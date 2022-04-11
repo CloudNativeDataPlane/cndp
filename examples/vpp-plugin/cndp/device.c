@@ -24,6 +24,10 @@
 #include <cndp/netdev_funcs.h>
 #include <vppinfra/unix.h>
 
+#if USE_2101_RX_QUEUES == 0
+#include <vnet/interface/rx_queue_funcs.h>
+#endif
+
 cndp_main_t cndp_main;
 
 void cndp_delete_dev (vlib_main_t *vm, u32 sw_if_index)
@@ -48,8 +52,11 @@ void cndp_delete_dev (vlib_main_t *vm, u32 sw_if_index)
   if (d->hw_if_index)
     {
       vnet_hw_interface_set_flags (vnm, d->hw_if_index, 0);
+#if USE_2101_RX_QUEUES == 1
+      /* VPP 21.06 changes how rx queues are processed */
       vec_foreach (lport, d->lports)
           vnet_hw_interface_unassign_rx_thread (vnm, d->hw_if_index, lport->qid);
+#endif
       ethernet_delete_interface (vnm, d->hw_if_index);
     }
 
@@ -158,6 +165,24 @@ static inline void cndp_buf_reset (void *mb, uint32_t buf_len, size_t headroom)
   vlib_buffer_t *b = (vlib_buffer_t *)mb;
 
   vlib_buffer_reset (b);
+}
+
+static clib_error_t *register_interface (vnet_main_t *vnm, cndp_device_t *cd)
+{
+#if USE_2110_ETHERNET_REGISTER_INTERFACE == 1
+  /* VPP 22.02 changes how interfaces are registered */
+  return ethernet_register_interface (vnm, cndp_device_class.index,
+                                      cd->instance, cd->mac.ether_addr_octet,
+                                      &cd->hw_if_index, NULL);
+#else
+  vnet_eth_interface_registration_t eir = {};
+
+  eir.dev_class_index = cndp_device_class.index;
+  eir.dev_instance = cd->instance;
+  eir.address = cd->mac.ether_addr_octet,
+  cd->hw_if_index = vnet_eth_register_interface (vnm, &eir);
+  return NULL;
+#endif
 }
 
 clib_error_t *cndp_create_dev (vlib_main_t *vm, u8 *ifname, u32 nb_qs,
@@ -280,9 +305,7 @@ clib_error_t *cndp_create_dev (vlib_main_t *vm, u8 *ifname, u32 nb_qs,
       goto cleanup_xskdev;
     }
 
-  error = ethernet_register_interface (vnm, cndp_device_class.index,
-                                       cd->instance, cd->mac.ether_addr_octet,
-                                       &cd->hw_if_index, NULL);
+  error = register_interface (vnm, cd);
   if (error)
     {
       goto cleanup_xskdev;
@@ -300,8 +323,13 @@ clib_error_t *cndp_create_dev (vlib_main_t *vm, u8 *ifname, u32 nb_qs,
 
   cd->sw_if_index = sw->sw_if_index;
 
+#if USE_2101_RX_QUEUES == 1
+  /* VPP 21.06 changes how rx queues are processed */
   vnet_hw_interface_set_input_node (vnm, cd->hw_if_index,
                                     cndp_input_node.index);
+#else
+  vnet_hw_if_set_input_node (vnm, cd->hw_if_index, cndp_input_node.index);
+#endif
 
   vnet_hw_interface_set_flags (vnm, cd->hw_if_index,
                                VNET_HW_INTERFACE_FLAG_LINK_UP);
@@ -310,16 +338,33 @@ clib_error_t *cndp_create_dev (vlib_main_t *vm, u8 *ifname, u32 nb_qs,
   for (int i = 0; i < nb_qs; i++)
     {
       int qid = offset + i;
+#if USE_2101_RX_QUEUES == 0
+      u32 queue_index;
+#endif
+
       if (tm->n_vlib_mains == 1)
         thread_index = ~0; /* any cpu */
+#if USE_2101_RX_QUEUES == 1
+      /* VPP 21.06 changes how rx queues are processed */
       vnet_hw_interface_assign_rx_thread (vnm, cd->hw_if_index, qid,
                                           thread_index++);
       vnet_hw_interface_set_rx_mode (vnm, cd->hw_if_index, qid,
                                      VNET_HW_IF_RX_MODE_POLLING);
+#else
+      queue_index = vnet_hw_if_register_rx_queue (vnm, cd->hw_if_index, qid,
+                                                  thread_index++);
+      vnet_hw_if_set_rx_queue_mode (vnm, queue_index,
+                                    VNET_HW_IF_RX_MODE_POLLING);
+#endif
       thread_index = (thread_index > vdm->last_worker_thread_index)
                          ? vdm->first_worker_thread_index
                          : thread_index;
     }
+
+#if USE_2101_RX_QUEUES == 0
+  /* VPP 21.06 changes how rx queues are processed */
+  vnet_hw_if_update_runtime_data (vnm, cd->hw_if_index);
+#endif
 
   /* buffer template */
   vlib_buffer_t *bt = &cd->buffer_template;
