@@ -5,7 +5,6 @@
 #ifndef _NETDEV_FUNCS_H_
 #define _NETDEV_FUNCS_H_
 
-#include <net/ethernet.h>
 #include <stdint.h>            // for uint32_t, uint16_t
 #include <cne_common.h>        // for CNDP_API
 

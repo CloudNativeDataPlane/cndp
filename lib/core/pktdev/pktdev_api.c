@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation.
  */
-#include <string.h>           // for strcmp
-#include <stdio.h>            // for fprintf, NULL, FILE, stdout
-#include <sys/queue.h>        // for TAILQ_FOREACH, TAILQ_HEAD_INITIALIZER
+#include <string.h>              // for strcmp
+#include <stdio.h>               // for fprintf, NULL, FILE, stdout
+#include <net/ethernet.h>        // ether_addr
+#include <sys/queue.h>           // for TAILQ_FOREACH, TAILQ_HEAD_INITIALIZER
 #include <pktdev_api.h>
 
 #include "pktdev.h"               // for pktdev_info

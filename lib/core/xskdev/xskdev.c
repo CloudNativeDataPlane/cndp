@@ -16,7 +16,6 @@
 #include <linux/bpf.h>            // for XDP_PACKET_HEADROOM
 #include <linux/if_xdp.h>         // for xdp_desc, xdp_statistics, XDP_STATISTICS
 #include <linux/if_link.h>        // for XDP_FLAGS_UPDATE_IF_NOEXIST
-#include <net/ethernet.h>
 #include <linux/ethtool.h>        // for ethtool_channels, ETHTOOL_GCHANNELS
 #include <linux/sockios.h>        // for SIOCETHTOOL
 #include <cne_common.h>           // for CNE_DEFAULT_SET, CNE_MAX_SET, CNE_PTR_SUB
