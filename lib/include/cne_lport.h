@@ -13,7 +13,6 @@
 
 #include <stdint.h>        // for uint16_t, uint32_t
 #include <sys/types.h>
-#include <net/ethernet.h>
 #include <stdbool.h>
 #include <pktmbuf.h>
 

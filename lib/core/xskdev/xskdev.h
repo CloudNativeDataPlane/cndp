@@ -5,14 +5,13 @@
 #ifndef _XSKDEV_H_
 #define _XSKDEV_H_
 
-#include <net/if.h>              // for IF_NAMESIZE
-#include <poll.h>                // for pollfd
-#include <pthread.h>             // for pthread_mutex_t, pthread_mutex_init, pthre...
-#include <bpf/xsk.h>             // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_ring...
-#include <net/ethernet.h>        // for ether_addr
-#include <stdint.h>              // for uint16_t, uint32_t
-#include <stdio.h>               // for FILE, NULL, size_t
-#include <cne_lport.h>           // for lport_stats_t, buf_alloc_t, buf_free_t
+#include <net/if.h>           // for IF_NAMESIZE
+#include <poll.h>             // for pollfd
+#include <pthread.h>          // for pthread_mutex_t, pthread_mutex_init, pthre...
+#include <bpf/xsk.h>          // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_ring...
+#include <stdint.h>           // for uint16_t, uint32_t
+#include <stdio.h>            // for FILE, NULL, size_t
+#include <cne_lport.h>        // for lport_stats_t, buf_alloc_t, buf_free_t
 
 /**
  * @file
@@ -107,7 +106,6 @@ typedef struct xskdev_info {
     unsigned int if_index;         /**< If_index of the interface */
     uint32_t prog_id;              /**< BPF program ID */
     pktmbuf_info_t *pi;            /**< The pktmbuf information structure pointer */
-    struct ether_addr eth_addr;    /**< MAC address for netdev */
     xskdev_rxq_t rxq;              /**< RX queue */
     xskdev_txq_t txq;              /**< TX queue */
     lport_stats_t stats;           /**< Stats for the lport interface */

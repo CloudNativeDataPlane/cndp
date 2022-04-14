@@ -6,7 +6,6 @@
 #define __PKTDEV_H
 
 #include <cne_common.h>
-#include <net/ethernet.h>
 #include <errno.h>            // for EINVAL, ENOTSUP
 #include <stddef.h>           // for NULL
 #include <stdint.h>           // for uint16_t, uint32_t, uint64_t, uint8_t
