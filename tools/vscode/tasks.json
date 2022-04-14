@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build debug",
+            "type": "shell",
+            "command": "make debug",
+            "options": {
+                "env": {
+                    "PKG_CONFIG_PATH": "/usr/local/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig"
+                }
+            },
+            "group": "none",
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/builddir/"
+                ]
+            }
+        },
+        {
+            "label": "Build docs",
+            "type": "shell",
+            "command": "make docs",
+            "group": "none",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "group": "build",
+            "dependsOn": [
+                "Build debug",
+                "Build docs"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,105 @@
+{
+    "interval": 1,
+    "stats":[
+        {
+            "metric": "n_rx_bytes",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_bytes",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_packets",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_packets",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_errors",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_errors",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_missed",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_dropped",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_invalid_requests",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_invalid_requests",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_ring_empty",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_buf_allocs",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_busypoll_wakeup",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_poll_wakeup",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_count",
+            "type": "counter"
+        },
+        {
+            "metric": "n_rx_burst_called",
+            "type": "counter"
+        },
+        {
+            "metric": "n_fq_add_count",
+            "type": "counter"
+        },
+        {
+            "metric": "n_fq_alloc_failed",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_kicks",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_failed_kicks",
+            "type": "counter"
+        },
+        {
+            "metric": "n_tx_kick_again",
+            "type": "counter"
+        },
+        {
+            "metric": "tx_ring_full",
+            "type": "gauge"
+        },
+        {
+            "metric": "tx_copied",
+            "type": "counter"
+        },
+        {
+            "metric": "cq_empty",
+            "type": "counter"
+        },
+        {
+            "metric": "cq_buf_freed",
+            "type": "counter"
+        }
+    ]
+}

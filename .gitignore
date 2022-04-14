@@ -1,0 +1,31 @@
+# Remove a few common types of files i.e. backup files
+*~
+*#
+.#*
+*.dot
+
+# Remove vscode and meson build directories
+.vscode/
+builddir/
+clang-builddir/
+usrtools/jsonc2json/build/
+doc/*/_build/
+
+# Keep the next two in this order, removes the usr directory (which is the install files), but
+# retains the lib/usr directory.
+usr/
+!lib/usr/
+
+# Remove some binary applications in the go directories
+lang/go/cndp.org/cmon/cmon
+lang/go/cndp.org/txgen/txgen
+
+# ignore the user modified or private jsonc files
+private-*.jsonc
+private-*.c
+Cargo.lock
+
+# cscope and ctags
+cscope.files
+cscope.out
+tags

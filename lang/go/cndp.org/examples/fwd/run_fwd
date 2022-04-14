@@ -1,0 +1,8 @@
+#!/bin/bash
+
+project_path="${PROJECT_PATH:-/root/git/networking.dataplane.cndp.cndp}"
+
+go build
+sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so ./fwd -c fwd.json -t rx -p enp25s0f0:0
+
+stty sane

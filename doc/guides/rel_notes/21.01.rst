@@ -1,0 +1,37 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2019-2022 Intel Corporation.
+
+CNDP Release 21.01
+==================
+
+New Features
+------------
+* **Columbiaville Support**
+* **Pktmbuf API changes**
+* **Txgen support for different packet sizes and pcap replay**
+* **ACL AVX512 Support**
+* **Examples (pktfwd and xdpfwd) forwarding mode support**
+* **CMON tool added - for finding and configuring interrupt cores**
+
+
+Known Issues
+-------------
+* The following Testcne test suites are currently failing: loop
+* The example apps (xdpfwd and pktfwd) are sending all 0s packets in tx-only mode.
+
+Limitations
+------------
+* Currently the Prometheus go agent only supports collecting metrics from one CNDP process. It will be extended in the follow up release to support multiple processes.
+
+
+Tested Platforms
+----------------
+* **Intel® Server System R2000WF Family**
+
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller XXV710 for 25GbE SFP28 (rev 02)**
+
+   - Driver-version: 2.8.20-k
+   - Firmware-version: 7.00 0x80004cf8 1.2154.0

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+project_path="${PROJECT_PATH:-/root/git/networking.dataplane.cndp.cndp}"
+
+go build
+
+#go test
+sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -port "enp25s0f0:0" -config "/root/git/networking.dataplane.cndp.cndp/lang/go/cndp.org/examples/fwd/fwd.json" -v
+
+#go test cover
+#sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -v -cover
+
+#go bench
+sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -port "enp25s0f0:0" -config "/root/git/networking.dataplane.cndp.cndp/lang/go/cndp.org/examples/fwd/fwd.json"  -bench=.
+
+#go bench profiles
+#sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -cpuprofile cpu.prof -memprofile mem.prof -bench=.
+#go tool pprof -pdf cpu.prof > cpu.pdf
+#go tool pprof -pdf mem.prof > mem.pdf
+
+stty sane

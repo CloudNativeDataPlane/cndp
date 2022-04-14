@@ -1,0 +1,60 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2021-2022 Intel Corporation.
+
+CNDP First Public Release 22.04
+===============================
+
+New Features
+------------
+* **Update CNI to do ethtool filter programming**
+* **Add --no-color option to cndpfwd to remove color text**
+* **Moved K8s device plugin to separate repo**
+* **Added alternative to docker with CRI-O and Podman support**
+* **Added support to allow CNDP to be built on Alpine Linux containers**
+* **Update the documentation for public release, API documentation and guides**
+* **xdpdev API has been deprecated, removed documentation and references**
+* **Added better logging support for k8s container systems**
+* **Fixed many minor bugs, increased performance and other improvements**
+* **Add first draft of CNDP go-binding routines**
+
+Some notable changes
+--------------------
+* CNET stack depends on libnl3. On Ubuntu, the libnl-3-dev and libnl-cli-3-dev packages are
+  required to build CNDP.
+* The cnet-quic example application use quicly (https://github.com/h2o/quicly.git) library to
+  demonstrate a simple QUIC application using the CNET stack.
+* The k8s device plugin is moved to its own repo (https://github.com/intel/afxdp-plugins-for-kubernetes)
+* Deprecated xdpdev APIs
+
+Known Issues
+-------------
+* CNET stack assumes a single IP address per logical port, which means a 1:1 mapping between IP
+  address and hardware queue. This is counter-intuitive to the way IP addresses are typically
+  assigned, where a single IP address is assigned to a device which has many queues.
+* Lport groups jcfg creates a single umem per lport-group, but it should create a single umem
+  for all the lports in all the lport-groups.
+* Lport group jcfg processing fails for two groups which map devices onto the same thread.
+
+Limitations
+------------
+* Still need to use a full netdev (Physical Function) with CNDP at this time. Support for
+  Virtual Functions and Sub-devices will follow in later releases.
+* Logical port groups support is under active development. Logical port groups can be used with
+  this release, but eventually the functionality with be integrated with the existing logical port
+  JSON decoder.
+
+Tested Platforms System information
+-----------------------------------
+* **CPU = Intel(R) Xeon(R) Gold 6139 CPU @ 2.30GHz**
+* **BIOS = SE5C620.86B.00.01.0015.110720180833**
+* **Baseboard = Intel S2600WFQ**
+* **OS  = Ubuntu 20.04.4 LTS (Focal Fossa)**
+* **Kernel = 5.4.0-89-generic**
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller XL710 for 40GbE QSFP+ (rev 02)**
+
+   - driver: i40e
+   - version: 2.8.20-k
+   - firmware-version: 6.01 0x800035da 1.1747.0

@@ -1,0 +1,372 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema",
+    "description": "CNDP configuration file",
+    "type": "object",
+
+    "properties": {
+        "application": {
+            "description": "Application information",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "The name of the application",
+                    "type": "string"
+                }
+            },
+            "patternProperties": {
+                "^desc(ription){0,1}$": {
+                    "description": "Description of the application",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+
+        "defaults": {
+            "description": "Default values",
+            "type": "object",
+            "properties": {
+                "bufcnt": {
+                    "description": "UMEM default buffer count in 1K increments",
+                    "type": "number"
+                },
+                "bufsz": {
+                    "description": "UMEM buffer size in 1K increments",
+                    "type": "number"
+                },
+                "rxdesc": {
+                    "description": "Number of RX ring descriptors in 1K increments",
+                    "type": "number"
+                },
+                "txdesc": {
+                    "description": "Number of TX ring descriptors in 1K increments",
+                    "type": "number"
+                },
+                "cache": {
+                    "description": "MBUF Pool cache size in number of entries",
+                    "type": "number"
+                },
+                "mtype": {
+                    "description": "Memory type for mmap allocations",
+                    "type": "string",
+                    "enum": [ "4KB", "2MB", "1GB" ]
+                }
+            },
+            "additionalProperties": false
+        },
+
+        "umems": {
+            "description": "The umems to create",
+            "type": "object",
+            "additionalProperties": {
+                "description": "Define a UMEM by name",
+                "type": "object",
+                "properties": {
+                    "bufcnt": {
+                        "description": "The number of buffers in 1K increments in the UMEM space",
+                        "type": "number"
+                    },
+                    "bufsz": {
+                        "description": "The size in 1K increments of each buffer in the UMEM space",
+                        "type": "number"
+                    },
+                    "mtype": {
+                        "description": "Memory type for mmap allocations",
+                        "type": "string",
+                        "enum": [ "4KB", "2MB", "1GB" ],
+                        "default": "4KB"
+                    },
+                    "regions": {
+                        "description": "Array of sizes one per region in 1K increments, total must be <= bufcnt",
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "rxdesc": {
+                        "description": "Number of RX ring descriptors in 1K increments",
+                        "type": "number",
+                        "default": 0
+                    },
+                    "txdesc": {
+                        "description": "Number of TX ring descriptors in 1K increments",
+                        "type": "number",
+                        "default": 0
+                    },
+                    "shared_umem": {
+                        "description": "Use xsk_socket__create_shared() API",
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "patternProperties": {
+                    "^desc(ription){0,1}$": {
+                        "description": "Description of the umem space",
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "bufcnt",
+                    "bufsz"
+                ]
+            }
+        },
+
+        "lports": {
+            "description": "The logical port definitions",
+            "type": "object",
+            "patternProperties": {
+                "^.*(:.*)*$": {
+                    "description": "Netdev, optionally suffixed with :tag for uniqueness",
+                    "type": "object",
+                    "properties": {
+                        "pmd": {
+                            "description": "The PMD name",
+                            "type": "string"
+                        },
+                        "qid": {
+                            "description": "Queue ID",
+                            "type": "number"
+                        },
+                        "umem": {
+                            "description": "The UMEM assigned to this lport",
+                            "type": "string"
+                        },
+                        "region": {
+                            "description": "UMEM region index",
+                            "type": "number",
+                            "default": 0
+                        },
+                        "busy_timeout": {
+                            "description": "Busy timeout in milliseconds",
+                            "type": "number",
+                            "default": 0,
+                            "minimum": 0,
+                            "maximum": 65535
+                        },
+                        "busy_budget": {
+                            "description": "Busy budget (0xFFFF disables)",
+                            "type": "number",
+                            "default": 0,
+                            "minimum": 0,
+                            "maximum": 65535
+                        },
+                        "unprivileged": {
+                            "description": "Enable unprivileged operations",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "force_wakeup": {
+                            "description": "Force Tx wakeup calls for CVL NIC",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "skb_mode": {
+                            "description": "Enable XDP_FLAGS_SKB_MODE to force copy mode",
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "patternProperties": {
+                        "^desc(ription){0,1}$": {
+                            "description": "Description of the lport",
+                            "type": "string"
+                        },
+                        "^busy_poll(ing){0,1}$": {
+                            "description": "Enable or disable busy polling",
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "pmd",
+                        "qid",
+                        "umem"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+
+        "lcore-groups": {
+            "description": "The logical core group where threads can run",
+            "type": "object",
+            "properties": {
+                "initial": {
+                    "description": "Used by the main application thread",
+                    "type": "array",
+                    "items": {
+                        "type": [
+                            "number",
+                            "string"
+                        ]
+                    }
+                },
+                "default": {
+                    "description": "Used by threads not assigned to another group",
+                    "type": "array",
+                    "items": {
+                        "type": [
+                            "number",
+                            "string"
+                        ]
+                    }
+                }
+            },
+            "additionalProperties": {
+                "description": "Define an lcore group by name",
+                "type": "array",
+                "items": {
+                    "type": [
+                        "number",
+                        "string"
+                    ]
+                }
+            }
+        },
+
+        "options": {
+            "description": "The Application options",
+            "type": "object",
+            "properties": {
+                "pkt_api": {
+                    "description": "Which packet API to use",
+                    "type": "string",
+                    "enum": ["xskdev", "pktdev"]
+                },
+                "no-metrics": {
+                    "description": "Disable metrics gathering and thread",
+                    "type": "boolean"
+                },
+                "no-restapi": {
+                    "description": "Disable RestAPI support",
+                    "type": "boolean"
+                },
+                "cli": {
+                    "description": "Enable or disable the CLI",
+                    "type": "boolean"
+                },
+                "mode": {
+                    "description": "Mode type",
+                    "type": "string",
+                    "enum": ["drop", "rx-only", "tx-only", "lb", "loopback", "fwd", "acl-strict", "acl-permissive"]
+                }
+            },
+            "additionalProperties": true
+        },
+
+        "threads": {
+            "description": "The set of lport to lcore-group mappings",
+            "type": "object",
+            "patternProperties": {
+                "^.*(:.*)*$": {
+                    "description": "Define a thread mapping by name",
+                    "type": "object",
+                    "properties": {
+                        "group": {
+                            "description": "The lcore-group to which the thread belongs",
+                            "type": "string"
+                        },
+                        "lports": {
+                            "description": "The list of lports assigned to this thread",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "patternProperties": {
+                        "^desc(ription){0,1}$": {
+                            "description": "Description of the thread",
+                            "type": "string"
+                        }
+                    }
+                },
+                "additionalProperties": false
+            },
+            "additionalProperties": false
+        },
+
+        "lport-groups": {
+            "description": "The set of logical port groups",
+            "type": "object",
+            "additionalProperties": {
+                "description": "Define a logical port group by name",
+                "type": "object",
+                "properties": {
+                    "netdevs": {
+                        "description": "The netdev names from which logical ports are created",
+                        "type": "array"
+                    },
+                    "queues": {
+                        "description": "The queues to use from each netdev",
+                        "type": ["integer", "string", "array"]
+                    },
+                    "threads": {
+                        "description": "The threads to which logical ports are assigned",
+                        "type": "array"
+                    },
+                    "pmd": {
+                        "description": "The PMD name",
+                        "type": "string"
+                    },
+                    "umem": {
+                        "description": "The UMEM assigned to this lport",
+                        "type": "string"
+                    },
+                    "busy_timeout": {
+                        "description": "Busy timeout in milliseconds",
+                        "type": "number",
+                        "default": 0,
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "busy_budget": {
+                        "description": "Busy budget (0xFFFF disables)",
+                        "type": "number",
+                        "default": 0,
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "unprivileged": {
+                        "description": "Enable unprivileged operations",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "force_wakeup": {
+                        "description": "Force Tx wakeup calls for CVL NIC",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "skb_mode": {
+                        "description": "Enable XDP_FLAGS_SKB_MODE to force copy mode",
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "patternProperties": {
+                    "^desc(ription){0,1}$": {
+                        "description": "Description of the logical port group",
+                        "type": "string"
+                    },
+                    "^busy_poll(ing){0,1}$": {
+                        "description": "Enable or disable busy polling",
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "netdevs",
+                    "threads"
+                ]
+            }
+        }
+    },
+
+    "required": [
+        "application"
+    ]
+}

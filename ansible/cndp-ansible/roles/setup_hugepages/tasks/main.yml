@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+# This role will setup hugepages for CNDP
+################################################################
+#             2MB pages config                                 #
+################################################################
+- name: Check 2MB Hugepages Support
+  shell: cat /proc/cpuinfo | grep -q pse && echo "FOUND" || echo "NOT FOUND"
+  register: hugepages_2MB_check
+  tags:
+    - check_hugepages_2MB
+
+- name: Check 2MB Hugepages
+  debug:
+    msg: Selected 2MB hugepages but these are "{{ hugepages_2MB_check.stdout }}" on the system
+  when: hugepages_2MB_check.stdout != "FOUND" and hugepages_2MB|int > 0
+  tags:
+    - check_hugepages_2MB
+
+- name: Configure Persistent 2MB Hugepages if missing in /etc/sysctl.conf
+  lineinfile:
+    path: /etc/sysctl.conf
+    backup: yes
+    regexp: 'vm.nr_hugepages = [0-9]+'
+    state: absent
+    insertafter: 'EOF'
+    line: 'vm.nr_hugepages = {{ hugepages_2MB }}'
+  when:
+    - hugepages_2MB_check.stdout == "FOUND" and hugepages_2MB|int > 0
+  tags:
+     - hugepages_2MB_config
+
+- name: Edit Persistent 2MB Hugepages if it already exists
+  lineinfile:
+    path: /etc/sysctl.conf
+    backup: yes
+    regexp: 'vm.nr_hugepages = [0-9]+'
+    state: present
+    line: 'vm.nr_hugepages = {{ hugepages_2MB }}'
+  when:
+    - hugepages_2MB_check.stdout == "FOUND" and hugepages_2MB|int > 0
+  tags:
+     - hugepages_2MB_config
+
+
+################################################################
+#             1GB pages config                                 #
+################################################################
+
+- name: Check 1GB Hugepages Support in cpuinfo
+  shell: cat /proc/cpuinfo | grep -q pdpe1gb && echo "FOUND" || echo "NOT FOUND"
+  register: hugepages_1GB_check
+  tags:
+    - check_1GB_hugepages
+
+- name: Check cpuinfo result
+  debug:
+    msg: selected 1GB hugepages but these are not supported by the system
+  when: hugepages_1GB > 0 and hugepages_1GB_check.stdout != "FOUND"
+  tags:
+    - check_1GB_hugepages
+
+- name: Modify existing 1GB Hugepages configuration if it exists
+  replace:
+    path: /etc/default/grub
+    regexp: "{{ item.regex }}"
+    replace: "{{ item.config }}"
+  when:
+    - hugepages_1GB > 0 and hugepages_1GB_check.stdout == "FOUND"
+  loop:
+    - {regex: '(GRUB_CMDLINE_LINUX=.*)([hugepagesz=][0-9][G|MB])(.*)', config: '\1=1G\3'}
+    - {regex: '(GRUB_CMDLINE_LINUX=.*)([hugepages=][0-9]+)(.*)', config: '\1={{ hugepages_1GB }}\3'}
+  tags:
+    - config_1GB_hugepages
+
+- name: Insert new 1GB configuration in grub if it doesn't exist
+  replace:
+    dest: /etc/default/grub
+    regexp: "(GRUB_CMDLINE_LINUX=(?!.* default_hugepagesz)(?!.* hugepagesz)(?!.* hugepages)\"[^\"]*)(\".*)"
+    replace: '\1 hugepagesz=1G hugepages={{ hugepages_1GB }}\2'
+  when:
+    - hugepages_1GB > 0 and hugepages_1GB_check.stdout == "FOUND"
+  tags:
+    - config_1GB_hugepages
+
+- name: update grub
+  shell: update-grub
+  when:
+    - hugepages_1GB > 0 and hugepages_1GB_check.stdout == "FOUND"
+  tags:
+    - config_1GB_hugepages

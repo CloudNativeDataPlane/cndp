@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: BSD-3-Clause
+ * Copyright (c) 2020-2022 Intel Corporation.
+ */
+
+extern crate bindgen;
+
+use std::env;
+use std::path::PathBuf;
+
+fn main() {
+
+//    let lib_path =
+//        ::std::env::var("LIB_NAME_PATH")
+//            .expect("Please provide the `LIB_NAME_PATH` env var");
+    println!("cargo:rustc-link-search={}", "../../usr/local/lib/x86_64-linux-gnu"); // -L $LIB_NAME_PATH
+
+    // Tell cargo to tell rustc to link the system cndp
+    // shared library.
+    println!("cargo:rustc-link-lib=cndp");
+
+    // Tell cargo to invalidate the built crate whenever the wrapper changes
+    println!("cargo:rerun-if-changed=wrapper.h");
+
+    // The bindgen::Builder is the main entry point
+    // to bindgen, and lets you build up options for
+    // the resulting bindings.
+    let bindings = bindgen::Builder::default()
+        // The input header we would like to generate
+        // bindings for.
+        .header("wrapper.h")
+        .clang_arg(r"-I../../usr/local/include")
+        // Tell cargo to invalidate the built crate whenever any of the
+        // included header files changed.
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        // Finish the builder and generate the bindings.
+        .generate()
+        // Unwrap the Result and panic on failure.
+        .expect("Unable to generate bindings");
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+}

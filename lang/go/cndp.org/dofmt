@@ -1,0 +1,8 @@
+# format go code
+
+dirs="asciichart capi cmon cndpfwd_api colorize etimers graphdata hexdump"
+dirs="$dirs irq metrics taborder ttylog txgen utils"
+
+for dir in $dirs; do
+    (cd $dir; gofmt -s -w .)
+done

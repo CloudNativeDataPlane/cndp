@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cndp-0-0
+  annotations:
+    k8s.v1.cni.cncf.io/networks: cndp-cni-afxdp0
+  labels:
+    app: cndp
+spec:
+  nodeSelector:
+    cndp: "true"
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+  containers:
+    - name: cndp-0
+      command: ["/bin/bash"]
+      args: ["-c", "./jsonc_gen.sh; cndpfwd -c config.jsonc lb;"]
+      image: cndp
+      imagePullPolicy: Never
+      securityContext:
+        capabilities:
+          add:
+            - NET_RAW
+      ports:
+      - containerPort: 8094
+        hostPort: 8094
+      resources:
+        requests:
+          cndp/pool1: '1'
+        limits:
+          cndp/pool1: '1'
+          hugepages-2Mi: 512Mi
+          memory: 2Gi
+      volumeMounts:
+        - name: shared-data
+          mountPath: /var/run/cndp/
+    - name: control-0
+      command: ["/bin/bash", "-c", "prometheus"]
+      image: cndp
+      imagePullPolicy: Never
+      ports:
+      - containerPort: 2112
+        hostPort: 2112
+      volumeMounts:
+        - name: shared-data
+          mountPath: /var/run/cndp/

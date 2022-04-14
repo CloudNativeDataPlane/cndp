@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="341.19mm" height="136.36mm" version="1.1" viewBox="0 0 341.19 136.36" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(36.063 -37.482)">
+  <g>
+   <rect x="-12.032" y="103.35" width="114.48" height="33.555" rx="2.5242" ry="3.029" fill="#00c7fd" stroke-linejoin="round" stroke-width=".61736"/>
+   <text x="36.33849" y="111.35461" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="36.33849" y="111.35461" fill="#ffffff" font-size="6.35px" stroke-width=".26458">PMDs</tspan></text>
+  </g>
+  <g>
+   <rect x="-36.054" y="53.537" width="138.5" height="17.438" rx="2.5242" ry="3.029" fill="#ffc000" stroke-linejoin="round" stroke-width=".61736"/>
+   <rect x="-12.382" y="73.62" width="114.83" height="25.702" rx="2.5242" ry="3.029" fill="#00c7fd" stroke-linejoin="round" stroke-width=".61736"/>
+   <text transform="scale(1.0127 .98749)" x="44.14447" y="85.343834" fill="#ffffff" font-family="sans-serif" font-size="6.4305px" stroke-width=".26458" text-align="center" text-anchor="middle" style="line-height:1.25" xml:space="preserve"><tspan x="44.14447" y="85.343834" text-align="center">Packet Device Layer</tspan><tspan x="44.14447" y="93.381912" text-align="center">(pktdev)</tspan></text>
+   <text x="15.943554" y="64.029053" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="15.943554" y="64.029053" fill="#ffffff" font-size="6.35px" stroke-width=".26458">Application</tspan></text>
+   <rect transform="rotate(-90)" x="-158.13" y="-36.063" width="50.052" height="19.643" rx="2.5242" ry="3.029" fill="#004a86" stroke-linejoin="round" stroke-width=".61736"/>
+  </g>
+  <g transform="translate(0 -3.7922)">
+   <text transform="rotate(-90)" x="-151.2408" y="-28.437307" fill="#ffffff" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-151.2408" y="-28.437307">Hugepage/</tspan><tspan x="-151.2408" y="-20.499807">Memory</tspan></text>
+  </g>
+  <g transform="translate(2.1167 5.3798)">
+   <rect x="-12.032" y="117.17" width="45" height="12.232" rx="2.5242" ry="3.029" fill="#8bae46" stroke-linejoin="round" stroke-width=".61736"/>
+   <text x="-2.0275393" y="125.13177" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-2.0275393" y="125.13177" fill="#ffffff" font-size="6.35px" stroke-width=".26458">AF_XDP</tspan></text>
+  </g>
+  <g transform="translate(-2.1167 5.3797)">
+   <g transform="matrix(1.2285 0 0 1 -23.406 4.2333)" stroke-width=".90223">
+    <rect x="65.82" y="112.94" width="36.631" height="12.232" rx="2.0547" ry="3.029" fill="#8bae46" stroke-linejoin="round" stroke-width=".557"/>
+   </g>
+   <text x="72.861214" y="124.95662" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="72.861214" y="124.95662" fill="#ffffff" font-size="6.35px" stroke-width=".26458">Ring</tspan></text>
+  </g>
+  <g transform="translate(-.52809 -1.1774)">
+   <rect x="55.862" y="143.9" width="45" height="15" rx="2.5242" ry="3.029" fill="#8bae46" stroke-linejoin="round" stroke-width=".61736"/>
+   <text x="64.660645" y="153.06712" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="64.660645" y="153.06712" fill="#ffffff" font-size="6.35px" stroke-width=".26458">Ring API</tspan></text>
+  </g>
+  <g transform="translate(6.5052 -3.3816)">
+   <rect x="-16.421" y="146.1" width="45" height="15" rx="2.5242" ry="3.029" fill="#8bae46" stroke-linejoin="round" stroke-width=".61736"/>
+   <text x="-11.499456" y="155.96747" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-11.499456" y="155.96747" fill="#ffffff" font-size="6.35px" stroke-width=".26458">xskdev API</tspan></text>
+  </g>
+  <rect transform="rotate(-90)" x="-107.02" y="-36.054" width="33.933" height="19.633" rx="2.5242" ry="3.029" fill="#00c7fd" stroke-linejoin="round" stroke-width=".61736"/>
+  <text transform="rotate(-90)" x="-99.223785" y="-25.096375" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-99.223785" y="-25.096375" fill="#ffffff" font-size="6.35px" stroke-width=".26458">mmap</tspan></text>
+  <g>
+   <rect transform="rotate(-90)" x="-136.93" y="104.59" width="63.307" height="19.643" rx="2.5242" ry="3.029" fill="#004a86" stroke-linejoin="round" stroke-width=".61736"/>
+   <text transform="rotate(-90)" x="-121.25248" y="112.21875" fill="#ffffff" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-121.25248" y="112.21875">Mempool/</tspan><tspan x="-121.25248" y="120.15625">pktmbuf</tspan></text>
+  </g>
+  <path d="m-27.474 164.92h145.64" fill="none" stroke="#0066b5" stroke-dasharray="1.5875, 1.5875" stroke-width=".79375"/>
+  <g>
+   <text x="92.8125" y="162.77884" fill="#000000" font-family="sans-serif" font-size="4.9389px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="92.8125" y="162.77884" font-size="4.9389px" stroke-width=".26458">User space</tspan></text>
+   <text x="92.8125" y="170.98918" fill="#000000" font-family="sans-serif" font-size="4.9389px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="92.8125" y="170.98918" font-size="4.9389px" stroke-width=".26458">Kernel</tspan></text>
+   <rect x="149.39" y="53.688" width="138.5" height="17.438" rx="2.5242" ry="3.029" fill="#ffc000" stroke-linejoin="round" stroke-width=".61736"/>
+   <rect x="149.78" y="73.772" width="114.83" height="61.399" rx="2.5242" ry="3.029" fill="#00c7fd" stroke-linejoin="round" stroke-width=".61736"/>
+   <text transform="scale(1.0127 .98749)" x="204.552" y="103.48263" fill="#ffffff" font-family="sans-serif" font-size="6.4305px" stroke-width=".26458" text-align="center" text-anchor="middle" style="line-height:1.25" xml:space="preserve"><tspan x="204.552" y="103.48263" text-align="center">AF_XDP Device Layer</tspan><tspan x="204.552" y="111.52071" text-align="center">(xskdev)</tspan></text>
+   <text x="201.39006" y="64.180687" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="201.39006" y="64.180687" fill="#ffffff" font-size="6.35px" stroke-width=".26458">Application</tspan></text>
+   <rect transform="rotate(-90)" x="-155.96" y="268.25" width="47.197" height="19.643" rx="2.5242" ry="3.029" fill="#004a86" stroke-linejoin="round" stroke-width=".61736"/>
+  </g>
+  <g transform="translate(304.32 -3.1114)">
+   <text transform="rotate(-90)" x="-151.2408" y="-28.437307" fill="#ffffff" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-151.2408" y="-28.437307">Hugepage/</tspan><tspan x="-151.2408" y="-20.499807">Memory</tspan></text>
+  </g>
+  <g transform="translate(200.88 -5.3718)">
+   <rect x="-16.421" y="146.1" width="45" height="15" rx="2.5242" ry="3.029" fill="#8bae46" stroke-linejoin="round" stroke-width=".61736"/>
+   <text x="-11.499456" y="155.96747" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-11.499456" y="155.96747" fill="#ffffff" font-size="6.35px" stroke-width=".26458">xskdev API</tspan></text>
+  </g>
+  <rect transform="rotate(-90)" x="-107.7" y="268.26" width="33.933" height="19.633" rx="2.5242" ry="3.029" fill="#00c7fd" stroke-linejoin="round" stroke-width=".61736"/>
+  <text transform="rotate(-90)" x="-99.904587" y="279.22153" fill="#000000" font-family="sans-serif" font-size="6.35px" stroke-width=".26458" style="line-height:1.25" xml:space="preserve"><tspan x="-99.904587" y="279.22153" fill="#ffffff" font-size="6.35px" stroke-width=".26458">mmap</tspan></text>
+  <path d="m157.97 165.07h145.64" fill="none" stroke="#0066b5" stroke-dasharray="1.5875, 1.5875" stroke-width=".79375"/>
+  <g fill="#000000" stroke-width=".26458">
+   <text x="278.259" y="162.93048" font-family="sans-serif" font-size="4.9389px" style="line-height:1.25" xml:space="preserve"><tspan x="278.259" y="162.93048" font-size="4.9389px" stroke-width=".26458">User space</tspan></text>
+   <text x="278.259" y="171.14082" font-family="sans-serif" font-size="4.9389px" style="line-height:1.25" xml:space="preserve"><tspan x="278.259" y="171.14082" font-size="4.9389px" stroke-width=".26458">Kernel</tspan></text>
+   <text x="21.775242" y="47.12019" font-family="'Intel Clear'" font-size="10.583px" font-weight="300" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="21.775242" y="47.12019" font-family="'Intel Clear'" font-size="10.583px" font-weight="300" stroke-width=".26458" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal">pktdev</tspan></text>
+   <text x="198.47597" y="47.12019" font-family="'Intel Clear'" font-size="10.583px" font-weight="300" style="line-height:1.25" xml:space="preserve"><tspan x="198.47597" y="47.12019" font-family="'Intel Clear'" font-size="10.583px" font-weight="300" stroke-width=".26458">xskdev</tspan></text>
+  </g>
+  <path d="m138.15 37.482v136.36" fill="none" stroke="#0066b5" stroke-dasharray="3.175, 3.175" stroke-width=".79375"/>
+ </g>
+</svg>

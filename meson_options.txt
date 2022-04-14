@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2019-2022 Intel Corporation.
+
+# Please keep the options sorted alphabetically.
+
+option('coverity', type: 'boolean', value: 'false',
+    description: 'build for coverity')
+
+option('enable_asserts', type: 'boolean', value: false,
+    description: 'Enable CNE asserts')
+
+option('enable_docs', type: 'boolean', value: false,
+    description: 'build documentation')
+
+option('enable_tcp', type: 'boolean', value: 'false',
+    description: 'enable TCP in CNET')  # Not working yet
+
+option('json_test_dir', type: 'string',
+	value:'', # '/work/projects/json/tests',
+	description: 'include path to JSON test files')
+
+# Building examples/afxdp_user we need to install linux-source code
+#   sudo -s    # switch to root privilage
+#   apt-get install linux-source
+#   cd /usr/src
+#   tar xjf linux-source-X.Y.Z.tar.bz2
+#
+# Will create a linux-source-X.Y.Z directory use this path in the
+# linux_source_dir variable in meson_options.txt file.
+#
+#   cd linux-source-X.Y.Z
+#   make menuconfig       # Save and exit the menuconfig.
+#   make headers_install
+#   exit                  # exit root privilage
+#
+# After the headers_install you can build CNDP to get xdpsock_user application
+# built, which is called afxdp_user.
+#   cd cndp
+#   make rebuild install
+#
+# The binaries are located in ./usr/local/bin in the CNDP source directory.
+#
+option('linux_source_dir', type: 'string',
+	value:'/usr/src/linux-source-5.11.0',
+	description: 'location of Linux sources')
+
+option('machine', type: 'string', value: 'native',
+	description: 'set the target machine type')
+
+# The path below can't be a relative path, must be absolute path to quicly source code.
+# Follow the quicly build process to get the libquicly.a and picotls code.
+option('picotls_path', type: 'string', value: '/work/projects/intel/networking.dataplane/picotls',
+	description: 'set the path to picotls directory')
+option('quicly_path', type: 'string', value: '/work/projects/intel/networking.dataplane/quicly',
+	description: 'set the path to quicly directory')
+
+option('verbose', type: 'boolean', value: false,
+    description: 'Verbose build messages')
+

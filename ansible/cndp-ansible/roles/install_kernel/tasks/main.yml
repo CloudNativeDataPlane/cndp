@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+# This role checks if the kernel version is the one
+# needed for CNDP, then installs and reboots
+# the target host if it's not.
+- name: Kernel Version Check
+  debug:
+    msg: Kernel version {{ ansible_kernel }} is OK no need to update
+  when:
+    - ansible_kernel is version ( min_kernel, '>=')
+  tags:
+     - check_kernel
+
+- name: Kernel Version Needs update
+  debug:
+    msg: Kernel will be updated
+  when:
+    - ansible_kernel is version ( min_kernel, '<')
+  tags:
+     - check_kernel
+
+- name: install linux-image-unsigned-5.13.0-1009-oem
+  package:
+     name: linux-image-unsigned-5.13.0-1009-oem
+     state: present
+  environment: "{{ proxy_env }}"
+  tags: install_kernel
+
+- name: install linux-headers-5.13.0-1009-oem
+  package:
+     name: linux-headers-5.13.0-1009-oem
+     state: present
+  environment: "{{ proxy_env }}"
+  tags: install_kernel
+
+- name: install linux-oem-5.13-tools-5.13.0-1009
+  package:
+     name: linux-oem-5.13-tools-5.13.0-1009
+     state: present
+  environment: "{{ proxy_env }}"
+  tags: install_kernel
+
+- name: Reboot the host after kernel installation
+  reboot:
+    reboot_timeout: 3600
+#    pre_reboot_delay: 60
+  when:
+    - ansible_kernel is version ( min_kernel, '<') and localhost_install != true
+  tags:
+    - reboot_cndp_remote

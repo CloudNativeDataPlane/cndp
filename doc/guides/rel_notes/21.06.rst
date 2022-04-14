@@ -1,0 +1,48 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2021-2022 Intel Corporation.
+
+CNDP Release 21.06
+==================
+
+New Features
+------------
+* **Add ISA API for UMWAIT, UMONITOR, TPAUSE, MOVDIRI, MOVDIR64B, CLDEMOTE instructions**
+* **Add User Interrupt library (ibroker)**
+* **Port Data Streaming Accelerator (DSA) library from DPDK**
+* **Add Busy Poll support for AF_XDP sockets**
+* **Add support for unprivileged containers through CNDP device plugin**
+* **Refactor Unix Domain Socket (UDS) Library to support REST API**
+* **Add REST API to cndpfwd example with accompanying Go web-server frontend**
+* **Add Rust packet forwarding example**
+* **Add custom stdio/tty implementation with support for remote CLI over unix domain socket**
+* **Improved test pass/fail reporting by testcne**
+
+
+Some notable changes
+--------------------
+* Replace xdpfwd and pktfwd examples with cndpfwd example
+* Replace LPM library with RIB and FIB libraries ported from DPDK
+* Over 150 fixes for issues found by Klocwork Static Code Analysis
+
+
+Known Issues
+-------------
+* None at this time
+
+
+Limitations
+------------
+* None at this time
+
+
+Tested Platforms
+----------------
+* **Intel® Server System R2000WF Family**
+
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller XXV710 for 25GbE SFP28 (rev 02)**
+
+   - Driver-version: 2.8.20-k
+   - Firmware-version: 7.00 0x80004cf8 1.2154.0

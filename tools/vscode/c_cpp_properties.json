@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                // include all project
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                // should be included by compile-commands, add just in case
+                "_GNU_SOURCE"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-x64",
+            "forcedInclude": [
+                // should be included by compile-commands, add just in case
+                "${workspaceFolder}/builddir/cne_build_config.h"
+            ],
+            // use compiler commands for code analysis, this makes it so that
+            // the code model sees the same code compiler does
+            "compileCommands": "${workspaceFolder}/builddir/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2019-2022 Intel Corporation
+
+dirs = [
+    'acl',
+    'dsa',
+    'thread',
+    'utils',
+    'timer',
+    'vec',
+    'graph',
+    'hmap',
+    'net',
+    'rib',
+    'fib',
+    'meter',
+    'nodes',
+    'cthread',
+]
+
+foreach d:dirs
+    deps = [build_cfg, include, osal, log]
+
+    libname = 'cne_' + d
+    enabled_libs += libname
+	subdir(d)
+
+	install_headers(headers, subdir: meson.project_name().to_lower())
+endforeach

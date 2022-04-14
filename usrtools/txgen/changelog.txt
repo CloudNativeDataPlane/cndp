@@ -1,0 +1,12 @@
+TXGen-CNDP - Traffic Generator powered by CNDP
+=====================================================
+
+**TXGen-CNDP is a traffic generator powered by CNDP at wire rate traffic with 64 byte frames.**
+
+** (TXGen) Sounds like 'Packet-Gen'**
+
+**=== Modifications ===**
+
+20.04.0 - First release
+
+**=====================**

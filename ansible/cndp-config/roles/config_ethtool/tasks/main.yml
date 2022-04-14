@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation
+---
+- name: RESET ethtool filters Step 1
+  command: >
+    ethtool -K {{ iface }} ntuple off
+
+- name: RESET ethtool filters Step 2
+  command: >
+    ethtool -K {{ iface }} ntuple on
+
+- name: RESET ethtool filters Step 2
+  command: >
+    ethtool -N {{ iface }} rx-flow-hash udp4 fn
+
+- name: Configure ethtool filters
+  command: >
+    ethtool -N {{ iface }} flow-type udp4 src-port {{ sport +item|int }} dst-port {{ dport }}  action {{ item|int +1 }}
+  with_sequence: start=0 end={{num_lports}} stride=1

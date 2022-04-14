@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+- hosts: cndp_single
+  vars:
+    localhost_install: true
+  become: true
+  become_user: root
+  gather_facts: true
+  tasks:
+    - include_role:
+        name: check_os
+        apply:
+          delegate_to: localhost
+      tags: 00_check_os
+    - include_role:
+        name: check_updated_kernel
+        apply:
+          delegate_to: localhost
+      tags: 01_check_kernel
+    - include_role:
+        name: install_libbpf
+        apply:
+          delegate_to: localhost
+      tags: 02_install_libbpf
+

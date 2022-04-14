@@ -1,0 +1,55 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2021-2022 Intel Corporation.
+
+CNDP Release 22.01
+==================
+
+New Features
+------------
+* **Add UDP Network Stack (CNET) with QUIC example application**
+* **Add User Managed Buffers to allow zero-copy for apps that implement their own memory allocator**
+* **Add Logical Port (lport) Groups for use with RSS when exact queues are unknown**
+* **Add AF_PACKET PMD to support environments where AF_XDP is not enabled**
+* **CNDP Plugin for VPP is updated to support multiple queues and zero-copy**
+* **Support AF_XDP copy-mode in CNDP Pod for devices not implementing zero-copy**
+* **Support containerd Container Runtime to remove the dependency on docker-shim**
+
+Some notable changes
+--------------------
+* Hugepages are automatically downgraded from 1GB -> 2MB -> 4KB when the larger page size is
+  requested, but not available.
+* CNET stack depends on libnl3. On Ubuntu, the libnl-3-dev and libnl-cli-3-dev packages are
+  required to build CNDP.
+* The LwIP Server example is removed since CNET is the preferred network stack.
+
+Known Issues
+-------------
+* CNET stack assumes a single IP address per logical port, which means a 1:1 mapping between IP
+  address and hardware queue. This is counter-intuitive to the way IP addresses are typically
+  assigned, where a single IP address is assigned to a device which has many queues.
+* Lport groups jcfg creates a single umem per lport-group, but it should create a single umem
+  for all the lports in all the lport-groups.
+* Lport group jcfg processing fails for two groups which map devices onto the same thread.
+
+Limitations
+------------
+* Still need to use a full netdev (Physical Function) with CNDP at this time. Support for
+  Virtual Functions and Sub-devices will follow in later releases.
+* Ethtool support is not yet enabled in the CNI and device plugin. As such, it's recomended
+  to use a small pool of devices for the CNDP netdev pool and pre-configure the ethtool rules
+  on the netdev.
+* Logical port groups support is under active development. Logical port groups can be used with
+  this release, but eventually the functionality with be integrated with the existing logical port
+  JSON decoder.
+
+Tested Platforms
+----------------
+* **Intel® Server System R2000WF Family**
+
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller X710 for 10GbE SFP+ (rev 01)**
+
+   - Driver-version: 2.8.20-k
+   - Firmware-version:  8.15 0x80009616 1.2829.0

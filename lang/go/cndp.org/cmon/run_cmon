@@ -1,0 +1,2 @@
+(go mod tidy && go build -gcflags '-N -l' && sudo ./cmon $*)
+stty sane

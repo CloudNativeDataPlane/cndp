@@ -1,0 +1,40 @@
+---
+# Common Variables
+
+########################
+# config file location #
+########################
+config_dst: /tmp
+
+
+##############
+# UMEM VARS #
+##############
+umem_num: 30 # 1 umem per lport
+umem_regions_num: 1
+umem_regions: 32
+
+################
+#  LPORT VARS  #
+################
+num_lports: 30
+iface: ens786f2
+starting_qid: 1
+
+##############
+#  CORE VARS #
+##############
+c_default: "9-8"
+c_initial: 10
+c_starting_group: 13
+
+###############
+# THREAD VARS #
+###############
+num_threads: "{{ ansible_processor_vcpus }}"
+
+################
+# ETHTOOL VARS #
+################
+sport: 1234
+dport: 5678

@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // use this as a basis for other apps
+            "name": "cndpfwd",
+            "type": "cppdbg",
+            "request": "launch",
+            // assumes default build directory
+            "program": "${workspaceFolder}/builddir/examples/cndpfwd/cndpfwd",
+            "args": [
+                // specify our JSON config
+                "-c",
+                "${workspaceFolder}/examples/cndpfwd/fwd.jsonc"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            // use gdbSUDO wrapper
+            "miDebuggerPath": "${workspaceFolder}/tools/sudoGDB",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            // build before running
+            "preLaunchTask": "Build"
+        }
+    ]
+}

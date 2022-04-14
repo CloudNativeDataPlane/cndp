@@ -1,0 +1,42 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2019-2022 Intel Corporation.
+
+CNDP Release 20.06
+==================
+
+New Features
+------------
+* **Added support for AF_XDP and Ring PMDs**
+
+* **CNDP Txgen**
+  An implementation of Txgen using CNDP.
+
+* **Added L2FWD example**
+
+* **Added support for JSON configuration**
+
+* **Added metrics support**
+
+
+Libraries
+----------
+* **Added CNDP core libraries**
+
+  These libraries can be found in the libs/ directory
+
+* **Added CNDP user libraries**
+
+  These libraries can be found in the usrlibs/ directory
+
+
+Tested Platforms
+----------------
+* **Intel® Server System R2000WF Family**
+
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller XXV710 for 25GbE SFP28 (rev 02)**
+
+   - Driver-version: 2.8.20-k
+   - Firmware-version: 7.00 0x80004cf8 1.2154.0

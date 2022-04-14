@@ -1,0 +1,45 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2019-2022 Intel Corporation.
+
+CNDP Release 21.03
+==================
+
+New Features
+------------
+* **Add Fuzzing support**
+* **Add Clang build support for Fuzzing**
+* **Add ACL example to Pktfwd Application**
+* **Update Hash library from original source code**
+* **Add DLB (Dynamic Load Balancing) hardware support example**
+* **Add memif virtual memory interface PMD**
+* **Add cthread library for userspace threading model**
+
+
+Some notable changes
+--------------------
+* Remove the need for libjansson support.
+* Change the build process to not install into cndp/usr directory, but 'make install'.
+* Replace make dist-clean with uninstall
+
+
+Known Issues
+-------------
+* None at this time
+
+
+Limitations
+------------
+* None at this time
+
+
+Tested Platforms
+----------------
+* **Intel® Server System R2000WF Family**
+
+
+Tested NICs
+------------
+#. **Ethernet controller: Intel Corporation Ethernet Controller XXV710 for 25GbE SFP28 (rev 02)**
+
+   - Driver-version: 2.8.20-k
+   - Firmware-version: 7.00 0x80004cf8 1.2154.0

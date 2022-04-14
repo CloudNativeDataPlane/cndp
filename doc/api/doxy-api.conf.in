@@ -1,0 +1,148 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation
+
+PROJECT_NAME            = CNDP
+PROJECT_NUMBER          = @VERSION@
+INPUT                   = @TOPDIR@/doc/api/doxy-api-index.md \
+                          @TOPDIR@/lib/cnet/arp \
+                          @TOPDIR@/lib/cnet/chnl \
+                          @TOPDIR@/lib/cnet/cmds \
+                          @TOPDIR@/lib/cnet/cnet \
+                          @TOPDIR@/lib/cnet/drv \
+                          @TOPDIR@/lib/cnet/eth \
+                          @TOPDIR@/lib/cnet/gtpu \
+                          @TOPDIR@/lib/cnet/incs \
+                          @TOPDIR@/lib/cnet/ipv4 \
+                          @TOPDIR@/lib/cnet/netif \
+                          @TOPDIR@/lib/cnet/netlink \
+                          @TOPDIR@/lib/cnet/nodes \
+                          @TOPDIR@/lib/cnet/pcb \
+                          @TOPDIR@/lib/cnet/protosw \
+                          @TOPDIR@/lib/cnet/ptype \
+                          @TOPDIR@/lib/cnet/punt \
+                          @TOPDIR@/lib/cnet/reg \
+                          @TOPDIR@/lib/cnet/route \
+                          @TOPDIR@/lib/cnet/sbin \
+                          @TOPDIR@/lib/cnet/stk \
+                          @TOPDIR@/lib/cnet/tcp \
+                          @TOPDIR@/lib/cnet/udp \
+                          @TOPDIR@/lib/common/uds \
+                          @TOPDIR@/lib/core/cne \
+                          @TOPDIR@/lib/core/events \
+                          @TOPDIR@/lib/core/hash \
+                          @TOPDIR@/lib/core/kvargs \
+                          @TOPDIR@/lib/core/log \
+                          @TOPDIR@/lib/core/mempool \
+                          @TOPDIR@/lib/core/mmap \
+                          @TOPDIR@/lib/core/osal \
+                          @TOPDIR@/lib/core/pktdev \
+                          @TOPDIR@/lib/core/pktmbuf \
+                          @TOPDIR@/lib/core/pmds/net/af_xdp \
+                          @TOPDIR@/lib/core/pmds/net/af_packet \
+                          @TOPDIR@/lib/core/pmds/net/memif \
+                          @TOPDIR@/lib/core/pmds/net/null \
+                          @TOPDIR@/lib/core/pmds/net/ring \
+                          @TOPDIR@/lib/core/ring \
+                          @TOPDIR@/lib/core/txbuff \
+                          @TOPDIR@/lib/core/xskdev \
+                          @TOPDIR@/lib/include \
+                          @TOPDIR@/lib/include/net \
+                          @TOPDIR@/lib/usr/app/cli \
+                          @TOPDIR@/lib/usr/app/jcfg \
+                          @TOPDIR@/lib/usr/app/metrics \
+                          @TOPDIR@/lib/usr/clib/acl \
+                          @TOPDIR@/lib/usr/clib/cthread \
+                          @TOPDIR@/lib/usr/clib/dsa \
+                          @TOPDIR@/lib/usr/clib/fib \
+                          @TOPDIR@/lib/usr/clib/graph \
+                          @TOPDIR@/lib/usr/clib/hmap \
+                          @TOPDIR@/lib/usr/clib/net \
+                          @TOPDIR@/lib/usr/clib/nodes \
+                          @TOPDIR@/lib/usr/clib/rib \
+                          @TOPDIR@/lib/usr/clib/thread \
+                          @TOPDIR@/lib/usr/clib/timer \
+                          @TOPDIR@/lib/usr/clib/utils \
+                          @TOPDIR@/lib/usr/clib/vec \
+                          @TOPDIR@/lib/usr/slib/csock \
+                          @TOPDIR@/lib/usr/slib/ibroker
+
+INPUT                   += @API_EXAMPLES@
+
+FILE_PATTERNS           = acl*.h \
+                          cnet*.h \
+                          cli*.h \
+                          cne*.h \
+                          crc32.h \
+                          csock*.h \
+                          cthread*.h \
+                          ctx.h \
+                          dir24_8*.h \
+                          eth_node_api.h \
+                          graph_private.h \
+                          hexdump.h \
+                          hmap.h \
+                          ibroker.h \
+                          ip4_rewrite_priv.h \
+                          ip4_node_api.h \
+                          jcfg*.h \
+                          kvargs.h \
+                          memif*.h \
+                          mempool*.h \
+                          metrics.h \
+                          mmap*.h \
+                          netdev*.h \
+                          node_*.h \
+                          pkt_cls_priv.h \
+                          pktdev*.h \
+                          pktmbuf*.h \
+                          pmd*.h \
+                          private_fib6.h \
+                          ring*.h \
+                          tb_mem.h \
+                          thread_private.h \
+                          trie*.h \
+                          tun_alloc.h \
+                          txbuff.h \
+                          uds*.h \
+                          uid*.h \
+                          vt100_out.h \
+                          xskdev.h
+
+PREDEFINED              = __DOXYGEN__ \
+                          __attribute__(x)= \
+                          __cne_unused= \
+                          __cne_aligned=
+
+OPTIMIZE_OUTPUT_FOR_C   = YES
+ENABLE_PREPROCESSING    = YES
+MACRO_EXPANSION         = YES
+EXPAND_ONLY_PREDEF      = YES
+EXTRACT_STATIC          = YES
+DISTRIBUTE_GROUP_DOC    = YES
+HIDE_UNDOC_MEMBERS      = YES
+HIDE_UNDOC_CLASSES      = YES
+HIDE_SCOPE_NAMES        = YES
+GENERATE_DEPRECATEDLIST = YES
+DISABLE_INDEX           = NO
+GENERATE_TREEVIEW       = YES
+VERBATIM_HEADERS        = NO
+ALPHABETICAL_INDEX      = NO
+
+HTML_TIMESTAMP          = NO
+HTML_DYNAMIC_SECTIONS   = YES
+SEARCHENGINE            = YES
+SORT_MEMBER_DOCS        = NO
+SOURCE_BROWSER          = YES
+
+EXAMPLE_PATH            = @TOPDIR@/examples
+EXAMPLE_PATTERNS        = *.c
+EXAMPLE_RECURSIVE       = YES
+
+OUTPUT_DIRECTORY        = @OUTPUT@
+STRIP_FROM_PATH         = @STRIP_FROM_PATH@
+GENERATE_HTML           = YES
+HTML_OUTPUT             = @HTML_OUTPUT@
+GENERATE_LATEX          = NO
+GENERATE_MAN            = NO
+
+HAVE_DOT                = NO

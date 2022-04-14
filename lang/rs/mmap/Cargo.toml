@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2019-2022 Intel Corporation.
+
+[package]
+name = "mmap"
+version = "0.1.0"
+authors = ["Keith Wiles <keith.wiles@intel.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mmap-cndp = { path = "../mmap-cndp" }
