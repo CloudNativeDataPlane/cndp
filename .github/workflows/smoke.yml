@@ -1,0 +1,37 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v2
+
+    - name: Install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y\
+          build-essential libbsd-dev libelf-dev libjson-c-dev\
+          libnl-3-dev libnl-cli-3-dev libnuma-dev libpcap-dev meson\
+          pkg-config wget
+
+    - name: Install libbpf
+      run: |
+        wget -q -O - https://github.com/libbpf/libbpf/archive/refs/tags/v0.3.tar.gz \
+        | tar -xzC ${GITHUB_WORKSPACE} \
+        && sudo make -j -C ${GITHUB_WORKSPACE}/libbpf-0.3/src install \
+        && sudo rm -rf ${GITHUB_WORKSPACE}/libbpf-0.3
+
+    - name: Build
+      run: make
+
+    - name: Short test
+      run: meson test -C builddir --suite short
