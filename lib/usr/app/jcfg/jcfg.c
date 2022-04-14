@@ -380,7 +380,8 @@ _object_free(jcfg_hdr_t *hdr)
         } while(0);
         break;
     case JCFG_UMEM_TYPE:
-        /* FALL-THRU */
+        jcfg_umem_free(hdr);
+        break;
     case JCFG_LGROUP_TYPE:
         break;
     case JCFG_LPORT_TYPE:

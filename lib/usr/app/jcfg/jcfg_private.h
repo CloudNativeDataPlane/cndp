@@ -90,6 +90,15 @@ jcfg_get_json_token(struct jcfg *cfg)
     return (cfg) ? cfg->tok : NULL;
 }
 
+/**
+ * Free the internal umem structure.
+ * @internal
+ *
+ * @param hdr
+ *   The generic header structure pointer.
+ */
+void jcfg_umem_free(jcfg_hdr_t *hdr);
+
 #ifdef __cplusplus
 }
 #endif
