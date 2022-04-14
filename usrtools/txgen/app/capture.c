@@ -119,13 +119,14 @@ txgen_set_capture(port_info_t *info, uint32_t onOff)
 
         txgen_set_port_flags(info, CAPTURE_PKTS);
 
-        cne_printf("Capturing on port %d buffer size: %.2f MB ",
-                 info->lport->lpid, (double)cap->mp->bufsz / (1024 * 1024));
+        cne_printf("Capturing on port %d buffer size: %.2f MB ", info->lport->lpid,
+                   (double)cap->mp->bufsz / (1024 * 1024));
 
         /* 64 bytes payload + 2 bytes for payload size, Xbit -> Xbyte */
         /* 64 bytes payload + 20 byte etherrnet frame overhead: 84 bytes per packet */
         cne_printf("(~%.2f seconds for 64 byte packets at line rate)\n",
-                 (double)cap->mp->bufsz / (66 * ((double)info->link.link_speed * 1000 * 1000 / 8) / 84));
+                   (double)cap->mp->bufsz /
+                       (66 * ((double)info->link.link_speed * 1000 * 1000 / 8) / 84));
     } else {
         if (!(txgen_tst_port_flags(info, CAPTURE_PKTS)))
             return;
@@ -147,7 +148,7 @@ txgen_set_capture(port_info_t *info, uint32_t onOff)
             struct tm *lt;
 
             cne_printf("\nDumping ~%.2fMB of captured data to disk: 0%%",
-                     (double)cap->used / (1024 * 1024));
+                       (double)cap->used / (1024 * 1024));
 
             pcap = pcap_open_dead(DLT_EN10MB, 65535);
 
