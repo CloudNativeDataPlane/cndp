@@ -36,8 +36,9 @@
 #include <cnet_inet.h>           // for _in_addr
 #include <cnet_arp.h>            // for cne_arp
 
-#include "ip4_node_api.h"            // for cne_node_ip4_forward_add
-#include "ip4_forward_priv.h"        // for ip4_forward_nh_header, ip4_rewrit...
+#include <cnet_node_names.h>
+#include "ip4_node_api.h"        // for cne_node_ip4_forward_add
+#include "ip4_forward_priv.h"
 #include "cnet_fib_info.h"
 
 struct ip4_forward_node_ctx {
@@ -297,7 +298,7 @@ ip4_forward_set_next(uint16_t port_id, uint16_t next_index)
 
 static struct cne_node_register ip4_forward_node = {
     .process = ip4_forward_node_process,
-    .name    = "ip4_forward",
+    .name    = IP4_FORWARD_NODE_NAME,
 
     .init = ip4_forward_node_init,
 
@@ -305,8 +306,8 @@ static struct cne_node_register ip4_forward_node = {
     .nb_edges = NODE_IP4_FORWARD_OUTPUT_OFFSET,
     .next_nodes =
         {
-            [NODE_IP4_FORWARD_PKT_DROP]    = "pkt_drop",
-            [NODE_IP4_FORWARD_ARP_REQUEST] = "arp_request",
+            [NODE_IP4_FORWARD_PKT_DROP]    = PKT_DROP_NODE_NAME,
+            [NODE_IP4_FORWARD_ARP_REQUEST] = ARP_REQUEST_NODE_NAME,
             /* TX outputs will be placed here */
         },
 };

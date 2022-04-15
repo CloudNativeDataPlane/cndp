@@ -28,6 +28,7 @@
 #include <cnet_eth.h>
 #include <cne_net.h>
 
+#include <cnet_node_names.h>
 #include "eth_rx_priv.h"
 
 static struct eth_rx_node_main eth_rx_main;
@@ -165,14 +166,14 @@ eth_rx_get_node_data_get(void)
 static struct cne_node_register eth_rx_node_base = {
     .process = eth_rx_node_process,
     .flags   = CNE_NODE_SOURCE_F,
-    .name    = "eth_rx",
+    .name    = ETH_RX_NODE_NAME,
 
     .init = eth_rx_node_init,
 
     .nb_edges = ETH_RX_NEXT_MAX,
     .next_nodes =
         {
-            [ETH_RX_NEXT_PTYPE] = "ptype",
+            [ETH_RX_NEXT_PTYPE] = PTYPE_NODE_NAME,
         },
 };
 

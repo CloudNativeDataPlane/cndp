@@ -39,6 +39,7 @@
 #include <net/cne_udp.h>
 #include <hexdump.h>
 
+#include <cnet_node_names.h>
 #include "punt_kernel_priv.h"
 #include "tun_alloc.h"
 
@@ -52,13 +53,6 @@ punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
 
     if (ctx->tinfo->tun_fd >= 0) {
         for (int i = 0; i < cnt; i++) {
-#if 0 /* TODO: Fix up address if needed */
-            pktmbuf_adj_offset(mbufs[i], -mbufs[i]->l2_len);
-
-            /* update the source MAC address */
-            memcpy(pktmbuf_mtod_offset(mbufs[i], char *, 0),
-                   &ctx->tinfo->eth_addr, sizeof(struct ether_addr));
-#endif
             v[i].iov_base = pktmbuf_mtod(mbufs[i], char *);
             v[i].iov_len  = pktmbuf_data_len(mbufs[i]);
         }
@@ -142,14 +136,14 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
 static struct cne_node_register punt_kernel_node_base = {
     .process = punt_kernel_node_process,
-    .name    = "punt_kernel",
+    .name    = PUNT_KERNEL_NODE_NAME,
 
     .init = punt_kernel_node_init,
 
     .nb_edges = PUNT_KERNEL_NEXT_MAX,
     .next_nodes =
         {
-            [PUNT_KERNEL_NEXT_PKT_DROP] = "pkt_drop",
+            [PUNT_KERNEL_NEXT_PKT_DROP] = PKT_DROP_NODE_NAME,
         },
 };
 

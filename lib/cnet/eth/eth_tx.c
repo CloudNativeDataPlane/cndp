@@ -14,6 +14,7 @@
 #include "cne_common.h"        // for CNE_MAX_ETHPORTS, CNE_PRIORITY_LAST
 #include "cne_log.h"           // for CNE_VERIFY
 
+#include <cnet_node_names.h>
 #include "eth_tx_priv.h"        // for eth_tx_node_ctx_t, ETH_TX_NEXT_MAX
 
 static struct eth_tx_node_main eth_tx_main;
@@ -72,7 +73,7 @@ eth_tx_node_data_get(void)
 
 static struct cne_node_register eth_tx_node_base = {
     .process = eth_tx_node_process,
-    .name    = "eth_tx",
+    .name    = ETH_TX_NODE_NAME,
 
     .init = eth_tx_node_init,
 

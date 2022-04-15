@@ -21,6 +21,7 @@
 #include <cnet_route4.h>             // for
 #include <cnet_meta.h>               // for
 
+#include <cnet_node_names.h>
 #include "ip4_node_api.h"                 // for
 #include "ip4_input_priv.h"               // for CNE_NODE_IP4_INPUT_NEXT_PKT_DROP
 #include "cne_branch_prediction.h"        // for likely, unlikely
@@ -256,16 +257,16 @@ ip4_input_node_init(const struct cne_graph *graph, struct cne_node *node)
 
 static struct cne_node_register ip4_input_node = {
     .process = ip4_input_node_process,
-    .name    = "ip4_input",
+    .name    = IP4_INPUT_NODE_NAME,
 
     .init = ip4_input_node_init,
 
     .nb_edges = CNE_NODE_IP4_INPUT_NEXT_MAX,
     .next_nodes =
         {
-            [CNE_NODE_IP4_INPUT_NEXT_PKT_DROP] = "pkt_drop",
-            [CNE_NODE_IP4_INPUT_NEXT_FORWARD]  = "ip4_forward",
-            [CNE_NODE_IP4_INPUT_NEXT_PROTO]    = "ip4_proto",
+            [CNE_NODE_IP4_INPUT_NEXT_PKT_DROP] = PKT_DROP_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_NEXT_FORWARD]  = IP4_FORWARD_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_NEXT_PROTO]    = IP4_PROTO_NODE_NAME,
         },
 };
 

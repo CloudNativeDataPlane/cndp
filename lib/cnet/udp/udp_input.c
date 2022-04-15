@@ -28,6 +28,7 @@
 #include <cnet_udp.h>
 #include <cnet_meta.h>
 
+#include <cnet_node_names.h>
 #include "udp_input_priv.h"
 
 /* The UDP/IP Pseudo header */
@@ -230,16 +231,16 @@ udp_input_node_init(const struct cne_graph *graph __cne_unused, struct cne_node 
 
 static struct cne_node_register udp_input_node_base = {
     .process = udp_input_node_process,
-    .name    = "udp_input",
+    .name    = UDP_INPUT_NODE_NAME,
 
     .init = udp_input_node_init,
 
     .nb_edges = UDP_INPUT_NEXT_MAX,
     .next_nodes =
         {
-            [UDP_INPUT_NEXT_PKT_DROP]  = "pkt_drop",
-            [UDP_INPUT_NEXT_CHNL_RECV] = "chnl_recv",
-            [UDP_INPUT_NEXT_PKT_PUNT]  = "punt_kernel",
+            [UDP_INPUT_NEXT_PKT_DROP]  = PKT_DROP_NODE_NAME,
+            [UDP_INPUT_NEXT_CHNL_RECV] = CHNL_RECV_NODE_NAME,
+            [UDP_INPUT_NEXT_PKT_PUNT]  = PUNT_KERNEL_NODE_NAME,
         },
 };
 

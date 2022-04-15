@@ -28,6 +28,7 @@
 #include <cnet_tcp.h>
 #include <cnet_meta.h>
 
+#include <cnet_node_names.h>
 #include "tcp_input_priv.h"
 
 /* The TCP/IP Pseudo header */
@@ -227,16 +228,16 @@ tcp_input_node_init(const struct cne_graph *graph __cne_unused, struct cne_node 
 
 static struct cne_node_register tcp_input_node_base = {
     .process = tcp_input_node_process,
-    .name    = "tcp_input",
+    .name    = TCP_INPUT_NODE_NAME,
 
     .init = tcp_input_node_init,
 
     .nb_edges = TCP_INPUT_NEXT_MAX,
     .next_nodes =
         {
-            [TCP_INPUT_NEXT_PKT_DROP]  = "pkt_drop",
-            [TCP_INPUT_NEXT_CHNL_RECV] = "chnl_recv",
-            [TCP_INPUT_NEXT_PKT_PUNT]  = "punt_kernel",
+            [TCP_INPUT_NEXT_PKT_DROP]  = PKT_DROP_NODE_NAME,
+            [TCP_INPUT_NEXT_CHNL_RECV] = CHNL_RECV_NODE_NAME,
+            [TCP_INPUT_NEXT_PKT_PUNT]  = PUNT_KERNEL_NODE_NAME,
         },
 };
 
