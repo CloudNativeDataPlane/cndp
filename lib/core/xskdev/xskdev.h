@@ -409,7 +409,9 @@ xskdev_buf_inc_ptr(xskdev_info_t *xi, void **buf)
  * @param buf
  *    The buffer to reset.
  * @param buf_len
- *    The buffer length to set the buffer to (if needed).
+ *    The max data length able to be contained in the buffer.
+ *    If the buffer is 2K and it contains a mbuf like header then
+ *    buf_len = (2K - sizeof(mbuf)).
  * @param headroom
  *    The buffer headroom to offset the data pointer by (if needed).
  */
