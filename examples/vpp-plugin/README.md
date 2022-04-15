@@ -9,7 +9,10 @@ by building CNDP normally, then install with "sudo CNE_DEST_DIR=/ make install".
 
 ## Known limitations
 
-The plugin works with VPP version 21.01 and will not compile on newer versions.
+The plugin is tested with VPP versions 21.01 and 22.02. It may not compile with
+other versions. When using VPP version 21.01, the USE_2101_RX_QUEUES and
+USE_2110_ETHERNET_REGISTER_INTERFACE macros should be set to 1 in cndp.h. When
+using VPP version 22.02, they should be set to 0.
 
 The max number of devices supported right now is 6. This can be increased by
 increasing #define CNDP_MAX_DEVS 6 in cndp.h

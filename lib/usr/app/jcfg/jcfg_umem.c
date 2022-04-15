@@ -55,8 +55,14 @@ _umem(struct json_object *obj, int flags, struct json_object *parent __cne_unuse
         else if (!strcmp(key, "regions")) {
             umem->region_cnt = json_object_array_length(obj);
 
-            if (umem->region_cnt >= UMEM_MAX_REGIONS) {
-                CNE_ERR("Invalid number of regions %d\n", umem->region_cnt);
+            if (umem->region_cnt > UMEM_MAX_REGIONS) {
+                CNE_ERR("UMEM region count %d > %d max\n", umem->region_cnt, UMEM_MAX_REGIONS);
+                return JSON_C_VISIT_RETURN_ERROR;
+            }
+
+            umem->rinfo = calloc(umem->region_cnt, sizeof(region_info_t));
+            if (!umem->rinfo) {
+                CNE_ERR("Unable to allocate UMEM regions (%d)\n", umem->region_cnt);
                 return JSON_C_VISIT_RETURN_ERROR;
             }
 
@@ -180,4 +186,18 @@ _decode_umems(struct json_object *obj, int flags, struct json_object *parent __c
         cne_printf("}\n");
 
     return ret ? ret : JSON_C_VISIT_RETURN_SKIP;
+}
+
+void
+jcfg_umem_free(jcfg_hdr_t *hdr)
+{
+    jcfg_umem_t *umem = (jcfg_umem_t *)hdr;
+
+    if (!umem)
+        return;
+
+    free(umem->rinfo);
+    mmap_free(umem->mm);
+    umem->rinfo = NULL;
+    umem->mm    = NULL;
 }
