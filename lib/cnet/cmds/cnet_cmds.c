@@ -132,36 +132,43 @@ dump_sizes(void)
     return 0;
 }
 
-#define _off(v)                                                                       \
-    do {                                                                              \
-        pktmbuf_t m;                                                                  \
-        uint32_t o = offsetof(pktmbuf_t, v);                                          \
-        uint32_t s = sizeof(m.v);                                                     \
-        cne_printf("  [cyan]%-14s[]: [magenta]sizeof [orange]%3u[], [magenta]offset " \
-                   "[orange]%3u[], [magenta]Next [orange]%3u[]\n",                    \
-                   #v, s, o, o + s);                                                  \
+#define _off(e, v)                                                                     \
+    do {                                                                               \
+        pktmbuf_t m;                                                                   \
+        uint32_t o = offsetof(pktmbuf_t, v);                                           \
+        uint32_t s = sizeof(m.v);                                                      \
+        cne_printf("  [cyan]%-14s[]: [magenta]sizeof [orange]%3u[], [magenta]offset "  \
+                   "[orange]%3u[], [magenta]Next [orange]%3u[]",                       \
+                   #v, s, o, o + s);                                                   \
+        if (e != o)                                                                    \
+            cne_printf(" [red]%s [orange]%d[]", (e != o) ? "Hole found:" : "", o - e); \
+        cne_printf("\n");                                                              \
+        e = o + s;                                                                     \
     } while (0)
 
 static int
 dump_mbuf(void)
 {
+    uint32_t e = 0;
+
     cne_printf("[magenta]Dump MBUF structure offsets, size [orange]%lu [magenta]bytes[]\n",
                sizeof(pktmbuf_t));
 
-    _off(pooldata);
-    _off(buf_addr);
-    _off(hash);
-    _off(data_off);
-    _off(lport);
-    _off(buf_len);
-    _off(data_len);
-    _off(packet_type);
+    _off(e, pooldata);
+    _off(e, buf_addr);
+    _off(e, hash);
+    _off(e, meta_index);
+    _off(e, data_off);
+    _off(e, lport);
+    _off(e, buf_len);
+    _off(e, data_len);
+    _off(e, packet_type);
 
-    _off(tx_offload);
-    _off(ol_flags);
-    _off(udata64);
-    _off(refcnt);
-    _off(rsvd16);
+    _off(e, refcnt);
+    _off(e, rsvd16);
+    _off(e, tx_offload);
+    _off(e, ol_flags);
+    _off(e, udata64);
 
     return 0;
 }

@@ -24,12 +24,6 @@ struct cnet_metadata {
     CNE_MARKER end_metadata;
 } __cne_cache_aligned; /**< cnet_metadata should be <= 64 bytes */
 
-static __cne_always_inline struct cnet_metadata *
-cnet_mbuf_metadata(pktmbuf_t *mbuf)
-{
-    return (struct cnet_metadata *)&mbuf[1];
-}
-
 #ifdef __cplusplus
 }
 #endif

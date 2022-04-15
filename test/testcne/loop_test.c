@@ -119,11 +119,12 @@ sig_handler(int v)
 }
 
 static int
-rx_cb(pktmbuf_info_t *pi, pktmbuf_t *mb, uint32_t sz, void *opaque)
+rx_cb(pktmbuf_info_t *pi, pktmbuf_t *mb, uint32_t sz, uint32_t idx, void *opaque)
 {
     CNE_SET_USED(pi);
     CNE_SET_USED(sz);
     CNE_SET_USED(opaque);
+    CNE_SET_USED(idx);
 
     if (!mb || mb->pooldata == NULL) {
         cne_printf("Object %p, mempool is NULL\n", mb);

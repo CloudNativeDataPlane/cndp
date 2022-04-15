@@ -37,7 +37,7 @@ udp_output_header(pktmbuf_t *m, uint16_t nxt)
     struct cnet_metadata *md;
     int16_t len;
 
-    md = cnet_mbuf_metadata(m);
+    md = pktmbuf_metadata(m);
 
     /* Build the UDP header */
     len           = sizeof(struct cne_udp_hdr);

@@ -50,13 +50,15 @@ pi_list_unlock(void)
  *   The mbuf to initialize.
  * @param sz
  *   Size of the buffer.
+ * @param idx
+ *   The index of the buffer in the mempool.
  * @param ud
  *   The user defined pointer value
  * @return
  *   0 on success or -1 on error
  */
 static int
-__mbuf_init(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, void *ud __cne_unused)
+__mbuf_init(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, uint32_t idx, void *ud __cne_unused)
 {
     if (!m || !pi)
         CNE_ERR_RET("pktmbuf_info_t pointer or mbuf pointer invalid\n");
@@ -73,8 +75,9 @@ __mbuf_init(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, void *ud __cne_unused
     m->data_off = CNE_MIN(CNE_PKTMBUF_HEADROOM, (uint16_t)m->buf_len);
 
     /* init some constant fields */
-    m->pooldata = pi;
-    m->lport    = CNE_MBUF_INVALID_PORT;
+    m->pooldata   = pi;
+    m->lport      = CNE_MBUF_INVALID_PORT;
+    m->meta_index = idx;
     pktmbuf_refcnt_set(m, 1);
 
     return 0;
@@ -94,7 +97,7 @@ pktmbuf_iterate(pktmbuf_info_t *pi, pktmbuf_cb_t cb, void *ud)
 
         /* Allow the caller to iterate over the buffers */
         for (uint32_t i = 0; i < pi->bufcnt; i++) {
-            if (cb(pi, (pktmbuf_t *)addr, pi->bufsz, ud))
+            if (cb(pi, (pktmbuf_t *)addr, pi->bufsz, i, ud))
                 CNE_ERR_RET("user buffer callback has failed\n");
 
             addr += pi->bufsz;
@@ -105,37 +108,46 @@ pktmbuf_iterate(pktmbuf_info_t *pi, pktmbuf_cb_t cb, void *ud)
 }
 
 pktmbuf_info_t *
-pktmbuf_pool_create(char *addr, uint32_t bufcnt, uint32_t bufsz, uint32_t cache_sz, mbuf_ops_t *ops)
+pktmbuf_pool_cfg_create(const pktmbuf_pool_cfg_t *cfg)
 {
+    pktmbuf_pool_cfg_t _cfg, *c = &_cfg;
     pktmbuf_info_t *pi = NULL;
 
-    if (bufcnt == 0 || bufsz == 0)
-        CNE_ERR_GOTO(leave, "buffer count %d or buffer size %d is zero\n", bufcnt, bufsz);
+    if (!cfg)
+        goto leave;
 
-    CNE_MAX_SET(cache_sz, MEMPOOL_CACHE_MAX_SIZE);
+    /* Grab a copy of the const config data */
+    memcpy(c, cfg, sizeof(pktmbuf_pool_cfg_t));
+
+    if (c->bufcnt == 0 || c->bufsz == 0)
+        CNE_ERR_GOTO(leave, "buffer count %d or buffer size %d is zero\n", c->bufcnt, c->bufsz);
+
+    CNE_MAX_SET(c->cache_sz, MEMPOOL_CACHE_MAX_SIZE);
 
     /* Use default values when a field is zero */
-    CNE_DEFAULT_SET(cache_sz, 0, MEMPOOL_CACHE_MAX_SIZE);
-    CNE_DEFAULT_SET(bufcnt, 0, DEFAULT_MBUF_COUNT);
-    CNE_DEFAULT_SET(bufsz, 0, DEFAULT_MBUF_SIZE);
+    CNE_DEFAULT_SET(c->cache_sz, 0, MEMPOOL_CACHE_MAX_SIZE);
+    CNE_DEFAULT_SET(c->bufcnt, 0, DEFAULT_MBUF_COUNT);
+    CNE_DEFAULT_SET(c->bufsz, 0, DEFAULT_MBUF_SIZE);
 
     /* Make sure the mbuf size is cache aligned */
-    if (CNE_CACHE_LINE_ROUNDUP(bufsz) != bufsz)
+    if (CNE_CACHE_LINE_ROUNDUP(c->bufsz) != c->bufsz)
         goto leave;
 
     pi = calloc(1, sizeof(pktmbuf_info_t));
     if (!pi)
         CNE_ERR_GOTO(leave, "unable to allocate pktmbuf_info_t structure\n");
 
-    pi->addr     = addr;
-    pi->bufcnt   = bufcnt;
-    pi->bufsz    = bufsz;
-    pi->cache_sz = cache_sz;
+    pi->addr           = c->addr;
+    pi->bufcnt         = c->bufcnt;
+    pi->bufsz          = c->bufsz;
+    pi->cache_sz       = c->cache_sz;
+    pi->metadata       = c->metadata;
+    pi->metadata_bufsz = c->metadata_bufsz;
 
     pktmbuf_set_default_ops(&pi->ops);
 
-    if (ops)
-        memcpy(&pi->ops, ops, sizeof(mbuf_ops_t));
+    if (c->ops)
+        memcpy(&pi->ops, c->ops, sizeof(mbuf_ops_t));
 
     if (pi->ops.mbuf_ctor(pi))
         CNE_ERR_GOTO(leave, "not able to construct pktmbuf_t pool\n");
@@ -152,6 +164,21 @@ pktmbuf_pool_create(char *addr, uint32_t bufcnt, uint32_t bufsz, uint32_t cache_
 leave:
     pktmbuf_destroy(pi);
     return NULL;
+}
+
+pktmbuf_info_t *
+pktmbuf_pool_create(char *addr, uint32_t bufcnt, uint32_t bufsz, uint32_t cache_sz, mbuf_ops_t *ops)
+{
+    pktmbuf_pool_cfg_t cfg = {0};
+
+    /* create a pktmbuf pool configuration structure with no external metadata */
+    cfg.addr     = addr;
+    cfg.bufcnt   = bufcnt;
+    cfg.bufsz    = bufsz;
+    cfg.cache_sz = cache_sz;
+    cfg.ops      = ops;
+
+    return pktmbuf_pool_cfg_create(&cfg);
 }
 
 void

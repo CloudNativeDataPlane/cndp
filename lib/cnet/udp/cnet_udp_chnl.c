@@ -132,7 +132,7 @@ udp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
         if (is_set(ch->ch_state, _CANTSENDMORE | _CHNL_FREE))
             continue;
 
-        md = cnet_mbuf_metadata(m);
+        md = pktmbuf_metadata(m);
 
         to = &md->faddr;
         if (CIN_LEN(to) == 0) {

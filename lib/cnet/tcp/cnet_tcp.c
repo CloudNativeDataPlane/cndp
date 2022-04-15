@@ -44,7 +44,7 @@
 #include <cnet_tcp.h>              // for tcb_entry, seg_entry, tcp_entry, DROP_PA...
 #include <cnet_pkt.h>              // for tcp_ipv4
 #include <cnet_ip_common.h>        // for ip_info
-#include <cnet_meta.h>             // for cnet_metadata, cnet_mbuf_metadata, PKT_B...
+#include <cnet_meta.h>             // for cnet_metadata
 #include <cnet_tcp_chnl.h>         // for cnet_drop_acked_data, cnet_tcp_chnl_scal...
 #include <endian.h>                // for be16toh, htobe32, htobe16, be32toh
 #include <errno.h>                 // for errno, ECONNREFUSED, ECONNRESET, ETIMEDOUT
@@ -1480,7 +1480,7 @@ do_passive_open(struct seg_entry *seg)
 
     vec_add(ppcb->tcb->half_open_q, tcb->pcb);
 
-    md = cnet_mbuf_metadata(seg->mbuf);
+    md = pktmbuf_metadata(seg->mbuf);
 
     /* Add the pkt information to the new pcb */
     in_caddr_copy(&nch->ch_pcb->key.faddr, &md->faddr);
@@ -3119,7 +3119,7 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     if (seg->offset > sizeof(struct cne_tcp_hdr))
         opts = (uint8_t *)&tcp[1];
 
-    md = cnet_mbuf_metadata(mbuf);
+    md = pktmbuf_metadata(mbuf);
 
     /*
      * Segment Arrives - Starting p65-p76 - RFC793

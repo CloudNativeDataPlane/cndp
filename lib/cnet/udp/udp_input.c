@@ -46,7 +46,7 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
 
-    md = cnet_mbuf_metadata(m);
+    md = pktmbuf_metadata(m);
 
     /* Assume we point to the L3 header here */
     uip = pktmbuf_mtod(m, struct udpip4_s *);
