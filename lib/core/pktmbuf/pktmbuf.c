@@ -65,7 +65,7 @@ __mbuf_init(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, void *ud __cne_unused
 
     /* start of buffer is after pktmbuf structure */
     m->buf_addr = (char *)m + sizeof(pktmbuf_t);
-    m->buf_len  = (uint16_t)sz;
+    m->buf_len  = (uint16_t)sz - sizeof(pktmbuf_t);
 
     /* keep some headroom between start of buffer and data */
     m->data_off = CNE_MIN(CNE_PKTMBUF_HEADROOM, (uint16_t)m->buf_len);

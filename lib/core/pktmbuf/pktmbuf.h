@@ -94,7 +94,7 @@ struct pktmbuf_s {
     uint32_t hash;     /**< Hash value */
     uint16_t data_off; /**< Data offset */
     uint16_t lport;    /**< RX lport number */
-    uint16_t buf_len;  /**< Length of segment buffer */
+    uint16_t buf_len;  /**< Length of segment buffer - sizeof(pktmbuf_t) */
     uint16_t data_len; /**< Amount of data in segment buffer */
 
     /*
@@ -826,7 +826,7 @@ static inline uint16_t
 pktmbuf_tailroom(const pktmbuf_t *m)
 {
     __pktmbuf_sanity_check(m, 0);
-    return (uint16_t)(pktmbuf_buf_len(m) - pktmbuf_headroom(m) - pktmbuf_data_len(m));
+    return (uint16_t)(pktmbuf_buf_len(m) - pktmbuf_data_off(m) - pktmbuf_data_len(m));
 }
 
 /**
@@ -860,7 +860,7 @@ static inline char *
 pktmbuf_mtod_end(const pktmbuf_t *m)
 {
     __pktmbuf_sanity_check(m, 0);
-    return (char *)CNE_PTR_ADD((char *)(uintptr_t)m, pktmbuf_buf_len(m));
+    return (char *)CNE_PTR_ADD((char *)(uintptr_t)m, pktmbuf_buf_len(m) + sizeof(pktmbuf_t));
 }
 
 /**
@@ -919,6 +919,8 @@ pktmbuf_adj_offset(pktmbuf_t *m, int16_t len)
     if (likely(len >= 0)) {
         if (unlikely(alen > pktmbuf_data_len(m)))
             return NULL;
+        if (unlikely((alen + pktmbuf_data_off(m)) > pktmbuf_buf_len(m)))
+            return NULL;
 
         /* NB: elaborating the subtraction like this instead of using
          *     -= allows us to ensure the result type is uint16_t
@@ -926,7 +928,7 @@ pktmbuf_adj_offset(pktmbuf_t *m, int16_t len)
         pktmbuf_data_off(m) = (uint16_t)(pktmbuf_data_off(m) + alen);
         pktmbuf_data_len(m) = (uint16_t)(pktmbuf_data_len(m) - alen);
     } else {
-        if (unlikely(alen > pktmbuf_headroom(m)))
+        if (unlikely(alen > pktmbuf_data_off(m)))
             return NULL;
 
         /* NB: elaborating the subtraction like this instead of using
@@ -1058,10 +1060,21 @@ pktmbuf_write(void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
         return __pktmbuf_write(buf, len, m, off);
 }
 
+/**
+ * Amount of total data space available for packet data.
+ *
+ * This value is the max space available for packet data in a pktmbuf_t, which means
+ * the value for a 2K buffer would be (2K - sizeof(pktmbuf_t)).
+ *
+ * @param mp
+ *   The mempool pointer to get the element size.
+ * @return
+ *   The total amount of space available for packet data in a pktmbuf_t.
+ */
 static inline uint16_t
 pktmbuf_data_room_size(mempool_t *mp)
 {
-    return mempool_objsz(mp) - CNE_PKTMBUF_HEADROOM - sizeof(pktmbuf_t);
+    return mempool_objsz(mp) - sizeof(pktmbuf_t);
 }
 
 /**
