@@ -31,6 +31,7 @@
 #include <cnet_eth.h>
 #include <net/cne_udp.h>
 
+#include <cnet_node_names.h>
 #include "arp_request_priv.h"
 
 static __cne_always_inline cne_edge_t
@@ -213,14 +214,14 @@ arp_request_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
 static struct cne_node_register arp_request_node_base = {
     .process = arp_request_node_process,
-    .name    = "arp_request",
+    .name    = ARP_REQUEST_NODE_NAME,
 
     .init = arp_request_node_init,
 
     .nb_edges = ARP_REQUEST_NEXT_MAX,
     .next_nodes =
         {
-            [ARP_REQUEST_NEXT_PKT_DROP] = "pkt_drop",
+            [ARP_REQUEST_NEXT_PKT_DROP] = PKT_DROP_NODE_NAME,
         },
 };
 

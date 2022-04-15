@@ -10,6 +10,7 @@
 #include <stdint.h>                  // for uint8_t, uint16_t, uint32_t
 #include <string.h>                  // for memcpy
 
+#include <cnet_node_names.h>
 #include "ptype_priv.h"                   // for PTYPE_NEXT_IP4_LOOKUP, PTYPE_...
 #include "cne_branch_prediction.h"        // for likely, unlikely
 #include "cne_common.h"                   // for CNE_PRIORITY_LAST, __cne_cache_al...
@@ -196,15 +197,15 @@ ptype_node_process(struct cne_graph *graph, struct cne_node *node, void **objs, 
 /* Packet Classification Node */
 struct cne_node_register ptype_node = {
     .process = ptype_node_process,
-    .name    = "ptype",
+    .name    = PTYPE_NODE_NAME,
 
     .nb_edges = PTYPE_NEXT_MAX,
     .next_nodes =
         {
             /* Pkt drop node starts at '0' */
-            [PTYPE_NEXT_PKT_DROP]   = "pkt_drop",
-            [PTYPE_NEXT_IP4_INPUT]  = "ip4_input",
-            [PTYPE_NEXT_GTPU_INPUT] = "gtpu_input",
+            [PTYPE_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
+            [PTYPE_NEXT_IP4_INPUT]  = IP4_INPUT_NODE_NAME,
+            [PTYPE_NEXT_GTPU_INPUT] = GTPU_INPUT_NODE_NAME,
         },
 };
 CNE_NODE_REGISTER(ptype_node);

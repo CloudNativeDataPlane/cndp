@@ -19,6 +19,7 @@
 #include <cnet_route.h>              // for
 #include <cnet_route4.h>             // for
 
+#include <cnet_node_names.h>
 #include "ip4_proto_priv.h"               // for
 #include "cne_branch_prediction.h"        // for likely, unlikely
 #include "cne_common.h"                   // for CNE_BUILD_BUG_ON, CNE_PRIORITY_LAST
@@ -195,17 +196,17 @@ ip4_proto_node_init(const struct cne_graph *graph, struct cne_node *node)
 
 static struct cne_node_register ip4_proto_node = {
     .process = ip4_proto_node_process,
-    .name    = "ip4_proto",
+    .name    = IP4_PROTO_NODE_NAME,
 
     .init = ip4_proto_node_init,
 
     .nb_edges = CNE_NODE_IP4_INPUT_PROTO_MAX,
     .next_nodes =
         {
-            [CNE_NODE_IP4_INPUT_PROTO_DROP] = "pkt_drop",
-            [CNE_NODE_IP4_INPUT_PROTO_UDP]  = "udp_input",
+            [CNE_NODE_IP4_INPUT_PROTO_DROP] = PKT_DROP_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_PROTO_UDP]  = UDP_INPUT_NODE_NAME,
 #if CNET_ENABLE_TCP
-            [CNE_NODE_IP4_INPUT_PROTO_TCP] = "tcp_input",
+            [CNE_NODE_IP4_INPUT_PROTO_TCP] = TCP_INPUT_NODE_NAME,
 #endif
         },
 };

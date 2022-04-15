@@ -28,6 +28,7 @@
 #include <cnet_udp.h>
 #include <cnet_meta.h>
 
+#include <cnet_node_names.h>
 #include "udp_output_priv.h"
 
 static inline uint16_t
@@ -207,15 +208,15 @@ udp_output_node_init(const struct cne_graph *graph __cne_unused, struct cne_node
 
 static struct cne_node_register udp_output_node_base = {
     .process = udp_output_node_process,
-    .name    = "udp_output",
+    .name    = UDP_OUTPUT_NODE_NAME,
 
     .init = udp_output_node_init,
 
     .nb_edges = UDP_OUTPUT_NEXT_MAX,
     .next_nodes =
         {
-            [UDP_OUTPUT_NEXT_PKT_DROP]   = "pkt_drop",
-            [UDP_OUTPUT_NEXT_IP4_OUTPUT] = "ip4_output",
+            [UDP_OUTPUT_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
+            [UDP_OUTPUT_NEXT_IP4_OUTPUT] = IP4_OUTPUT_NODE_NAME,
         },
 };
 

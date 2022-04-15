@@ -27,6 +27,7 @@
 #include <pktmbuf_ptype.h>
 #include <cnet_tcp.h>
 
+#include <cnet_node_names.h>
 #include "tcp_output_priv.h"
 
 static inline uint16_t
@@ -206,15 +207,15 @@ tcp_output_node_init(const struct cne_graph *graph __cne_unused, struct cne_node
 
 static struct cne_node_register tcp_output_node_base = {
     .process = tcp_output_node_process,
-    .name    = "tcp_output",
+    .name    = TCP_OUTPUT_NODE_NAME,
 
     .init = tcp_output_node_init,
 
     .nb_edges = TCP_OUTPUT_NEXT_MAX,
     .next_nodes =
         {
-            [TCP_OUTPUT_NEXT_PKT_DROP]   = "pkt_drop",
-            [TCP_OUTPUT_NEXT_IP4_OUTPUT] = "ip4_output",
+            [TCP_OUTPUT_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
+            [TCP_OUTPUT_NEXT_IP4_OUTPUT] = IP4_OUTPUT_NODE_NAME,
         },
 };
 

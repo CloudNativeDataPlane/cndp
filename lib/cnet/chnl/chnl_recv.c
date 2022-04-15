@@ -27,6 +27,7 @@
 #include <pktmbuf_ptype.h>
 #include <cnet_chnl.h>        // for cnet_chnl_get
 
+#include <cnet_node_names.h>
 #include "chnl_recv_priv.h"
 
 static uint16_t
@@ -170,15 +171,15 @@ chnl_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_node 
 
 static struct cne_node_register chnl_recv_node_base = {
     .process = chnl_recv_node_process,
-    .name    = "chnl_recv",
+    .name    = CHNL_RECV_NODE_NAME,
 
     .init = chnl_recv_node_init,
 
     .nb_edges = CHNL_RECV_NEXT_MAX,
     .next_nodes =
         {
-            [CHNL_RECV_NEXT_PKT_DROP]     = "pkt_drop",
-            [CHNL_RECV_NEXT_PKT_CALLBACK] = "chnl_callback",
+            [CHNL_RECV_NEXT_PKT_DROP]     = PKT_DROP_NODE_NAME,
+            [CHNL_RECV_NEXT_PKT_CALLBACK] = CHNL_CALLBACK_NODE_NAME,
         },
 };
 
