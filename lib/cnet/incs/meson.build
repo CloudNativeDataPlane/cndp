@@ -9,5 +9,6 @@ headers += files(
     'cnet_inet4.h',
     'cnet_ip_common.h',
     'cnet_meta.h',
+    'cnet_node_names.h',
     'cnet_pkt.h',
     )

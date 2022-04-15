@@ -20,6 +20,10 @@
 #include <cndp/cndp.h>
 #include <cndp/xskdev.h>
 
+#if USE_2101_RX_QUEUES == 0
+#include <vnet/interface/rx_queue_funcs.h>
+#endif
+
 #ifndef CLIB_MARCH_VARIANT
 /* packet trace format function */
 static u8 *format_cndp_trace (u8 *s, va_list *args)
@@ -202,21 +206,38 @@ VLIB_NODE_FN (cndp_input_node)
 {
   uword n_rx_packets = 0;
   cndp_main_t *cmp = &cndp_main;
+#if USE_2101_RX_QUEUES == 1
+  /* VPP 21.06 changes how rx queues are processed */
   vnet_device_input_runtime_t *rt = (void *)node->runtime_data;
   vnet_device_and_queue_t *dq;
+#else
+  vnet_hw_if_rxq_poll_vector_t *pv;
+#endif
 
   /*
    * Poll all devices on this cpu for input/interrupts.
    */
+#if USE_2101_RX_QUEUES == 1
+  /* VPP 21.06 changes how rx queues are processed */
   /* *INDENT-OFF* */
   foreach_device_and_queue (dq, rt->devices_and_queues)
-  {
-    cndp_device_t *cd;
+    {
+      cndp_device_t *cd;
 
-    cd = cmp->devices[dq->dev_instance];
-    n_rx_packets += cndp_device_input (vm, node, cd, dq->queue_id);
-  }
+      cd = cmp->devices[dq->dev_instance];
+      n_rx_packets += cndp_device_input (vm, node, cd, dq->queue_id);
+    }
   /* *INDENT-ON* */
+#else
+  pv = vnet_hw_if_get_rxq_poll_vector (vm, node);
+  for (int i = 0; i < vec_len (pv); i++)
+    {
+      cndp_device_t *cd;
+
+      cd = cmp->devices[pv[i].dev_instance];
+      n_rx_packets += cndp_device_input (vm, node, cd, pv[i].queue_id);
+    }
+#endif
 
   return n_rx_packets;
 }

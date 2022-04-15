@@ -36,6 +36,7 @@
 #include <linux/if_tun.h>
 #include "ptype_priv.h"        // for PTYPE_NEXT_IP4_LOOKUP, PTYPE_...
 
+#include <cnet_node_names.h>
 #include "kernel_recv_priv.h"
 #include "tun_alloc.h"
 
@@ -223,14 +224,14 @@ kernel_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 static struct cne_node_register kernel_recv_node_base = {
     .process = kernel_recv_node_process,
     .flags   = CNE_NODE_SOURCE_F,
-    .name    = "kernel_recv",
+    .name    = KERNEL_RECV_NODE_NAME,
 
     .init = kernel_recv_node_init,
 
     .nb_edges = KERNEL_RECV_NEXT_MAX,
     .next_nodes =
         {
-            [KERNEL_RECV_NEXT_PTYPE] = "ptype",
+            [KERNEL_RECV_NEXT_PTYPE] = PTYPE_NODE_NAME,
         },
 };
 

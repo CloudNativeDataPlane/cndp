@@ -29,6 +29,8 @@
 #include <cndp/xskdev.h>
 #include "cndp_elog.h"
 
+#define USE_2110_ETHERNET_REGISTER_INTERFACE 0
+#define USE_2101_RX_QUEUES 0
 #define CNDP_MAX_PORTS 30
 #define CNDP_MAX_DEVS 6
 

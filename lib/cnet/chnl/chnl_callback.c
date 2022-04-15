@@ -26,6 +26,7 @@
 #include <pktmbuf.h>          // for pktmbuf_t, pktmbuf_data_len
 #include <pktmbuf_ptype.h>
 #include <cnet_chnl.h>        // for cnet_chnl_get
+#include <cnet_node_names.h>
 
 static inline void
 __callback(struct pcb_entry *pcb, pktmbuf_t **mbufs, int len)
@@ -98,7 +99,7 @@ chnl_callback_node_init(const struct cne_graph *graph __cne_unused,
 
 static struct cne_node_register chnl_callback_node_base = {
     .process = chnl_callback_node_process,
-    .name    = "chnl_callback",
+    .name    = CHNL_CALLBACK_NODE_NAME,
 
     .init = chnl_callback_node_init,
 

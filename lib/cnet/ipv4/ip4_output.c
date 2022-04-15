@@ -28,6 +28,7 @@
 #include <cnet_ipv4.h>
 #include <cnet_meta.h>
 
+#include <cnet_node_names.h>
 #include "ip4_node_api.h"                 // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
 #include "ip4_output_priv.h"              // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
 #include "cne_branch_prediction.h"        // for likely, unlikely
@@ -288,15 +289,15 @@ ip4_output_set_next(uint16_t port_id, uint16_t next_index)
 
 static struct cne_node_register ip4_output_node = {
     .process = ip4_output_node_process,
-    .name    = "ip4_output",
+    .name    = IP4_OUTPUT_NODE_NAME,
 
     .init = ip4_output_node_init,
 
     .nb_edges = IP4_OUTPUT_NEXT_MAX,
     .next_nodes =
         {
-            [IP4_OUTPUT_NEXT_PKT_DROP]    = "pkt_drop",    /* Drop packet node */
-            [IP4_OUTPUT_NEXT_ARP_REQUEST] = "arp_request", /* TX output nodes go here */
+            [IP4_OUTPUT_NEXT_PKT_DROP]    = PKT_DROP_NODE_NAME,    /* Drop packet node */
+            [IP4_OUTPUT_NEXT_ARP_REQUEST] = ARP_REQUEST_NODE_NAME, /* TX output nodes go here */
         },
 };
 

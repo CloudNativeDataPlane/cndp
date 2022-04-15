@@ -8,6 +8,7 @@
 #include <stdint.h>           // for uint16_t
 
 #include "cne_common.h"        // for CNE_SET_USED, CNE_PRIORITY_LAST
+#include "cnet_node_names.h"
 
 struct cne_graph;
 struct cne_node;
@@ -34,7 +35,7 @@ pkt_drop_node_init(const struct cne_graph *graph, struct cne_node *node)
 
 static struct cne_node_register pkt_drop_node = {
     .process = pkt_drop_process,
-    .name    = "pkt_drop",
+    .name    = PKT_DROP_NODE_NAME,
     .init    = pkt_drop_node_init,
 };
 

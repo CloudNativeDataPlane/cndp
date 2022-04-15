@@ -26,6 +26,7 @@
 #include <pktmbuf_ptype.h>
 #include <cnet_pcb.h>
 
+#include <cnet_node_names.h>
 #include "chnl_send_priv.h"
 
 #define CHNL_SEND_NODE_LAST_NEXT(ctx) (((struct chnl_send_node_ctx *)ctx)->last_next)
@@ -203,17 +204,17 @@ chnl_send_node_init(const struct cne_graph *graph __cne_unused, struct cne_node 
 static struct cne_node_register chnl_send_node_base = {
     .process = chnl_send_node_process,
     .flags   = CNE_NODE_INPUT_F,
-    .name    = "chnl_send",
+    .name    = CHNL_SEND_NODE_NAME,
 
     .init = chnl_send_node_init,
 
     .nb_edges = CHNL_SEND_NEXT_MAX,
     .next_nodes =
         {
-            [CHNL_SEND_NEXT_PKT_DROP]   = "pkt_drop",
-            [CHNL_SEND_NEXT_UDP_OUTPUT] = "udp_output",
+            [CHNL_SEND_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
+            [CHNL_SEND_NEXT_UDP_OUTPUT] = UDP_OUTPUT_NODE_NAME,
 #if CNET_ENABLE_TCP
-            [CHNL_SEND_NEXT_TCP_OUTPUT] = "tcp_output",
+            [CHNL_SEND_NEXT_TCP_OUTPUT] = TCP_OUTPUT_NODE_NAME,
 #endif
         },
 };

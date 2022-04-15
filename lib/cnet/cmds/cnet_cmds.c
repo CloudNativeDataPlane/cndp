@@ -39,6 +39,7 @@
 #include "pktdev_api.h"        // for pktdev_port_count, pktdev_start, pktdev_...
 #include "pktmbuf.h"           // for DEFAULT_MBUF_SIZE, pktmbuf_t
 #include "cnet_chnl.h"         // for chnl_list
+#include <cnet_node_names.h>
 
 #define _prt(_s)                                                           \
     do {                                                                   \
@@ -313,20 +314,22 @@ _node_style(char *name, int src)
         const char *style;
     } styles[] = {
         // clang-format off
-        { 0,                    "ip4_*",            "[fillcolor=mediumspringgreen]" },
-        { 0,                    "udp_*",            "[fillcolor=cornsilk]" },
-        { 0,                    "pkt_drop",         "[fillcolor=lightgrey]" },
-        { 0,                    "chnl_callback",    "[fillcolor=lightgrey]" },
-        { 0,                    "chnl_*",           "[fillcolor=yellowgreen]" },
-        { 0,                    "kernel_recv",      "[fillcolor=lightcoral]" },
-        { 0,                    "eth_rx*",          "[fillcolor=lavender]" },
-        { 0,                    "arp_request",      "[fillcolor=mediumspringgreen]" },
-        { 0,                    "eth_tx*",          "[fillcolor=cyan]" },
-        { 0,                    "punt_kernel",      "[fillcolor=coral]" },
-        { 0,                    "ptype",            "[fillcolor=goldenrod]" },
-        { 0,                    "gtpu_input",       "[fillcolor=lightskyblue]" },
-        { CNE_NODE_SOURCE_F,    NULL,               "[fillcolor=cyan]" },
-        { CNE_NODE_INPUT_F,     NULL,               "[fillcolor=lightskyblue]" },
+        { 0,                    "ip4_*",                 "[fillcolor=mediumspringgreen]" },
+        { 0,                    "udp_*",                 "[fillcolor=cornsilk]" },
+        { 0,                    PKT_DROP_NODE_NAME,      "[fillcolor=lightgrey]" },
+        { 0,                    CHNL_CALLBACK_NODE_NAME, "[fillcolor=lightgrey]" },
+        { 0,                    "chnl_*",                "[fillcolor=yellowgreen]" },
+        { 0,                    KERNEL_RECV_NODE_NAME,   "[fillcolor=lightcoral]" },
+        { 0,                    ETH_RX_NODE_NAME"*",     "[fillcolor=lavender]" },
+        { 0,                    ARP_REQUEST_NODE_NAME,   "[fillcolor=mediumspringgreen]" },
+        { 0,                    ETH_TX_NODE_NAME"*",     "[fillcolor=cyan]" },
+        { 0,                    PUNT_KERNEL_NODE_NAME,   "[fillcolor=coral]" },
+        { 0,                    PTYPE_NODE_NAME,         "[fillcolor=goldenrod]" },
+        { 0,                    GTPU_INPUT_NODE_NAME,    "[fillcolor=lightskyblue]" },
+        { 0,                    "tcp_*",                 "[fillcolor=lightpink]" },
+        { CNE_NODE_SOURCE_F,    NULL,                    "[fillcolor=cyan]" },
+        { CNE_NODE_INPUT_F,     NULL,                    "[fillcolor=lightskyblue]" },
+        { 0,                    NULL,                    "[fillcolor=lightgrey]" }
         // clang-format on
     };
 

@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #define DEFAULT_CHUNK_SIZE   1024
-#define UMEM_MAX_REGIONS     16
+#define UMEM_MAX_REGIONS     128
 #define JCFG_MAX_STRING_SIZE 32
 
 #include <cne_common.h>        // for CNDP_API, CNE_STD_C11
@@ -154,9 +154,8 @@ typedef struct jcfg_umem {
     uint16_t txdesc;            /**< Number of Tx descriptors */
     uint16_t idx;               /**< The UMEM index id 0 to N */
     uint16_t shared_umem;       /**< Enable shared umem support */
-
-    uint16_t region_cnt;                   /**< Number of regions defined */
-    region_info_t rinfo[UMEM_MAX_REGIONS]; /**< Region information data */
+    uint16_t region_cnt;        /**< Number of regions defined */
+    region_info_t *rinfo;       /**< Region information data */
 } jcfg_umem_t;
 
 /**
