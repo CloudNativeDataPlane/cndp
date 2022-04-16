@@ -6,7 +6,7 @@ package cndpgo
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"testing"
 )
@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	handle, err = Open(*configStr)
 	if err != nil {
-		fmt.Printf("error in initialization %s\n", err.Error())
+		log.Fatalf("error in initialization %s\n", err.Error())
 		return
 	}
 
