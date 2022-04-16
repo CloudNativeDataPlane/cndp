@@ -1,8 +1,32 @@
 #!/bin/bash
 
-project_path="${PROJECT_PATH:-/root/git/networking.dataplane.cndp.cndp}"
+while getopts c:t:p: option
+do 
+    case "${option}"
+        in
+        c)config=${OPTARG};;
+        t)test=${OPTARG};;
+        p)lports=${OPTARG};;
+        \? ) echo "Usage: run_fwd -c <path to config file> -t <test type> -p <comma-seperated lport string>";;
+    esac
+done
+
+cdir=`pwd`
+PROJECT_PATH="${cdir}/../../../../.."
+
+IFS=','
+lportsstr=""
+for lport in $lports; 
+do   
+    lportsstr+="-p `echo $lport | xargs` "; 
+done
 
 go build
-sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so ./fwd -c fwd.json -t rx -p enp25s0f0:0
+
+cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu \
+LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so \
+./fwd -c $config -t $test $lportsstr"
+
+eval $cmdstring
 
 stty sane

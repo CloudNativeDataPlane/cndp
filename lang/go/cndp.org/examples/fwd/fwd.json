@@ -35,6 +35,13 @@
             "umem": "umem0",
             "region": 0,
             "description": "LAN 0 port"
+        },
+        "enp25s0f1:0": {
+            "pmd": "net_af_xdp",
+            "qid": 37,
+            "umem": "umem0",
+            "region": 1,
+            "description": "LAN 0 port"
         }
     },
 
