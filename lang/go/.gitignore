@@ -1,0 +1,3 @@
+# Remove some binary applications
+bindings/examples/fwd/fwd
+tools/cmon/cmon

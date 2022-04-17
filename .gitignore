@@ -16,10 +16,6 @@ doc/*/_build/
 usr/
 !lib/usr/
 
-# Remove some binary applications in the go directories
-lang/go/cndp.org/cmon/cmon
-lang/go/cndp.org/txgen/txgen
-
 # ignore the user modified or private jsonc files
 private-*.jsonc
 private-*.c
