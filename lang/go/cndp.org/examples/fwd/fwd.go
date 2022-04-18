@@ -80,7 +80,7 @@ func collectStats(handle *cndp.System, lportName string, ctx context.Context, wg
 func receivePackets(handle *cndp.System, lportName string, ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	tid := handle.RegisterThread("rx" + lportName)
+	tid := handle.RegisterThread("rx_" + lportName)
 	if tid <= 0 {
 		return
 	}
@@ -157,7 +157,7 @@ func transmitPackets(handle *cndp.System, lportName string, ctx context.Context,
 func reTransmitPackets(handle *cndp.System, lportName string, ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	tid := handle.RegisterThread("lb" + lportName)
+	tid := handle.RegisterThread("lb_" + lportName)
 	if tid <= 0 {
 		return
 	}

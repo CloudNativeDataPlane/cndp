@@ -21,6 +21,19 @@ type Port struct {
 	lportId C.int
 }
 
+type PortStats struct {
+	InPackets  uint64
+	InBytes    uint64
+	InErrors   uint64
+	InMissed   uint64
+	RxInvalid  uint64
+	OutPackets uint64
+	OutBytes   uint64
+	OutErrors  uint64
+	OutDropped uint64
+	TxInvalid  uint64
+}
+
 func newPort(lportId C.int) *Port {
 	var p Port
 	p.lportId = lportId
@@ -58,11 +71,9 @@ func (p *Port) TxBurst(packets []*Packet) int {
 }
 
 func (p *Port) GetPortStats() (*PortStats, error) {
-	var stats *C.lport_stats_t
-	stats = (*C.lport_stats_t)(C.calloc(1, C.ulong(unsafe.Sizeof(*stats))))
-	defer C.free(unsafe.Pointer(stats))
+	var stats C.lport_stats_t
 
-	ret := C.pktdev_stats_get(C.ushort(p.lportId), stats)
+	ret := C.pktdev_stats_get(C.ushort(p.lportId), &stats)
 	if ret < 0 {
 		return nil, fmt.Errorf("GetPortStats failed with error code %d", ret)
 	}
