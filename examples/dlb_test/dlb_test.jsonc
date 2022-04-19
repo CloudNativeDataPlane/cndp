@@ -124,7 +124,7 @@
     "options": {
         "no-metrics": false,
         "no-restapi": false,
-        "cli": true,
+        "cli": true
     },
 
     // List of threads to start and information for that thread. Application can start

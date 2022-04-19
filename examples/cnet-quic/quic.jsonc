@@ -126,7 +126,7 @@
         "cli": true,
 
         // Optional example application options, note the key-name needs to match the thread name
-        "graph:0": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"],
+        "graph:0": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"]
         // "graph:1": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"]
     },
 
