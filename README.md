@@ -63,7 +63,7 @@ for cloud native applications while gaining the performance benefits provided by
 
 The following shows a subset of the directory structure.
 
-``` bash
+```bash
 .
 ├── ansible                   # Ansible playbook to install in a system(s)
 ├── containerization          # Container configuration and setup scripts for Docker/K8s
