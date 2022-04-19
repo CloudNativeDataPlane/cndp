@@ -1,8 +1,10 @@
-### Step 1: Docker Installation
+# Docker Setup
+
+## Step 1: Docker Installation
 
 Add the docker repo:
 
-```
+```bash
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg2
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -11,13 +13,15 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubun
 ```
 
 Install docker-ce:
-```
+
+```bash
 sudo apt-get install -y docker-ce docker-ce-cli
 ```
 
 Ensure that the overlay driver is what's used for docker-ce and memlock limit
 is removed:
-```
+
+```bash
 cat <<EOF | sudo tee /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
@@ -39,33 +43,36 @@ EOF
 
 For more info, please follow the following instructions :
 
-1. Ubuntu: https://docs.docker.com/install/linux/docker-ce/ubuntu/
-2. Fedora: https://docs.docker.com/install/linux/docker-ce/fedora/
-3. CentOS: https://docs.docker.com/install/linux/docker-ce/centos/
+1. [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+2. [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/)
+3. [CentOS](https://docs.docker.com/install/linux/docker-ce/centos/)
 
-> *Note:* Only Ubuntu 21.04 is tested with the included Dockerfile.
+> **Note:** Only Ubuntu 21.04 is tested with the included Dockerfile.
 
-### Step 2: Docker Proxy Configuration:
+## Step 2: Docker Proxy Configuration
+
 If you are behind an HTTP or HTTPS proxy server, you will need to add this
 configuration in the Docker systemd service file.
 
-1. Create a systemd drop-in directory for the docker service:
-```
-$ sudo mkdir -p /etc/systemd/system/docker.service.d
+- Create a systemd drop-in directory for the docker service:
+
+```cmd
+sudo mkdir -p /etc/systemd/system/docker.service.d
 ```
 
-2. Create a file called /etc/systemd/system/docker.service.d/http-proxy.conf
-that adds the HTTP_PROXY environment variable:
+- Create a file called /etc/systemd/system/docker.service.d/http-proxy.conf
+  that adds the HTTP_PROXY environment variable:
 
-```
+```bash
 [Service]
 Environment="HTTP_PROXY=http://proxy.example.com:80/"
 ```
+
 Or, if you are behind an HTTPS proxy server, create a file called 
 /etc/systemd/system/docker.service.d/https-proxy.conf that adds the HTTPS_PROXY
 environment variable:
 
-```
+```bash
 [Service]
 Environment="HTTP_PROXY=http://proxy.example.com:80/"
 ```
@@ -73,36 +80,36 @@ Environment="HTTP_PROXY=http://proxy.example.com:80/"
 Or create a single file with all the proxy configurations:
 /etc/systemd/system/docker.service.d/proxy.conf
 
-```
+```bash
 [Service]
 Environment="HTTP_PROXY=http://proxy.example.com:80/"
 Environment="HTTPS_PROXY=http://proxy.example.com:80/"
 Environment="NO_PROXY=localhost"
 ```
 
-3. Flush changes:
+- Flush changes:
 
-```
+```cmd
 sudo systemctl daemon-reload
 ```
 
-4. Restart Docker:
+- Restart Docker:
 
-```
+```cmd
 sudo systemctl restart docker
 ```
 
-5. Check docker environment variables:
+- Check docker environment variables:
 
-```
+```cmd
 sudo systemctl show --property=Environment docker
 ```
 
-### Step 3: Add user to docker group:
+## Step 3: Add user to docker group
 
 This step is required to run docker commands as a non-root user.
 
-```
+```cmd
 sudo usermod -aG docker $USER
 newgrp docker
 ```
@@ -110,16 +117,15 @@ newgrp docker
 The `newgrp` command activates the group changes immediately. Without it you must logout
 and login again for new groups to take effect.
 
+## Step 4: Testing Docker Installation
 
-### Step 4: Testing Docker Installation:
-
-```
+```cmd
 docker run hello-world
 ```
 
 The output should be something like:
 
-```
+```bash
 Unable to find image 'hello-world:latest' locally
 latest: Pulling from library/hello-world
 5b0f327be733: Pull complete
@@ -136,19 +142,20 @@ executable that produces the output you are currently reading.
 to your terminal.
 ```
 
-### Step 5: Build the cndp docker container
+## Step 5: Build the cndp docker container
 
-> *Note:* Follow INSTALL.md in the CNDP top level directory if CNDP dependencies are not installed
+> **Note:** Follow INSTALL.md in the CNDP top level directory if CNDP dependencies are not installed
 
 From the top level CNDP directory call:
 
-```
+```cmd
 make docker-image
 ```
 
-### Step 6: Run the cndp docker container
+## Step 6: Run the cndp docker container
+
 From the top level CNDP directory call:
 
-```
+```cmd
 make docker-run
 ```
