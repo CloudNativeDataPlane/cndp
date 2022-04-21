@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation.
  */
-
+#include <net/ethernet.h>
 #include "rust_helper.h"
 
 // static linine functions are not currently supported by rust bindgen
