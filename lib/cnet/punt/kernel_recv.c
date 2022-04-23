@@ -2,16 +2,16 @@
  * Copyright (c) 2021-2022 Intel Corporation
  */
 
-#include <cne_ether.h>         // for ether_addr_copy, cne_ether_hdr, ether_ad...
-#include <cnet.h>              // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>          // for proto_in_ifunc
-#include <cnet_inet.h>         // for inet_ntop4, CIN_ADDR
-#include <cnet_drv.h>          // for drv_entry
-#include <cnet_route.h>        // for
-#include <cnet_arp.h>          // for arp_entry
-#include <cnet_netif.h>        // for netif, cnet_ipv4_compare
-#include <netinet/in.h>        // for ntohs
-#include <stddef.h>            // for NULL
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
+#include <cnet.h>                 // for cnet_add_instance, cnet, per_thread_cnet
+#include <cnet_stk.h>             // for proto_in_ifunc
+#include <cne_inet.h>             // for inet_ntop4, CIN_ADDR
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_route.h>           // for
+#include <cnet_arp.h>             // for arp_entry
+#include <cnet_netif.h>           // for netif, cnet_ipv4_compare
+#include <netinet/in.h>           // for ntohs
+#include <stddef.h>               // for NULL
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <poll.h>
@@ -32,7 +32,7 @@
 #include <cnet_eth.h>
 #include <net/cne_udp.h>
 #include <sys/uio.h>
-#include <cne_net.h>
+#include <net/cne_net.h>
 #include <linux/if_tun.h>
 #include "ptype_priv.h"        // for PTYPE_NEXT_IP4_LOOKUP, PTYPE_...
 
@@ -52,7 +52,7 @@ mbuf_update(pktmbuf_t **mbufs, uint16_t nb_pkts)
 
         eth_hdr = pktmbuf_mtod(m, struct cne_ether_hdr *);
 
-        m->packet_type = cne_net_get_ptype(m, &hdr_lens, CNE_PTYPE_ALL_MASK);
+        m->packet_type = cne_get_ptype(m, &hdr_lens, CNE_PTYPE_ALL_MASK);
 
         m->ol_flags = 0;
 

@@ -8,7 +8,6 @@ sources = files(
 	'capture.c',
 	'display.c',
 	'ether.c',
-	'_inet.c',
 	'ipv4.c',
 	'main.c',
 	'parse-args.c',
@@ -19,11 +18,10 @@ sources = files(
 	'tcp.c',
 	'txgen.c',
 	'udp.c',
-	'cne_atoip.c',
 	'cne_net_crc.c',
 )
 
-deps += [cli, kvargs, pktdev, pktmbuf, mempool, mmap, ring, jcfg, thread, uds, metrics, net, pmd_af_xdp]
+deps += [cli, kvargs, pktdev, pktmbuf, mempool, mmap, ring, jcfg, thread, uds, metrics, pmd_af_xdp]
 
 executable('txgen',
     sources,

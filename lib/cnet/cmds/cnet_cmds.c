@@ -7,7 +7,7 @@
 #include <immintrin.h>             // for __m256i
 #include <cnet.h>                  // for cnet, per_thread_cnet, this_cnet, cnet_l...
 #include <cnet_stk.h>              // for per_thread_stk, this_stk, stk_entry, cne...
-#include <cnet_inet.h>             // for
+#include <cne_inet.h>              // for
 #include <cnet_drv.h>              // for drv_entry
 #include <cnet_pcb.h>              // for cnet_pcb_dump, cnet_pcb_dump_details
 #include <cnet_tcp.h>              // for cnet_tcb_list, seg_entry

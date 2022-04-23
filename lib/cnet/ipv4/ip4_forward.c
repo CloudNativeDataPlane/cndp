@@ -8,7 +8,7 @@
 #include <net/cne_ip.h>              // for cne_ipv4_hdr
 #include <pktmbuf.h>                 // for pktmbuf_t, pktmbuf_mtod
 #include <cne_vect.h>                // for cne_xmm_t
-#include <cne_ether.h>               // for cne_ether_hdr
+#include <net/cne_ether.h>           // for cne_ether_hdr
 #include <errno.h>                   // for EINVAL, ENOMEM
 #include <netinet/in.h>              // for htons
 #include <stdbool.h>                 // for true, bool
@@ -21,19 +21,17 @@
 #include <cne_log.h>                      // for CNE_LOG_DEBUG
 #include <cne_prefetch.h>                 // for cne_prefetch0
 #include <cne_branch_prediction.h>        // for likely, unlikely
-#include <cne_ether.h>
-#include <cne_hash.h>        // for
+#include <cne_hash.h>                     // for
 
 #include <cnet_const.h>        // for
 #include <cnet_stk.h>
 #include <cnet_netif.h>
 #include <cnet_route.h>
 #include <cnet_route4.h>
-#include <cnet_ipv4.h>        // for
-#include <cnet_ether.h>
+#include <cnet_ipv4.h>           // for
 #include <net/ethernet.h>        // for ether_addr
 #include <net/cne_udp.h>         // for
-#include <cnet_inet.h>           // for _in_addr
+#include <cne_inet.h>            // for _in_addr
 #include <cnet_arp.h>            // for cne_arp
 
 #include <cnet_node_names.h>

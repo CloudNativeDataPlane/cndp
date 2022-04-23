@@ -11,7 +11,7 @@
  */
 
 #include <cnet_ip_common.h>
-#include <cnet_inet.h>
+#include <cne_inet.h>
 
 #ifdef __cplusplus
 extern "C" {

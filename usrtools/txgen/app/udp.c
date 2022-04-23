@@ -8,7 +8,7 @@
 #include <stdint.h>            // for uint16_t
 
 #include "udp.h"
-#include "_inet.h"              // for pg_ipaddr, pg_ipaddr::(anonymous)
+#include "cne_inet.h"           // for ip4addr, ip4addr::(anonymous)
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_udp.h"        // for cne_udp_hdr
@@ -33,8 +33,8 @@ txgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
     struct cne_udp_hdr *udp   = (struct cne_udp_hdr *)&ipv4[1];
 
     /* Create the UDP header */
-    ipv4->src_addr = htonl(pkt->ip_src_addr.ipv4.s_addr);
-    ipv4->dst_addr = htonl(pkt->ip_dst_addr.ipv4.s_addr);
+    ipv4->src_addr = htonl(pkt->ip_src_addr.s_addr);
+    ipv4->dst_addr = htonl(pkt->ip_dst_addr.s_addr);
 
     tlen                = pkt->pktSize - pkt->ether_hdr_size;
     ipv4->total_length  = htons(tlen);

@@ -26,9 +26,13 @@ headers = files(
     'cne_vect.h',
     'cne_vect_generic.h',
     'cne_version.h',
+    'cne_inet.h',
+    'cne_inet4.h',
     'cne_xmmt_ops.h',
     )
 net_hdrs = files(
+    'net/cne_arp.h',
+    'net/cne_ether.h',
     'net/cne_gre.h',
     'net/cne_gtp.h',
     'net/cne_icmp.h',

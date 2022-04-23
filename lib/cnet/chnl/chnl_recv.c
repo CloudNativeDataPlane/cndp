@@ -2,16 +2,16 @@
  * Copyright (c) 2021-2022 Intel Corporation
  */
 
-#include <cne_ether.h>         // for ether_addr_copy, cne_ether_hdr, ether_ad...
-#include <cnet.h>              // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>          // for proto_in_ifunc
-#include <cnet_inet.h>         // for inet_ntop4, CIN_ADDR
-#include <cnet_drv.h>          // for drv_entry
-#include <cnet_route.h>        // for
-#include <cnet_arp.h>          // for arp_entry
-#include <cnet_netif.h>        // for netif, cnet_ipv4_compare
-#include <netinet/in.h>        // for ntohs
-#include <stddef.h>            // for NULL
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
+#include <cnet.h>                 // for cnet_add_instance, cnet, per_thread_cnet
+#include <cnet_stk.h>             // for proto_in_ifunc
+#include <cne_inet.h>             // for inet_ntop4, CIN_ADDR
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_route.h>           // for
+#include <cnet_arp.h>             // for arp_entry
+#include <cnet_netif.h>           // for netif, cnet_ipv4_compare
+#include <netinet/in.h>           // for ntohs
+#include <stddef.h>               // for NULL
 
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
@@ -19,7 +19,6 @@
 #include <net/cne_ip.h>              // for cne_ipv4_hdr
 #include <net/cne_udp.h>
 #include <cne_log.h>          // for CNE_LOG, CNE_LOG_DEBUG
-#include <cne_vec.h>          // for vec_len, vec_ptr_at_index, vec_next_mbuf_pre...
 #include <cnet_ipv4.h>        // for IPv4_VER_LEN_VALUE
 #include <mempool.h>          // for mempool_t
 #include <pktdev.h>           // for pktdev_rx_burst

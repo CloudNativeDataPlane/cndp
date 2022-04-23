@@ -7,7 +7,7 @@
 #include <net/cne_ip.h>              // for cne_ipv4_hdr
 #include <pktmbuf.h>                 // for pktmbuf_t, pktmbuf_mtod
 #include <cne_vect.h>                // for cne_xmm_t
-#include <cne_ether.h>               // for cne_ether_hdr
+#include <net/cne_ether.h>           // for cne_ether_hdr
 #include <errno.h>                   // for EINVAL, ENOMEM
 #include <netinet/in.h>              // for htons
 #include <stdbool.h>                 // for true, bool

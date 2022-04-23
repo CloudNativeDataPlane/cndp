@@ -4,7 +4,7 @@
 sources = files('cnet-graph.c', 'parse-args.c', 'stats.c')
 
 deps += [pktdev, graph, mempool, pktmbuf, vec, hmap, timer,
-    mmap, uds, metrics, pmd_af_xdp, net, fib, stack]
+    mmap, uds, metrics, pmd_af_xdp, fib, stack]
 
 executable('cnet-graph',
     sources,

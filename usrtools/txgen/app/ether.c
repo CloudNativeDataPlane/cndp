@@ -7,10 +7,10 @@
 
 #include <netinet/in.h>        // for htons
 
-#include "seq.h"               // for pkt_seq_t
-#include "port-cfg.h"          // for port_info_t
-#include "cne_common.h"        // for __cne_unused
-#include "cne_ether.h"         // for ether_addr_copy, cne_ether_hdr
+#include "seq.h"                  // for pkt_seq_t
+#include "port-cfg.h"             // for port_info_t
+#include "cne_common.h"           // for __cne_unused
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr
 
 /**
  *

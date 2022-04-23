@@ -21,11 +21,11 @@
 #include "port-cfg.h"                     // for port_info_t, port_sizes_t, mbuf_t...
 #include "pcap.h"                         // for txgen_page_pcap, txgen_pcap_mbuf_...
 #include "cmds.h"                         // for txgen_force_update
-#include "_inet.h"                        // for pg_ipaddr, pg_ipaddr::(anonymous)
+#include "cne_inet.h"                     // for ip4addr, ip4addr::(anonymous)
 #include "_pcap.h"                        // for pcap_info_t
 #include "cne_branch_prediction.h"        // for unlikely, likely
 #include "cne_common.h"                   // for __cne_unused
-#include "cne_ether.h"                    // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
+#include <net/cne_ether.h>                // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
 #include "cne_prefetch.h"                 // for cne_prefetch0
 #include "cne_log.h"
 #include "jcfg.h"                // for jcfg_lport_t, jcfg_thd_t, jcfg_lg...
@@ -216,13 +216,13 @@ txgen_packet_ctor(port_info_t *info)
     l3_hdr = txgen_ether_hdr_ctor(info, pkt, eth);
 
     if (likely(pkt->ethType == CNE_ETHER_TYPE_IPV4)) {
-        if (likely(pkt->ipProto == CNE_IPPROTO_TCP)) {
+        if (likely(pkt->ipProto == IPPROTO_TCP)) {
             /* Construct the TCP header */
             txgen_tcp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
 
             /* IPv4 Header constructor */
             txgen_ipv4_ctor(pkt, l3_hdr);
-        } else if (pkt->ipProto == CNE_IPPROTO_UDP) {
+        } else if (pkt->ipProto == IPPROTO_UDP) {
             /* Construct the UDP header */
             txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
 
@@ -614,21 +614,21 @@ init_port_info(port_info_t *info, jcfg_lport_t *lport)
     if (netdev_get_mac_addr(lport->netdev, &info->pkt.eth_src_addr) < 0)
         return -1;
 
-    info->lport                       = lport;
-    info->tx_rate                     = 100.0;
-    info->tx_cycles                   = 0;
-    info->tx_next_cycle               = 0;
-    info->tx_burst                    = 64;
-    info->pkt.pktSize                 = 60;
-    info->pkt.sport                   = 1234;
-    info->pkt.dport                   = 5678;
-    info->pkt.ipProto                 = IPPROTO_UDP;
-    info->pkt.ttl                     = DEFAULT_TTL;
-    info->pkt.ethType                 = ETHERTYPE_IP;
-    info->pkt.ip_dst_addr.ipv4.s_addr = DEFAULT_IP_ADDR | ((lport->lpid + 1) << 8) | 1;
-    info->pkt.ip_src_addr.ipv4.s_addr = DEFAULT_IP_ADDR | (lport->lpid << 8) | 1;
-    info->pkt.ip_mask                 = DEFAULT_NETMASK;
-    info->fill_pattern_type           = ABC_FILL_PATTERN;
+    info->lport                  = lport;
+    info->tx_rate                = 100.0;
+    info->tx_cycles              = 0;
+    info->tx_next_cycle          = 0;
+    info->tx_burst               = 64;
+    info->pkt.pktSize            = 60;
+    info->pkt.sport              = 1234;
+    info->pkt.dport              = 5678;
+    info->pkt.ipProto            = IPPROTO_UDP;
+    info->pkt.ttl                = DEFAULT_TTL;
+    info->pkt.ethType            = ETHERTYPE_IP;
+    info->pkt.ip_dst_addr.s_addr = DEFAULT_IP_ADDR | ((lport->lpid + 1) << 8) | 1;
+    info->pkt.ip_src_addr.s_addr = DEFAULT_IP_ADDR | (lport->lpid << 8) | 1;
+    info->pkt.ip_mask            = DEFAULT_NETMASK;
+    info->fill_pattern_type      = ABC_FILL_PATTERN;
     strlcpy(info->user_pattern, "0123456789abcdef", sizeof(info->user_pattern));
 
     txgen_set_port_flags(info, RUNNING_FLAG);

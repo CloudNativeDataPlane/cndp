@@ -2,16 +2,16 @@
  * Copyright (c) 2021-2022 Intel Corporation
  */
 
-#include <cne_ether.h>         // for ether_addr_copy, cne_ether_hdr, ether_ad...
-#include <cnet.h>              // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>          // for proto_in_ifunc
-#include <cnet_inet.h>         // for inet_ntop4, CIN_ADDR
-#include <cnet_drv.h>          // for drv_entry
-#include <cnet_route.h>        // for
-#include <cnet_arp.h>          // for arp_entry
-#include <cnet_netif.h>        // for netif, cnet_ipv4_compare
-#include <netinet/in.h>        // for ntohs
-#include <stddef.h>            // for NULL
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
+#include <cnet.h>                 // for cnet_add_instance, cnet, per_thread_cnet
+#include <cnet_stk.h>             // for proto_in_ifunc
+#include <cne_inet.h>             // for inet_ntop4, CIN_ADDR
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_route.h>           // for
+#include <cnet_arp.h>             // for arp_entry
+#include <cnet_netif.h>           // for netif, cnet_ipv4_compare
+#include <netinet/in.h>           // for ntohs
+#include <stddef.h>               // for NULL
 
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
@@ -32,23 +32,23 @@
 #include "tcp_input_priv.h"
 
 /* The TCP/IP Pseudo header */
-typedef struct tcpip_s {
+typedef struct tcpip4_s {
     struct cne_ipv4_hdr ip4; /* IPv4 header */
     struct cne_tcp_hdr tcp;  /* TCP header */
-} __attribute__((__packed__)) tcpip_t;
+} __cne_packed tcpip4_t;
 
 static inline uint16_t
 tcp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
 {
     struct cnet *cnet = this_cnet;
-    tcpip_t *uip;
+    tcpip4_t *uip;
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
 
     md = cnet_mbuf_metadata(m);
 
-    uip = pktmbuf_mtod(m, struct tcpip_s *);
+    uip = pktmbuf_mtod(m, struct tcpip4_s *);
 
     /* Convert this into AVX instructions */
     in_caddr_update(&key.faddr, AF_INET, sizeof(struct in_caddr), uip->tcp.src_port);

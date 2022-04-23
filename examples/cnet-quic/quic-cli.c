@@ -616,34 +616,6 @@ run_client(struct chnl *ch, pktmbuf_t *mbuf)
 {
     quicly_conn_t *conn = NULL;
 
-#if 0
-    struct timeval *tv, tvbuf;
-    do {
-        int64_t timeout_at = conn != NULL ? quicly_get_first_timeout(conn) : INT64_MAX;
-        if (enqueue_requests_at < timeout_at)
-            timeout_at = enqueue_requests_at;
-
-        if (timeout_at != INT64_MAX) {
-            quicly_context_t *ctx = quicly_get_context(conn);
-            int64_t delta         = timeout_at - ctx->now->cb(ctx->now);
-            if (delta > 0) {
-                tvbuf.tv_sec  = delta / 1000;
-                tvbuf.tv_usec = (delta % 1000) * 1000;
-            } else {
-                tvbuf.tv_sec  = 0;
-                tvbuf.tv_usec = 0;
-            }
-            tv = &tvbuf;
-        } else
-            tv = NULL;
-
-        FD_ZERO(&readfds);
-        FD_SET(fd, &readfds);
-    } while (select(fd + 1, &readfds, NULL, NULL, tv) == -1 && errno == EINTR);
-
-    if (enqueue_requests_at <= ctx.now->cb(ctx.now))
-        enqueue_requests(conn);
-#endif
     uint8_t buf[ctx.transport_params.max_udp_payload_size];
     struct sockaddr sa;
     ssize_t rret = pktmbuf_data_len(mbuf);
@@ -763,36 +735,6 @@ CIDMismatch:
 static int
 run_server(struct chnl *ch, pktmbuf_t *mbuf)
 {
-#if 0
-    struct timeval *tv, tvbuf;
-
-    do {
-        int64_t timeout_at = INT64_MAX;
-
-        for (size_t i = 0; i != num_conns; ++i) {
-            int64_t conn_to = quicly_get_first_timeout(conns[i]);
-
-            if (conn_to < timeout_at)
-                timeout_at = conn_to;
-        }
-        if (timeout_at != INT64_MAX) {
-            int64_t delta = timeout_at - ctx.now->cb(ctx.now);
-
-            if (delta > 0) {
-                tvbuf.tv_sec  = delta / 1000;
-                tvbuf.tv_usec = (delta % 1000) * 1000;
-            } else {
-                tvbuf.tv_sec  = 0;
-                tvbuf.tv_usec = 0;
-            }
-            tv = &tvbuf;
-        } else
-            tv = NULL;
-
-        FD_ZERO(&readfds);
-        FD_SET(fd, &readfds);
-    } while (select(fd + 1, &readfds, NULL, NULL, tv) == -1 && errno == EINTR);
-#endif
     uint8_t *buf = pktmbuf_mtod(mbuf, uint8_t *);
     quicly_address_t remote;
     size_t len               = pktmbuf_data_len(mbuf);

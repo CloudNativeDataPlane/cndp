@@ -2,12 +2,12 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-#include <cne_ether.h>        // for CNE_ETHER_TYPE_ARP, CNE_ETHER_TYPE_IPV4, CNE...
-#include <mempool.h>          // for mempool_cfg, mempool_create, mempool_obj_iter
-#include <cnet.h>             // for cnet_add_instance, cnet_new_if_index, per_th...
+#include <net/cne_ether.h>        // for CNE_ETHER_TYPE_ARP, CNE_ETHER_TYPE_IPV4, CNE...
+#include <mempool.h>              // for mempool_cfg, mempool_create, mempool_obj_iter
+#include <cnet.h>                 // for cnet_add_instance, cnet_new_if_index, per_th...
 #include "cnet_reg.h"
-#include <cnet_inet.h>        // for in_caddr_create, _in_addr, in_caddr
-#include <cnet_drv.h>         // for drv_entry
+#include <cne_inet.h>        // for in_caddr_create, _in_addr, in_caddr
+#include <cnet_drv.h>        // for drv_entry
 #include <cnet_ip_common.h>
 #include <cnet_netif.h>
 #include <cnet_eth.h>           // for cnet_eth_init

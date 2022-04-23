@@ -5,7 +5,7 @@
 #include <cnet.h>        // for cnet_add_instance
 #include <cnet_reg.h>
 #include <cnet_stk.h>            // for stk_entry, per_thread_stk, this_stk
-#include <cnet_inet.h>           // for _in_addr, in_caddr_copy, inet_ntop4, in_caddr
+#include <cne_inet.h>            // for _in_addr, in_caddr_copy, inet_ntop4, in_caddr
 #include <cnet_ipv4.h>           // for __netbytes
 #include <cnet_netif.h>          // for netif
 #include <endian.h>              // for be32toh
@@ -35,6 +35,7 @@ cnet_route4_insert(int netdev_idx, struct in_addr *dst, struct in_addr *netmask,
     rt = cnet_route4_alloc();
     if (rt) {
         int idx;
+        char ip[IP4_ADDR_STRLEN] = {0};
         uint8_t depth;
         fib_info_t *fi = this_cnet->rt4_finfo;
 
@@ -47,13 +48,14 @@ cnet_route4_insert(int netdev_idx, struct in_addr *dst, struct in_addr *netmask,
 
         idx = fib_info_alloc(fi, rt);
         if (idx < 0)
-            CNE_WARN("FIB allocate failed for %s\n", inet_ntop4(&rt->nexthop, &rt->netmask));
+            CNE_WARN("FIB allocate failed for %s\n",
+                     inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask));
 
-        depth = __prefixbits(rt->netmask.s_addr);
+        depth = __cne_prefixbits(rt->netmask.s_addr);
         if ((rc = cne_node_ip4_add_input(fi->fib, rt->nexthop.s_addr, depth, (uint32_t)idx))) {
             (void)fib_info_free(fi, idx);
-            CNE_ERR_RET("Add %s Failed: %s\n", inet_ntop4(&rt->nexthop, &rt->netmask),
-                        strerror(-rc));
+            CNE_ERR_RET("Add %s Failed: %s\n",
+                        inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask), strerror(-rc));
         }
     }
 
@@ -77,7 +79,7 @@ cnet_route4_delete(struct in_addr *ipaddr)
         if (fib_info_get(fi, &nexthop, (void **)&rt, 1) < 0)
             CNE_ERR_RET("Unable to delete FIB entry pointer\n");
 
-        if (cne_fib_delete(fi->fib, rt->nexthop.s_addr, __prefixbits(rt->netmask.s_addr)) < 0)
+        if (cne_fib_delete(fi->fib, rt->nexthop.s_addr, __cne_prefixbits(rt->netmask.s_addr)) < 0)
             CNE_ERR_RET("Unable to delete FIB entry\n");
 
         if (fib_info_free(fi, (uint32_t)nexthop) != rt)
@@ -215,17 +217,21 @@ route4_dump(struct rt4_entry *rt, void *arg __cne_unused)
 {
     struct netif *netif;
     struct in_addr nh, mask, gate;
+    char ip1[IP4_ADDR_STRLEN] = {0};
+    char ip2[IP4_ADDR_STRLEN] = {0};
+    char ip3[IP4_ADDR_STRLEN] = {0};
 
     nh.s_addr   = htobe32(rt->nexthop.s_addr);
     mask.s_addr = htobe32(rt->netmask.s_addr);
     gate.s_addr = htobe32(rt->gateway.s_addr);
 
-    cne_printf("  [yellow]%-17s ", inet_ntop4(&nh, NULL));
-    cne_printf("[orange]%-17s [cyan]%3d  ", inet_ntop4(&mask, NULL), rt->netif_idx);
+    cne_printf("  [yellow]%-17s ", inet_ntop4(ip1, sizeof(ip1), &nh, NULL));
+    cne_printf("[orange]%-17s [cyan]%3d  ", inet_ntop4(ip2, sizeof(ip2), &mask, NULL),
+               rt->netif_idx);
 
     netif = vec_ptr_at_index(this_cnet->netifs, rt->netif_idx);
-    cne_printf("[orange]%-17s [cyan]%6d %7d   [magenta]%s[]\n", inet_ntop4(&gate, NULL), rt->metric,
-               rt->timo, netif->ifname);
+    cne_printf("[orange]%-17s [cyan]%6d %7d   [magenta]%s[]\n",
+               inet_ntop4(ip3, sizeof(ip3), &gate, NULL), rt->metric, rt->timo, netif->ifname);
 
     return 0;
 }

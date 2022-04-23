@@ -9,9 +9,9 @@
 
 #include <cne_stdio.h>
 #include <cnet.h>
-#include <cnet_inet.h>        // for inet_mtoa
-#include <cnet_reg.h>         // for cnet_register_t, cnet_do_calls, cnet_do_stk...
-#include <cne_vec.h>          // for vec_ptr_at_index, vec_calc_size, vec_max_len
+#include <cne_inet.h>        // for inet_mtoa
+#include <cnet_reg.h>        // for cnet_register_t, cnet_do_calls, cnet_do_stk...
+#include <cne_vec.h>         // for vec_ptr_at_index, vec_calc_size, vec_max_len
 #include <cnet_drv.h>
 #include <cnet_stk.h>          // for stk_entry
 #include <cnet_const.h>        // for CNET_STOP, CNET_INIT, cnet_assert
@@ -134,6 +134,7 @@ cnet_dump(void)
 {
     struct drv_entry *drv;
     struct netif *netif;
+    char mac_str[32];
     stk_t *stk;
 
     cne_printf("[yellow]CNET[]\n");
@@ -144,7 +145,8 @@ cnet_dump(void)
         netif = drv->netif;
         cne_printf("  [cyan]drv%d[] --> [green]Attach port [magenta]%d [green]to device "
                    "[magenta]eth%d [green]MAC[]=[cyan]%s[] ([yellow]%s[])\n",
-                   netif->lpid, 99, netif->lpid, inet_mtoa(&netif->mac), netif->ifname);
+                   netif->lpid, 99, netif->lpid, inet_mtoa(mac_str, sizeof(mac_str), &netif->mac),
+                   netif->ifname);
     }
 
     vec_foreach_ptr (stk, __cnet->stks)

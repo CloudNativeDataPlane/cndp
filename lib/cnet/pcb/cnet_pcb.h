@@ -10,9 +10,9 @@
  * CNET PCB routines.
  */
 
-#include <cnet_inet.h>        // for in_caddr
-#include <stdint.h>           // for uint16_t, uint8_t, int32_t
-#include <string.h>           // for NULL, memset
+#include <cne_inet.h>        // for in_caddr
+#include <stdint.h>          // for uint16_t, uint8_t, int32_t
+#include <string.h>          // for NULL, memset
 
 #include "cne_common.h"        // for __cne_aligned, __cne_cache_aligned
 #include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG

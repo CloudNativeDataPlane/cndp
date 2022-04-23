@@ -23,7 +23,6 @@ def_deps = [
     timer,
     thread,
     utils,
-    net,
     graph,
     jcfg,
     ]

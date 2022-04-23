@@ -10,7 +10,6 @@ dirs = [
     'vec',
     'graph',
     'hmap',
-    'net',
     'rib',
     'fib',
     'meter',
