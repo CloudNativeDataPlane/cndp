@@ -40,14 +40,14 @@ struct cne_tcp_hdr {
 /**
  * TCP Flags
  */
-#define CNE_TCP_CWR_FLAG 0x80 /**< Congestion Window Reduced */
-#define CNE_TCP_ECE_FLAG 0x40 /**< ECN-Echo */
-#define CNE_TCP_URG_FLAG 0x20 /**< Urgent Pointer field significant */
-#define CNE_TCP_ACK_FLAG 0x10 /**< Acknowledgment field significant */
-#define CNE_TCP_PSH_FLAG 0x08 /**< Push Function */
-#define CNE_TCP_RST_FLAG 0x04 /**< Reset the connection */
-#define CNE_TCP_SYN_FLAG 0x02 /**< Synchronize sequence numbers */
-#define CNE_TCP_FIN_FLAG 0x01 /**< No more data from sender */
+#define TCP_CWR_FLAG 0x80 /**< Congestion Window Reduced */
+#define TCP_ECE_FLAG 0x40 /**< ECN-Echo */
+#define TCP_URG_FLAG 0x20 /**< Urgent Pointer field significant */
+#define TCP_ACK_FLAG 0x10 /**< Acknowledgment field significant */
+#define TCP_PSH_FLAG 0x08 /**< Push Function */
+#define TCP_RST_FLAG 0x04 /**< Reset the connection */
+#define TCP_SYN_FLAG 0x02 /**< Synchronize sequence numbers */
+#define TCP_FIN_FLAG 0x01 /**< No more data from sender */
 
 #ifdef __cplusplus
 }

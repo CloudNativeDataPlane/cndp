@@ -149,6 +149,12 @@ typedef uint16_t unaligned_uint16_t;
  */
 #define CNE_SET_USED(x) (void)(x)
 
+#define __cne_countof(_x)     (sizeof(_x) / sizeof(_x[0]))
+#define __cne_roundup(_x, _y) ((((_x) + ((_y)-1)) / (_y)) * (_y))
+#define __cne_ctz(_v)         __builtin_ctz(_v)
+#define __cne_prefixbits(_v)  ((__typeof__(_v))(sizeof(_v) * 8) - __cne_ctz(_v))
+#define __cne_numbytes(_v)    ((__cne_prefixbits(_v) + 7) / 8)
+
 #define CNE_PRIORITY_INIT   101
 #define CNE_PRIORITY_START  102
 #define CNE_PRIORITY_THREAD 103

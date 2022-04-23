@@ -2,15 +2,15 @@
  * Copyright (c) 2021-2022 Intel Corporation
  */
 
-#include <cne_ether.h>         // for ether_addr_copy, cne_ether_hdr, ether_ad...
-#include <cnet.h>              // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>          // for proto_in_ifunc
-#include <cnet_inet.h>         // for inet_ntop4, CIN_ADDR
-#include <cnet_drv.h>          // for drv_entry
-#include <cnet_route.h>        // for
-#include <cnet_arp.h>          // for arp_entry
-#include <cnet_netif.h>        // for netif, cnet_ipv4_compare
-#include <netinet/in.h>        // for ntohs
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
+#include <cnet.h>                 // for cnet_add_instance, cnet, per_thread_cnet
+#include <cnet_stk.h>             // for proto_in_ifunc
+#include <cne_inet.h>             // for inet_ntop4, CIN_ADDR
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_route.h>           // for
+#include <cnet_arp.h>             // for arp_entry
+#include <cnet_netif.h>           // for netif, cnet_ipv4_compare
+#include <netinet/in.h>           // for ntohs
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>

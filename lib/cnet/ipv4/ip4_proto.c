@@ -9,7 +9,7 @@
 #include <cne_graph_worker.h>        // for cne_node, cne_node_enqueue_x1
 #include <net/cne_ip.h>              // for cne_ipv4_hdr
 #include <pktmbuf.h>                 // for pktmbuf_t, pktmbuf_mtod_offset
-#include <cne_ether.h>               // for cne_ether_hdr
+#include <net/cne_ether.h>           // for cne_ether_hdr
 #include <cne_system.h>              // for cne_max_numa_nodes
 #include <errno.h>                   // for errno
 #include <netinet/in.h>              // for in_addr, INET6_ADDRSTRLEN, htonl

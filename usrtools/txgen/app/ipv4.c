@@ -9,7 +9,7 @@
 
 #include "txgen.h"        // for txgen, txgen_t
 #include "ipv4.h"
-#include "_inet.h"             // for pg_ipaddr, pg_ipaddr::(anonymous), IPv4_VERSION
+#include "cne_inet.h"          // for ip4addr, ip4addr::(anonymous), IPv4_VERSION
 #include "net/cne_ip.h"        // for cne_ipv4_hdr, cne_ipv4_cksum
 
 /**
@@ -46,8 +46,8 @@ txgen_ipv4_ctor(pkt_seq_t *pkt, void *hdr)
     ip->packet_id       = htons(txgen.ident);
     ip->fragment_offset = 0;
     ip->next_proto_id   = pkt->ipProto;
-    ip->src_addr        = htonl(pkt->ip_src_addr.ipv4.s_addr);
-    ip->dst_addr        = htonl(pkt->ip_dst_addr.ipv4.s_addr);
+    ip->src_addr        = htonl(pkt->ip_src_addr.s_addr);
+    ip->dst_addr        = htonl(pkt->ip_dst_addr.s_addr);
     ip->hdr_checksum    = 0;
     ip->hdr_checksum    = cne_ipv4_cksum((const struct cne_ipv4_hdr *)ip);
 }

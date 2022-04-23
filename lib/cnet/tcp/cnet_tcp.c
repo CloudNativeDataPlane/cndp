@@ -36,7 +36,7 @@
 
 #include <cnet.h>                  // for cnet_add_instance
 #include <cnet_stk.h>              // for stk_entry, stk_get_timer_ticks, per_thre...
-#include <cnet_inet.h>             // for inet_ntop4, inet_caddr_print, _in_addr
+#include <cne_inet.h>              // for inet_ntop4, _in_addr
 #include <cnet_netif.h>            // for cnet_netif_match_subnet, cnet_ipv4_compare
 #include <cnet_route.h>            // for rtLookup
 #include <cnet_route4.h>           // for rtLookup
@@ -53,13 +53,13 @@
 #include <stdlib.h>                // for free, calloc, rand
 #include <string.h>                // for strcat, memcpy, memset
 
-#include "cne_common.h"         // for CNE_MIN, CNE_MAX, CNE_SET_USED, __cne_un...
-#include "cne_cycles.h"         // for cne_rdtsc
-#include "cne_log.h"            // for CNE_ASSERT
-#include "cne_ether.h"          // for cne_ether_hdr
-#include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum, CNE...
-#include "net/cne_tcp.h"        // for cne_tcp_hdr
-#include "cne_vec.h"            // for vec_len, vec_add_ptr, vec_ptr_at_index
+#include "cne_common.h"           // for CNE_MIN, CNE_MAX, CNE_SET_USED, __cne_un...
+#include "cne_cycles.h"           // for cne_rdtsc
+#include "cne_log.h"              // for CNE_ASSERT
+#include <net/cne_ether.h>        // for cne_ether_hdr
+#include "net/cne_ip.h"           // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum, CNE...
+#include "net/cne_tcp.h"          // for cne_tcp_hdr
+#include "cne_vec.h"              // for vec_len, vec_add_ptr, vec_ptr_at_index
 #include <cnet_reg.h>
 #include "cnet_ipv4.h"           // for TOS_DEFAULT, TTL_DEFAULT, _OFF_DF
 #include "cnet_protosw.h"        // for protosw_entry, cnet_ipproto_set, cnet_pr...
@@ -354,20 +354,29 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
 
         nif = cnet_netif_match_subnet(&pcb->key.faddr.cin_addr);
         if (!nif) {
-            CNE_ERR("No netif match %s\n", inet_ntop4(&pcb->key.faddr.cin_addr, NULL));
+            char ip[INET6_ADDRSTRLEN + 4] = {0};
+
+            CNE_ERR("No netif match %s\n",
+                    inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
             pktmbuf_free(mbuf);
             return -1;
         }
         if (fib_info_lookup_index(fi, &pcb->key.faddr.cin_addr.s_addr, &nexthop, 1) <= 0) {
-            CNE_WARN("Route lookup failed %s\n", inet_ntop4(&pcb->key.faddr.cin_addr, NULL));
+            char ip[INET6_ADDRSTRLEN + 4] = {0};
+
+            CNE_WARN("Route lookup failed %s\n",
+                     inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
             pktmbuf_free(mbuf);
             return -1;
         }
 
         /* Find the correct subnet IP address for the given request */
         if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
+            char ip[INET6_ADDRSTRLEN + 4] = {0};
+
             CNE_WARN("cnet_ipv4_compare(%s) failed\n",
-                     inet_ntop4((struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL));
+                     inet_ntop4(ip, sizeof(ip), (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr,
+                                NULL));
             pktmbuf_free(mbuf);
             return -1;
         }
@@ -946,24 +955,10 @@ tcp_do_response(struct netif *netif, struct pcb_entry *pcb, pktmbuf_t *mbuf, uin
     if (!pcb)
         tcp->cksum = cne_ipv4_udptcp_cksum(ip, tcp);
 
-#if 0
-    /*
-     * Nothing we can do if the output routine returns error, in any case the
-     * packet should have been freed by the lower layers.
-     */
-    vec = vec_pool_alloc(this_cnet->vec_pool, 0);
-    if (vec) {
-        vec_add_ptr(vec, mbuf);
-        proto_out_vfunc(IPV4_IO, netif, vec);
-    } else {
-        CNE_ERR("Unable to allocate vector!\n");
-        pktmbuf_free(mbuf);
-    }
-#else
+    /* TODO: need to fix */
     (void)vec;
     (void)netif;
     pktmbuf_free(mbuf);
-#endif
 }
 
 /**
@@ -1704,112 +1699,112 @@ do_segment_listen(struct seg_entry *seg)
 static uint8_t
 tcp_reassemble(struct seg_entry *seg)
 {
-#if 0
-	pktmbuf_t	 *mbuf = seg->mbuf;
-	struct pcb_entry *pcb = seg->pcb;
-	struct tcb_entry *tcb = pcb->tcb;
-	struct tcp_ipv4	*tip = seg->ip;
-	struct cne_tcp_hdr *tcp;
-	uint8_t		  flags = 0;
-	pktmbuf_t	 *m, *p;
-	struct tcp_ipv4	 *t;
-	int32_t		  i;
+#ifdef ENABLE_TCP_REASSEMBLE
+    pktmbuf_t *mbuf       = seg->mbuf;
+    struct pcb_entry *pcb = seg->pcb;
+    struct tcb_entry *tcb = pcb->tcb;
+    struct tcp_ipv4 *tip  = seg->ip;
+    struct cne_tcp_hdr *tcp;
+    uint8_t flags = 0;
+    pktmbuf_t *m, *p;
+    struct tcp_ipv4 *t;
+    int32_t i;
 
-	if (mbuf == NULL)
-		goto handoff;
+    if (mbuf == NULL)
+        goto handoff;
 
-	tip->tcp.sent_seq = seg->seq;	/* Already in host order */
-	tip->ip.len  = seg->len;	/* Already in host order */
+    tip->tcp.sent_seq = seg->seq; /* Already in host order */
+    tip->ip.len       = seg->len; /* Already in host order */
 
-	/* Move the read pointer to the start of TCP data */
-	pktmbuf_adj_offset(mbuf, seg->offset);
+    /* Move the read pointer to the start of TCP data */
+    pktmbuf_adj_offset(mbuf, seg->offset);
 
-	/* Find the segment after this one. */
-	p = NULL;
-	STAILQ_FOREACH(m, &tcb->reassemble, stq_next) {
-		t = pktmbuf_mtod(m, struct tcp_ipv4 *);
+    /* Find the segment after this one. */
+    p = NULL;
+    STAILQ_FOREACH (m, &tcb->reassemble, stq_next) {
+        t = pktmbuf_mtod(m, struct tcp_ipv4 *);
 
-		if (seqGT(t->tcp.sent_seq, tip->tcp.sent_seq))
-			break;
-		p = m;
-	}
+        if (seqGT(t->tcp.sent_seq, tip->tcp.sent_seq))
+            break;
+        p = m;
+    }
 
-	/* verify we are not pointing to the head of the circular list */
-	if (!p) {
-		t = pktmbuf_mtod(p, struct tcb_ipv4 *);
+    /* verify we are not pointing to the head of the circular list */
+    if (!p) {
+        t = pktmbuf_mtod(p, struct tcb_ipv4 *);
 
-		i = t->tcp.sent_seq + t->ip.len - tip->tcp.sent_seq;
+        i = t->tcp.sent_seq + t->ip.len - tip->tcp.sent_seq;
 
-		/* when positive we have to trim the incoming segment at the front */
-		if (i > 0) {
-			/* Duplicate data, return after freeing packet */
-			if (i > tip->ip.len) {
-				pktmbuf_free(mbuf);
-				seg->mbuf = NULL;
-				return flags;
-			}
+        /* when positive we have to trim the incoming segment at the front */
+        if (i > 0) {
+            /* Duplicate data, return after freeing packet */
+            if (i > tip->ip.len) {
+                pktmbuf_free(mbuf);
+                seg->mbuf = NULL;
+                return flags;
+            }
 
-			/* Remove data from the front of the segment */
-			pktmbuf_adj_offset(mbuf, i);
-			tip->ip.len  -= i;
-			tip->tcp.sent_seq += i;
-		}
-	}
+            /* Remove data from the front of the segment */
+            pktmbuf_adj_offset(mbuf, i);
+            tip->ip.len -= i;
+            tip->tcp.sent_seq += i;
+        }
+    }
 
-	while (m != STAILQ_FIRST(&tcb->reassemble)) {	/* not at head of list */
-		i = (tip->tcp.sent_seq + tip->ip.len) - t->tcp.sent_seq;
+    while (m != STAILQ_FIRST(&tcb->reassemble)) { /* not at head of list */
+        i = (tip->tcp.sent_seq + tip->ip.len) - t->tcp.sent_seq;
 
-		/* When i less then or equal to zero, segment is after this one. */
-		if (i <= 0)
-			break;
+        /* When i less then or equal to zero, segment is after this one. */
+        if (i <= 0)
+            break;
 
-		/* When i is positive and less then current segment length, must trim */
-		if (i < t->ip.len) {
-			t->tcp.sent_seq += i;
-			t->ip.len	-= i;
+        /* When i is positive and less then current segment length, must trim */
+        if (i < t->ip.len) {
+            t->tcp.sent_seq += i;
+            t->ip.len -= i;
 
-			pktmbuf_append(m, i);
+            pktmbuf_append(m, i);
 
-			/* segment fits in the list and no more trimming is required */
-			break;
-		}
+            /* segment fits in the list and no more trimming is required */
+            break;
+        }
 
-		/* new segment is larger then current segment, which must be freed */
-		t = (tcpip_t *)clist_next(t);
+        /* new segment is larger then current segment, which must be freed */
+        t = (tcpip_t *)clist_next(t);
 
-		p = reass_pkt((tcpip_t *)t->ip.node.p_back);
-		clist_remove(t->ip.node.p_back);
-		pktmbuf_free(m);
-	}
+        p = reass_pkt((tcpip_t *)t->ip.node.p_back);
+        clist_remove(t->ip.node.p_back);
+        pktmbuf_free(m);
+    }
 
-	clist_insert(&tip->ip.node, t->ip.node.p_back);
+    clist_insert(&tip->ip.node, t->ip.node.p_back);
 
 handoff:
-	if (tcb->state < TCPS_SYN_RCVD)
-		return flags;
+    if (tcb->state < TCPS_SYN_RCVD)
+        return flags;
 
-	tip = (tcpip_t *)clist_next(hd);
+    tip = (tcpip_t *)clist_next(hd);
 
-	if (clist_empty(hd) || (tip->tcp.seq != tcb->rcv_nxt))
-		return flags;
+    if (clist_empty(hd) || (tip->tcp.seq != tcb->rcv_nxt))
+        return flags;
 
-	if ((tcb->state == TCPS_SYN_RCVD) && tip->ip.len)
-		return flags;
+    if ((tcb->state == TCPS_SYN_RCVD) && tip->ip.len)
+        return flags;
 
-	do {
-		flags = tip->tcp.flags & TCP_FIN;
+    do {
+        flags = tip->tcp.flags & TCP_FIN;
 
-		clist_remove(tip);
+        clist_remove(tip);
 
-		p = reass_pkt(tip);
+        p = reass_pkt(tip);
 
-		tip = (tcpip_t *)clist_next(tip);
+        tip = (tcpip_t *)clist_next(tip);
 
-		/* Update rcv_nxt for the total amount of data sent to the user */
-		tcb->rcv_nxt += pcb->data_rcv(pcb, p);
-	} while ((tip != hd) && (tip->tcp.seq == tcb->rcv_nxt));
+        /* Update rcv_nxt for the total amount of data sent to the user */
+        tcb->rcv_nxt += pcb->data_rcv(pcb, p);
+    } while ((tip != hd) && (tip->tcp.seq == tcb->rcv_nxt));
 
-	return flags;
+    return flags;
 #else
     CNE_SET_USED(seg);
     return seg->flags;

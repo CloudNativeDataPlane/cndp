@@ -13,16 +13,16 @@
 #include <net/if.h>
 #include <cne_atomic.h>
 #include <pktdev.h>
-#include <cnet_inet.h>        // for inet_addr_mask_cmp, inet_ntop4
-#include <stddef.h>           // for NULL
-#include <stdint.h>           // for uint64_t, uint8_t, uint16_t, uint32_t, int32_t
+#include <cne_inet.h>        // for inet_addr_mask_cmp, inet_ntop4
+#include <stddef.h>          // for NULL
+#include <stdint.h>          // for uint64_t, uint8_t, uint16_t, uint32_t, int32_t
 
 #include "cne_common.h"        // for __cne_cache_aligned
 #include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_WARNING
 #include "cne_lport.h"         // for lport_stats
 #include "cne_vec.h"           // for vec_ptr_at_index, vec_pool_free
 #include "cnet_const.h"        // for iofunc_t
-#include "cnet_inet.h"         // for _in_addr, _in6_addr
+#include "cne_inet.h"          // for _in_addr, _in6_addr
 #include "cnet_stk.h"          // for stk_entry, per_thread_stk, this_stk
 #include "mempool.h"           // for mempool_get, mempool_obj_iter, mempool_put
 #include "pktmbuf.h"           // for pktmbuf_t

@@ -11,7 +11,7 @@
  */
 
 #include <net/cne_ip.h>          // for cne_ipv4_hdr
-#include <cnet_inet.h>           // for _in_addr
+#include <cne_inet.h>            // for _in_addr
 #include <cnet_protosw.h>        // for
 #include <endian.h>              // for htobe16
 #include <netinet/in.h>          // for IN_CLASSA, IN_CLASSB, IN_CLASSC, IN_CLASSD
@@ -107,19 +107,6 @@ struct ipv4_overlay {
     uint16_t len;  /**< Protocol length, overlays cksum */
     uint32_t src;  /**< Source address */
     uint32_t dst;  /**< Destination address */
-} __cne_packed;
-
-struct ipv4_5tuple {
-    struct in_addr ip_dst;
-    struct in_addr ip_src;
-    uint16_t port_dst;
-    uint16_t port_src;
-    uint8_t proto;
-} __cne_packed;
-
-struct l3_4route {
-    struct ipv4_5tuple key;
-    uint8_t ifid;
 } __cne_packed;
 
 /* Timestamp Option structure */

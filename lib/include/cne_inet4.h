@@ -2,8 +2,8 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-#ifndef __CNET_INET4_H
-#define __CNET_INET4_H
+#ifndef __CNE_INET4_H
+#define __CNE_INET4_H
 
 /**
  * @file
@@ -12,12 +12,14 @@
 
 #include <immintrin.h>
 #include <stdbool.h>
+#include <bsd/string.h>
+#include <net/ethernet.h>
 
-#include <cnet_inet.h>
-#include <cnet_ether.h>
+#include <cne_common.h>
+#include <cne_inet.h>
 
-#ifndef __CNET_INET_H
-#error "Do not include this file directly use cnet_inet.h instead."
+#ifndef __CNE_INET_H
+#error "Do not include this file directly use cne_inet.h instead."
 #endif
 
 #ifdef __cplusplus
@@ -49,40 +51,84 @@ inet_addr_swap(uint32_t *t, uint32_t *f)
     *f = d;
 }
 
-#ifndef _NTOP4_
-#define _NTOP4_
-static __inline__ char *
-inet_ntop4(struct in_addr *ip_addr, struct in_addr *mask)
+/* mask_size(uint32_t mask) - return the number of bits in mask */
+static __inline__ int
+__mask_size(uint32_t mask)
 {
-    static char v4buf[128];
-    char lbuf[64];
-
-    inet_ntop(AF_INET, &ip_addr->s_addr, lbuf, sizeof(lbuf));
-    if (mask && mask->s_addr && (mask->s_addr != 0xFFFFFFFF)) {
-        int bits = (32 - __builtin_ctzl(mask->s_addr));
-
-        snprintf(v4buf, sizeof(v4buf), "%s/%d", lbuf, bits);
-    } else
-        strcpy(v4buf, lbuf);
-
-    return v4buf;
+    if (mask == 0)
+        return 0;
+    else if (mask == 0xFF000000)
+        return 8;
+    else if (mask == 0xFFFF0000)
+        return 16;
+    else if (mask == 0xFFFFFF00)
+        return 24;
+    else if (mask == 0xFFFFFFFF)
+        return 32;
+    else {
+        int i;
+        for (i = 0; i < 32; i++)
+            if ((mask & (1 << (31 - i))) == 0)
+                break;
+        return i;
+    }
 }
-#endif
 
-#ifndef _MTOA_
-#define _MTOA_
+/* size_to_mask( int len ) - return the mask for the mask size */
+static __inline__ uint32_t
+__size_to_mask(int len)
+{
+    uint32_t mask = 0;
+
+    if (len == 0)
+        mask = 0x00000000;
+    else if (len == 8)
+        mask = 0xFF000000;
+    else if (len == 16)
+        mask = 0xFFFF0000;
+    else if (len == 24)
+        mask = 0xFFFFFF00;
+    else if (len == 32)
+        mask = 0xFFFFFFFF;
+    else {
+        int i;
+
+        for (i = 0; i < len; i++)
+            mask |= (1 << (31 - i));
+    }
+    return mask;
+}
+
+/* char * inet_ntop4(char * buff, int len, unsigned long ip_addr, unsigned long mask) - Convert
+ * IPv4 address to ascii */
 static inline char *
-inet_mtoa(struct ether_addr *eaddr)
+inet_ntop4(char *buff, int len, struct in_addr *ip_addr, struct in_addr *mask)
 {
-    static char buff[64];
+    char *orig              = buff;
+    char b[IP4_ADDR_STRLEN] = {0};
 
-    snprintf(buff, sizeof(buff), "%02x:%02x:%02x:%02x:%02x:%02x", eaddr->ether_addr_octet[0],
-             eaddr->ether_addr_octet[1], eaddr->ether_addr_octet[2], eaddr->ether_addr_octet[3],
-             eaddr->ether_addr_octet[4], eaddr->ether_addr_octet[5]);
+    if (!buff || len < IP4_ADDR_STRLEN)
+        return NULL;
 
-    return buff;
+    memset(buff, 0, len);
+
+    if (inet_ntop(AF_INET, ip_addr, b, sizeof(b)) == NULL)
+        return NULL;
+
+    if (mask && mask->s_addr != 0xFFFFFFFF) {
+        char lbuf[64] = {0};
+        int n;
+
+        snprintf(lbuf, sizeof(lbuf), "/%u", __mask_size(mask->s_addr));
+        n = strlcpy(buff, b, len);
+        buff += n;
+        len -= n;
+        strlcat(buff, lbuf, len);
+    } else
+        strlcpy(buff, b, len);
+
+    return orig;
 }
-#endif
 
 /* convert a MAC address from network byte order to host 64bit number */
 static inline uint64_t
@@ -138,26 +184,17 @@ in_caddr_copy(struct in_caddr *t, struct in_caddr *f)
     *t = *f;
 }
 
-#if 0
-static inline bool
-vec_equal(__m256i a, __m256i b) {
-    __m256i pcmp = _mm256_cmpeq_epi32(a, b);  // epi8 is fine too
-    unsigned bitmask = _mm256_movemask_epi8(pcmp);
-    return (bitmask == 0xffffffffU);
-}
-#endif
-
 /* Compare the two in_caddr structures to determine if equal */
 static inline int
 in_caddr_compare(struct in_caddr *p1, struct in_caddr *p2)
 {
-#if 0
-	__m256i v1, v2;
+#ifdef USE_AVX_INSTRUCTIONS
+    __m256i v1, v2;
 
-	v1 = _mm256_loadu_si256((__m256i const *)p1);
-	v2 = _mm256_loadu_si256((__m256i const *)p2);
+    v1 = _mm256_loadu_si256((__m256i const *)p1);
+    v2 = _mm256_loadu_si256((__m256i const *)p2);
 
-	return vec_equal(v1, v2);
+    return vec_equal(v1, v2);
 #else
     return (p1->cin_len == p2->cin_len) && (p1->cin_family == p2->cin_family) &&
            (p1->cin_addr.s_addr == p2->cin_addr.s_addr) && (p1->cin_port == p2->cin_port);
@@ -207,12 +244,8 @@ in_caddr_create(struct in_caddr *sa, struct in_addr *pa, int type, int len, int 
 
     in_caddr_zero(sa);
 
-    CNE_DEBUG("addr %08x, len %d ", ip, len);
-    if (len == 0) {
-        len = __numbytes(ip);
-        CNE_DEBUG(" ctz %d, bytes %d\n", __builtin_ctz(ip), len);
-    }
-    CNE_DEBUG("\n");
+    if (len == 0)
+        len = __cne_numbytes(ip);
 
     sa->cin_len         = len;
     sa->cin_family      = type;
@@ -243,4 +276,4 @@ in_caddr_update(struct in_caddr *sa, int type, int len, int port)
 }
 #endif
 
-#endif /* __CNET_INET4_H */
+#endif /* __CNE_INET4_H */

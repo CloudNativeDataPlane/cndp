@@ -6,20 +6,20 @@
 
 #include "cli-functions.h"
 
-#include <stdio.h>               // for NULL, snprintf
-#include <string.h>              // for strchr
-#include <cne_ether.h>           // for cne_ether_aton
-#include <cne_common.h>          // for __cne_unused, CNE_MIN
-#include <cli.h>                 // for c_cmd, c_alias, cli_add_bin_path, cli_add_...
-#include <cli_map.h>             // for cli_mapping, cli_map, cli_map_list_search
-#include <net/ethernet.h>        // for ETHER_CRC_LEN
-#include <stdint.h>              // for uint16_t, uint32_t
-#include <stdlib.h>              // for atoi, strtoul
+#include <stdio.h>                // for NULL, snprintf
+#include <string.h>               // for strchr
+#include <net/cne_ether.h>        // for cne_ether_aton
+#include <cne_common.h>           // for __cne_unused, CNE_MIN
+#include <cli.h>                  // for c_cmd, c_alias, cli_add_bin_path, cli_add_...
+#include <cli_map.h>              // for cli_mapping, cli_map, cli_map_list_search
+#include <net/ethernet.h>         // for ETHER_CRC_LEN
+#include <stdint.h>               // for uint16_t, uint32_t
+#include <stdlib.h>               // for atoi, strtoul
 
-#include "txgen.h"           // for foreach_port, estate, txgen, txgen_t, MIN_...
-#include "cmds.h"            // for txgen_clear_display, txgen_update_display
-#include "display.h"         // for display_set_color, txgen_set_theme_item
-#include "_inet.h"           // for _atoip, pg_ipaddr, CNE_IPADDR_V4, IPv4_VER...
+#include "txgen.h"          // for foreach_port, estate, txgen, txgen_t, MIN_...
+#include "cmds.h"           // for txgen_clear_display, txgen_update_display
+#include "display.h"        // for display_set_color, txgen_set_theme_item
+#include "cne_inet.h"
 #include "_pcap.h"           // for pcap_info_t, _pcap_info
 #include "cli_help.h"        // for cli_cmd_error, cli_help_add, CLI_HELP_PAUSE
 #include "cne_log.h"
@@ -123,8 +123,8 @@ set_cmd(int argc, char **argv)
     char *what, *p;
     int value, n;
     struct cli_map *m;
-    struct pg_ipaddr ip;
-    int ip_ver;
+    struct in_addr ip;
+    int prefixlen;
 
     m = cli_mapping(set_map, argc, argv);
     if (!m)
@@ -184,31 +184,26 @@ set_cmd(int argc, char **argv)
             break;
         case 30:
             p = strchr(argv[4], '/');
-            if (!p) {
-                cne_printf("src IP address should contain subnet value, default /32 for IPv4, /128 for IPv6\n");
-            }
-            ip_ver = _atoip(argv[4],
-                CNE_IPADDR_V4 | CNE_IPADDR_NETWORK,
-                &ip, sizeof(ip));
-            if(ip_ver > 0) {
-                foreach_port(portlist,
-                    single_set_ipaddr(info, 's', &ip, IPv4_VERSION));
-            } else
-                cne_printf("ERROR couldn't set ipv4IP address\n");
+            if (!p)
+                CNE_ERR_RET("src IP address should contain subnet value, default /32 for IPv4, /128 for IPv6\n");
+            *p++ = '\0';
+            prefixlen = atoi(p);
+            if (!inet_aton(argv[4], &ip))
+                CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+            foreach_port(portlist,
+                single_set_ipaddr(info, 's', &ip, prefixlen));
             break;
         case 31:
             /* Remove the /XX mask value if supplied */
             p = strchr(argv[4], '/');
             if (p) {
-                cne_printf("Subnet mask not required, removing subnet mask value\n");
+                CNE_WARN("Subnet mask not required, removing subnet mask value\n");
                 *p = '\0';
             }
-            ip_ver = _atoip(argv[4], CNE_IPADDR_V4, &ip, sizeof(ip));
-            if(ip_ver > 0) {
-                foreach_port(portlist,
-                    single_set_ipaddr(info, 'd', &ip, IPv4_VERSION));
-            } else
-                cne_printf("ERROR couldn't set IP address\n");
+            if (!inet_aton(argv[4], &ip))
+                CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+            foreach_port(portlist,
+                single_set_ipaddr(info, 'd', &ip, 0));
             break;
         default:
             return cli_cmd_error("Command invalid", "Set", argc, argv);

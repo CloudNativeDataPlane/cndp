@@ -5,7 +5,7 @@
 #include <pthread.h>           // for pthread_mutex_init, pthread_cond_init, pth...
 #include <cnet.h>              // for cnet_add_instance
 #include <cnet_stk.h>          // for stk_entry, per_thread_stk, this_stk, cnet_...
-#include <cnet_inet.h>         // for in_caddr, in_caddr_copy, inet_caddr_print
+#include <cne_inet.h>          // for in_caddr, in_caddr_copy
 #include <cne_vec.h>           // for vec_len, vec_pool_free, vec_add_ptr
 #include <cnet_pcb.h>          // for pcb_entry, pcb_key, cnet_pcb_delete, pcb_hd
 #include <cnet_udp.h>          // for udp_entry

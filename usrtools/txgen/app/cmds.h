@@ -8,7 +8,7 @@
 
 #include <inttypes.h>
 #include <cne_version.h>
-#include <cne_net.h>
+#include <net/cne_net.h>
 #include <cne_strings.h>
 #include <portlist.h>
 #include <stdint.h>        // for uint32_t, uint16_t, uint8_t
@@ -52,10 +52,10 @@ void txgen_quit(void);
 void txgen_set_port_number(uint16_t port_number);
 void txgen_port_defaults(uint32_t pid);
 
-struct pg_ipaddr;
+struct ip4addr;
 
 /* Single */
-void single_set_ipaddr(port_info_t *info, char type, struct pg_ipaddr *ip, int ip_ver);
+void single_set_ipaddr(port_info_t *info, char type, struct in_addr *ip, int prefixlen);
 void single_set_proto(port_info_t *info, char *type);
 void single_set_mac(port_info_t *info, const char *which, struct ether_addr *mac);
 void single_set_dst_mac(port_info_t *info, struct ether_addr *mac);

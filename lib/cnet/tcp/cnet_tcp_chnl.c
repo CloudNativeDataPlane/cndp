@@ -12,7 +12,7 @@
 #include <netinet/tcp.h>        // for tcp_info, SOL_TCP, TCP_MAXSEG
 #include <cnet.h>               // for cnet_add_instance
 #include <cnet_stk.h>           // for stk_entry, per_thread_stk, this_stk, prot...
-#include <cnet_inet.h>          // for CIN_PORT, in_caddr, CIN_LEN
+#include <cne_inet.h>           // for CIN_PORT, in_caddr, CIN_LEN
 #include <cnet_chnl.h>          // for chnl, chnl_buf, chnl_cb_wait, _ISCONNECTED
 #include <cnet_pcb.h>           // for pcb_entry, pcb_key, cnet_pcb_alloc, pcb_hd
 #include <cnet_tcp.h>           // for tcb_entry, tcp_entry, cnet_tcb_new, tcp_a...
@@ -203,83 +203,6 @@ tcp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 
     return nb_mbufs;
 }
-
-#if 0
-static inline int
-_mbuf_to_mbuf(pktmbuf_t *dst, pktmbuf_t *src, uint32_t max_len)
-{
-    uint16_t len;
-
-    len = CNE_MIN(pktmbuf_data_len(src), pktmbuf_tailroom(dst));
-    len = CNE_MIN(len, max_len);
-
-    memcpy(pktmbuf_mtod_offset(dst, char *, pktmbuf_data_len(dst)), pktmbuf_mtod(src, char *), len);
-
-    pktmbuf_append(dst, len);
-    pktmbuf_adj_offset(src, len);
-
-    return len;
-}
-
-/**
- * This routine is the protocol-specific recv() back-end function for
- * TCP channels.
- */
-static int
-tcp_chnl_recv(struct chnl *ch, pktmbuf_t **cvec, int nb_mbufs)
-{
-    size_t len;
-    ssize_t ret = 0;
-
-    if (pthread_mutex_lock(&cb->mutex))
-        CNE_ERR_RET("Unable to acquire mutex\n");
-
-    /*
-     * If chnl is disconnected or shutdown, return 0
-     * (end of file).
-     * This is not an error condition, and we don't set
-     * errno, even if the chnl is shut down as the result
-     * of a previously-reported error condition.
-     */
-    if (chnl_cant_rcv_more(ch))
-        CNE_ERR_GOTO(leave, "Chnl can not receive more data\n");
-
-    if (vec_len(ch->ch_rcv.cb_vec) == 0 ||
-        ((ch->ch_rcv.cb_cc < ch->ch_rcv.cb_lowat) && !ch->ch_error)) {
-
-        if (ch->ch_state & _NBIO) {
-            __errno_set(EWOULDBLOCK);
-            goto exit_ok;
-        }
-
-        if (chnl_cb_wait(ch, &ch->ch_rcv) < 0)
-            CNE_ERR_GOTO(exit_ok, "chnl_cb_wait() failed\n");
-    }
-
-    len = chnl_copy_data(cvec, ch->ch_rcv.cb_vec, nb_mbufs);
-    ret += len;
-
-exit_ok:
-    if (pthread_mutex_unlock(&ch->ch_rcv.mutex))
-        CNE_ERR("Unable to release mutex\n");
-
-    if (ch->ch_rcv.cb_cc <= ch->ch_rcv.cb_lowat) {
-        ch_rwakeup(ch);
-        if (ch->ch_ch)
-            ch_wwakeup(ch->ch_ch);
-    }
-
-    if (ch->ch_error) {
-        __errno_set(ch->ch_error);
-        ch->ch_error = 0;
-    }
-    return ret;
-leave:
-    if (pthread_mutex_unlock(&ch->ch_rcv.mutex))
-        CNE_ERR("Unable to release mutex\n");
-    return -1;
-}
-#endif
 
 /**
  * This routine is the protocol-specific listen() back-end function for

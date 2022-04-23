@@ -7,7 +7,7 @@
 #ifndef _TXGEN_UDP_H_
 #define _TXGEN_UDP_H_
 
-#include <_inet.h>
+#include <cne_inet.h>
 
 #include "seq.h"        // for pkt_seq_t
 

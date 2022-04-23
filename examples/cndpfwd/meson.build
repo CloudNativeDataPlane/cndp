@@ -10,7 +10,6 @@ deps += [
     mempool,
     metrics,
     mmap,
-    net,
     pktdev,
     pktmbuf,
     pmd_af_xdp,

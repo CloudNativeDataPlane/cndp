@@ -97,15 +97,6 @@ struct cne_vec;
 
 typedef uint32_t seq_t; /* TCP Sequence type */
 
-enum {
-    URG_FLAG = 0x20,
-    ACK_FLAG = 0x10,
-    PSH_FLAG = 0x08,
-    RST_FLAG = 0x04,
-    SYN_FLAG = 0x02,
-    FIN_FLAG = 0x01
-};
-
 /* Timestamp modulo math test macros */
 static inline int
 tstampLT(uint32_t a, uint32_t b)

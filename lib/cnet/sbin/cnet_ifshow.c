@@ -2,15 +2,15 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-#include <stdlib.h>            // for NULL, strtoul
-#include <string.h>            // for strcmp, strrchr
-#include <sys/socket.h>        // for AF_INET
-#include <arpa/inet.h>         // for inet_pton
-#include <cne_ether.h>         // for ether_format_addr
-#include <cnet.h>              // for cnet_add_instance
+#include <stdlib.h>               // for NULL, strtoul
+#include <string.h>               // for strcmp, strrchr
+#include <sys/socket.h>           // for AF_INET
+#include <arpa/inet.h>            // for inet_pton
+#include <net/cne_ether.h>        // for ether_format_addr
+#include <cnet.h>                 // for cnet_add_instance
 #include <cnet_reg.h>
 #include <cnet_stk.h>          // for stk_entry
-#include <cnet_inet.h>         // for _in_addr, inet_ntop4
+#include <cne_inet.h>          // for _in_addr, inet_ntop4
 #include <cnet_drv.h>          // for drv_entry
 #include <cnet_netif.h>        // for net_addr, netif, net_addr::(anonymous), _IF...
 #include <cnet_ifshow.h>
@@ -35,6 +35,9 @@ netif_show(struct netif *netif, char *ifname)
     struct lport_stats *ps, stats = {0};
     int32_t j;
     struct in_addr addr;
+    char ip1[IP4_ADDR_STRLEN] = {0};
+    char ip2[IP4_ADDR_STRLEN] = {0};
+    char ip3[IP4_ADDR_STRLEN] = {0};
 
     if (netif->drv == NULL)
         return;
@@ -56,14 +59,17 @@ netif_show(struct netif *netif, char *ifname)
             continue;
 
         addr.s_addr = be32toh(netif->ip4_addrs[j].ip.s_addr);
-        cne_printf("%9s[magenta]inet.%d[]: [orange]%-15s[]", "", j, inet_ntop4(&addr, NULL));
+        cne_printf("%9s[magenta]inet.%d[]: [orange]%-15s[]", "", j,
+                   inet_ntop4(ip1, sizeof(ip1), &addr, NULL));
 
         addr.s_addr = be32toh(netif->ip4_addrs[j].netmask.s_addr);
-        cne_printf(" [magenta]netmask[]: [goldenrod]%-15s[]", inet_ntop4(&addr, NULL));
+        cne_printf(" [magenta]netmask[]: [goldenrod]%-15s[]",
+                   inet_ntop4(ip2, sizeof(ip2), &addr, NULL));
 
         if (netif->ip4_addrs[j].broadcast.s_addr) {
             addr.s_addr = be32toh(netif->ip4_addrs[j].broadcast.s_addr);
-            cne_printf(" [magenta]broadcast[]: [green]%-15s[]\n", inet_ntop4(&addr, NULL));
+            cne_printf(" [magenta]broadcast[]: [green]%-15s[]\n",
+                       inet_ntop4(ip3, sizeof(ip3), &addr, NULL));
         } else
             cne_printf("\n");
     }
@@ -89,9 +95,10 @@ netif_show(struct netif *netif, char *ifname)
 int
 cnet_ifshow(char *ifname)
 {
+    struct cnet *cnet = this_cnet;
     struct netif *netif;
 
-    vec_foreach_ptr (netif, this_cnet->netifs)
+    vec_foreach_ptr (netif, cnet->netifs)
         netif_show(netif, ifname);
 
     return 0;
