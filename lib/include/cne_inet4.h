@@ -7,7 +7,7 @@
 
 /**
  * @file
- * CNET INET routines.
+ * CNE INET routines.
  */
 
 #include <immintrin.h>
@@ -79,6 +79,9 @@ static __inline__ uint32_t
 __size_to_mask(int len)
 {
     uint32_t mask = 0;
+
+    if (len > 32)
+        CNE_ERR_RET("Length is > 32\n");
 
     if (len == 0)
         mask = 0x00000000;
@@ -245,7 +248,7 @@ in_caddr_create(struct in_caddr *sa, struct in_addr *pa, int type, int len, int 
     in_caddr_zero(sa);
 
     if (len == 0)
-        len = __cne_numbytes(ip);
+        len = cne_numbytes(ip);
 
     sa->cin_len         = len;
     sa->cin_family      = type;

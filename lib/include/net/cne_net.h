@@ -9,6 +9,13 @@
 extern "C" {
 #endif
 
+/**
+ * @file cne_net.h
+ *
+ * Network checksum functions to prepare pseudo header checksum for TSO and non-TSO
+ * TCP/UDP data.
+ */
+
 #include <net/cne_ip.h>
 #include <net/cne_udp.h>
 #include <net/cne_tcp.h>
@@ -34,7 +41,7 @@ extern "C" {
  *   0 if checksum is initialized properly
  */
 static inline int
-cne_net_intel_cksum_flags_prepare(pktmbuf_t *m, uint64_t ol_flags)
+cne_net_cksum_flags_prepare(pktmbuf_t *m, uint64_t ol_flags)
 {
     /* Initialise ipv4_hdr to avoid false positive compiler warnings. */
     struct cne_ipv4_hdr *ipv4_hdr = NULL;
@@ -115,9 +122,9 @@ cne_net_intel_cksum_flags_prepare(pktmbuf_t *m, uint64_t ol_flags)
  *   0 if checksum is initialized properly
  */
 static inline int
-cne_net_intel_cksum_prepare(pktmbuf_t *m)
+cne_net_cksum_prepare(pktmbuf_t *m)
 {
-    return cne_net_intel_cksum_flags_prepare(m, m->ol_flags);
+    return cne_net_cksum_flags_prepare(m, m->ol_flags);
 }
 
 #ifdef __cplusplus

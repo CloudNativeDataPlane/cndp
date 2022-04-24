@@ -7,7 +7,7 @@
 
 /**
  * @file
- * CNET INET information.
+ * CNE INET information.
  */
 
 #include <stdio.h>
@@ -49,26 +49,26 @@ struct in_caddr {
 #define CIN_CADDR(sa)  (sa)->cin_addr.s_addr
 
 /* IP overlay header for the pseudo header */
-typedef struct ipOverlay_s {
+typedef struct ip_overlay_s {
     uint32_t node[2];
     uint8_t pad0;  /* overlays ttl */
     uint8_t proto; /* Protocol type */
     uint16_t len;  /* Protocol length, overlays cksum */
     uint32_t src;  /* Source address */
     uint32_t dst;  /* Destination address */
-} __attribute__((__packed__)) ipOverlay_t;
+} __attribute__((__packed__)) ip_overlay_t;
 
 typedef unsigned int seq_t; /* TCP Sequence type */
 
 /* The UDP/IP Pseudo header */
 typedef struct udpip_s {
-    ipOverlay_t ip;         /* IPv4 overlay header */
+    ip_overlay_t ip;        /* IPv4 overlay header */
     struct cne_udp_hdr udp; /* UDP header for protocol */
 } __attribute__((__packed__)) udpip_t;
 
 /* The TCP/IPv4 Pseudo header */
 typedef struct tcpip_s {
-    ipOverlay_t ip;         /* IPv4 overlay header */
+    ip_overlay_t ip;        /* IPv4 overlay header */
     struct cne_tcp_hdr tcp; /* TCP header for protocol */
 } __attribute__((__packed__)) tcpip_t;
 

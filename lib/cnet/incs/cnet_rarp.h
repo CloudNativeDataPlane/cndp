@@ -8,7 +8,7 @@
 /**
  * @file
  *
- * ARP-related defines
+ * RARP-related defines
  */
 
 // IWYU pragma: no_forward_declare cne_mempool

@@ -98,8 +98,10 @@ cnet_arp_add(int netif_idx, struct in_addr *addr, struct ether_addr *mac, int pe
         idx = ret;
         if (cne_fib_add(fi->fib, addr->s_addr, 32, idx)) {
             fib_info_free(fi, idx);
-            CNE_NULL_RET("ARP add failed for %s\n",
-                         inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask));
+            CNE_ERR("ARP add failed for %s\n",
+                    inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask));
+            cnet_arp_free(entry);
+            return NULL;
         }
     }
     return entry;
