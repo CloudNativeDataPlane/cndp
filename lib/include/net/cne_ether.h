@@ -127,7 +127,7 @@ struct cne_vlan_hdr {
  *  True  (1) if the given two ethernet address are the same;
  *  False (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_same(const struct ether_addr *ea1, const struct ether_addr *ea2)
 {
     const uint16_t *w1 = (const uint16_t *)ea1;
@@ -146,7 +146,7 @@ ether_addr_is_same(const struct ether_addr *ea1, const struct ether_addr *ea2)
  *   True  (1) if the given ethernet address is filled with zeros;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_zero(const struct ether_addr *ea)
 {
     const uint16_t *w = (const uint16_t *)ea;
@@ -164,7 +164,7 @@ ether_addr_is_zero(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is a unicast address;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_unicast(const struct ether_addr *ea)
 {
     return (ea->ether_addr_octet[0] & ETHER_GROUP_ADDR) == 0;
@@ -180,7 +180,7 @@ ether_addr_is_unicast(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is a multicast address;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_multicast(const struct ether_addr *ea)
 {
     return ea->ether_addr_octet[0] & ETHER_GROUP_ADDR;
@@ -196,7 +196,7 @@ ether_addr_is_multicast(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is a broadcast address;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_broadcast(const struct ether_addr *ea)
 {
     const uint16_t *ea_words = (const uint16_t *)ea;
@@ -214,7 +214,7 @@ ether_addr_is_broadcast(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is a universally assigned address;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_universal(const struct ether_addr *ea)
 {
     return (ea->ether_addr_octet[0] & ETHER_LOCAL_ADMIN_ADDR) == 0;
@@ -230,7 +230,7 @@ ether_addr_is_universal(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is a locally assigned address;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_local_admin(const struct ether_addr *ea)
 {
     return (ea->ether_addr_octet[0] & ETHER_LOCAL_ADMIN_ADDR) != 0;
@@ -247,7 +247,7 @@ ether_addr_is_local_admin(const struct ether_addr *ea)
  *   True  (1) if the given ethernet address is valid;
  *   false (0) otherwise.
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_addr_is_valid_assigned(const struct ether_addr *ea)
 {
     return ether_addr_is_unicast(ea) && (!ether_addr_is_zero(ea));
@@ -259,7 +259,7 @@ ether_addr_is_valid_assigned(const struct ether_addr *ea)
  * @param addr
  *   A pointer to Ethernet address.
  */
-static inline void
+CNDP_API __cne_always_inline void
 ether_random_addr(uint8_t *addr)
 {
     uint64_t rnd = rand();
@@ -278,7 +278,7 @@ ether_random_addr(uint8_t *addr)
  * @param ea_to
  *   A pointer to a ether_addr structure where to copy the Ethernet address.
  */
-static inline void
+CNDP_API __cne_always_inline void
 ether_addr_copy(const struct ether_addr *ea_from, struct ether_addr *ea_to)
 {
 #ifdef __INTEL_COMPILER
@@ -296,8 +296,8 @@ ether_addr_copy(const struct ether_addr *ea_from, struct ether_addr *ea_to)
 #endif
 }
 
-/* eth_swap(uint16_t * to, uint16_t * from) - Swap two 16 bit values */
-static inline void
+/* Swap two 16 bit values */
+CNDP_API __cne_always_inline void
 ether_swap(uint16_t *t, uint16_t *f)
 {
     uint16_t v;
@@ -307,9 +307,8 @@ ether_swap(uint16_t *t, uint16_t *f)
     *f = v;
 }
 
-/* eth_addr_swap( struct ether_addr * to, struct ether_addr * from ) - Swap two
-   ethernet addresses */
-static inline void
+/* Swap two ethernet addresses */
+CNDP_API __cne_always_inline void
 ether_addr_swap(struct ether_addr *t, struct ether_addr *f)
 {
     uint16_t *d = (uint16_t *)t;
@@ -331,7 +330,7 @@ ether_addr_swap(struct ether_addr *t, struct ether_addr *f)
  * @param eth_addr
  *   A pointer to a ether_addr structure.
  */
-static inline void
+CNDP_API __cne_always_inline void
 ether_format_addr(char *buf, uint16_t size, const struct ether_addr *eth_addr)
 {
     // clang-format off
@@ -342,7 +341,7 @@ ether_format_addr(char *buf, uint16_t size, const struct ether_addr *eth_addr)
     // clang-format on
 }
 
-static inline int8_t
+CNDP_API __cne_always_inline int8_t
 __get_xdigit(char ch)
 {
     if (ch >= '0' && ch <= '9')
@@ -355,7 +354,7 @@ __get_xdigit(char ch)
 }
 
 /* Convert 00:11:22:33:44:55 to ethernet address */
-static inline bool
+CNDP_API __cne_always_inline bool
 __get_ether_addr6(const char *s0, struct ether_addr *ea)
 {
     const char *s = s0;
@@ -383,7 +382,7 @@ __get_ether_addr6(const char *s0, struct ether_addr *ea)
 }
 
 /* Convert 0011:2233:4455 to ethernet address */
-static inline bool
+CNDP_API __cne_always_inline bool
 __get_ether_addr3(const char *s, struct ether_addr *ea)
 {
     int i, j;
@@ -423,7 +422,7 @@ __get_ether_addr3(const char *s, struct ether_addr *ea)
  *   0 if successful
  *   -1 and sets errno if invalid string
  */
-static inline int
+CNDP_API __cne_always_inline int
 ether_unformat_addr(const char *s, struct ether_addr *ea)
 {
     if (__get_ether_addr6(s, ea))
@@ -442,22 +441,19 @@ ether_unformat_addr(const char *s, struct ether_addr *ea)
  *   String containing the MAC address in two forms
  *      XX:XX:XX:XX:XX:XX or XXXX:XXXX:XXX
  * @param _e
- *   pointer to a struct ether_addr to place the return value. If the value
- *   is null then use a static location instead.
+ *   pointer to a struct ether_addr to place the return value.
  * @return
  *   Pointer to the struct ether_addr structure;
  */
-static inline struct ether_addr *
-cne_ether_aton(const char *a, void *_e)
+CNDP_API __cne_always_inline struct ether_addr *
+cne_ether_aton(const char *a, struct ether_addr *e)
 {
     int i;
     char *end;
     unsigned long o[ETH_ALEN];
-    struct ether_addr *e = _e;
-    static struct ether_addr ether_addr;
 
     if (!e)
-        e = &ether_addr;
+        return NULL;
 
     i = 0;
     do {
@@ -494,11 +490,8 @@ cne_ether_aton(const char *a, void *_e)
     return e;
 }
 
-#ifndef _MTOA_
-#define _MTOA_
-/* char * inet_mtoa(char * buff, int len, struct ether_addr * eaddr) - Convert MAC address to
- * ascii */
-static inline char *
+/* Convert MAC address to ascii */
+CNDP_API __cne_always_inline char *
 inet_mtoa(char *buff, int len, struct ether_addr *eaddr)
 {
     snprintf(buff, len, "%02x:%02x:%02x:%02x:%02x:%02x", eaddr->ether_addr_octet[0],
@@ -506,7 +499,6 @@ inet_mtoa(char *buff, int len, struct ether_addr *eaddr)
              eaddr->ether_addr_octet[4], eaddr->ether_addr_octet[5]);
     return buff;
 }
-#endif
 
 #ifdef __cplusplus
 }

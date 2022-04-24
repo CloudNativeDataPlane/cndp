@@ -8,5 +8,4 @@ headers += files(
     'cnet_meta.h',
     'cnet_node_names.h',
     'cnet_pkt.h',
-    'cnet_rarp.h',
     )

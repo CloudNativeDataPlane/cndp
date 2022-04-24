@@ -51,7 +51,7 @@ cnet_route4_insert(int netdev_idx, struct in_addr *dst, struct in_addr *netmask,
             CNE_WARN("FIB allocate failed for %s\n",
                      inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask));
 
-        depth = __cne_prefixbits(rt->netmask.s_addr);
+        depth = cne_prefixbits(rt->netmask.s_addr);
         if ((rc = cne_node_ip4_add_input(fi->fib, rt->nexthop.s_addr, depth, (uint32_t)idx))) {
             (void)fib_info_free(fi, idx);
             CNE_ERR_RET("Add %s Failed: %s\n",
@@ -79,7 +79,7 @@ cnet_route4_delete(struct in_addr *ipaddr)
         if (fib_info_get(fi, &nexthop, (void **)&rt, 1) < 0)
             CNE_ERR_RET("Unable to delete FIB entry pointer\n");
 
-        if (cne_fib_delete(fi->fib, rt->nexthop.s_addr, __cne_prefixbits(rt->netmask.s_addr)) < 0)
+        if (cne_fib_delete(fi->fib, rt->nexthop.s_addr, cne_prefixbits(rt->netmask.s_addr)) < 0)
             CNE_ERR_RET("Unable to delete FIB entry\n");
 
         if (fib_info_free(fi, (uint32_t)nexthop) != rt)

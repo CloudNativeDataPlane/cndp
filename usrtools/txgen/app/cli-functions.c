@@ -159,7 +159,9 @@ set_cmd(int argc, char **argv)
             break;
         case 22:
             {
-                struct ether_addr *addr = cne_ether_aton(argv[4], NULL);
+                struct ether_addr eaddr;
+                struct ether_addr *addr = cne_ether_aton(argv[4], &eaddr);
+
                 if (addr == NULL)
                     return cli_cmd_error("Ethernet address is invalid", "Set", argc, argv);
 
@@ -168,7 +170,9 @@ set_cmd(int argc, char **argv)
             }
         case 23:
             {
-                struct ether_addr *addr = cne_ether_aton(argv[4], NULL);
+                struct ether_addr eaddr;
+                struct ether_addr *addr = cne_ether_aton(argv[4], &eaddr);
+
                 if (addr == NULL)
                     return cli_cmd_error("Ethernet address is invalid", "Set", argc, argv);
 
@@ -187,7 +191,10 @@ set_cmd(int argc, char **argv)
             if (!p)
                 CNE_ERR_RET("src IP address should contain subnet value, default /32 for IPv4, /128 for IPv6\n");
             *p++ = '\0';
-            prefixlen = atoi(p);
+            errno = 0;
+            prefixlen = strtol(p, NULL, 10);
+            if (errno)
+                CNE_ERR_RET("IP address prefix length: %s\n", strerror(errno));
             if (!inet_aton(argv[4], &ip))
                 CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
             foreach_port(portlist,

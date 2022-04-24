@@ -718,10 +718,10 @@ struct cne_net_hdr_lens {
  * (retval & CNE_PTYPE_L2_MASK) != CNE_PTYPE_UNKNOWN.
  *
  * Supported packet types are:
- *   L2: Ether, Vlan, QinQ
+ *   L2: Ether, VLAN, QinQ
  *   L3: IPv4, IPv6
  *   L4: TCP, UDP, SCTP
- *   Tunnels: IPv4, IPv6, Gre, Nvgre
+ *   Tunnels: IPv4, IPv6, GRE, NVGRE
  *
  * @param m
  *   The packet mbuf to be parsed.
