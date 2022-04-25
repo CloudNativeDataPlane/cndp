@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2019-2022 Intel Corporation
 
-dirs = ['af_xdp', 'af_packet', 'null', 'ring', 'memif']
+dirs = [
+    'af_packet',
+    'af_xdp',
+    'memif',
+    'null',
+    'ring',
+    'tap',
+    ]
 
 foreach d:dirs
     deps = [build_cfg, include, osal, log]
