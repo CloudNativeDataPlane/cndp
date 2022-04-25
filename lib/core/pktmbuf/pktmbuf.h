@@ -1032,7 +1032,7 @@ pktmbuf_read(const pktmbuf_t *m, uint32_t off, uint32_t len, void *buf)
 /**
  * @internal used by pktmbuf_write() to copy data into an mbuf.
  */
-const void *__pktmbuf_write(void *buf, uint32_t len, pktmbuf_t *m, uint32_t off);
+const void *__pktmbuf_write(const void *buf, uint32_t len, pktmbuf_t *m, uint32_t off);
 
 /**
  * Write len data bytes into the mbuf at specified offset.
@@ -1052,7 +1052,7 @@ const void *__pktmbuf_write(void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
  *   The pointer to the data or in the user buffer. If mbuf is too small, NULL is returned.
  */
 static inline const void *
-pktmbuf_write(void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
+pktmbuf_write(const void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
 {
     if (likely((len + off) > pktmbuf_tailroom(m)))
         return NULL;
