@@ -381,7 +381,7 @@ __pktmbuf_read(const pktmbuf_t *m, uint32_t off, uint32_t len, void *buf)
  *   NULL on error or the starting address of the copied data in mbuf
  */
 const void *
-__pktmbuf_write(void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
+__pktmbuf_write(const void *buf, uint32_t len, pktmbuf_t *m, uint32_t off)
 {
     char *sptr, *lptr, *eptr;
 
