@@ -1,3 +1,3 @@
-module github.com/intel/cndp
+module github.com/CloudNativeDataPlane/cndp/cndpgo
 
 go 1.16
