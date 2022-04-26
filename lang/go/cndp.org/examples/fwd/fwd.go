@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation.
+ * Copyright (c) 2017-2022 Intel Corporation.
  */
 
 package main
@@ -11,18 +11,20 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+	"unsafe"
 
-	cndp "github.com/intel/cndp"
+	cndp "github.com/CloudNativeDataPlane/cndp/cndpgo"
 	flags "github.com/jessevdk/go-flags"
 )
 
 type Options struct {
 	Config     string   `short:"c" long:"config" description:"path to configuration file"`
-	Test       string   `short:"t" long:"test" description:"run tests - rx|tx|lb"`
+	Test       string   `short:"t" long:"test" description:"run tests - rx|tx|lb|chksum"`
 	LPortNames []string `short:"p" long:"lport names" description:"list of lport names comma-seperated"`
 }
 
@@ -103,6 +105,107 @@ func receivePackets(handle *cndp.System, lportName string, ctx context.Context, 
 			if size > 0 {
 				cndp.FreePacketBuffer(packets[:size])
 			}
+		}
+	}
+}
+
+func makeUint16Slice(start uintptr, length int) (data []uint16) {
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(&data))
+	slice.Data = start
+	slice.Len = length
+	slice.Cap = length
+	return
+}
+
+func getWords(ptr unsafe.Pointer, length, offset int) (data []uint16) {
+	uptr := uintptr(ptr) + uintptr(offset)
+	data = makeUint16Slice(uptr, length/2)
+
+	if length&1 != 0 {
+		v := uint16(uintptr(ptr)+uintptr(length-1)) << 8
+		data = append(data, v)
+	}
+	return
+}
+
+func verifyIPv4(l2 unsafe.Pointer) bool {
+	if l2 == nil {
+		return false
+	}
+	ethWords := getWords(l2, cndp.EtherLen, 0)
+	if !(len(ethWords) < cndp.EtherLen/2) {
+		if cndp.SwapBytesUint16(ethWords[6]) == cndp.ETHER_TYPE_IPV4 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func reduceChecksum(sum uint32) uint16 {
+	for sum > 0xffff {
+		sum = (sum >> 16) + (sum & 0xffff)
+	}
+	return uint16(sum)
+}
+
+func calculateDataChecksum(data []uint16) uint32 {
+	var sum uint32
+	for i := range data {
+		sum += uint32(cndp.SwapBytesUint16(data[i]))
+	}
+	return sum
+}
+
+func verifyIPv4Checksum(l3 unsafe.Pointer) bool {
+	if l3 == nil {
+		return false
+	}
+	ipv4Words := getWords(l3, cndp.IPv4Len, 0)
+	if !(len(ipv4Words) < cndp.IPv4Len/2) {
+		temp := ipv4Words[5]
+		ipv4Words[5] = 0
+		checksum := ^reduceChecksum(calculateDataChecksum(ipv4Words))
+		ipv4Words[5] = temp
+		if checksum == cndp.SwapBytesUint16(ipv4Words[5]) {
+			return true
+		}
+	}
+	return false
+}
+
+func verifyIPv4ChecksumPackets(handle *cndp.System, lportName string, ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	tid := handle.RegisterThread("chksum_" + lportName)
+	if tid <= 0 {
+		return
+	}
+	defer handle.UnregisterThread(tid)
+
+	port, err := handle.GetPort(lportName)
+	if err != nil {
+		log.Fatalf("error getting port %s: %s\n", lportName, err.Error())
+		return
+	}
+
+	packets := make([]*cndp.Packet, 256)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			size := port.RxBurst(packets)
+			if size > 0 {
+				for j := 0; j < size; j++ {
+					pMData := packets[j].GetHeaderMetaData()
+					if verifyIPv4(pMData.L2) && !verifyIPv4Checksum(pMData.L3) {
+						log.Println("packet ipv4Hdr checksum validation failed")
+					}
+				}
+			}
+			cndp.FreePacketBuffer(packets[:size])
 		}
 	}
 }
@@ -228,6 +331,8 @@ func main() {
 			go transmitPackets(handle, lportName, ctx, wg)
 		case "lb":
 			go reTransmitPackets(handle, lportName, ctx, wg)
+		case "chksum":
+			go verifyIPv4ChecksumPackets(handle, lportName, ctx, wg)
 		default:
 			log.Fatalf("*** invalid test option")
 			os.Exit(1)

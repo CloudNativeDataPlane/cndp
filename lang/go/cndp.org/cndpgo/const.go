@@ -17,6 +17,7 @@ const (
 // is not determined inside packet. Only default minimum size is used.
 const (
 	EtherLen = 14
+	IPv4Len  = 20
 	IPv6Len  = 40
 )
 
