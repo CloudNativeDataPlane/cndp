@@ -123,8 +123,12 @@ static uint16_t
 kernel_recv_node_do(struct cne_graph *graph, struct cne_node *node, kernel_recv_node_ctx_t *ctx)
 {
     uint16_t len = 0, count = 0, nb_pkts;
+    int fd;
 
-    if (ctx->tinfo->tun_fd > 0) {
+    if (!ctx)
+        return 0;
+
+    if ((fd = tun_get_fd(ctx->tinfo)) > 0) {
         pktmbuf_t **mbufs;
 
         /* Get pkts from port */
@@ -141,7 +145,7 @@ kernel_recv_node_do(struct cne_graph *graph, struct cne_node *node, kernel_recv_
             vec.iov_base = pktmbuf_mtod(m, void *);
             vec.iov_len  = pktmbuf_tailroom(m);
 
-            len = readv(ctx->tinfo->tun_fd, &vec, 1);
+            len = readv(fd, &vec, 1);
             if (len == 0 || len == 0xFFFF)
                 break;
 
@@ -173,12 +177,16 @@ kernel_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **
                          uint16_t nb_objs)
 {
     kernel_recv_node_ctx_t *ctx = (kernel_recv_node_ctx_t *)node->ctx;
+    int fd;
 
     CNE_SET_USED(objs);
     CNE_SET_USED(nb_objs);
 
-    if (ctx && ctx->tinfo && ctx->tinfo->tun_fd > 0) {
-        struct pollfd fds = {.fd = ctx->tinfo->tun_fd, .events = POLLIN};
+    if (!ctx)
+        return 0;
+
+    if ((fd = tun_get_fd(ctx->tinfo)) > 0) {
+        struct pollfd fds = {.fd = fd, .events = POLLIN};
 
         if (poll(&fds, 1, 0) > 0) {
             if (fds.revents & POLLIN)
@@ -196,7 +204,10 @@ kernel_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
     pktmbuf_info_t *pi;
     mmap_t *mm;
 
-    ctx->tinfo = tun_alloc(TUN_DEVICE_TYPE, "krecv%d");
+    if (!ctx)
+        CNE_ERR_RET("Node context pointer is NULL\n");
+
+    ctx->tinfo = tun_alloc(IFF_TUN | IFF_NO_PI, "krecv%d");
     if (!ctx->tinfo)
         CNE_ERR_RET("Unable to open TUN/TAP socket\n");
 
@@ -214,7 +225,7 @@ kernel_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
         tun_free(ctx->tinfo);
         CNE_ERR_RET("pktmbuf_pool_create() failed\n");
     }
-    pktmbuf_info_name_set(pi, ctx->tinfo->tun_name);
+    pktmbuf_info_name_set(pi, tun_get_name(ctx->tinfo));
     ctx->pi = pi;
 
     tun_dump(NULL, ctx->tinfo);
