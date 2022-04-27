@@ -123,7 +123,7 @@ static uint16_t
 kernel_recv_node_do(struct cne_graph *graph, struct cne_node *node, kernel_recv_node_ctx_t *ctx)
 {
     uint16_t len = 0, count = 0, nb_pkts;
-    int fd;
+    int fd, nb_cnt          = 0;
 
     if (!ctx)
         return 0;
@@ -134,29 +134,26 @@ kernel_recv_node_do(struct cne_graph *graph, struct cne_node *node, kernel_recv_
         /* Get pkts from port */
         nb_pkts = (node->size >= CNE_GRAPH_BURST_SIZE) ? CNE_GRAPH_BURST_SIZE : node->size;
 
-        if (pktmbuf_alloc_bulk(ctx->pi, (pktmbuf_t **)node->objs, nb_pkts) < 0)
+        if ((nb_cnt = pktmbuf_alloc_bulk(ctx->pi, (pktmbuf_t **)node->objs, nb_pkts)) < 0)
             return 0;
 
         mbufs = (pktmbuf_t **)node->objs;
-        for (;;) {
-            pktmbuf_t *m = mbufs[0];
-            struct iovec vec;
+        for (int i = 0; i < nb_cnt; i++) {
+            pktmbuf_t *m = *mbufs;
 
-            vec.iov_base = pktmbuf_mtod(m, void *);
-            vec.iov_len  = pktmbuf_tailroom(m);
-
-            len = readv(fd, &vec, 1);
+            len = read(fd, pktmbuf_mtod(m, char *), pktmbuf_tailroom(m));
             if (len == 0 || len == 0xFFFF)
                 break;
+            mbufs++;
+
+            pktmbuf_port(m)     = node->id;
+            pktmbuf_data_len(m) = len;
 
             count++;
-
-            pktmbuf_data_len(m) = len;
-            mbufs++;
         }
 
-        if (count < nb_pkts)
-            pktmbuf_free_bulk(mbufs, nb_pkts - count);
+        if (count < nb_cnt)
+            pktmbuf_free_bulk(mbufs, nb_cnt - count);
 
         if (count) {
             recv_pkt_parse(node->objs, count);
