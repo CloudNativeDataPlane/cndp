@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation.
+
+[package]
+name = "cndp-cne-sys"
+description = "Cloud Native Data Plane (CNDP) Rust Bindings"
+repository = "https://github.com/CloudNativeDataPlane/cndp"
+homepage = "https://cndp.io/"
+readme = "README.md"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+[lib]
+name = "cne_sys"
+
+[build-dependencies]
+bindgen = "^0.59"
+meson = "^1.0.0"
+pkg-config = "^0.3"
