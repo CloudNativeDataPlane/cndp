@@ -25,6 +25,7 @@ def_deps = [
     utils,
     graph,
     jcfg,
+    tun,
     ]
 
 dirs = [ # list is not sorted and must be in this order.
