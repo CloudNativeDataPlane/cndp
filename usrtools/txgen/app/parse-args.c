@@ -171,7 +171,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
             /* Setup the mempool configuration */
-            strlcpy(pcfg.pmd_name, PMD_NET_AF_XDP_NAME, sizeof(pcfg.pmd_name));
+            strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));
             strlcpy(pcfg.ifname, lport->netdev, sizeof(pcfg.ifname));
             strlcpy(pcfg.name, lport->name, sizeof(pcfg.name));
 
