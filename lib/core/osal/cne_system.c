@@ -167,8 +167,8 @@ parse_sysfs_value(const char *filename, unsigned long *val)
     char *end = NULL;
 
     if ((f = fopen(filename, "r")) == NULL) {
-        cne_printf("%s(): cannot open sysfs value %s\n", __func__, filename);
-        return -1;
+        cne_printf("%s(): Warning cannot open sysfs value %s\n", __func__, filename);
+        return 0;
     }
 
     if (fgets(buf, sizeof(buf), f) == NULL) {
