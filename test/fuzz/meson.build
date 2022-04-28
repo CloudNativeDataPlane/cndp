@@ -11,6 +11,7 @@ cppflags = ['-gline-tables-only', '-fsanitize=address,fuzzer', '-fsanitize-addre
 fuzzerz = [
     'cli_input',
     'uds_create',
+    'cne_log',
 ]
 
 deps = [
