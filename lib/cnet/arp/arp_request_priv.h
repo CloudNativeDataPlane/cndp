@@ -53,7 +53,7 @@ struct arp_request_node_main {
  *
  * Get the Ethernet Rx node.
  *
- * @retrun
+ * @return
  *   Pointer to the Ethernet Rx node.
  */
 CNDP_API struct cne_node_register *arp_request_node_get(void);

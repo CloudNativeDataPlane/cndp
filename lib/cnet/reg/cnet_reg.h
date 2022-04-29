@@ -7,7 +7,7 @@
 
 /**
  * @file
- * CNET Registeration routines.
+ * CNET Registration routines.
  */
 
 #include <stdint.h>        // for int32_t

@@ -685,7 +685,7 @@ cne_memif_msg_receive(struct cne_memif_control_channel *cc)
         break;
     case CNE_MEMIF_MSG_TYPE_INIT:
         /*
-         * This cc does not have an interface asociated with it.
+         * This cc does not have an interface associated with it.
          * If suitable interface is found it will be assigned here.
          */
         ret = cne_memif_msg_receive_init(cc, &msg);

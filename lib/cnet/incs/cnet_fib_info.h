@@ -241,7 +241,7 @@ fib_info_get_fib(fib_info_t *fi)
 typedef int (*fib_func_t)(void *obj, void *arg);
 
 /**
- * Interate over the idx2obj values and call a function from caller.
+ * Iterate over the idx2obj values and call a function from caller.
  *
  * @param fi
  *   The FIB information structure pointer.
@@ -304,7 +304,7 @@ fib_info_get(fib_info_t *fi, uint64_t *idxs, void **objs, int n)
 }
 
 /**
- * Do a buld lookup in the FIB table an return the objects
+ * Do a build lookup in the FIB table and return the objects
  *
  * @param fi
  *   The FIB information structure pointer.

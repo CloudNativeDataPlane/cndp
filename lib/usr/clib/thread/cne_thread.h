@@ -147,7 +147,7 @@ CNDP_API int thread_wait_all(unsigned int checks, unsigned int usec, int skip);
  * @param tidx
  *    Clear the running flag for the thread index value, if -1 then stop self
  * @return
- *    0 on succesfully clearing the running flag
+ *    0 on successfully clearing the running flag
  */
 CNDP_API int thread_stop_running(int tidx);
 
