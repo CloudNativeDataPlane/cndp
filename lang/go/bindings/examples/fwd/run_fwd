@@ -7,7 +7,7 @@ do
         c)config=${OPTARG};;
         t)test=${OPTARG};;
         p)lports=${OPTARG};;
-        \? ) echo "Usage: run_fwd -c <path to config file> -t <test type> -p <comma-seperated lport string>";;
+        \? ) echo "Usage: run_fwd -c <path to config file> -t <test type> -p <comma-separated lport string>";;
     esac
 done
 

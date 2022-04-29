@@ -26,7 +26,7 @@ import (
 type Options struct {
 	Config     string   `short:"c" long:"config" description:"path to configuration file"`
 	Test       string   `short:"t" long:"test" description:"run tests - rx|tx|lb|chksum"`
-	LPortNames []string `short:"p" long:"lport names" description:"list of lport names comma-seperated"`
+	LPortNames []string `short:"p" long:"lport names" description:"list of lport names comma-separated"`
 }
 
 var options Options
