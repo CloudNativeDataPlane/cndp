@@ -8,7 +8,7 @@
 /**
  * @file
  *
- * This file defines generic types for values with a specific endianess.
+ * This file defines generic types for values with a specific endianness.
  */
 
 #include <stdint.h>

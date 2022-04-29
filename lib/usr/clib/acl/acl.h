@@ -56,7 +56,7 @@ struct cne_acl_bitset {
  * Each transition is 64 bit value with the following format:
  * | node_type_specific : 32 | node_type : 3 | node_addr : 29 |
  * For all node types except CNE_ACL_NODE_MATCH, node_addr is an index
- * to the start of the node in the transtions array.
+ * to the start of the node in the transitions array.
  * Few different node types are used:
  * CNE_ACL_NODE_MATCH:
  * node_addr value is and index into an array that contains the return value
@@ -77,7 +77,7 @@ struct cne_acl_bitset {
  * CNE_ACL_NODE_SINGLE:
  * always transitions to the same node regardless of the input value.
  * CNE_ACL_NODE_DFA:
- * that node consits of up to 256 transitions.
+ * that node consists of up to 256 transitions.
  * In attempt to conserve space all transitions are divided into 4 consecutive
  * groups, by 64 transitions per group:
  * group64[i] contains transitions[i * 64, .. i * 64 + 63].

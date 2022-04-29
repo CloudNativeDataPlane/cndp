@@ -46,7 +46,7 @@ int cnet_drv_create(struct cnet *cnet);
  * @brief Destroy the driver structure and initialize it
  *
  * @param cnet
- *   The cnet structure pointer to dettach the driver structure
+ *   The cnet structure pointer to detach the driver structure
  * @return
  *   -1 on error or 0 on success
  */

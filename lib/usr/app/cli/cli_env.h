@@ -49,7 +49,7 @@ CNDP_API struct cli_env *cli_env_create(void);
  * Delete the environment for the CLI
  *
  * @param env
- *   The pointer to the enviroment structure
+ *   The pointer to the environment structure
  */
 CNDP_API void cli_env_destroy(struct cli_env *env);
 
@@ -109,10 +109,10 @@ CNDP_API const char *cli_env_get(struct cli_env *env, const char *var);
 CNDP_API int cli_env_del(struct cli_env *env, const char *var);
 
 /**
- * Do enviroment variable subsitution on the line.
+ * Do environment variable substitution on the line.
  *
  * @param env
- *   Pointer to the enviroment structure
+ *   Pointer to the environment structure
  * @param line
  *   Pointer to the line to parse
  * @param sz
@@ -149,7 +149,7 @@ cli_env_count(struct cli_env *env)
 CNDP_API int cli_env_get_all(struct cli_env *env, struct env_node **list, int max_size);
 
 /**
- * Show all enviroment variable
+ * Show all environment variable
  *
  * @param env
  *   Pointer to the cli_env structure.

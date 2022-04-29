@@ -178,7 +178,7 @@ CNDP_API int tty_write(const char *buf, int len);
  * Write the data from buf to the tty file descriptor number, bypass this_tty->fd_out
  *
  * @param fd
- *    The file desciptor index value
+ *    The file descriptor index value
  * @param buf
  *    Pointer to data buffer to output the file descriptor.
  * @param len

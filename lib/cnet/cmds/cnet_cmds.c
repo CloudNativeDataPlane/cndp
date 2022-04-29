@@ -657,7 +657,7 @@ static struct cli_tree cnet_tree[] = {
     c_cmd("proto",      cmd_proto,      "Protosw dump"),
     c_cmd("ip",         cmd_ip,         "Show IP interface information [link|route|neigh|stats]"),
     c_cmd("hmap",       cmd_hmap,       "dump out the hashmap data"),
-    c_cmd("obj",        cmd_obj,        "objpool show comand"),
+    c_cmd("obj",        cmd_obj,        "objpool show command"),
     c_cmd("graph",      cmd_graph,      "CNET Graph information [list|node|dump|dot|stats]"),
     c_cmd("netlink",    cmd_netlink,    "Enable/Disable Netlink messages"),
     c_cmd("ipcksum",    cmd_ip_cksum,   "Test IP checksum"),

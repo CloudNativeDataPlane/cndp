@@ -13,7 +13,7 @@ model.
 
 The primary goal of CLI is to allow the developer to create commands quickly
 and with very little compile or runtime configuration. Using standard Unix*
-like constructs which are very familar to the developer. Allowing the developer
+like constructs which are very familiar to the developer. Allowing the developer
 to construct a set of commands for development or deployment of the application.
 
 The CLI design uses a directory like design instead of a single level command
@@ -23,7 +23,7 @@ it does have some advantages.
 
 One advantage allows the directory path for the command to be part of the
 information used in executing the command. The next advantage is creating
-directories to make a hierarchy of commands, plus allowing whole directroy
+directories to make a hierarchy of commands, plus allowing whole directory
 trees to dynamically come and go as required by the developer.
 
 Some of the advantages are:
@@ -62,7 +62,7 @@ thread based variable. Which allows the developer to have multiple CLI
 commands per thread if needed.
 
 Another advantage is the calling of the backend function to support a
-command is very familar to developers as it is basically just a argc/argv
+command is very familiar to developers as it is basically just a argc/argv
 style command and the developer gets the complete command line.
 
 One other advantage is the use of MAP structures, to help identify commands
@@ -70,7 +70,7 @@ quickly plus allowing the developer to define new versions of commands and
 be able to identify these new versions using a simple identifier value. Look at
 the sample application to see a simple usage.
 
-Another advantage of CLI is how simple it is to add new directroies, files and
+Another advantage of CLI is how simple it is to add new directories, files and
 commands for user development. The basic concept is for the developer to use
 standard Unix like designs. To add a command a developer needs to add an entry
 to the cli_tree_t structure and create a function using the following prototype:

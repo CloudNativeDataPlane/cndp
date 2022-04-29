@@ -39,7 +39,7 @@
 
 /**
  * @file
- * CNET TCP procotol routines and constants.
+ * CNET TCP protocol routines and constants.
  */
 
 #include <cnet_chnl.h>
@@ -187,7 +187,7 @@ enum {
     }
 // clang-format on
 
-/* TCP Output Events to drive the ouptut Finite State Machine. */
+/* TCP Output Events to drive the output Finite State Machine. */
 enum { SEND_EVENT, PERSIST_EVENT, RETRANSMIT_EVENT, DELETE_EVENT };
 
 #define TCP_OUTPUT_EVENTS                     \
@@ -251,7 +251,7 @@ enum {
 #define TCP_RTTVAR_SCALE 4 /**< multiplier   rttvar = rttvar x 4 */
 #define TCP_RTTVAR_SHIFT 2 /**< shift        rttvar = rttvar << 2 */
 
-#define TCP_ISSINCR 0x01000000 /**< Intial SYN Start increment */
+#define TCP_ISSINCR 0x01000000 /**< Initial SYN Start increment */
 #define TCP_SLOWHZ  2          /**< Slow hertz */
 
 /* Number of ms per timeout */
@@ -372,7 +372,7 @@ struct tcb_entry {
     uint8_t snd_scale;      /**< Send Window scale */
     uint8_t rcv_scale;      /**< Receive Window scale */
     uint8_t req_recv_scale; /**< pending window scaling for receive */
-    uint8_t req_send_scale; /**< pending window scaling for transmiter */
+    uint8_t req_send_scale; /**< pending window scaling for transmitter */
     uint32_t ts_recent;     /**< timestamp echo data */
     uint32_t ts_recent_age; /**< when last updated */
     seq_t last_ack_sent;    /**< last ACK Sent time */

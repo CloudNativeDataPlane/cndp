@@ -164,7 +164,7 @@ cne_strtok(char *str, const char *delim, char *entries[], int maxtokens)
  * @param str
  *   String to be tokenized and will be modified, null terminated
  * @param delim
- *   A null terminated list of delimitors
+ *   A null terminated list of delimiters
  * @param argv
  *   A pointer to an array to place the token pointers
  * @param maxtokens
