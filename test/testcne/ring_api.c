@@ -200,7 +200,7 @@ struct worker_info {
 
     void *pvt;
 
-    worker_join_fn join;     /**< wait for worker to finish and get result infromation*/
+    worker_join_fn join;     /**< wait for worker to finish and get result information*/
     worker_stop_fn stop;     /**< signal worker that it should stop */
     worker_cancel_fn cancel; /**< stop worker */
     worker_free_fn free;     /**< free worker memory */
@@ -218,8 +218,8 @@ typedef int (*worker_exit_fn)(struct worker_thread_state *ws);
  */
 struct worker_thread_state {
     pthread_t id;
-    int read_fd;  /** message pipe from superviosr to worker */
-    int write_fd; /** message pipe from worker to superviosr */
+    int read_fd;  /** message pipe from supervisor to worker */
+    int write_fd; /** message pipe from worker to supervisor */
 
     int stop;
     int finished;
@@ -850,7 +850,7 @@ test_ring_threaded(void *arg)
 
         TAILQ_INSERT_TAIL(&tst.worker_list, c, next);
         TST_ASSERT_AND_CLEANUP(0 == pthread_create(&t->id, 0, test_ring_thread, t),
-                               "'%s': consumer thred create failed\n", test_ring_threaded_cleanup,
+                               "'%s': consumer thread create failed\n", test_ring_threaded_cleanup,
                                &tst, test->name);
         c->id.thread = t->id;
 
