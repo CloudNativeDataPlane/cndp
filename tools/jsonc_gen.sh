@@ -8,7 +8,7 @@
 # CNDP_DEVICES and LIST_OF_QIDS
 # CNDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
 # When this script is used as part of a K8s deployment, the K8s device plugin
-# would populate the CNDP_DEVICES environment varible.
+# would populate the CNDP_DEVICES environment variable.
 # LIST_OF_QIDS is the list of queue IDs that are used to program ethtool filters.
 # The available cores to the application are determined by
 # the 'lscpu' command.
