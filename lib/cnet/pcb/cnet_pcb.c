@@ -181,7 +181,7 @@ pcb_show(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
          unsigned n __cne_unused)
 {
     struct pcb_entry *pcb = (struct pcb_entry *)obj;
-    char fbuf[128], lbuf[128];
+    char fbuf[128], lbuf[128], *ret = NULL;
     char ip1[IP4_ADDR_STRLEN] = {0};
     char ip2[IP4_ADDR_STRLEN] = {0};
 
@@ -191,15 +191,15 @@ pcb_show(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
     cne_printf("[green]%-6s [orange] %04x [red]%6s[]", pcb->closed ? "Closed" : "Open",
                pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
 
-    if (snprintf(fbuf, sizeof(fbuf), "%s:%d",
-                 inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL),
+    ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
+    if (snprintf(fbuf, sizeof(fbuf), "%s:%d", ret ?: "Invalid IP",
                  ntohs(CIN_PORT(&pcb->key.faddr))) < 0)
         CNE_RET("Truncated buffer data\n");
 
     cne_printf(" [orange]%20s[]", fbuf);
 
-    if (snprintf(lbuf, sizeof(lbuf), "%s:%d",
-                 inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL),
+    ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
+    if (snprintf(lbuf, sizeof(lbuf), "%s:%d", ret ?: "Invalid IP",
                  ntohs(CIN_PORT(&pcb->key.laddr))) < 0)
         CNE_RET("Truncated buffer data\n");
 
