@@ -37,9 +37,6 @@
 
 #define ETH_AF_XDP_MBUF_MASK ~(ETH_AF_XDP_FRAME_SIZE - 1)
 
-#define AF_XDP_IFNAME_ARG "iface"
-#define AF_XDP_QCNT_ARG   "qcnt"
-
 struct xsk_umem_info {
     struct xsk_ring_prod fq;
     struct xsk_ring_cons cq;
