@@ -3,7 +3,7 @@
  */
 
 #include <cnet.h>           // for cnet, per_thread_cnet, this_cnet, cnet_c...
-#include <cne_vec.h>        // for vec_ptr_at_index, vec_add_ptr, vec_...
+#include <cne_vec.h>        // for vec_at_index, vec_add, vec_...
 #include <cne_stdio.h>
 #include <cnet_stk.h>
 #include <cne_inet.h>             // for _in_addr
@@ -46,7 +46,7 @@ _stk_create(struct cnet *cnet)
         stk_set(stk); /* Set the this_stk pointer for this thread */
 
         /* Add this stk pointer to the vector list in CNET */
-        stk->idx = vec_add_ptr(cnet->stks, stk);
+        stk->idx = vec_add(cnet->stks, stk);
 
         snprintf(stk->name, sizeof(stk->name), "Stk-%d", stk->idx);
 

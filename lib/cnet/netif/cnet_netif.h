@@ -20,7 +20,7 @@
 #include "cne_common.h"        // for __cne_cache_aligned
 #include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_WARNING
 #include "cne_lport.h"         // for lport_stats
-#include "cne_vec.h"           // for vec_ptr_at_index, vec_pool_free
+#include "cne_vec.h"           // for vec_at_index, vec_pool_free
 #include "cnet_const.h"        // for iofunc_t
 #include "cne_inet.h"          // for _in_addr, _in6_addr
 #include "cnet_stk.h"          // for stk_entry, per_thread_stk, this_stk
@@ -170,7 +170,7 @@ cnet_ipv4_compare(struct netif *netif, struct in_addr *ip)
 static inline struct netif *
 cnet_netif_from_index(uint8_t idx)
 {
-    return vec_ptr_at_index(this_cnet->netifs, idx);
+    return vec_at_index(this_cnet->netifs, idx);
 }
 
 /**
@@ -196,7 +196,7 @@ cnet_netif_free(struct netif *netif)
 {
     if (netif) {
         if (netif->netif_idx >= 0 && netif->netif_idx < CNE_MAX_ETHPORTS)
-            vec_ptr_at_index(this_cnet->netifs, netif->netif_idx) = NULL;
+            vec_at_index(this_cnet->netifs, netif->netif_idx) = NULL;
         free(netif);
     }
 }

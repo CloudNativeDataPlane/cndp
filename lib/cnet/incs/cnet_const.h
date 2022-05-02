@@ -61,11 +61,10 @@ extern "C" {
 
 enum {
     CNET_MAX_INITS      = 64,
-    CNET_COUNT_PER_VEC  = 256,
-    CNET_NB_TCB_ENTRIES = 256,
-    CNET_NUM_CHANNELS   = 256,
-    CNET_NUM_ROUTES     = 512,
-    PROTOSW_MAX_SIZE    = 256,
+    CNET_NB_TCB_ENTRIES = 128,
+    CNET_NUM_CHANNELS   = 128,
+    CNET_NUM_ROUTES     = 128,
+    PROTOSW_MAX_SIZE    = 64,
 };
 
 enum {
@@ -112,12 +111,13 @@ enum {
 };
 
 enum {
-    TCP_VEC_PCB_COUNT   = 256,
-    UDP_VEC_PCB_COUNT   = 256,
-    RAW_VEC_PCB_COUNT   = 256,
-    ICMP_VEC_PCB_COUNT  = 256,
-    ICMP6_VEC_PCB_COUNT = 256,
-    CHNL_OPT_VEC_COUNT  = 64
+    STK_VEC_COUNT       = 32,
+    TCP_VEC_PCB_COUNT   = 32,
+    UDP_VEC_PCB_COUNT   = 32,
+    RAW_VEC_PCB_COUNT   = 32,
+    ICMP_VEC_PCB_COUNT  = 32,
+    ICMP6_VEC_PCB_COUNT = 32,
+    CHNL_OPT_VEC_COUNT  = 8,
 };
 
 /* Generic matching flags for pcb, route, and arp lookups */

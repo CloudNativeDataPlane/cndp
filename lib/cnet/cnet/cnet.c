@@ -11,7 +11,7 @@
 #include <cnet.h>
 #include <cne_inet.h>        // for inet_mtoa
 #include <cnet_reg.h>        // for cnet_register_t, cnet_do_calls, cnet_do_stk...
-#include <cne_vec.h>         // for vec_ptr_at_index, vec_calc_size, vec_max_len
+#include <cne_vec.h>         // for vec_calc_size, vec_max_len
 #include <cnet_drv.h>
 #include <cnet_stk.h>          // for stk_entry
 #include <cnet_const.h>        // for CNET_STOP, CNET_INIT, cnet_assert
@@ -167,18 +167,18 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
 
     cnet->num_chnls = CNET_NUM_CHANNELS;
 
-    cnet->stks = vec_alloc_ptr(cnet->stks, cne_max_threads());
+    cnet->stks = vec_alloc(cnet->stks, STK_VEC_COUNT);
     if (!cnet->stks)
         CNE_RET("Unable to allocate stk vector\n");
 
-    cnet->netifs = vec_alloc_ptr(cnet->netifs, CNE_MAX_ETHPORTS);
+    cnet->netifs = vec_alloc(cnet->netifs, CNE_MAX_ETHPORTS);
     if (!cnet->netifs) {
         vec_free(cnet->stks);
         cnet->stks = NULL;
         CNE_RET("Unable to allocate netif vector\n");
     }
 
-    cnet->drvs = vec_alloc_ptr(cnet->drvs, CNE_MAX_ETHPORTS);
+    cnet->drvs = vec_alloc(cnet->drvs, CNE_MAX_ETHPORTS);
     if (!cnet->drvs) {
         vec_free(cnet->netifs);
         cnet->netifs = NULL;
