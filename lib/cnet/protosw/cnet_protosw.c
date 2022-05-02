@@ -163,8 +163,10 @@ protosw_destroy(void *_stk)
 
     cnet_assert(stk != NULL);
 
-    if (stk->protosw_vec)
-        vec_pool_free(stk->protosw_vec);
+    if (stk->protosw_vec) {
+        vec_free(stk->protosw_vec);
+        stk->protosw_vec = NULL;
+    }
 
     return 0;
 }
