@@ -161,6 +161,7 @@ pcb_show_details(mempool_t *mp, void *obj_cb_arg __cne_unused, void *obj, unsign
     struct pcb_entry *pcb     = (struct pcb_entry *)obj;
     char ip1[IP4_ADDR_STRLEN] = {0};
     char ip2[IP4_ADDR_STRLEN] = {0};
+    char *ret                 = NULL;
 
     if (pcb->closed)
         return;
@@ -169,11 +170,10 @@ pcb_show_details(mempool_t *mp, void *obj_cb_arg __cne_unused, void *obj, unsign
     cne_printf("    mempool %p", mp);
     cne_printf(" ttl %d, closed %d, tos %d, flags %04x proto %s\n", pcb->ttl, pcb->closed, pcb->tos,
                pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
-    cne_printf("    Key: faddr %s:%d ",
-               inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL),
-               ntohs(CIN_PORT(&pcb->key.faddr)));
-    cne_printf("laddr %s:%d\n", inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL),
-               ntohs(CIN_PORT(&pcb->key.laddr)));
+    ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
+    cne_printf("    Key: faddr %s:%d ", ret ?: "Invalid IP", ntohs(CIN_PORT(&pcb->key.faddr)));
+    ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
+    cne_printf("laddr %s:%d\n", ret ?: "Invalid IP", ntohs(CIN_PORT(&pcb->key.laddr)));
 }
 
 static void
