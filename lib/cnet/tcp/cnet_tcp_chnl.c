@@ -27,7 +27,7 @@
 
 #include "cne_common.h"        // for __cne_unused, CNE_MIN
 #include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_...
-#include "cne_vec.h"           // for vec_len, vec_add_ptr, vec_ptr_at_index, vec_pool_free
+#include "cne_vec.h"           // for vec_len, vec_add, vec_at_index, vec_pool_free
 #include "cnet_const.h"        // for __errno_set, __errno_set_null, is_set, bool_t
 #include "cnet_reg.h"
 #include "cnet_protosw.h"        // for
@@ -54,7 +54,7 @@ cnet_drop_acked_data(struct chnl_buf *cb, int32_t acked)
         }
 
         /* get the pointer to the packet on the send queue */
-        m = vec_ptr_at_index(cb->cb_vec, 0);
+        m = vec_at_index(cb->cb_vec, 0);
 
         size = pktmbuf_data_len(m);
 
@@ -63,7 +63,7 @@ cnet_drop_acked_data(struct chnl_buf *cb, int32_t acked)
          * can be removed from the send_queue and freed.
          */
         if (size <= acked)
-            vec_free_mbuf_at_index(cb->cb_vec, 0);
+            pktmbuf_free(vec_at_index(cb->cb_vec, 0));
         else {
             /*
              * Acked only part of the packet data, need to adjust it packet.

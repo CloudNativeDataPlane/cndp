@@ -59,7 +59,7 @@
 #include <net/cne_ether.h>        // for cne_ether_hdr
 #include "net/cne_ip.h"           // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum, CNE...
 #include "net/cne_tcp.h"          // for cne_tcp_hdr
-#include "cne_vec.h"              // for vec_len, vec_add_ptr, vec_ptr_at_index
+#include "cne_vec.h"              // for vec_len, vec_add, vec_at_index
 #include <cnet_reg.h>
 #include "cnet_ipv4.h"           // for TOS_DEFAULT, TTL_DEFAULT, _OFF_DF
 #include "cnet_protosw.h"        // for protosw_entry, cnet_ipproto_set, cnet_pr...
@@ -112,7 +112,7 @@ tcp_vec_qpop(struct tcp_vec *tvec, uint16_t wait_flag)
 static int
 tcp_vec_qadd(struct tcp_vec *tvec, void *val)
 {
-    vec_add_ptr(tvec->vec, val);
+    vec_add(tvec->vec, val);
 
     pthread_cond_signal(&tvec->cond);
 
@@ -246,13 +246,15 @@ cnet_tcb_new(struct pcb_entry *pcb)
         return NULL;
     }
 
-    tcb->reassemble = vec_alloc_ptr(tcb->reassemble, CNET_TCP_REASSEMBLE_COUNT);
+    tcb->reassemble = vec_alloc(tcb->reassemble, CNET_TCP_REASSEMBLE_COUNT);
     if (!tcb->reassemble) {
         tcb_free(tcb);
         CNE_WARN("tcb->backlog allocate failed\n");
         return NULL;
     }
-    tcb->backlog_q.vec = vec_alloc_ptr(tcb->backlog_q.vec, CNET_TCP_BACKLOG_COUNT);
+    CNE_DEBUG("Reassemable %p, %d\n", tcb->reassemble, vec_len(tcb->reassemble));
+
+    tcb->backlog_q.vec = vec_alloc(tcb->backlog_q.vec, CNET_TCP_BACKLOG_COUNT);
     if (!tcb->backlog_q.vec) {
         tcb_free(tcb);
         CNE_WARN("tcb->backlog allocate failed\n");
@@ -269,7 +271,7 @@ cnet_tcb_new(struct pcb_entry *pcb)
     }
     pthread_mutexattr_destroy(&attr);
 
-    tcb->half_open_q = vec_alloc_ptr(tcb->half_open_q, CNET_TCP_HALF_OPEN_COUNT);
+    tcb->half_open_q = vec_alloc(tcb->half_open_q, CNET_TCP_HALF_OPEN_COUNT);
     if (!tcb->half_open_q) {
         vec_free(tcb->backlog_q.vec);
         tcb_free(tcb);
@@ -445,7 +447,7 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
     if (pthread_mutex_lock(&cb->mutex))
         CNE_ERR_RET("Unable to acquire mutex\n");
 
-    m = vec_ptr_at_index(cb->cb_vec, i++);
+    m = vec_at_index(cb->cb_vec, i++);
 
     /* skip to the offset location */
     while (m && off) {
@@ -455,7 +457,7 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
             break;
 
         off -= cnt;
-        m = vec_ptr_at_index(cb->cb_vec, i++);
+        m = vec_at_index(cb->cb_vec, i++);
     }
 
     while (m && len > 0) {
@@ -467,7 +469,7 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
         len -= cnt;
         buf += cnt;
         off = 0;
-        m   = vec_ptr_at_index(cb->cb_vec, i++);
+        m   = vec_at_index(cb->cb_vec, i++);
     }
 
     if (pthread_mutex_unlock(&cb->mutex))
@@ -955,7 +957,6 @@ tcp_do_response(struct netif *netif, struct pcb_entry *pcb, pktmbuf_t *mbuf, uin
     if (!pcb)
         tcp->cksum = cne_ipv4_udptcp_cksum(ip, tcp);
 
-    /* TODO: need to fix */
     (void)vec;
     (void)netif;
     pktmbuf_free(mbuf);
@@ -1214,7 +1215,7 @@ tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
              */
             int idx = vec_find_index(ptcb->half_open_q, pcb);
             if (idx != -1)
-                vec_ptr_at_index(ptcb->half_open_q, idx) = NULL;
+                vec_at_index(ptcb->half_open_q, idx) = NULL;
 
             /* Abort the connection, if the backlog queue is full */
             if (tcp_vec_qadd(&ptcb->backlog_q, pcb)) {
@@ -1476,7 +1477,7 @@ do_passive_open(struct seg_entry *seg)
     /* Setup this TCB as having a parent PCB */
     tcb->ppcb = ppcb;
 
-    vec_add_ptr(ppcb->tcb->half_open_q, tcb->pcb);
+    vec_add(ppcb->tcb->half_open_q, tcb->pcb);
 
     md = cnet_mbuf_metadata(seg->mbuf);
 
@@ -1553,13 +1554,13 @@ tcb_cleanup(struct tcb_entry *tcb)
         /* TCB may be on the parents backlog or half open queue */
         idx = vec_find_index(t->backlog_q.vec, p);
         if (idx != -1) {
-            vec_ptr_at_index(t->backlog_q.vec, idx) = NULL;
+            vec_at_index(t->backlog_q.vec, idx) = NULL;
             cnet_pcb_free(p);
         }
 
         idx = vec_find_index(t->half_open_q, p);
         if (idx != -1) {
-            vec_ptr_at_index(t->half_open_q, idx) = NULL;
+            vec_at_index(t->half_open_q, idx) = NULL;
             cnet_pcb_free(p);
         }
     }
@@ -1569,18 +1570,18 @@ tcb_cleanup(struct tcb_entry *tcb)
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_set_len(tcb->backlog_q.vec, 0);
+    vec_len(tcb->backlog_q.vec) = 0;
 
     /* Drop any half open connections */
     vec_foreach_ptr (p, tcb->half_open_q) {
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_set_len(tcb->half_open_q, 0);
+    vec_len(tcb->half_open_q) = 0;
 
     CNE_DEBUG("Half Open queue is clean\n");
 
-    vec_free_mbufs(tcb->reassemble);
+    pktmbuf_free_bulk(tcb->reassemble, vec_len(tcb->reassemble));
 
     /* TCB should be disconnected and ready to be freed */
     vec_free(tcb->reassemble);
@@ -2301,8 +2302,11 @@ do_segment_others(struct seg_entry *seg)
              * SYN_RCVD state remove from half open queue of the parent, if
              * started from a passive open.
              */
-            if (tcb->ppcb && tcb->ppcb->tcb && tcb->ppcb->tcb->half_open_q)
-                vec_find_delete(tcb->ppcb->tcb->half_open_q, seg->pcb);
+            if (tcb->ppcb && tcb->ppcb->tcb && tcb->ppcb->tcb->half_open_q) {
+                uint32_t idx = vec_find_index(tcb->ppcb->tcb->half_open_q, seg->pcb);
+
+                vec_at_index(tcb->ppcb->tcb->half_open_q, idx) = NULL;
+            }
 
             tcp_do_state_change(seg->pcb, TCPS_LISTEN);
 
@@ -3711,7 +3715,7 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
     stk->tcp->snd_ISS     = (uint32_t)rand();
     stk->tcp_now          = (uint32_t)cne_rdtsc();
 
-    stk->tcp->tcp_hd.vec = vec_alloc_ptr(stk->tcp->tcp_hd.vec, TCP_VEC_PCB_COUNT);
+    stk->tcp->tcp_hd.vec = vec_alloc(stk->tcp->tcp_hd.vec, TCP_VEC_PCB_COUNT);
     CNE_ASSERT(stk->tcp->tcp_hd.vec != NULL);
     stk->tcp->tcp_hd.lport = _IPPORT_RESERVED;
 

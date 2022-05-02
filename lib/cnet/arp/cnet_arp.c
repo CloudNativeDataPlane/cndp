@@ -145,7 +145,7 @@ _arp_show(struct arp_entry *entry, void *arg __cne_unused)
     cne_printf("[yellow]%-17s[] ", buf);
 
     if (entry->netif_idx < 0xFF) {
-        netif = vec_ptr_at_index(this_cnet->netifs, entry->netif_idx);
+        netif = vec_at_index(this_cnet->netifs, entry->netif_idx);
         cne_printf("[magenta]%04x [green]%3d [orange]%-16s [red]%s[]\n", entry->flags,
                    entry->netif_idx, netif->ifname,
                    (entry->flags & ARP_STATIC_FLAG) ? "Static" : "");

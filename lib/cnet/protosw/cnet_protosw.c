@@ -4,7 +4,7 @@
 
 #include <mempool.h>        // for mempool_obj_iter, mempool_destroy, mempool_cfg
 #include <cnet.h>           // for cnet_add_instance
-#include <cne_vec.h>        // for vec_add_ptr, vec_alloc_ptr, vec_ptr_at_index
+#include <cne_vec.h>        // for vec_add, vec_alloc_ptr, vec_at_index
 #include <cnet_reg.h>
 #include <cnet_stk.h>         // for stk_entry, per_thread_stk, this_stk
 #include <cnet_chnl.h>        // for chnl_domain_str, chnl_protocol_str, chnl_type...
@@ -81,7 +81,7 @@ cnet_protosw_add(const char *name, uint16_t domain, uint16_t type, uint16_t prot
     psw->proto  = proto;
 
     /* Setup proto ID to index in the protosw table */
-    vec_add_ptr(this_stk->protosw_vec, psw);
+    vec_add(this_stk->protosw_vec, psw);
 
     return psw;
 }
@@ -141,37 +141,23 @@ cnet_protosw_dump(stk_t *stk)
 }
 
 static int
-protosw_create(void *_stk)
-{
-    stk_t *stk = _stk;
-
-    cnet_assert(stk != NULL);
-
-    stk->protosw_vec = vec_alloc_ptr(stk->protosw_vec, PROTOSW_MAX_SIZE);
-    if (stk->protosw_vec == NULL) {
-        CNE_WARN("Unable to allocate ProtoSW table\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-static int
 protosw_destroy(void *_stk)
 {
     stk_t *stk = _stk;
+    struct protosw_entry *v;
 
     cnet_assert(stk != NULL);
 
-    if (stk->protosw_vec) {
-        vec_free(stk->protosw_vec);
-        stk->protosw_vec = NULL;
-    }
+    vec_foreach_ptr (v, stk->protosw_vec)
+        free(v);
+
+    vec_free(stk->protosw_vec);
+    stk->protosw_vec = NULL;
 
     return 0;
 }
 
 CNE_INIT_PRIO(cnet_protosw_constructor, STACK)
 {
-    cnet_add_instance("ProtoSW", CNET_PROTOSW_PRIO, protosw_create, protosw_destroy);
+    cnet_add_instance("ProtoSW", CNET_PROTOSW_PRIO, NULL, protosw_destroy);
 }

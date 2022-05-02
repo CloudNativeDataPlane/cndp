@@ -17,7 +17,7 @@
 #include "cnet_route.h"
 #include "cnet_route4.h"
 #include "ip4_input_priv.h"
-#include "cne_vec.h"        // for vec_ptr_at_index, vec_len
+#include "cne_vec.h"        // for vec_at_index, vec_len
 #include "mempool.h"        // for mempool_destroy, mempool_cfg, mempool_create
 
 #define RT4_DEFAULT_NUM_RULES 1024 /* Default number of max rules */
@@ -229,7 +229,7 @@ route4_dump(struct rt4_entry *rt, void *arg __cne_unused)
     cne_printf("[orange]%-17s [cyan]%3d  ", inet_ntop4(ip2, sizeof(ip2), &mask, NULL),
                rt->netif_idx);
 
-    netif = vec_ptr_at_index(this_cnet->netifs, rt->netif_idx);
+    netif = vec_at_index(this_cnet->netifs, rt->netif_idx);
     cne_printf("[orange]%-17s [cyan]%6d %7d   [magenta]%s[]\n",
                inet_ntop4(ip3, sizeof(ip3), &gate, NULL), rt->metric, rt->timo, netif->ifname);
 

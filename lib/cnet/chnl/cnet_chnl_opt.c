@@ -12,9 +12,9 @@
 #include <stdlib.h>        // for NULL, calloc, size_t
 #include <string.h>        // for memcpy
 
-#include "cne_common.h"          // for CNE_MIN, CNE_MAX
-#include "cne_log.h"             // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_L...
-#include "cne_vec.h"             // for vec_ptr_at_index, vec_len, vec_add_ptr
+#include "cne_common.h"        // for CNE_MIN, CNE_MAX
+#include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_L...
+#include "cne_vec.h"
 #include "cnet_const.h"          // for __errno_set, __errno_get, chnl_unlock, CHNL_...
 #include "cnet_protosw.h"        // for protosw_entry
 
@@ -26,23 +26,6 @@
  */
 
 /**
- * Initialize the sockopt switch entries.
- */
-int
-cnet_chnl_opt_init(int num_handlers)
-{
-    if (num_handlers <= 0)
-        num_handlers = CHNL_OPT_VEC_COUNT;
-
-    this_stk->chnlopt = vec_alloc_ptr(this_stk->chnlopt, num_handlers);
-
-    if (this_stk->chnlopt == NULL)
-        CNE_ERR_RET("Channel Option init failed\n");
-
-    return 0;
-}
-
-/**
  * Add a sockopt switch structure.  There can be multiple handlers for each
  * level (e.g. IPPROTO_IP handlers for raw socket options, multicast options,
  * etc).
@@ -52,12 +35,13 @@ cnet_chnl_opt_init(int num_handlers)
 int
 cnet_chnl_opt_add(struct chnl_optsw *p)
 {
-    if (!this_stk->chnlopt) {
-        if (cnet_chnl_opt_init(0) < 0)
-            return -1;
-    }
+    stk_t *stk = this_stk;
 
-    vec_add_ptr(this_stk->chnlopt, p);
+    if (!stk)
+        return -1;
+
+    vec_add(stk->chnlopt, p);
+
     return 0;
 }
 
@@ -78,9 +62,8 @@ cnet_chnl_opt_iterate_set(struct chnl *ch, int level, int optname, const void *o
     struct chnl_optsw *p;
     int ret;
 
-    if (!stk->chnlopt)
-        if ((stk->chnlopt = vec_alloc_ptr(stk->chnlopt, CHNL_OPT_VEC_COUNT)) == NULL)
-            return __errno_set(EINVAL);
+    if (!stk || !stk->chnlopt)
+        return __errno_set(EINVAL);
 
     vec_foreach_ptr (p, stk->chnlopt) {
         if (p->level == level) {
@@ -109,11 +92,8 @@ cnet_chnl_opt_iterate_get(struct chnl *ch, int level, int optname, void *optval,
     struct chnl_optsw *p;
     int ret;
 
-    if (!stk->chnlopt) {
-        stk->chnlopt = vec_alloc_ptr(stk->chnlopt, CHNL_OPT_VEC_COUNT);
-        if (!stk->chnlopt)
-            return __errno_set(EINVAL);
-    }
+    if (!stk || !stk->chnlopt)
+        return __errno_set(EINVAL);
 
     vec_foreach_ptr (p, stk->chnlopt) {
         if (p->level == level) {

@@ -29,9 +29,9 @@
 
 #include <cli.h>        // for c_cmd, cli_add_tree, cli_usage, c_alias
 
-#include "cne_common.h"          // for __cne_unused, CNE_PKTMBUF_HEADROOM
-#include "cne_log.h"             // for cne_panic
-#include "cne_vec.h"             // for vec_len, vec_calc_size, cne_vec
+#include "cne_common.h"        // for __cne_unused, CNE_PKTMBUF_HEADROOM
+#include "cne_log.h"           // for cne_panic
+#include "cne_vec.h"
 #include "cnet_const.h"          // for CNET_COUNT_PER_VEC, __offsetof
 #include "cnet_ipv4.h"           // for ipv4_entry
 #include "cnet_protosw.h"        // for cnet_protosw_dump, protosw_entry
@@ -270,8 +270,8 @@ cmd_obj(int argc, char **argv)
     if (all || !strcmp(pool, "rt4"))
         __obj_dump("rt4", cnet->rt4_obj);
 
-    for (int i = 0; i < vec_len(cnet->stks); i++) {
-        stk_t *stk = vec_ptr_at_index(cnet->stks, i);
+    for (uint32_t i = 0; i < vec_len(cnet->stks); i++) {
+        stk_t *stk = vec_at_index(cnet->stks, i);
 
         cne_printf("\n[yellow]******** [cyan]%s [yellow]********[]\n", stk->name);
         if (all || !strcmp(pool, "tcb"))
@@ -569,8 +569,8 @@ static int
 cmd_ip(int argc, char **argv)
 {
     struct cli_map *m;
-    stk_t *stk = NULL;
-    int idx    = 0;
+    stk_t *stk   = NULL;
+    uint32_t idx = 0;
 
     m = cli_mapping(ip_map, argc, argv);
     if (!m)
@@ -601,7 +601,7 @@ cmd_ip(int argc, char **argv)
         idx = atoi(argv[2]);
 
         if (idx < vec_len(this_cnet->stks))
-            stk = vec_ptr_at_index(this_cnet->stks, idx);
+            stk = vec_at_index(this_cnet->stks, idx);
         else
             CNE_WARN("Unknown stack index showing all\n");
 

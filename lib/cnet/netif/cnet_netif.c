@@ -152,11 +152,11 @@ cnet_netif_attach_ports(struct cnet *cnet)
     struct netif *netif = NULL;
 
     for (uint16_t lpid = 0; lpid < CNE_MAX_ETHPORTS; lpid++) {
-        if ((netif = vec_ptr_at_index(this_cnet->netifs, lpid)) == NULL)
+        if ((netif = vec_at_index(this_cnet->netifs, lpid)) == NULL)
             continue;
 
         /* grab the driver that matches the port id */
-        drv = vec_ptr_at_index(cnet->drvs, lpid);
+        drv = vec_at_index(cnet->drvs, lpid);
         if (!drv)
             CNE_ERR_RET("Unable to find driver for %d - %s\n", lpid, netif->ifname);
 
@@ -172,6 +172,7 @@ cnet_netif_attach_ports(struct cnet *cnet)
 int
 cnet_netif_register(uint16_t lpid, char *ifname, char *netdev)
 {
+    struct cnet *cnet   = this_cnet;
     struct netif *netif = NULL;
 
     if ((lpid >= CNE_MAX_ETHPORTS) || !ifname || !netdev)
@@ -187,7 +188,7 @@ cnet_netif_register(uint16_t lpid, char *ifname, char *netdev)
         strlcpy(netif->netdev_name, netdev, sizeof(netif->netdev_name));
 
     /* The netif_idx is the index into the vector list */
-    netif->netif_idx = vec_add_ptr(this_cnet->netifs, netif);
+    netif->netif_idx = vec_add(cnet->netifs, netif);
 
     return 0;
 leave:

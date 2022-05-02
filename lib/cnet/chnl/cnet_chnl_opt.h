@@ -27,7 +27,6 @@ struct chnl_optsw {
     int (*getfunc)(struct chnl *, int, int, void *, uint32_t *);
 };
 
-CNDP_API int cnet_chnl_opt_init(int num_handlers);
 CNDP_API int cnet_chnl_opt_add(struct chnl_optsw *);
 CNDP_API int cnet_chnl_opt_iterate_set(struct chnl *ch, int level, int optname, const void *optval,
                                        uint32_t optlen);

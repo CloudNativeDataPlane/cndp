@@ -28,7 +28,7 @@
 
 #include "cne_common.h"          // for __cne_unused, CNE_SET_USED
 #include "cne_log.h"             // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_WARNING
-#include "cne_vec.h"             // for vec_pool_free, vec_start_mbuf_prefetch, vec_add_ptr
+#include "cne_vec.h"             // for vec_pool_free, vec_start_mbuf_prefetch, vec_add
 #include "cnet_const.h"          // for __errno_set, UDP_IO, CNET_UDP_CHNL_PRIO
 #include "cnet_protosw.h"        // for
 #include "pktmbuf.h"             // for pktmbuf_free, pktmbuf_data_len, pktmbuf_t

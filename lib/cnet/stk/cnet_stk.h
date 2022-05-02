@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 #include <cne_system.h>        // for cne_get_timer_hz
-#include <cne_vec.h>           // for vec_ptr_at_index, vec_len
+#include <cne_vec.h>           // for vec_at_index, vec_len
 #include <hmap.h>              // for hmap_t
 
 #include "cne_common.h"            // for __cne_cache_aligned
@@ -35,7 +35,6 @@ extern "C" {
 
 #define DEFAULT_RING_SIZE      8192
 #define DEFAULT_MBUFS_PER_PORT (8192 - 1)
-#define DEFAULT_VEC_COUNT      ((DEFAULT_MBUFS_PER_PORT / CNET_COUNT_PER_VEC) * 16)
 #define DEFAULT_RX_DESC        128
 #define DEFAULT_TX_DESC        256
 

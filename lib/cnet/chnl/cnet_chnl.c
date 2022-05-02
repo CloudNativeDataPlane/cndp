@@ -56,11 +56,11 @@ _chnl_buf_init(mempool_t *mp, void *opaque_arg __cne_unused, void *_b, unsigned 
     if (pthread_cond_init(&ch->ch_rcv.cb_cond, NULL))
         CNE_RET("cond init(ch_rcv) failed\n");
 
-    ch->ch_rcv.cb_vec = vec_alloc_ptr(ch->ch_rcv.cb_vec, CHNL_VEC_SIZE * 4);
+    ch->ch_rcv.cb_vec = vec_alloc(ch->ch_rcv.cb_vec, CHNL_VEC_SIZE);
     if (ch->ch_rcv.cb_vec == NULL)
         return;
 
-    ch->ch_snd.cb_vec = vec_alloc_ptr(ch->ch_snd.cb_vec, CHNL_VEC_SIZE * 4);
+    ch->ch_snd.cb_vec = vec_alloc(ch->ch_snd.cb_vec, CHNL_VEC_SIZE);
     if (ch->ch_snd.cb_vec == NULL)
         vec_free(ch->ch_rcv.cb_vec);
 }
@@ -169,8 +169,11 @@ chnl_cbflush(struct chnl_buf *cb)
     if (pthread_mutex_lock(&cb->mutex))
         CNE_RET("mutex lock failed\n");
 
-    vec_free_mbufs(cb->cb_vec);
-    cb->cb_cc = 0;
+    if (vec_len(cb->cb_vec)) {
+        pktmbuf_free_bulk(cb->cb_vec, vec_len(cb->cb_vec));
+        vec_len(cb->cb_vec) = 0;
+        cb->cb_cc           = 0;
+    }
 
     if (pthread_mutex_unlock(&cb->mutex))
         CNE_RET("Unable to release lock\n");
@@ -299,14 +302,11 @@ chnl_copy_data(pktmbuf_t **to, pktmbuf_t **from, int len)
         return 0;
 
     vec_foreach_ptr (m, from) {
-        if (len == 0)
-            break;
-
-        bytes += pktmbuf_data_len(m);
-
-        vec_add_ptr(to, m);
         if (vec_full(to))
             break;
+        bytes += pktmbuf_data_len(m);
+
+        vec_add(to, m);
     }
 
     len = vec_len(from) - vec_len(to);
@@ -947,13 +947,12 @@ int
 chnl_validate_cb(const char *msg, struct chnl_buf *cb)
 {
     pktmbuf_t *m;
-    uint32_t tot, num;
+    uint32_t tot = 0, num;
 
     num = vec_len(cb->cb_vec);
     if (num == 0)
-        return 0;
+        return tot;
 
-    tot = 0;
     vec_foreach_ptr (m, cb->cb_vec)
         tot += pktmbuf_data_len(m);
 
@@ -979,12 +978,12 @@ chnl_list(stk_t *stk)
         cne_printf("  Channel %p\n", ch);
         cne_printf("    pcb %p  proto %p\n", ch->ch_pcb, ch->ch_proto);
         cne_printf("    RCV buf flags %04x hiwat %d lowat %d cnt %u cc %d\n", ch->ch_rcv.cb_flags,
-                   ch->ch_rcv.cb_hiwat, ch->ch_rcv.cb_lowat, vec_len(ch->ch_rcv.cb_vec),
-                   ch->ch_rcv.cb_cc);
+                   ch->ch_rcv.cb_hiwat, ch->ch_rcv.cb_lowat,
+                   ch->ch_rcv.cb_vec ? vec_len(ch->ch_rcv.cb_vec) : 0, ch->ch_rcv.cb_cc);
         chnl_validate_cb("RCV", &ch->ch_rcv);
         cne_printf("    SND buf flags %04x hiwat %d lowat %d cnt %u cc %d\n", ch->ch_snd.cb_flags,
-                   ch->ch_snd.cb_hiwat, ch->ch_snd.cb_lowat, vec_len(ch->ch_snd.cb_vec),
-                   ch->ch_snd.cb_cc);
+                   ch->ch_snd.cb_hiwat, ch->ch_snd.cb_lowat,
+                   ch->ch_snd.cb_vec ? vec_len(ch->ch_snd.cb_vec) : 0, ch->ch_snd.cb_cc);
         chnl_validate_cb("SND", &ch->ch_snd);
         cne_printf("    Callback count %'ld\n", ch->callback_cnt);
     }

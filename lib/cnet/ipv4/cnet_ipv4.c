@@ -26,8 +26,8 @@
 #include "net/cne_udp.h"                  // for cne_udp_hdr
 #include "net/cne_tcp.h"                  // for cne_tcp_hdr
 #include "cne_log.h"                      // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_W...
-#include "cne_vec.h"                      // for vec_len, vec_move_at_index, vec_pool_free
-#include "cnet_const.h"                   // for iofunc_t, BEST_MATCH, False, IPV4_IO
+#include "cne_vec.h"
+#include "cnet_const.h"        // for iofunc_t, BEST_MATCH, False, IPV4_IO
 #include "cnet_reg.h"
 #include "cnet_ipv4.h"           // for ipv4_entry, ipv4_stats, DEFAULT_I...
 #include "cnet_protosw.h"        // for protosw_entry, cnet_ipproto_get
