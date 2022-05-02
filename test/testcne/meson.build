@@ -92,7 +92,6 @@ deps = [
     timer,
     tst_common,
     utils,
-    vec,
     xskdev,
 ]
 

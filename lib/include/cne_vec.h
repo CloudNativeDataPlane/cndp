@@ -4,8 +4,8 @@
 
 /* Created by Keith Wiles @ intel.com */
 
-#ifndef __CNET_VEC_H
-#define __CNET_VEC_H
+#ifndef __CNE_VEC_H
+#define __CNE_VEC_H
 
 #include <string.h>        // for memcpy
 #include <sys/queue.h>
@@ -170,16 +170,6 @@ vec_data(void *h)
  */
 #define vec_calc_size(n, _t) \
     CNE_ALIGN_CEIL((n * sizeof(_t)) + sizeof(vec_hdr_t), CNE_CACHE_LINE_SIZE)
-
-/**
- * Calculate the size of a vector based on mempool object size
- *
- * @param mp
- *   The mempool pointer to get the object size.
- * @return
- *   The number of entries that will fit in a mempool buffer.
- */
-#define vec_pool_count(m, _t) ((mempool_objsz(m) - sizeof(_t)) / sizeof(_t))
 
 /**
  * Set the vector to be free used for mempool or free list designs
@@ -381,65 +371,6 @@ vec_clr_dont_free(vec_hdr_t *v)
 
 #pragma GCC diagnostic pop
 
-CNDP_API void vec_dump(const char *msg, void *vec);
-
-/**
- * Allocate a vector structure from a mempool object
- *
- * @param mp
- *   The mempool pointer to allocate from
- * @return
- *   A pointer to a non-inited vector structure or NULL on error
- */
-static inline void *
-vec_pool_alloc(mempool_t *mp, int dont_free)
-{
-    void *v = NULL;
-
-    if (mp && mempool_get(mp, (void **)&v) == 0) {
-        vec_hdr_t *vec;
-
-        /*  move pointer to the vector data */
-        v = CNE_PTR_ADD(v, CNE_CACHE_LINE_SIZE);
-
-        /* Move backward to the vector header structure and apply flags */
-        vec        = vec_header(v);
-        vec->flags = (dont_free) ? VEC_DONT_FREE_FLAG : 0;
-    } else
-        CNE_ERR("Unable to allocate from vec_pool mp %p\n", mp);
-    return v;
-}
-
-/**
- * Free a vector structure to a mempool
- *
- * @param vec
- *   free this vector list back to the mempool
- */
-static inline void
-vec_pool_free(void *vec)
-{
-    if (vec) {
-        vec_hdr_t *h = vec_header(vec);
-
-        h->len = 0;
-
-        if ((h->flags & VEC_DONT_FREE_FLAG) == 0) {
-            if (h->flags & VEC_FREE_FLAG) {
-                CNE_WARN("vec_pool_free() already freed\n");
-                vec_dump(__func__, vec);
-                return;
-            }
-
-            if (!h->pool)
-                CNE_RET("Calling vec_pool_free() pool pointer being NULL\n");
-
-            h->flags = VEC_FREE_FLAG;
-            mempool_put(h->pool, CNE_PTR_SUB(vec, CNE_CACHE_LINE_SIZE));
-        }
-    }
-}
-
 /**
  * Free a set of mbufs pointers in a vector list
  *
@@ -517,76 +448,37 @@ vec_free_mbufs(void *vec)
         vec_add_ptr(t, v);                    \
     } while (0)
 
-#define VEC_HISTOGRAM_NAME_SIZE 32
-
-struct vec_histogram {
-    uint64_t size;        /**< Size of the histogram table */
-    uint64_t histogram[]; /**< Histogram table */
-};
-
 /**
- * Increment a value in a histogram based on vector length.
+ * Dump out a vec_hdr_t structure
  *
- * @param h
- *   The histogram pointer
+ * @param msg
+ *   A message to be printed before data, can be NULL.
  * @param vec
- *   The vector list to use the length as the histogram index location
+ *   A vector to printout
  */
-#define vec_histogram(h, vec)           \
-    do {                                \
-        vec_hdr_t *v = vec_header(vec); \
-        h->histogram[v->len]++;         \
-    } while (0)
+static inline void
+vec_dump(const char *msg, void *vec)
+{
+    vec_hdr_t *h;
 
-/**
- * Create a mempool of vector structures defined by the count, size and cache_size
- *
- * @param n
- *    The max number of vector list entries
- * @param entries
- *    The number of mempool objects to create
- * @param entry_sz
- *    The size of each entry in the vector list
- * @param cache_size
- *    The size of the mempool cache entries
- * @return
- *    The mempool pointer to use for allocation of vector structures or NULL on error
- */
-CNDP_API mempool_t *vec_pool_create(unsigned int n, unsigned int entries, unsigned int entry_sz,
-                                    unsigned int cache_size);
+    cne_printf("  [orange]%-8s[]  ", msg ? msg : "");
+    if (!vec) {
+        cne_printf(" *** Vector is NULL ***\n");
+        return;
+    }
 
-/**
- * Destroy the mempool used for the vec_pool_create() function
- *
- * @param mp
- *    The mempool pointer to destroy or free
- */
-CNDP_API void vec_pool_destroy(mempool_t *mp);
+    h = vec_header(vec);
 
-CNDP_API int vec_ptr_copy(char **to, char **from, int len);
-
-/**
- * Create the histogram structure
- *
- * @param size
- *   The number of entries in the histogram table.
- * @return
- *   The allocated histogram structure data or NULL on error
- */
-CNDP_API struct vec_histogram *vec_histogram_create(uint32_t size);
-
-/**
- * Dump out the histogram data
- *
- * @param f
- *    The file descriptor to write the text data, if NULL use stdout
- * @param h
- *   The histogram data structure
- */
-CNDP_API void vec_histogram_dump(FILE *f, struct vec_histogram *h);
+    cne_printf("[orange]%-8s[]  ", msg ? msg : "");
+    cne_printf("Vec @ %p, ", vec);
+    cne_printf("flags 0x%04x, ", h->flags);
+    cne_printf("len   %5d, ", h->len);
+    cne_printf("tlen  %5d, ", h->tlen);
+    cne_printf("pool  %p\n", h->pool);
+}
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __CNET_VEC_H */
+#endif /* __CNE_VEC_H */

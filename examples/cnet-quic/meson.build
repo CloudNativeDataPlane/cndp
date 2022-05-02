@@ -3,7 +3,7 @@
 
 sources = files('cnet-quic.c', 'parse-args.c', 'stats.c', 'quic-cli.c')
 
-deps += [pktdev, graph, mempool, pktmbuf, vec, hmap, timer,
+deps += [pktdev, graph, mempool, pktmbuf, hmap, timer,
     mmap, uds, metrics, pmd_af_xdp, fib, stack, utils]
 
 quicly_path = get_option('quicly_path')
