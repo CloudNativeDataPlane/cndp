@@ -13,7 +13,6 @@ def_deps = [
     mmap,
     pktdev,
     pktmbuf,
-    vec,
     fib,
 
     ring,

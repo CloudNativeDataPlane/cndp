@@ -62,8 +62,10 @@ udp_destroy(void *_stk)
     stk_t *stk = _stk;
 
     if (stk->udp) {
-        vec_pool_free(stk->udp->udp_hd.vec);
+        vec_free(stk->udp->udp_hd.vec);
+        stk->udp->udp_hd.vec = NULL;
         free(stk->udp);
+        stk->udp = NULL;
     }
     return 0;
 }

@@ -28,6 +28,7 @@ headers = files(
     'cne_version.h',
     'cne_inet.h',
     'cne_inet4.h',
+    'cne_vec.h',
     'cne_xmmt_ops.h',
     )
 net_hdrs = files(
