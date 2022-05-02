@@ -60,11 +60,11 @@ netif_show(struct netif *netif, char *ifname)
 
         addr.s_addr = be32toh(netif->ip4_addrs[j].ip.s_addr);
         cne_printf("%9s[magenta]inet.%d[]: [orange]%-15s[]", "", j,
-                   inet_ntop4(ip1, sizeof(ip1), &addr, NULL));
+                   inet_ntop4(ip1, sizeof(ip1), &addr, NULL) ?: "Invalid IP");
 
         addr.s_addr = be32toh(netif->ip4_addrs[j].netmask.s_addr);
         cne_printf(" [magenta]netmask[]: [goldenrod]%-15s[]",
-                   inet_ntop4(ip2, sizeof(ip2), &addr, NULL));
+                   inet_ntop4(ip2, sizeof(ip2), &addr, NULL) ?: "Invalid IP");
 
         if (netif->ip4_addrs[j].broadcast.s_addr) {
             addr.s_addr = be32toh(netif->ip4_addrs[j].broadcast.s_addr);

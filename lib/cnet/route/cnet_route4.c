@@ -49,13 +49,14 @@ cnet_route4_insert(int netdev_idx, struct in_addr *dst, struct in_addr *netmask,
         idx = fib_info_alloc(fi, rt);
         if (idx < 0)
             CNE_WARN("FIB allocate failed for %s\n",
-                     inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask));
+                     inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask) ?: "Invalid IP");
 
         depth = cne_prefixbits(rt->netmask.s_addr);
         if ((rc = cne_node_ip4_add_input(fi->fib, rt->nexthop.s_addr, depth, (uint32_t)idx))) {
             (void)fib_info_free(fi, idx);
             CNE_ERR_RET("Add %s Failed: %s\n",
-                        inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask), strerror(-rc));
+                        inet_ntop4(ip, sizeof(ip), &rt->nexthop, &rt->netmask) ?: "Invalid IP",
+                        strerror(-rc));
         }
     }
 
@@ -225,13 +226,14 @@ route4_dump(struct rt4_entry *rt, void *arg __cne_unused)
     mask.s_addr = htobe32(rt->netmask.s_addr);
     gate.s_addr = htobe32(rt->gateway.s_addr);
 
-    cne_printf("  [yellow]%-17s ", inet_ntop4(ip1, sizeof(ip1), &nh, NULL));
-    cne_printf("[orange]%-17s [cyan]%3d  ", inet_ntop4(ip2, sizeof(ip2), &mask, NULL),
-               rt->netif_idx);
+    cne_printf("  [yellow]%-17s ", inet_ntop4(ip1, sizeof(ip1), &nh, NULL) ?: "Invalid IP");
+    cne_printf("[orange]%-17s [cyan]%3d  ",
+               inet_ntop4(ip2, sizeof(ip2), &mask, NULL) ?: "Invalid IP", rt->netif_idx);
 
     netif = vec_ptr_at_index(this_cnet->netifs, rt->netif_idx);
     cne_printf("[orange]%-17s [cyan]%6d %7d   [magenta]%s[]\n",
-               inet_ntop4(ip3, sizeof(ip3), &gate, NULL), rt->metric, rt->timo, netif->ifname);
+               inet_ntop4(ip3, sizeof(ip3), &gate, NULL) ?: "Invalid IP", rt->metric, rt->timo,
+               netif->ifname);
 
     return 0;
 }
