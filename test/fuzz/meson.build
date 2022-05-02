@@ -12,14 +12,17 @@ fuzzerz = [
     'cli_input',
     'uds_create',
     'cne_log',
+    'mempool_create',
 ]
 
 deps = [
     bpf_dep,
     build_cfg,
     cli,
+    cne,
     include,
     log,
+    mempool,
     osal,
     uds,
 ]
