@@ -93,13 +93,13 @@ cnet_arp_add(int netif_idx, struct in_addr *addr, struct ether_addr *mac, int pe
         ret = fib_info_alloc(fi, entry);
         if (ret < 0)
             CNE_WARN("FIB allocate failed for %s\n",
-                     inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask));
+                     inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask) ?: "Invalid IP");
 
         idx = ret;
         if (cne_fib_add(fi->fib, addr->s_addr, 32, idx)) {
             fib_info_free(fi, idx);
             CNE_ERR("ARP add failed for %s\n",
-                    inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask));
+                    inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask) ?: "Invalid IP");
             cnet_arp_free(entry);
             return NULL;
         }
@@ -140,7 +140,7 @@ _arp_show(struct arp_entry *entry, void *arg __cne_unused)
     char ip[IP4_ADDR_STRLEN] = {0};
 
     addr.s_addr = be32toh(entry->pa.s_addr);
-    cne_printf("  [orange]%-15s[] ", inet_ntop4(ip, sizeof(ip), &addr, NULL));
+    cne_printf("  [orange]%-15s[] ", inet_ntop4(ip, sizeof(ip), &addr, NULL) ?: "Invalid IP");
     ether_format_addr(buf, sizeof(buf), &entry->ha);
     cne_printf("[yellow]%-17s[] ", buf);
 
