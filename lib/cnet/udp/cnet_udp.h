@@ -23,11 +23,6 @@ extern "C" {
 #define MAX_UDP_RCV_SIZE (1024 * 1024)
 #define MAX_UDP_SND_SIZE MAX_UDP_RCV_SIZE
 
-#ifdef _IPPORT_RESERVED
-#undef _IPPORT_RESERVED
-#endif
-#define _IPPORT_RESERVED 49152 /* Starting Ephemeral Port value */
-
 struct udp_entry {
     struct pcb_hd udp_hd; /**< Head of the pcb list for UDP */
     bool cksum_on;        /**< Turn UDP checksum on/off */

@@ -29,6 +29,9 @@ extern "C" {
 #define is_set(x, y) (((x) & (y)) != 0)
 #define is_clr(x, y) (((x) & (y)) == 0)
 
+#define PROTO_DEFAULT_MBUF_COUNT 1024  /**< Default UDP/TCP mbuf count */
+#define _IPPORT_RESERVED         49152 /**< Starting Ephemeral Port value */
+
 /**
  * short definition to set a function does not return
  */
@@ -44,18 +47,6 @@ extern "C" {
 #else
 #define cnet_assert(x) \
     do {               \
-    } while (/*CONSTCOND*/ 0)
-#endif
-
-#ifdef ENABLE_CHNL_LOCKING
-#define chnl_lock(ch)   pthread_mutex_lock(&(ch)->ch_mutex)
-#define chnl_unlock(ch) pthread_mutex_unlock(&(ch)->ch_mutex)
-#else
-#define chnl_lock(ch) \
-    do {              \
-    } while (/*CONSTCOND*/ 0)
-#define chnl_unlock(ch) \
-    do {                \
     } while (/*CONSTCOND*/ 0)
 #endif
 

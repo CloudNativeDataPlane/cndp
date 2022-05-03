@@ -27,6 +27,7 @@
 #include <cnet_udp.h>
 #include <cnet_ipv4.h>
 #include <cnet_meta.h>
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>
 
 #include <cnet_node_names.h>

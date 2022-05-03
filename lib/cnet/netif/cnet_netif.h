@@ -374,6 +374,16 @@ CNDP_API struct netif *cnet_netif_find_by_ifindex(int ifindex);
 CNDP_API struct netif *cnet_netif_find_by_netdev(char *netdev_name);
 
 /**
+ * @brief Find the netif structure by the lport id.
+ *
+ * @param lport
+ *   The lport id value to help locate the netif pointer.
+ * @return
+ *   NULL on error or pointer to netif structure.
+ */
+CNDP_API struct netif *cnet_netif_find_by_lport(int lport);
+
+/**
  * @brief Is the ifname a valid interface name
  *
  * @param ifname
