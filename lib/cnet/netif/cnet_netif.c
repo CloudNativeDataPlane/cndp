@@ -13,11 +13,12 @@
 #include <cnet_eth.h>           // for cnet_eth_init
 #include <cnet_route.h>         // for
 #include <cnet_route4.h>        // for
-#include <cnet_chnl.h>          // for AF_INET, CH_UNSPEC
-#include <endian.h>             // for be32toh
-#include <stdatomic.h>          // for atomic_fetch_add
-#include <string.h>             // for NULL, strcmp, strerror
-#include <bsd/string.h>         // for
+#include "../chnl/chnl_priv.h"
+#include <cnet_chnl.h>         // for AF_INET, CH_UNSPEC
+#include <endian.h>            // for be32toh
+#include <stdatomic.h>         // for atomic_fetch_add
+#include <string.h>            // for NULL, strcmp, strerror
+#include <bsd/string.h>        // for
 #include <cnet_arp.h>
 
 #include "cne_log.h"           // for CNE_ERR_RET
@@ -243,6 +244,18 @@ cnet_netif_find_by_netdev(char *netdev_name)
 
     vec_foreach_ptr (netif, this_cnet->netifs) {
         if (netif && !strncmp(netif->netdev_name, netdev_name, sizeof(netif->ifname)))
+            return netif;
+    }
+    return NULL;
+}
+
+struct netif *
+cnet_netif_find_by_lport(int lport)
+{
+    struct netif *netif;
+
+    vec_foreach_ptr (netif, this_cnet->netifs) {
+        if (netif && netif->lpid == lport)
             return netif;
     }
     return NULL;

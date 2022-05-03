@@ -25,6 +25,7 @@
 #include <pktdev_api.h>         // for pktdev_port_count
 #include <pktdev_core.h>        // for cne_pktdev, pktdev_data
 #include <pmd_ring.h>
+#include <uid.h>
 
 #include <cnet_route.h>
 #include <cnet_route4.h>
@@ -109,11 +110,6 @@ cnet_stop(void)
     struct cnet *cnet = this_cnet;
 
     if (cnet && cnet_lock()) {
-        stk_t *stk;
-
-        vec_foreach_ptr (stk, cnet->stks)
-            cnet_stk_stop_running(stk);
-
         cnet_drv_destroy(cnet);
         cnet_route4_destroy(cnet);
         cnet_arp_destroy(cnet);
@@ -123,9 +119,16 @@ cnet_stop(void)
         vec_free(cnet->drvs);
         vec_free(cnet->netifs);
 
+        if (uid_unregister(cnet->chnl_uids) < 0)
+            CNE_ERR("Unable to unregister UID\n");
+        vec_free(cnet->chnl_descriptors);
+
         __cnet = NULL;
         memset(&cnet_data, 0, sizeof(cnet_data));
         cnet_unlock();
+
+        if (pthread_spin_destroy(&__cnet_lock))
+            CNE_ERR("Unable to destroy spinlock\n");
     }
 }
 
@@ -167,6 +170,15 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
 
     cnet->num_chnls = CNET_NUM_CHANNELS;
 
+    cnet->chnl_uids = uid_register("CHNL_UIDs", cnet->num_chnls);
+    if (!cnet->chnl_uids)
+        CNE_ERR_GOTO(err, "Unable to allocate UID values\n");
+
+    /* Vector of chnl descriptors indexed by chnl UID number */
+    cnet->chnl_descriptors = vec_alloc(cnet->chnl_descriptors, cnet->num_chnls);
+    if (cnet->chnl_descriptors == NULL)
+        CNE_ERR_GOTO(err, "Unable to allocate channel descriptor array\n");
+
     cnet->stks = vec_alloc(cnet->stks, STK_VEC_COUNT);
     if (!cnet->stks)
         CNE_ERR_GOTO(err, "Unable to allocate stk vector\n");
@@ -183,6 +195,9 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
     return;
 
 err:
+    if (uid_unregister(cnet->chnl_uids) < 0)
+        CNE_ERR("Unable to unregister UID\n");
+    vec_free(cnet->chnl_descriptors);
     vec_free(cnet->netifs);
     vec_free(cnet->drvs);
     vec_free(cnet->stks);

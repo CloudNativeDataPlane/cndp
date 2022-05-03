@@ -106,8 +106,6 @@ void netlink_thread(void *arg);
 int enable_metrics(void);
 
 int setup_echo_server(void);
-struct chnl;
-int quic_recv_callback(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs);
 
 int quicly_main(int argc, char **argv);
 int open_quic_channel(void);

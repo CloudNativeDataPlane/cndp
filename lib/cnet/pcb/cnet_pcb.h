@@ -35,20 +35,21 @@ struct chnl;
 struct tcb_entry;
 
 struct pcb_entry {
-    struct pcb_key key;    /**< Key values for PCB entry */
-    struct netif *netif;   /**< Netif pointer */
-    struct chnl *ch;       /**< Channel pointer */
-    struct tcb_entry *tcb; /**< TCB pointer */
-    uint16_t opt_flag;     /**< Option flags */
-    uint8_t ttl;           /**< Time to live */
-    uint8_t tos;           /**< TOS value */
-    uint8_t closed;        /**< Closed flag */
-    uint8_t ip_proto;      /**< IP protocol number */
+    TAILQ_ENTRY(pcb_entry) next; /**< Pointer to the next pcb_entry in a list */
+    struct pcb_key key;          /**< Key values for PCB entry */
+    struct netif *netif;         /**< Netif pointer */
+    struct chnl *ch;             /**< Channel pointer */
+    struct tcb_entry *tcb;       /**< TCB pointer */
+    uint16_t opt_flag;           /**< Option flags */
+    uint8_t ttl;                 /**< Time to live */
+    uint8_t tos;                 /**< TOS value */
+    uint8_t closed;              /**< Closed flag */
+    uint8_t ip_proto;            /**< IP protocol number */
 } __cne_cache_aligned;
 
 struct pcb_hd {
     struct pcb_entry **vec; /**< PCB entries */
-    uint16_t lport;         /**< Local port number i.e. IP local port ID */
+    uint16_t local_port;    /**< Local port number i.e. IP local port ID */
 };
 
 static inline void

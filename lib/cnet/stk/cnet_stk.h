@@ -17,6 +17,7 @@
 #include <stdint.h>            // for uint32_t, uint16_t, uint64_t, uint8_t
 #include <sys/select.h>        // for fd_set
 #include <unistd.h>            // for usleep, pid_t
+#include <bsd/sys/bitstring.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +26,7 @@ extern "C" {
 #include <cne_system.h>        // for cne_get_timer_hz
 #include <cne_vec.h>           // for vec_at_index, vec_len
 #include <hmap.h>              // for hmap_t
+#include <cne_timer.h>
 
 #include "cne_common.h"            // for __cne_cache_aligned
 #include "cne_per_thread.h"        // for CNE_PER_THREAD, CNE_DECLARE_PER_THREAD
@@ -33,31 +35,25 @@ extern "C" {
 #include "mempool.h"               // for mempool_t
 #include "pktmbuf.h"               // for pktmbuf_alloc, pktmbuf_t
 
-#define DEFAULT_RING_SIZE      8192
-#define DEFAULT_MBUFS_PER_PORT (8192 - 1)
-#define DEFAULT_RX_DESC        128
-#define DEFAULT_TX_DESC        256
-
 struct netlink_info;
+struct tcp_stats;
 
 typedef struct stk_s {
-    pthread_mutex_t mutex;              /**< Stack Mutex */
-    volatile uint16_t running;          /**< Network instance is running */
-    uint16_t idx;                       /**< Index number of stack instance */
-    uint16_t lid;                       /**< lcore ID for the the network instance */
-    uint16_t reserved;                  /**< Reserved for future use */
-    pid_t tid;                          /**< Thread process id */
-    char name[32];                      /**< Name of the network instance */
-    struct cne_graph *graph;            /**< Graph structure pointer for this instance */
-    TAILQ_HEAD(, chnl) chnls;           /**< List of chnl structures */
-    TAILQ_HEAD(, tcb_entry) tcbs;       /**< List of TCB structures */
-    uint32_t tcp_now;                   /**< TCP now timer tick on slow timeout */
-    uint32_t gflags;                    /**< Global flags */
-    uint64_t ticks;                     /**< Number of ticks from start */
-    mempool_t *tcb_objs;                /**< List of free TCB structures */
-    mempool_t *seg_objs;                /**< List of free Segment structures */
-    mempool_t *pcb_objs;                /**< PCB cnet_objpool pointer */
-    mempool_t *chnl_objs;               /**< Channel cnet_objpool pointer */
+    pthread_mutex_t mutex;    /**< Stack Mutex */
+    uint16_t idx;             /**< Index number of stack instance */
+    uint16_t lid;             /**< lcore ID for the stack instance */
+    pid_t tid;                /**< Thread process id */
+    char name[32];            /**< Name of the network instance */
+    struct cne_graph *graph;  /**< Graph structure pointer for this instance */
+    struct cne_node *tx_node; /**< TX node pointer used for sending packets */
+    bitstr_t *tcbs;           /**< Bitmap of active TCB structures based on mempool index */
+    uint32_t tcp_now;         /**< TCP now timer tick on slow timeout */
+    uint32_t gflags;          /**< Global flags */
+    uint64_t ticks;           /**< Number of ticks from start */
+    mempool_t *tcb_objs;      /**< List of free TCB structures */
+    mempool_t *seg_objs;      /**< List of free Segment structures */
+    mempool_t *pcb_objs;      /**< PCB cnet_objpool pointer */
+    mempool_t *chnl_objs;     /**< Channel cnet_objpool pointer */
     struct protosw_entry **protosw_vec; /**< protosw vector entries */
     struct icmp_entry *icmp;            /**< ICMP information */
     struct icmp6_entry *icmp6;          /**< ICMP6 information */
@@ -67,6 +63,8 @@ typedef struct stk_s {
     struct raw_entry *raw;              /**< Raw information */
     struct udp_entry *udp;              /**< UDP information */
     struct chnl_optsw **chnlopt;        /**< Channel Option pointers */
+    struct cne_timer tcp_timer;         /**< TCP Timer structure */
+    struct tcp_stats *tcp_stats;        /**< TCP statistics */
 } stk_t __cne_cache_aligned;
 
 CNE_DECLARE_PER_THREAD(stk_t *, stk);
@@ -119,19 +117,6 @@ cnet_stk_find_by_lcore(uint8_t lid)
             return stk;
     }
     return NULL;
-}
-
-static inline void
-cnet_stk_stop_running(stk_t *stk)
-{
-    if (stk)
-        stk->running = 0;
-}
-
-static inline int
-cnet_stk_is_running(void)
-{
-    return (this_stk) ? this_stk->running : 0;
 }
 
 static inline int

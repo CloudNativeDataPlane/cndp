@@ -37,43 +37,48 @@ typedef struct tcpip4_s {
 } __cne_packed tcpip4_t;
 
 static inline uint16_t
-tcp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
+tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
 {
     struct cnet *cnet = this_cnet;
-    tcpip4_t *uip;
+    tcpip4_t *tip;
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
 
     md = cnet_mbuf_metadata(m);
 
-    uip = pktmbuf_mtod(m, struct tcpip4_s *);
+    tip = pktmbuf_mtod(m, struct tcpip4_s *);
 
     /* Convert this into AVX instructions */
-    in_caddr_update(&key.faddr, AF_INET, sizeof(struct in_caddr), uip->tcp.src_port);
-    key.faddr.cin_addr.s_addr = uip->ip4.src_addr;
-    in_caddr_update(&key.laddr, AF_INET, sizeof(struct in_caddr), uip->tcp.dst_port);
-    key.laddr.cin_addr.s_addr = uip->ip4.dst_addr;
+    in_caddr_update(&key.faddr, AF_INET, sizeof(struct in_addr), tip->tcp.src_port);
+    key.faddr.cin_addr.s_addr = tip->ip4.src_addr;
+    in_caddr_update(&key.laddr, AF_INET, sizeof(struct in_addr), tip->tcp.dst_port);
+    key.laddr.cin_addr.s_addr = tip->ip4.dst_addr;
 
-    md->faddr.cin_port = be16toh(uip->tcp.src_port);
-    md->laddr.cin_port = be16toh(uip->tcp.dst_port);
+    md->faddr.cin_port = be16toh(tip->tcp.src_port);
+    md->laddr.cin_port = be16toh(tip->tcp.dst_port);
 
     /* Create a 4x PCB lookup routine */
     pcb = cnet_pcb_lookup(hd, &key, BEST_MATCH);
     if (likely(pcb)) {
-        if (cne_ipv4_udptcp_cksum_verify(&uip->ip4, &uip->tcp))
-            return TCP_INPUT_NEXT_PKT_DROP;
+        int rc = TCP_INPUT_NEXT_PKT_DROP;
+
+        if (cne_ipv4_udptcp_cksum_verify(&tip->ip4, &tip->tcp))
+            return rc;
 
         m->userptr = pcb;
         in_caddr_copy(&md->faddr, &key.faddr); /* Save the foreign address */
         in_caddr_copy(&md->laddr, &key.laddr); /* Save the local address */
 
-        pktmbuf_adj_offset(m, m->l3_len); /* Adjust mbuf to point to TCP header */
-
         /* returns one of the TCP_INPUT_NEXT_* values */
-        return cnet_tcp_input(pcb, m);
+        rc = cnet_tcp_input(pcb, m);
+
+        CNE_DEBUG("cnet_tcp_input() returned [orange]%s[]\n", node->nodes[rc]->name);
+
+        return rc;
     }
 
+    CNE_DEBUG("PCB lookup failed (%s)\n", (cnet->flags & CNET_PUNT_ENABLED) ? "Punt" : "Drop");
     return (cnet->flags & CNET_PUNT_ENABLED) ? TCP_INPUT_NEXT_PKT_PUNT : TCP_INPUT_NEXT_PKT_DROP;
 }
 
@@ -127,10 +132,10 @@ tcp_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 4;
         n_left_from -= 4;
 
-        next0 = tcp_input_lookup(mbuf0, hd);
-        next1 = tcp_input_lookup(mbuf1, hd);
-        next2 = tcp_input_lookup(mbuf2, hd);
-        next3 = tcp_input_lookup(mbuf3, hd);
+        next0 = tcp_input_lookup(node, mbuf0, hd);
+        next1 = tcp_input_lookup(node, mbuf1, hd);
+        next2 = tcp_input_lookup(node, mbuf2, hd);
+        next3 = tcp_input_lookup(node, mbuf3, hd);
 
         /* Enqueue four to next node */
         cne_edge_t fix_spec = (next_index ^ next0) | (next_index ^ next1) | (next_index ^ next2) |
@@ -188,7 +193,7 @@ tcp_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 1;
         n_left_from -= 1;
 
-        next0 = tcp_input_lookup(mbuf0, hd);
+        next0 = tcp_input_lookup(node, mbuf0, hd);
 
         if (unlikely(next_index ^ next0)) {
             /* Copy things successfully speculated till now */
@@ -219,17 +224,9 @@ tcp_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     return nb_objs;
 }
 
-static int
-tcp_input_node_init(const struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused)
-{
-    return 0;
-}
-
 static struct cne_node_register tcp_input_node_base = {
     .process = tcp_input_node_process,
     .name    = TCP_INPUT_NODE_NAME,
-
-    .init = tcp_input_node_init,
 
     .nb_edges = TCP_INPUT_NEXT_MAX,
     .next_nodes =

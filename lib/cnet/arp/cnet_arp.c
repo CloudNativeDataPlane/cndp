@@ -15,12 +15,13 @@
 #define DEFAULT_HASH_FUNC cne_jhash
 #endif
 
-#include <cnet.h>                  // for cnet_add_instance
-#include <cnet_stk.h>              // for stk_entry, per_thread_stk, this_stk
-#include <cne_inet.h>              // for inet_ntop4, inet_addr_copy
-#include <cnet_drv.h>              // for drv_entry
-#include <cnet_netif.h>            // for netif, net_addr, cnet_netif_match...
-#include <cnet_eth.h>              // for IPV4_ADDR_SIZE
+#include <cnet.h>              // for cnet_add_instance
+#include <cnet_stk.h>          // for stk_entry, per_thread_stk, this_stk
+#include <cne_inet.h>          // for inet_ntop4, inet_addr_copy
+#include <cnet_drv.h>          // for drv_entry
+#include <cnet_netif.h>        // for netif, net_addr, cnet_netif_match...
+#include <cnet_eth.h>          // for IPV4_ADDR_SIZE
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>             // for AF_INET
 #include <cnet_route.h>            // for
 #include <cnet_ip_common.h>        // for ETH_HW_TYPE

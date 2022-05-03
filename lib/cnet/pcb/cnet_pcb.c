@@ -4,7 +4,8 @@
 
 #include <cnet.h>        // for cnet_add_instance
 #include <cnet_reg.h>
-#include <cnet_stk.h>          // for stk_entry, per_thread_stk, this_stk
+#include <cnet_stk.h>        // for stk_entry, per_thread_stk, this_stk
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>         // for chnl_protocol_str, chnl, AF_INET
 #include <netinet/in.h>        // for INADDR_ANY, ntohs
 

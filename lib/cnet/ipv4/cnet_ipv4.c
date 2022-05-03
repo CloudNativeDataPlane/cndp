@@ -2,13 +2,14 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-#include <net/cne_ether.h>         // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
-#include <hexdump.h>               // for cne_hexdump
-#include <cnet.h>                  // for cnet_add_instance
-#include <cnet_stk.h>              // for stk_entry, per_thread_stk, this_stk
-#include <cne_inet.h>              // for in_caddr_create, inet_ntop4, in_c...
-#include <cnet_drv.h>              // for drv_entry
-#include <cnet_netif.h>            // for netif, cnet_netif_from_index...
+#include <net/cne_ether.h>        // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
+#include <hexdump.h>              // for cne_hexdump
+#include <cnet.h>                 // for cnet_add_instance
+#include <cnet_stk.h>             // for stk_entry, per_thread_stk, this_stk
+#include <cne_inet.h>             // for in_caddr_create, inet_ntop4, in_c...
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_netif.h>           // for netif, cnet_netif_from_index...
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>             // for
 #include <cnet_route.h>            // for _RTF_HOST
 #include <cnet_route4.h>           // for

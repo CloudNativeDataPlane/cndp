@@ -24,6 +24,7 @@
 #include <pktdev.h>           // for pktdev_rx_burst
 #include <pktmbuf.h>          // for pktmbuf_t, pktmbuf_data_len
 #include <pktmbuf_ptype.h>
+#include "chnl_priv.h"
 #include <cnet_chnl.h>        // for cnet_chnl_get
 
 #include <cnet_node_names.h>

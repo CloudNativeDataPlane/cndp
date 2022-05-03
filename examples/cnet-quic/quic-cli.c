@@ -476,8 +476,7 @@ static quicly_generate_resumption_token_t generate_resumption_token = {
     &on_generate_resumption_token};
 
 static void
-send_packets_default(struct chnl *ch, struct sockaddr *dest, struct iovec *packets,
-                     size_t num_packets)
+send_packets_default(int cd, struct sockaddr *dest, struct iovec *packets, size_t num_packets)
 {
     for (size_t i = 0; i != num_packets; ++i) {
         pktmbuf_t *m;
@@ -485,13 +484,13 @@ send_packets_default(struct chnl *ch, struct sockaddr *dest, struct iovec *packe
         if (verbosity >= 2)
             cne_hexdump(NULL, "sendmsg", packets[i].iov_base, packets[i].iov_len);
 
-        if (pktdev_buf_alloc(ch->ch_idx, &m, 1) == 0)
+        if (pktdev_buf_alloc(0, &m, 1) == 0)
             CNE_RET("Unable to allocate mbufs\n");
 
         if (pktmbuf_write(packets[i].iov_base, packets[i].iov_len, m, 0) == NULL)
             CNE_RET("Unable to copy data into mbuf\n");
 
-        if (chnl_sendto(ch, dest, &m, 1) < 0)
+        if (chnl_sendto(cd, dest, &m, 1) < 0)
             perror("sendmsg failed");
     }
 }
@@ -543,18 +542,18 @@ send_packets_gso(struct chnl *ch, struct sockaddr *dest, struct iovec *packets, 
 
 #endif
 
-static void (*send_packets)(struct chnl *ch, struct sockaddr *, struct iovec *,
+static void (*send_packets)(int cd, struct sockaddr *, struct iovec *,
                             size_t) = send_packets_default;
 
 static void
-send_one_packet(struct chnl *ch, struct sockaddr *dest, const void *payload, size_t payload_len)
+send_one_packet(int cd, struct sockaddr *dest, const void *payload, size_t payload_len)
 {
     struct iovec vec = {.iov_base = (void *)payload, .iov_len = payload_len};
-    send_packets(ch, dest, &vec, 1);
+    send_packets(cd, dest, &vec, 1);
 }
 
 static int
-send_pending(struct chnl *ch, quicly_conn_t *conn)
+send_pending(int cd, quicly_conn_t *conn)
 {
     quicly_address_t dest, src;
     struct iovec packets[MAX_BURST_PACKETS];
@@ -565,7 +564,7 @@ send_pending(struct chnl *ch, quicly_conn_t *conn)
 
     if ((ret = quicly_send(conn, &dest, &src, packets, &num_packets, buf, sizeof(buf))) == 0 &&
         num_packets != 0)
-        send_packets(ch, &dest.sa, packets, num_packets);
+        send_packets(cd, &dest.sa, packets, num_packets);
 
     return ret;
 }
@@ -612,7 +611,7 @@ enqueue_requests(quicly_conn_t *conn)
 }
 
 static int
-run_client(struct chnl *ch, pktmbuf_t *mbuf)
+run_client(int cd, pktmbuf_t *mbuf)
 {
     quicly_conn_t *conn = NULL;
 
@@ -640,7 +639,7 @@ run_client(struct chnl *ch, pktmbuf_t *mbuf)
         }
     }
     if (conn != NULL) {
-        int ret = send_pending(ch, conn);
+        int ret = send_pending(cd, conn);
         if (ret != 0) {
             quicly_free(conn);
             conn = NULL;
@@ -733,7 +732,7 @@ CIDMismatch:
 }
 
 static int
-run_server(struct chnl *ch, pktmbuf_t *mbuf)
+run_server(int cd, pktmbuf_t *mbuf)
 {
     uint8_t *buf = pktmbuf_mtod(mbuf, uint8_t *);
     quicly_address_t remote;
@@ -763,7 +762,7 @@ run_server(struct chnl *ch, pktmbuf_t *mbuf)
                                                     quicly_supported_versions, payload);
 
                 assert(payload_len != SIZE_MAX);
-                send_one_packet(ch, &remote.sa, payload, payload_len);
+                send_one_packet(cd, &remote.sa, payload, payload_len);
                 break;
             }
 
@@ -806,7 +805,7 @@ run_server(struct chnl *ch, pktmbuf_t *mbuf)
                         &ctx, packet.version, packet.cid.src, packet.cid.dest.encrypted, err_desc,
                         payload);
                     assert(payload_len != SIZE_MAX);
-                    send_one_packet(ch, &remote.sa, payload, payload_len);
+                    send_one_packet(cd, &remote.sa, payload, payload_len);
                 }
             }
             if (enforce_retry && token == NULL && packet.cid.dest.encrypted.len >= 8) {
@@ -822,7 +821,7 @@ run_server(struct chnl *ch, pktmbuf_t *mbuf)
                     packet.cid.dest.encrypted, ptls_iovec_init(NULL, 0), ptls_iovec_init(NULL, 0),
                     NULL, payload);
                 assert(payload_len != SIZE_MAX);
-                send_one_packet(ch, &remote.sa, payload, payload_len);
+                send_one_packet(cd, &remote.sa, payload, payload_len);
                 break;
             } else {
                 /* new connection */
@@ -850,14 +849,14 @@ run_server(struct chnl *ch, pktmbuf_t *mbuf)
                 size_t payload_len =
                     quicly_send_stateless_reset(&ctx, packet.cid.dest.encrypted.base, payload);
                 assert(payload_len != SIZE_MAX);
-                send_one_packet(ch, &remote.sa, payload, payload_len);
+                send_one_packet(cd, &remote.sa, payload, payload_len);
             }
         }
     }
 
     for (size_t i = 0; i != num_conns; ++i) {
         if (quicly_get_first_timeout(conns[i]) <= ctx.now->cb(ctx.now)) {
-            if (send_pending(ch, conns[i]) != 0) {
+            if (send_pending(cd, conns[i]) != 0) {
                 dump_stats(stderr, conns[i]);
                 quicly_free(conns[i]);
                 memmove(conns + i, conns + i + 1, (num_conns - i - 1) * sizeof(*conns));
@@ -1080,13 +1079,21 @@ push_req(const char *path, int to_file)
 }
 
 int
-quic_recv_callback(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+quic_callback(int ctype __cne_unused, int cd)
 {
-    CNE_DEBUG("Received %d packets\n", nb_mbufs);
+    pktmbuf_t *mbufs[128];
+    int nb_mbufs;
 
-    for (int i = 0; i < nb_mbufs; i++) {
-        if ((is_server) ? run_server(ch, mbufs[i]) : run_client(ch, mbufs[i]) < 0)
-            break;
+    nb_mbufs = chnl_recv(cd, mbufs, 128);
+
+    if (nb_mbufs > 0) {
+        CNE_DEBUG("Received %d packets\n", nb_mbufs);
+
+        for (int i = 0; i < nb_mbufs; i++)
+            if ((is_server) ? run_server(cd, mbufs[i]) : run_client(cd, mbufs[i]) < 0)
+                break;
+
+        pktmbuf_free_bulk(mbufs, nb_mbufs);
     }
 
     return 0;
@@ -1457,23 +1464,23 @@ quicly_main(int argc, char **argv)
 int
 open_quic_channel(void)
 {
-    struct chnl *ch = NULL;
     uint32_t opt;
+    int cd;
 
-    ch = channel(cinfo->sa.ss_family, SOCK_DGRAM, 0, quic_recv_callback);
-    if (!ch)
-        CNE_ERR_GOTO(err, "chnl_socket call failed\n");
+    cd = channel(cinfo->sa.ss_family, SOCK_DGRAM, 0, quic_callback);
+    if (cd < 0)
+        CNE_ERR_GOTO(err, "channel() call failed\n");
 
     opt = 1;
-    if (chnl_set_opt(ch, SO_CHANNEL, SO_REUSEADDR, &opt, sizeof(uint32_t)) < 0)
+    if (chnl_set_opt(cd, SO_CHANNEL, SO_REUSEADDR, &opt, sizeof(uint32_t)) < 0)
         CNE_ERR_GOTO(err, "Setting Reuseaddr failed\n");
 
     opt = 1;
-    if (chnl_set_opt(ch, 0, SO_UDP_CHKSUM, &opt, sizeof(uint32_t)) < 0)
+    if (chnl_set_opt(cd, 0, SO_UDP_CHKSUM, &opt, sizeof(uint32_t)) < 0)
         CNE_ERR_GOTO(err, "Setting UDP checksum failed\n");
 
     if (is_server) {
-        if (chnl_bind(ch, (struct sockaddr *)&cinfo->sa, cinfo->salen) < 0)
+        if (chnl_bind(cd, (struct sockaddr *)&cinfo->sa, cinfo->salen) < 0)
             CNE_ERR_GOTO(err, "bind failed\n");
     } else {
         struct sockaddr_in local = {0};
@@ -1481,7 +1488,7 @@ open_quic_channel(void)
         int ret;
 
         local.sin_family = AF_INET;
-        if (chnl_bind(ch, (struct sockaddr *)&local, sizeof(local)) != 0)
+        if (chnl_bind(cd, (struct sockaddr *)&local, sizeof(local)) != 0)
             CNE_ERR_GOTO(err, "bind failed to local address\n");
 
         ret =
@@ -1490,10 +1497,10 @@ open_quic_channel(void)
         assert(ret == 0);
         ++next_cid.master_id;
         enqueue_requests(conn);
-        send_pending(ch, conn);
+        send_pending(cd, conn);
     }
     return 0;
 err:
-    chnl_shutdown(ch, SHUT_RDWR);
+    chnl_shutdown(cd, SHUT_RDWR);
     return -1;
 }

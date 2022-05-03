@@ -10,7 +10,7 @@
     //    description - (O) the description of the application
     "application": {
         "name": "cnet-graph",
-        "description": "A simple packet forwarder using graph nodes for CNET"
+        "description": "A simple network stack example using graph nodes for CNET"
     },
 
     // (O) Default values
@@ -43,6 +43,7 @@
     //                  if not present or zero use defaults.rxdesc, normally zero.
     //    txdesc  - (O) Number of TX descriptors to be allocated in 1K increments,
     //                  if not present or zero use defaults.txdesc, normally zero.
+    //    shared_umem - (O) Set to true to use xsk_socket__create_shared() API, default false
     //    description | desc - (O) Description of the umem space.
     "umems": {
         "umem0": {
@@ -75,6 +76,7 @@
     //    umem          - (R) The UMEM assigned to this lport
     //    region        - (O) UMEM region index value, default region 0
     //    busy_poll     - (O) Enable busy polling support, true or false, default false
+    //    busy_polling  -     Same as above
     //    busy_timeout  - (O) 1-65535 or 0 - use default value, values in milliseconds
     //    busy_budget   - (O) 0xFFFF disabled, 0 use default, >0 budget value
     //    inhibit_prog_load - (O) inhibit loading the BPF program if true, default false
@@ -106,6 +108,7 @@
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
         "initial": [35],
+        "timer": [34],
         "group0": [38],
         "group1": [39],
         "default": ["38-39"]
@@ -120,6 +123,7 @@
     //   no-restapi - (O) Disable RestAPI support
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
+    //   uds_path   - (O) Path to unix domain socket to get xsk map fd
     "options": {
         "no-metrics": false,
         "no-restapi": false,
@@ -129,22 +133,18 @@
         "graph:0": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"],
         "graph:1": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"],
 
-        // Array of channels to open 'type:proto:ipaddr:port'
-        //   type   - udp4 | tcp4
-        //   proto  - Protocol number
+        // Array of channels to open 'type:ipaddr:port'
+        //   type   - udp4 | tcp4 | udp4-listen | tcp4-listen
         //   ipaddr - IPv4 address (0.0.0.0 for any)
         //   port   - protocol port ID (number or 0)
         "graph:0-chnl": [
-            "udp4:0:198.18.0.2:5678",
-            "udp4:0:198.18.1.2:5678",
-            "tcp4:0:198.18.0.2:4433",
-            "tcp4:0:198.18.1.2:4433"
+            "udp4-listen:5678",
+            "tcp4-listen:4433"
         ],
         "graph:1-chnl": [
-            "udp4:0:198.18.2.2:5678",
-            "udp4:0:198.18.3.2:5678",
-            "tcp4:0:198.18.2.2:4433",
-            "tcp4:0:198.18.3.2:4433"
+            "udp4-listen:5678",
+            "tcp4-listen:4433",
+            "tcp4-connect:198.18.2.1:2222"
         ]
     },
 
@@ -161,6 +161,10 @@
         "main": {
             "group": "initial",
             "description": "CLI Thread"
+        },
+        "timer": {
+            "group": "timer",
+            "description": "Timer thread"
         },
         "graph:0": {
             "group": "group0",
