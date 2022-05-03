@@ -106,6 +106,7 @@
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
         "initial": [35],
+        "timer": [34],
         "group0": [38],
         "group1": [39],
         "default": ["38-39"]
@@ -161,6 +162,10 @@
         "main": {
             "group": "initial",
             "description": "CLI Thread"
+        },
+        "timer": {
+            "group": "timer",
+            "description": "Timer thread"
         },
         "graph:0": {
             "group": "group0",

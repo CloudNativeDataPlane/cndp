@@ -26,8 +26,6 @@
 
 #include <cne_spinlock.h>
 
-static int stk_destroy(void *_stk);
-
 static int
 _stk_create(struct cnet *cnet)
 {
@@ -52,10 +50,13 @@ _stk_create(struct cnet *cnet)
         stk->tid = gettid();       /* Grab the process ID */
         stk->lid = cne_lcore_id(); /* setup a set of values for the stack with defaults */
 
-        TAILQ_INIT(&stk->chnls);
-        TAILQ_INIT(&stk->tcbs);
-
+        stk->tcbs = bit_alloc(CNET_NUM_TCBS);
+        if (!stk->tcbs) {
+            cnet_unlock();
+            CNE_ERR_RET("Unable to initialize TCB bitmap\n");
+        }
         if (cne_mutex_create(&stk->mutex, PTHREAD_MUTEX_RECURSIVE)) {
+            free(stk->tcbs);
             cnet_unlock();
             CNE_ERR_RET("Unable to initialize mutex\n");
         }

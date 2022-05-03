@@ -23,18 +23,18 @@ extern "C" {
  */
 struct chnl_optsw {
     int32_t level;
-    int (*setfunc)(struct chnl *, int, int, const void *, uint32_t);
-    int (*getfunc)(struct chnl *, int, int, void *, uint32_t *);
+    int (*setfunc)(int cd, int, int, const void *, uint32_t);
+    int (*getfunc)(int cd, int, int, void *, uint32_t *);
 };
 
 CNDP_API int cnet_chnl_opt_add(struct chnl_optsw *);
-CNDP_API int cnet_chnl_opt_iterate_set(struct chnl *ch, int level, int optname, const void *optval,
+CNDP_API int cnet_chnl_opt_iterate_set(int cd, int level, int optname, const void *optval,
                                        uint32_t optlen);
-CNDP_API int cnet_chnl_opt_iterate_get(struct chnl *, int level, int optname, void *optval,
+CNDP_API int cnet_chnl_opt_iterate_get(int cd, int level, int optname, void *optval,
                                        uint32_t *optlen);
 
-CNDP_API int chnl_set_opt(struct chnl *ch, int level, int optname, const void *optval, int optlen);
-CNDP_API int chnl_get_opt(struct chnl *ch, int level, int optname, void *optval, socklen_t *optlen);
+CNDP_API int chnl_set_opt(int cd, int level, int optname, const void *optval, int optlen);
+CNDP_API int chnl_get_opt(int cd, int level, int optname, void *optval, socklen_t *optlen);
 CNDP_API uint32_t chnl_optval_get(const void *optval, uint32_t optlen);
 
 #ifdef __cplusplus

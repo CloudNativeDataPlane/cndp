@@ -18,7 +18,7 @@ enum tcp_input_next_nodes {
 };
 
 /** Use TCP_INPUT_NEXT_MAX to call tcp_output in the cnet_tcp_input() */
-#define TCP_INPUT_NEXT_CHECK_OUTPUT TCP_INPUT_NEXT_MAX
+#define TCP_CHECK_OUTPUT_AND_DROP TCP_INPUT_NEXT_MAX
 
 #ifdef __cplusplus
 }

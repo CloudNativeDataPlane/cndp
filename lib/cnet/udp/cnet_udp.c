@@ -45,10 +45,10 @@ udp_create(void *_stk)
 
     cnet_ipproto_set(IPPROTO_UDP, psw);
 
-    stk->udp->cksum_on     = 1;
-    stk->udp->rcv_size     = MAX_UDP_RCV_SIZE;
-    stk->udp->snd_size     = MAX_UDP_SND_SIZE;
-    stk->udp->udp_hd.lport = _IPPORT_RESERVED;
+    stk->udp->cksum_on          = 1;
+    stk->udp->rcv_size          = MAX_UDP_RCV_SIZE;
+    stk->udp->snd_size          = MAX_UDP_SND_SIZE;
+    stk->udp->udp_hd.local_port = _IPPORT_RESERVED;
 
     return 0;
 }

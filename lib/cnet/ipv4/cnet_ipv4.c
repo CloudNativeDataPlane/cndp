@@ -72,18 +72,22 @@ cnet_ipv4_stats_dump(stk_t *stk)
 void
 cnet_ipv4_dump(const char *msg, struct cne_ipv4_hdr *ip)
 {
+    struct in_addr daddr, saddr;
     char ip1[IP4_ADDR_STRLEN] = {0};
     char ip2[IP4_ADDR_STRLEN] = {0};
 
-    cne_printf("[magenta]<<<< [orange]%s [magenta]>>>>[]\n", msg);
-    cne_printf("      Src %s Dst %s cksum %04x version %d hlen %d %02x\n",
-               inet_ntop4(ip1, sizeof(ip1), (struct in_addr *)&ip->src_addr, NULL) ?: "Invalid IP",
-               inet_ntop4(ip2, sizeof(ip2), (struct in_addr *)&ip->dst_addr, NULL) ?: "Invalid IP",
-               be16toh(ip->hdr_checksum), ip->version_ihl >> 4, (ip->version_ihl & 0x0f) << 2,
-               ip->version_ihl);
-    cne_printf("      offset %d next_proto %d id %d ttl %d tlen %d tos %d\n", ip->fragment_offset,
-               ip->next_proto_id, ip->packet_id, ip->time_to_live, be16toh(ip->total_length),
-               ip->type_of_service);
+    cne_printf("%s [cyan]IPv4 Header[] @ %p\n", (msg == NULL) ? "" : msg, ip);
+    daddr.s_addr = ip->dst_addr;
+    saddr.s_addr = ip->src_addr;
+    cne_printf("   [cyan]Src [orange]%s [cyan]Dst [orange]%s [cyan]cksum [orange]%04x "
+               "[cyan]version [orange]%d [cyan]hlen [orange]%d  [cyan]ver [orange]%02x[]\n",
+               inet_ntop4(ip1, sizeof(ip1), &saddr, NULL),
+               inet_ntop4(ip2, sizeof(ip2), &daddr, NULL), be16toh(ip->hdr_checksum),
+               ip->version_ihl >> 4, (ip->version_ihl & 0x0f) << 2, ip->version_ihl);
+    cne_printf("   [cyan]offset [orange]%d [cyan]next_proto [orange]%d [cyan]id [orange]%d "
+               "[cyan]ttl [orange]%d [cyan]tlen [orange]%d [cyan]tos [orange]%d[]\n",
+               ip->fragment_offset, ip->next_proto_id, be16toh(ip->packet_id), ip->time_to_live,
+               be16toh(ip->total_length), ip->type_of_service);
 }
 
 static int

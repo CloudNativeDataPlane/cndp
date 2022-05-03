@@ -141,12 +141,20 @@ pmd_dev_close(struct cne_pktdev *dev)
 static int
 pmd_pkt_alloc(struct cne_pktdev *dev, pktmbuf_t **pkts, uint16_t nb_pkts)
 {
-    struct pmd_lport *lport = dev->data->dev_private;
+    int ret = -1;
 
-    if (!lport)
-        return -1;
+    if (dev && dev->data && dev->data->dev_private) {
+        struct pmd_lport *lport = dev->data->dev_private;
 
-    return pktmbuf_alloc_bulk(lport->xi->buf_mgmt.buf_arg, pkts, nb_pkts);
+        if (lport->xi) {
+            pktmbuf_info_t *pi = lport->xi->buf_mgmt.buf_arg;
+
+            ret = pktmbuf_alloc_bulk(pi, pkts, nb_pkts);
+            if (ret <= 0)
+                CNE_ERR_RET("pktmbuf allocation failed\n");
+        }
+    }
+    return ret;
 }
 
 static const struct pktdev_ops ops = {

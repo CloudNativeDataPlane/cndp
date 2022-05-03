@@ -106,10 +106,16 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         dip[0] = dip[1] = dip[2] = dip[3] = 0;
 
         /* Extract DIP from mbufs plus validate the IP header checksum. */
-        ip4[0] = pktmbuf_adjust(mbuf0, struct cne_ipv4_hdr *, mbuf0->l2_len);
-        ip4[1] = pktmbuf_adjust(mbuf1, struct cne_ipv4_hdr *, mbuf1->l2_len);
-        ip4[2] = pktmbuf_adjust(mbuf2, struct cne_ipv4_hdr *, mbuf2->l2_len);
-        ip4[3] = pktmbuf_adjust(mbuf3, struct cne_ipv4_hdr *, mbuf3->l2_len);
+        ip4[0] = pktmbuf_mtod(mbuf0, struct cne_ipv4_hdr *);
+        ip4[1] = pktmbuf_mtod(mbuf1, struct cne_ipv4_hdr *);
+        ip4[2] = pktmbuf_mtod(mbuf2, struct cne_ipv4_hdr *);
+        ip4[3] = pktmbuf_mtod(mbuf3, struct cne_ipv4_hdr *);
+
+        /* Adjust the data length for an IPv4 packet to the size given in the header */
+        pktmbuf_data_len(mbuf0) = be16toh(ip4[0]->total_length);
+        pktmbuf_data_len(mbuf1) = be16toh(ip4[1]->total_length);
+        pktmbuf_data_len(mbuf2) = be16toh(ip4[2]->total_length);
+        pktmbuf_data_len(mbuf3) = be16toh(ip4[3]->total_length);
 
         if (likely(cne_ipv4_cksum(ip4[0]) == 0))
             dip[0] = be32toh(ip4[0]->dst_addr);
@@ -194,8 +200,11 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         n_left_from -= 1;
 
         /* Extract DIP from mbuf */
-        ip4[0] = pktmbuf_adjust(mbuf0, struct cne_ipv4_hdr *, mbuf0->l2_len);
+        ip4[0] = pktmbuf_mtod(mbuf0, struct cne_ipv4_hdr *);
         dip[0] = be32toh(ip4[0]->dst_addr);
+
+        /* Adjust the data length for an IPv4 packet to the size given in the header */
+        pktmbuf_data_len(mbuf0) = be16toh(ip4[0]->total_length);
 
         ipv4_save_metadata(mbuf0, ip4[0]);
 

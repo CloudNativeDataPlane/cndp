@@ -20,6 +20,7 @@
 #include <cnet_route4.h>             // for
 
 #include <cnet_node_names.h>
+#include <cnet_ipv4.h>
 #include "ip4_proto_priv.h"               // for
 #include "cne_branch_prediction.h"        // for likely, unlikely
 #include "cne_common.h"                   // for CNE_BUILD_BUG_ON, CNE_PRIORITY_LAST

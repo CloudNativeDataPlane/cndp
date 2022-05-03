@@ -404,6 +404,30 @@ CNDP_API int mempool_cache_sz(mempool_t *mp);
  */
 CNDP_API int mempool_cache_len(mempool_t *mp, int idx);
 
+/**
+ * Determine the object index value in the mempool.
+ *
+ * @param mp
+ *   The mempool_t pointer to use to calculate the object index.
+ * @param obj
+ *   The object pointer to use in calculation
+ * @return
+ *   -1 on error or object index value.
+ */
+CNDP_API int mempool_obj_index(mempool_t *mp, void *obj);
+
+/**
+ * Return the object pointer for the given mempool_t and index value
+ *
+ * @param mp
+ *   The mempool_t pointer to use to calculate the object address.
+ * @param idx
+ *   The index value into the mempool buffer array.
+ * @return
+ *   NULL on error or pointer to object.
+ */
+CNDP_API void *mempool_obj_at_index(mempool_t *mp, int idx);
+
 #ifdef __cplusplus
 }
 #endif

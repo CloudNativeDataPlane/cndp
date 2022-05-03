@@ -86,6 +86,21 @@ uid_find_by_name(const char *name)
     return ret;
 }
 
+int
+uid_test(u_id_t *_e, int uid)
+{
+    struct uid_entry *e = (struct uid_entry *)_e;
+    int ret             = 0;
+
+    if (e) {
+        if (uid_lock(e)) {
+            ret = (bit_test(e->bitmap, uid) == 0);
+            uid_unlock(e);
+        }
+    }
+    return ret;
+}
+
 uint16_t
 uid_max_ids(u_id_t _e)
 {

@@ -15,6 +15,7 @@
 #include <errno.h>         // for EFAULT, EINVAL, EADDRINUSE, EADDRNOTAVAIL
 #include <string.h>        // for memcpy, memset, strerror
 #include <cnet_meta.h>
+#include <cne_mutex_helper.h>
 
 #include "cne_common.h"        // for __cne_unused, CNE_MIN, CNE_SET_USED
 #include "cne_log.h"           // for cne_panic
@@ -25,44 +26,64 @@
 #include "mempool.h"             // for mempool_cfg, mempool_create, mempool_get
 #include "pktmbuf.h"             // for pktmbuf_data_len, pktmbuf_t, ...
 
-static void
-_chnl_buf_init(mempool_t *mp, void *opaque_arg __cne_unused, void *_b, unsigned i __cne_unused)
+static void chnl_free(struct chnl *ch);
+
+static inline int
+alloc_cd(struct chnl *ch)
 {
-    pthread_mutexattr_t attr;
+    struct cnet *cnet = this_cnet;
+
+    if (cnet && ch) {
+        int cd = uid_alloc(cnet->chnl_uids);
+
+        if (cd >= 0) {
+            cnet->chnl_descriptors[cd] = ch;
+            ch->ch_cd                  = cd;
+            ch->stk_id                 = this_stk->idx;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static inline void
+free_cd(struct chnl *ch)
+{
+    struct cnet *cnet = this_cnet;
+
+    if (cnet && ch && ch->ch_cd >= 0) {
+        uid_free(cnet->chnl_uids, ch->ch_cd);
+
+        if (cnet->chnl_descriptors)
+            cnet->chnl_descriptors[ch->ch_cd] = NULL;
+        ch->ch_cd = -1;
+    }
+}
+
+static void
+mp_init(mempool_t *mp, void *opaque_arg __cne_unused, void *_b, unsigned i __cne_unused)
+{
     struct chnl *ch = _b;
 
     memset(ch, 0, mempool_objsz(mp));
 
-    ch->ch_state = _CHNL_FREE;
+    chnl_state_set(ch, _CHNL_FREE);
+    ch->ch_cd = -1;
+}
 
-    if (pthread_mutexattr_init(&attr))
-        CNE_RET("mutex attribute init failed\n");
-    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex attribute set type failed\n");
-    }
+static int
+init_chnl(struct chnl *ch)
+{
+    if (cne_mutex_create(&ch->ch_rcv.mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
+        return -1;
+    if (cne_mutex_create(&ch->ch_snd.mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
+        return -1;
 
-    if (pthread_mutex_init(&ch->ch_rcv.mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex init(ch_rcv) failed\n");
-    }
-    if (pthread_mutex_init(&ch->ch_snd.mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex init(ch_snd) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
-    if (pthread_cond_init(&ch->ch_snd.cb_cond, NULL))
-        CNE_RET("cond init(ch_snd) failed\n");
-    if (pthread_cond_init(&ch->ch_rcv.cb_cond, NULL))
-        CNE_RET("cond init(ch_rcv) failed\n");
+    if (alloc_cd(ch) < 0)
+        CNE_ERR_RET("allocate of channel descriptor failed\n");
 
-    ch->ch_rcv.cb_vec = vec_alloc(ch->ch_rcv.cb_vec, CHNL_VEC_SIZE);
-    if (ch->ch_rcv.cb_vec == NULL)
-        return;
-
-    ch->ch_snd.cb_vec = vec_alloc(ch->ch_snd.cb_vec, CHNL_VEC_SIZE);
-    if (ch->ch_snd.cb_vec == NULL)
-        vec_free(ch->ch_rcv.cb_vec);
+    ch->ch_state = 0;
+    return 0;
 }
 
 /*
@@ -77,30 +98,32 @@ chnl_alloc(void)
     struct chnl *ch        = NULL;
     struct cnet *cnet      = cnet_get();
 
-    if (pthread_mutex_lock(&stk->mutex))
-        CNE_NULL_RET("Unable to acquire mutex\n");
-    if (stk->chnl_objs == NULL) {
-        cfg.objcnt     = cnet->num_chnls;
-        cfg.objsz      = sizeof(struct chnl);
-        cfg.cache_sz   = 64;
-        stk->chnl_objs = mempool_create(&cfg);
+    if (stk_lock()) {
+        if (!stk->chnl_objs) {
+            cfg.objcnt     = cnet->num_chnls;
+            cfg.objsz      = sizeof(struct chnl);
+            cfg.cache_sz   = 64;
+            stk->chnl_objs = mempool_create(&cfg);
 
-        if (stk->chnl_objs == NULL) {
-            if (pthread_mutex_unlock(&stk->mutex))
-                CNE_NULL_RET("Unable to release mutex\n");
-            CNE_NULL_RET("Unable to create objpool\n");
+            if (!stk->chnl_objs) {
+                stk_unlock();
+                CNE_NULL_RET("Unable to create objpool\n");
+            }
+
+            mempool_obj_iter(stk->chnl_objs, mp_init, NULL);
         }
-
-        mempool_obj_iter(stk->chnl_objs, _chnl_buf_init, NULL);
-    }
-    if (pthread_mutex_unlock(&stk->mutex))
-        CNE_NULL_RET("Unable to release mutex\n");
+        stk_unlock();
+    } else
+        CNE_NULL_RET("Unable to acquire mutex\n");
 
     if (mempool_get(stk->chnl_objs, (void *)&ch) < 0)
         CNE_NULL_RET("Allocate for chnl_obj failed\n");
-    ch->ch_state = _NOFDREF;
 
-    ch->initialized = 1;
+    if (init_chnl(ch) < 0) {
+        chnl_free(ch);
+        CNE_NULL_RET("setup of channel struct failed\n");
+    }
+
     return ch;
 }
 
@@ -112,34 +135,14 @@ static void
 chnl_free(struct chnl *ch)
 {
     stk_t *stk = this_stk;
-    pthread_mutexattr_t attr;
 
     if (ch == NULL)
         CNE_RET("Channel Pointer is NULL\n");
 
-    if (is_set(ch->ch_state, _CHNL_FREE))
+    if (chnl_state_tst(ch, _CHNL_FREE))
         CNE_RET("chnl is already free!");
 
-    if (pthread_mutexattr_init(&attr))
-        CNE_RET("mutex attribute init failed\n");
-    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex attribute set type failed\n");
-    }
-
-    if (pthread_mutex_init(&ch->ch_rcv.mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex init(ch_rcv) failed\n");
-    }
-    if (pthread_mutex_init(&ch->ch_snd.mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_RET("mutex init(ch_snd) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
-    if (pthread_cond_init(&ch->ch_snd.cb_cond, NULL))
-        CNE_RET("cond init(ch_snd) failed\n");
-    if (pthread_cond_init(&ch->ch_rcv.cb_cond, NULL))
-        CNE_RET("cond init(ch_rcv) failed\n");
+    free_cd(ch);
 
     vec_free(ch->ch_rcv.cb_vec);
     vec_free(ch->ch_snd.cb_vec);
@@ -148,14 +151,8 @@ chnl_free(struct chnl *ch)
     ch->ch_snd.cb_vec = NULL;
 
     /* Set chnl structure to the free state */
-    ch->ch_state = _CHNL_FREE;
-    ch->ch_pcb   = NULL;
-
-    if (pthread_mutex_lock(&stk->mutex))
-        CNE_RET("mutex lock failed\n");
-    TAILQ_REMOVE(&stk->chnls, ch, ch_entry);
-    if (pthread_mutex_unlock(&stk->mutex))
-        CNE_RET("mutex unlock failed\n");
+    chnl_state_set(ch, _CHNL_FREE);
+    ch->ch_pcb = NULL;
 
     mempool_put(stk->chnl_objs, (void *)ch);
 }
@@ -188,11 +185,10 @@ chnl_cleanup(struct chnl *ch)
     if (!ch)
         CNE_RET("Channel NULL\n");
 
-    if (ch->ch_state & _CHNL_FREE)
+    if (chnl_state_tst(ch, _CHNL_FREE))
         CNE_RET("Already free!\n");
 
-    ch->ch_state &= ~_ISCONNECTED;
-    ch->ch_state |= _ISDISCONNECTED;
+    chnl_state_set(ch, _ISDISCONNECTED);
 
     /* Just to be sure the RD/WR are awake */
     chnl_cant_snd_rcv_more(ch, (_CANTSENDMORE | _CANTRECVMORE));
@@ -219,116 +215,73 @@ chnl_cleanup(struct chnl *ch)
 }
 
 /*
- * This routine waits on a chnl buffer semaphore, which could mean the caller
- * is waiting for data for a read or space to write data. The CB_WAIT flag is
- * set to indicate to chnl_sbwakeup() when some thead or threads are waiting on
- * the packet buffer semaphore. The chnl_sbwakeup() will issue a flush to
- * awaken all threads waiting on the chnl buffer semaphore. Each thread will
- * run at some point in the future to determine if its conditions for waiting
- * have been fulfilled.
- *
- * The routine checks the state of the chnl structure in an attempt to detect
- * when a chnl has been closed or reused while the thread was asleep. A error
- * code is returned when this state has been detected.
- */
-int
-chnl_cb_wait(struct chnl *ch, struct chnl_buf *cb)
-{
-    int rc;
-
-    if (!ch || !cb)
-        CNE_ERR_RET_VAL(__errno_set(EINVAL), "ch or cb is NULL\n");
-
-    cb->cb_flags |= CB_WAIT;
-
-    rc = pthread_cond_wait(&cb->cb_cond, &cb->mutex);
-    if (rc != 0) {
-        if (rc != EWOULDBLOCK)
-            CNE_ERR_RET_VAL(__errno_set(EIO), "pthread_cond_wait(): %s\n", strerror(rc));
-        else
-            CNE_ERR_RET_VAL(__errno_set(ETIMEDOUT), "Would block error\n");
-    }
-
-    if (is_set(ch->ch_state, _CHNL_FREE))
-        CNE_ERR_RET_VAL(__errno_set(EPIPE), "Channel is closed\n");
-
-    CNE_INFO("Exit rc %d\n", rc);
-    return rc;
-}
-
-/*
- * The routine wakes up threads waiting on a read, write and/or select states to
- * change allowing the waiting threads to be awoken. The waiting threads are on
- * the chnl buffer condition variable for reading data or space to write
- * data in/out of the chnl buffer.
- *
- * If the _CB_WAIT flag is set then a signal is issued to wakeup a thread
- * on the condition variable.
- *
- * The CB_SEL bit will be used to flag threads are waiting on the 'select'
- * system call. If the CB_SEL is set then broadcast() signal to
- * wakeup all selecting threads.
- */
-void
-chnl_cb_wakeup(struct chnl *ch, struct chnl_buf *cb, int wakeup_type)
-{
-    if (cb->cb_flags & CB_WAIT) {
-        cb->cb_flags &= ~CB_WAIT;
-
-        if (pthread_cond_signal(&cb->cb_cond))
-            cne_panic("pthread_cond_signal() failed\n");
-    }
-
-    if (cb->cb_flags & CB_SEL) {
-        if (wakeup_type == _SELREAD) {
-            if (!ch_readable(ch))
-                return;
-        } else if (!ch_writeable(ch))
-            return;
-    }
-}
-
-size_t
-chnl_copy_data(pktmbuf_t **to, pktmbuf_t **from, int len)
-{
-    pktmbuf_t *m;
-    size_t bytes = 0;
-
-    if (!to || !from || len == 0)
-        return 0;
-
-    vec_foreach_ptr (m, from) {
-        if (vec_full(to))
-            break;
-        bytes += pktmbuf_data_len(m);
-
-        vec_add(to, m);
-    }
-
-    len = vec_len(from) - vec_len(to);
-    memmove(from, &from[vec_len(to)], len * sizeof(char *));
-    vec_set_len(from, len);
-
-    return bytes;
-}
-
-/*
  * This routine opens a chnl and returns a chnl descriptor.
  * The chnl descriptor is passed to the other chnl routines to identify the
  * channel to process.
  */
-struct chnl *
+int
 channel(int domain, int type, int proto, chnl_cb_t cb)
 {
     struct chnl *ch;
 
     if ((ch = __chnl_create(domain, type, proto, NULL)) == NULL)
-        CNE_NULL_RET("__chnl_create() failed\n");
+        CNE_ERR_RET("chnl create failed\n");
 
-    ch->ch_state &= ~_NOFDREF;
-    ch->callback = cb;
+    ch->ch_callback = cb;
 
-    return ch;
+    return ch->ch_cd;
+}
+
+static int
+__alloc_pcb(struct chnl *ch, int typ)
+{
+    stk_t *stk = this_stk;
+    struct chnl_buf *rb, *sb;
+    struct pcb_entry *pcb;
+
+    rb = &ch->ch_rcv;
+    sb = &ch->ch_snd;
+
+    if (typ == SOCK_DGRAM) {
+        rb->cb_size = rb->cb_hiwat = stk->udp->rcv_size;
+        sb->cb_size = sb->cb_hiwat = stk->udp->snd_size;
+        rb->cb_lowat = sb->cb_lowat = 1;
+
+        if ((pcb = cnet_pcb_alloc(&stk->udp->udp_hd, IPPROTO_UDP)) == NULL)
+            return __errno_set(ENOBUFS);
+
+        if (stk->udp->cksum_on)
+            pcb->opt_flag |= UDP_CHKSUM_FLAG;
+
+        ch->ch_proto->proto = IPPROTO_UDP;
+    } else {
+        rb->cb_size = rb->cb_hiwat = stk->tcp->rcv_size;
+        sb->cb_size = sb->cb_hiwat = stk->tcp->snd_size;
+        rb->cb_lowat = sb->cb_lowat = 1;
+
+        if ((pcb = cnet_pcb_alloc(&stk->tcp->tcp_hd, IPPROTO_TCP)) == NULL)
+            return __errno_set(ENOBUFS);
+
+        ch->ch_proto->proto = IPPROTO_TCP;
+    }
+
+    pcb->ch    = ch;
+    ch->ch_pcb = pcb;
+    pcb->ttl   = TTL_DEFAULT;
+    pcb->tos   = TOS_DEFAULT;
+
+    rb->cb_vec = vec_alloc(rb->cb_vec, rb->cb_size / PROTO_DEFAULT_MBUF_COUNT);
+    if (rb->cb_vec == NULL) {
+        cnet_pcb_free(pcb);
+        return __errno_set(ENOBUFS);
+    }
+    sb->cb_vec = vec_alloc(sb->cb_vec, sb->cb_size / PROTO_DEFAULT_MBUF_COUNT);
+    if (sb->cb_vec == NULL) {
+        vec_free(rb->cb_vec);
+        cnet_pcb_free(pcb);
+        return __errno_set(ENOBUFS);
+    }
+    return 0;
 }
 
 /*
@@ -359,32 +312,19 @@ __chnl_create(int32_t dom, int32_t type, int32_t pro, struct pcb_entry *ppcb)
     if (ch->ch_proto == NULL) {
         chnl_cleanup(ch);
         __errno_set(EPROTONOSUPPORT);
-        CNE_NULL_RET("ch->ch_proto == NULL\n");
+        CNE_NULL_RET("protosw not found\n");
     }
 
-    ch->ch_rcv.cb_lowat = 0;
-    ch->ch_rcv.cb_hiwat = 4 * 1024;
-    ch->ch_snd.cb_lowat = 0;
-    ch->ch_snd.cb_hiwat = 4 * 1024;
-
-    /* Call the protocol Init routine and allocate ch_pcb */
-    cnet_assert(ch->ch_proto->funcs != NULL && ch->ch_proto->funcs->channel_func != NULL);
-
-    if (ch->ch_proto->funcs->channel_func(ch, dom, type, pro)) {
+    if (__alloc_pcb(ch, type)) {
         chnl_cleanup(ch);
-        __errno_set(ENOBUFS);
-        CNE_NULL_RET("channel_func() failed\n");
+        return NULL;
     }
-
-    /* Should have a new PCB assigned to the chnl now */
-    pcb     = ch->ch_pcb;
-    pcb->ch = ch;
-
-    ch->ch_rcv.cb_timeo = 0;
-    ch->ch_snd.cb_timeo = 0;
+    pcb = ch->ch_pcb;
 
     if (ppcb) {
-        /* Copy the parent PCB information */
+        CNE_DEBUG("Copy the parent PCB information\n");
+        CNE_DEBUG("   chnl @ [orange]%p[], netif @ [orange]%p[]\n", ppcb->ch, ppcb->netif);
+
         if (ppcb->ch) {
             struct chnl *_ch = ppcb->ch;
 
@@ -397,32 +337,28 @@ __chnl_create(int32_t dom, int32_t type, int32_t pro, struct pcb_entry *ppcb)
             ch->ch_snd.cb_size  = _ch->ch_snd.cb_size;
         }
         pcb->netif = ppcb->netif;
-    } else {
-        /* setup the chnl buffer information obtained from protocol */
-        ch->ch_rcv.cb_lowat = ch->ch_snd.cb_lowat = 1;
-        ch->ch_rcv.cb_hiwat                       = ch->ch_rcv.cb_size;
-        ch->ch_snd.cb_hiwat                       = ch->ch_snd.cb_size;
     }
-
-    pcb->ttl = TTL_DEFAULT;
-    pcb->tos = TOS_DEFAULT;
 
     CIN_FAMILY(&pcb->key.laddr) = CIN_FAMILY(&pcb->key.faddr) = dom;
     CIN_LEN(&pcb->key.laddr) = CIN_LEN(&pcb->key.faddr) = 0;
 
-    if (pthread_mutex_lock(&this_stk->mutex)) {
-        chnl_cleanup(ch);
-        __errno_set(ENAVAIL);
-        CNE_NULL_RET("Unable to acquire mutex\n");
-    }
-    TAILQ_INSERT_TAIL(&this_stk->chnls, ch, ch_entry);
-    if (pthread_mutex_unlock(&this_stk->mutex)) {
-        chnl_cleanup(ch);
-        __errno_set(ENAVAIL);
-        CNE_NULL_RET("Unable to release mutex");
-    }
-
     return ch;
+}
+
+int
+chnl_close(int cd)
+{
+    struct chnl *ch = ch_get(cd);
+    int ret;
+
+    if (!ch)
+        return __errno_set(EFAULT);
+
+    chnl_lock(ch);
+    ret = ch->ch_proto->funcs->close_func(cd);
+    chnl_unlock(ch);
+
+    return ret;
 }
 
 /*
@@ -435,10 +371,11 @@ __chnl_create(int32_t dom, int32_t type, int32_t pro, struct pcb_entry *ppcb)
  * may have been received by the protocol layer.
  */
 int
-chnl_shutdown(struct chnl *ch, int how)
+chnl_shutdown(int cd, int how)
 {
     struct protosw_entry *psw;
-    int status = 0;
+    struct chnl *ch = ch_get(cd);
+    int status      = 0;
 
     if (!ch || (how < SHUT_RD) || (how > SHUT_RDWR))
         return __errno_set(EINVAL);
@@ -450,7 +387,7 @@ chnl_shutdown(struct chnl *ch, int how)
 
     psw = ch->ch_proto;
     if (psw && psw->funcs)
-        status = psw->funcs->shutdown_func(ch, how);
+        status = psw->funcs->shutdown_func(cd, how);
 
     if (!status) {
         /* shutdown recv side */
@@ -462,10 +399,10 @@ chnl_shutdown(struct chnl *ch, int how)
             chnl_cant_snd_rcv_more(ch, _CANTSENDMORE);
     }
 
-    chnl_unlock(ch);
-
     if (chnl_snd_rcv_more(ch, _CANTRECVMORE | _CANTSENDMORE))
         chnl_cleanup(ch);
+
+    chnl_unlock(ch);
 
     return status;
 }
@@ -478,10 +415,14 @@ chnl_shutdown(struct chnl *ch, int how)
  *
  */
 int
-chnl_bind(struct chnl *ch, struct sockaddr *sa, int namelen)
+chnl_bind(int cd, struct sockaddr *sa, int namelen)
 {
     struct in_caddr *name = (struct in_caddr *)sa;
+    struct chnl *ch       = ch_get(cd);
     int rs;
+
+    if (!ch)
+        return -1;
 
     chnl_lock(ch);
 
@@ -501,7 +442,7 @@ chnl_bind(struct chnl *ch, struct sockaddr *sa, int namelen)
         goto leave;
     }
 
-    rs = ch->ch_proto->funcs->bind_func(ch, name, namelen);
+    rs = ch->ch_proto->funcs->bind_func(cd, name, namelen);
 
 leave:
     chnl_unlock(ch);
@@ -514,9 +455,10 @@ leave:
  * packet, it permanently specifies the peer to which messages are sent.
  */
 int
-chnl_connect(struct chnl *ch, struct sockaddr *sa, int namelen)
+chnl_connect(int cd, struct sockaddr *sa, int namelen)
 {
     struct in_caddr *name = (struct in_caddr *)sa;
+    struct chnl *ch       = ch_get(cd);
     int rs                = -1;
     struct protosw_entry *psw;
     struct in_caddr faddr = {0};
@@ -547,17 +489,16 @@ chnl_connect(struct chnl *ch, struct sockaddr *sa, int namelen)
 
     /* If the chnl is not bound, bind it now. */
     if ((CIN_PORT(&ch->ch_pcb->key.laddr) == 0) && (ch->ch_proto->type != SOCK_RAW)) {
-        struct in_caddr sa;
+        struct in_caddr saddr;
 
-        in_caddr_zero(&sa);
+        in_caddr_zero(&saddr);
 
-        CIN_LEN(&sa)    = CIN_LEN(&faddr);
-        CIN_FAMILY(&sa) = CIN_FAMILY(&faddr);
-
-        /* {addr,port} == {INADDR_ANY,0} */
+        CIN_LEN(&saddr)    = CIN_LEN(&faddr);
+        CIN_FAMILY(&saddr) = CIN_FAMILY(&faddr);
+        CIN_PORT(&saddr)   = CIN_PORT(&faddr);
 
         if (psw->funcs) {
-            rs = psw->funcs->bind_func(ch, &sa, CIN_LEN(&sa));
+            rs = psw->funcs->bind_func(cd, &saddr, CIN_LEN(&saddr));
             if (rs) {
                 CNE_ERR("Failed bind call\n");
                 goto leave;
@@ -568,30 +509,10 @@ chnl_connect(struct chnl *ch, struct sockaddr *sa, int namelen)
     in_caddr_copy(&ch->ch_pcb->key.faddr, &faddr);
 
     if (psw && psw->funcs)
-        rs = psw->funcs->connect_func(ch, name, namelen);
+        rs = psw->funcs->connect_func(cd, name, namelen);
 
 leave:
     chnl_unlock(ch);
-    return rs;
-}
-
-int
-chnl_connect2(struct chnl *ch1, struct chnl *ch2)
-{
-    struct protosw_entry *psw;
-    int rs = -1;
-
-    chnl_lock(ch1);
-    chnl_lock(ch2);
-
-    psw = ch1->ch_proto;
-
-    if (psw && psw->funcs)
-        rs = psw->funcs->connect2_func(ch1, ch2);
-
-    chnl_unlock(ch2);
-    chnl_unlock(ch1);
-
     return rs;
 }
 
@@ -600,15 +521,18 @@ chnl_connect2(struct chnl *ch1, struct chnl *ch2)
  * connections with listen(), connections are actually accepted by accept().
  */
 int
-chnl_listen(struct chnl *ch, int backlog)
+chnl_listen(int cd, int backlog)
 {
-    int rs;
+    struct chnl *ch = ch_get(cd);
+    int rs          = -1;
 
-    chnl_lock(ch);
+    if (ch) {
+        chnl_lock(ch);
 
-    rs = ch->ch_proto->funcs->listen_func(ch, backlog);
+        rs = ch->ch_proto->funcs->listen_func(cd, backlog);
 
-    chnl_unlock(ch);
+        chnl_unlock(ch);
+    }
     return rs;
 }
 
@@ -621,19 +545,21 @@ chnl_listen(struct chnl *ch, int backlog)
  * It blocks the caller until a connection is present, unless the chnl is
  * marked as non-blocking.
  */
-struct chnl *
-chnl_accept(struct chnl *ch, struct sockaddr *sa, socklen_t *addrlen)
+int
+chnl_accept(int cd, struct sockaddr *sa, socklen_t *addrlen)
 {
     struct in_caddr *name = (struct in_caddr *)sa;
-    struct chnl *new_ch;
+    struct chnl *ch       = ch_get(cd);
+    int ncd               = -1;
 
-    chnl_lock(ch);
+    if (ch) {
+        chnl_lock(ch);
 
-    new_ch = ch->ch_proto->funcs->accept_func(ch, name, (int *)addrlen);
+        ncd = ch->ch_proto->funcs->accept_func(cd, name, (int *)addrlen);
 
-    chnl_unlock(ch);
-
-    return new_ch;
+        chnl_unlock(ch);
+    }
+    return ncd;
 }
 
 /*
@@ -657,11 +583,12 @@ chnl_accept(struct chnl *ch, struct sockaddr *sa, socklen_t *addrlen)
  *   OK or ERROR.
  */
 int
-chnl_getchnlname(struct chnl *ch, struct sockaddr *sa, socklen_t *namelen)
+chnl_getchnlname(int cd, struct sockaddr *sa, socklen_t *namelen)
 {
+    struct chnl *ch       = ch_get(cd);
     struct in_caddr *name = (struct in_caddr *)sa;
 
-    if ((name == NULL) || (namelen == NULL) || (*namelen > (int)sizeof(struct in_caddr)))
+    if (!ch || (name == NULL) || (namelen == NULL) || (*namelen > (int)sizeof(struct in_caddr)))
         return __errno_set(EFAULT);
 
     chnl_lock(ch);
@@ -699,11 +626,12 @@ chnl_getchnlname(struct chnl *ch, struct sockaddr *sa, socklen_t *namelen)
  *   OK or ERROR.
  */
 int
-chnl_getpeername(struct chnl *ch, struct sockaddr *sa, socklen_t *namelen)
+chnl_getpeername(int cd, struct sockaddr *sa, socklen_t *namelen)
 {
+    struct chnl *ch       = ch_get(cd);
     struct in_caddr *name = (struct in_caddr *)sa;
 
-    if ((name == NULL) || (namelen == NULL) || (*namelen > (int)sizeof(struct in_caddr)))
+    if (!ch || (name == NULL) || (namelen == NULL) || (*namelen > (int)sizeof(struct in_caddr)))
         return __errno_set(EFAULT);
 
     chnl_lock(ch);
@@ -720,13 +648,43 @@ chnl_getpeername(struct chnl *ch, struct sockaddr *sa, socklen_t *namelen)
     return 0;
 }
 
-static int
-sendit(struct chnl *ch, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+int
+chnl_recv(int cd, pktmbuf_t **mbufs, size_t len)
 {
-    if (is_set(ch->ch_state, (_CANTSENDMORE | _CHNL_FREE))) {
-        __errno_set(EPIPE);
-        CNE_ERR_RET("State is free or cant sent more\n");
+    struct chnl *ch = ch_get(cd);
+    ssize_t ret;
+
+    if (len == 0)
+        return 0;
+
+    if (!ch || !mbufs)
+        return __errno_set(EFAULT);
+
+    if (chnl_state_tst(ch, _CHNL_FREE) || chnl_state_tst(ch, _ISCONNECTING)) {
+        if (chnl_state_tst(ch, _CHNL_FREE))
+            return __errno_set(EPIPE);
+        return __errno_set(EINPROGRESS);
     }
+    if (!chnl_state_tst(ch, _ISCONNECTED))
+        return __errno_set(ENOTCONN);
+
+    __errno_set(0);
+
+    ret = ch->ch_proto->funcs->recv_func(cd, mbufs, len);
+
+    return ret;
+}
+
+static int
+sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+{
+    struct chnl *ch = ch_get(cd);
+
+    if (!ch || !mbufs)
+        return __errno_set(EFAULT);
+
+    if (chnl_state_tst(ch, _CHNL_FREE) || is_set(ch->ch_state, _CANTSENDMORE))
+        CNE_ERR_RET_VAL(__errno_set(EPIPE), "State is free or cant sent more\n");
 
     if (nb_mbufs == 0)
         return 0;
@@ -739,13 +697,15 @@ sendit(struct chnl *ch, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbuf
             if (addr->sin_family == AF_INET) {
                 md->faddr.cin_family      = addr->sin_family;
                 md->faddr.cin_port        = addr->sin_port;
-                md->faddr.cin_len         = sizeof(struct sockaddr_in);
+                md->faddr.cin_len         = sizeof(struct in_addr);
                 md->faddr.cin_addr.s_addr = addr->sin_addr.s_addr;
             }
         }
     }
 
-    return ch->ch_proto->funcs->send_func(ch, mbufs, nb_mbufs);
+    __errno_set(0);
+
+    return ch->ch_proto->funcs->send_func(cd, mbufs, nb_mbufs);
 }
 
 /*
@@ -786,24 +746,18 @@ sendit(struct chnl *ch, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbuf
  *   without blocking.
  */
 int
-chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+chnl_send(int cd, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 {
-    return sendit(ch, NULL, mbufs, nb_mbufs);
+    return sendit(cd, NULL, mbufs, nb_mbufs);
 }
 
 int
-chnl_sendto(struct chnl *ch, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+chnl_sendto(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 {
-    if (!ch || !sa || !mbufs)
-        return -1;
+    if (!sa)
+        return __errno_set(EFAULT);
 
-    return sendit(ch, sa, mbufs, nb_mbufs);
-}
-
-int
-chnl_fcntl(struct chnl *ch __cne_unused, int cmd __cne_unused, ...)
-{
-    return 0;
+    return sendit(cd, sa, mbufs, nb_mbufs);
 }
 
 /*
@@ -816,8 +770,9 @@ chnl_fcntl(struct chnl *ch __cne_unused, int cmd __cne_unused, ...)
  * RETURNS: 0 or -1.
  */
 int
-chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb_hd *hd)
+chnl_bind_common(int cd, struct in_caddr *addr, int32_t len, struct pcb_hd *hd)
 {
+    struct chnl *ch = ch_get(cd);
     struct in_caddr laddr;
     struct in_caddr zero_faddr;
     struct netif *netif;
@@ -825,11 +780,13 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
 
     CNE_SET_USED(len);
 
-    /* addr == NULL : unbind the chnl and return 0. */
+    if (!ch)
+        return -1;
+
+    /* addr == NULL we return 0 */
     if (!addr) {
         in_caddr_zero(&ch->ch_pcb->key.laddr);
-        CNE_ERR("Address is NULL\n");
-        return 0;
+        CNE_ERR_RET_VAL(0, "Address is NULL\n");
     }
 
     /* Get a local copy of the user struct in_caddr data, as his may be dirty */
@@ -855,7 +812,7 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
 
     /* If local port is unassigned, obtain the next ephemeral port value */
     if (CIN_PORT(&laddr) == 0) {
-        uint16_t prevPort = hd->lport;
+        uint16_t prevPort = hd->local_port;
 
         /*
          * Check for reuse.  This could happen if someone explicitly bound
@@ -865,10 +822,10 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
             uint16_t eport;
 
             /* Verify the new port has not wrapped or used all of the ports */
-            if (++hd->lport < _IPPORT_RESERVED)
-                hd->lport = _IPPORT_RESERVED;
+            if (++hd->local_port < _IPPORT_RESERVED)
+                hd->local_port = _IPPORT_RESERVED;
 
-            eport = hd->lport;
+            eport = hd->local_port;
 
             /* Verify we do not wrap around all of the port numbers */
             if (eport == prevPort)
@@ -912,31 +869,18 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
  * datagram chnls.
  */
 int
-chnl_connect_common(struct chnl *ch, struct in_caddr *to, int32_t tolen __cne_unused)
+chnl_connect_common(int cd, struct in_caddr *to, int32_t tolen __cne_unused)
 {
-    ch->ch_state |= _ISCONNECTED;
+    struct chnl *ch = ch_get(cd);
+
+    if (!ch)
+        return -1;
+    chnl_state_set(ch, _ISCONNECTED);
 
     if (!ch->ch_pcb->netif)
         ch->ch_pcb->netif = cnet_netif_match_subnet(&to->cin_addr);
 
     return 0;
-}
-
-int
-chnl_connect2_common(struct chnl *ch1, struct chnl *ch2)
-{
-    ch1->ch_state |= _ISCONNECTED;
-    ch2->ch_state |= _ISCONNECTED;
-
-    if (!ch1->ch_pcb->netif) {
-        struct in_addr *p = (struct in_addr *)&(ch1->ch_pcb->key.laddr.cin_addr);
-
-        ch1->ch_pcb->netif = cnet_netif_match_subnet(p);
-        ch2->ch_pcb->netif = ch1->ch_pcb->netif;
-        return 0;
-    }
-
-    return -1;
 }
 
 int
@@ -962,26 +906,46 @@ chnl_validate_cb(const char *msg, struct chnl_buf *cb)
 }
 
 void
+chnl_dump(const char *msg, struct chnl *ch)
+{
+    if (ch) {
+        const char *states[] = {"NoState", "Connected", "Connecting", "Disconnecting",
+                                "Disconnected"};
+
+        cne_printf("    [yellow]%s[] Channel descriptor: [orange]%d[] state [orange]%s %04x[]\n",
+                   msg ? msg : "", ch->ch_cd, states[chnl_state(ch)], ch->ch_state);
+        cne_printf("       pcb [cyan]%p[]  proto [cyan]%p[]", ch->ch_pcb, ch->ch_proto);
+        cne_printf(" options [cyan]%04x error [cyan]%d[]\n", ch->ch_options, ch->ch_error);
+        cne_printf("       RCV buf hiwat [cyan]%d[] lowat [cyan]%d[] cnt "
+                   "[cyan]%u[] cc [cyan]%d[]\n",
+                   ch->ch_rcv.cb_hiwat, ch->ch_rcv.cb_lowat,
+                   ch->ch_rcv.cb_vec ? vec_len(ch->ch_rcv.cb_vec) : 0, ch->ch_rcv.cb_cc);
+        chnl_validate_cb("RCV", &ch->ch_rcv);
+        cne_printf("       SND buf hiwat [cyan]%d[] lowat [cyan]%d[] cnt "
+                   "[cyan]%u[] cc [cyan]%d[]\n",
+                   ch->ch_snd.cb_hiwat, ch->ch_snd.cb_lowat,
+                   ch->ch_snd.cb_vec ? vec_len(ch->ch_snd.cb_vec) : 0, ch->ch_snd.cb_cc);
+        chnl_validate_cb("SND", &ch->ch_snd);
+        cnet_pcb_show(ch->ch_pcb);
+    }
+}
+
+void
 chnl_list(stk_t *stk)
 {
-    struct chnl *ch;
+    struct cnet *cnet = this_cnet;
 
     if (!stk)
         stk = this_stk;
 
     cne_printf("[yellow]CHNL[]: [skyblue]%s[]\n", stk->name);
-    TAILQ_FOREACH (ch, &stk->chnls, ch_entry) {
-        cne_printf("  Channel %p\n", ch);
-        cne_printf("    pcb %p  proto %p\n", ch->ch_pcb, ch->ch_proto);
-        cne_printf("    RCV buf flags %04x hiwat %d lowat %d cnt %u cc %d\n", ch->ch_rcv.cb_flags,
-                   ch->ch_rcv.cb_hiwat, ch->ch_rcv.cb_lowat,
-                   ch->ch_rcv.cb_vec ? vec_len(ch->ch_rcv.cb_vec) : 0, ch->ch_rcv.cb_cc);
-        chnl_validate_cb("RCV", &ch->ch_rcv);
-        cne_printf("    SND buf flags %04x hiwat %d lowat %d cnt %u cc %d\n", ch->ch_snd.cb_flags,
-                   ch->ch_snd.cb_hiwat, ch->ch_snd.cb_lowat,
-                   ch->ch_snd.cb_vec ? vec_len(ch->ch_snd.cb_vec) : 0, ch->ch_snd.cb_cc);
-        chnl_validate_cb("SND", &ch->ch_snd);
-        cne_printf("    Callback count %'ld\n", ch->callback_cnt);
+    for (int i = 0; i < uid_max_ids(cnet->chnl_uids); i++) {
+        if (uid_test(cnet->chnl_uids, i)) {
+            struct chnl *ch = cnet->chnl_descriptors[i];
+
+            if (stk->idx == ch->stk_id)
+                chnl_dump(NULL, ch);
+        }
     }
 }
 
@@ -992,56 +956,7 @@ chnl_list(stk_t *stk)
  * RETURNS: 0.
  */
 int
-chnl_OK(struct chnl *ch __cne_unused)
+chnl_OK(int cd __cne_unused)
 {
     return 0;
-}
-
-/*
- * This is a protocol back-end routine for operations that don't need to do
- * any further work.
- *
- * RETURNS: NULL.
- */
-struct chnl *
-chnl_NULL(struct chnl *ch __cne_unused)
-{
-    return NULL;
-}
-
-/*
- * This is a protocol back-end routine for operations that are not supported
- * by the protocol.
- *
- * Set the Operation not support in errno and return -1.
- *
- * RETURNS: -1.
- */
-int
-chnl_ERROR(struct chnl *ch __cne_unused)
-{
-    return __errno_set(EOPNOTSUPP);
-}
-
-static int
-_chnl_create(void *_stk)
-{
-    stk_t *stk = _stk;
-
-    CNE_DEBUG("Created chnl instance for %s\n", stk->name);
-    return 0;
-}
-
-static int
-_chnl_destroy(void *_stk)
-{
-    stk_t *stk = _stk;
-
-    CNE_DEBUG("Destroy chnl instance for %s\n", stk->name);
-    return 0;
-}
-
-CNE_INIT_PRIO(cnet_chnl_constructor, STACK)
-{
-    cnet_add_instance("chnl", CNET_CHNL_PRIO, _chnl_create, _chnl_destroy);
 }

@@ -39,6 +39,25 @@ __extension__ struct netdev_link {
 #define ETH_LINK_AUTONEG     1 /**< Autonegotiated (see link_autoneg). */
 
 /**
+ * Ethernet numeric link speeds in Mbps
+ */
+#define CNE_ETH_SPEED_NUM_NONE    0          /**< Not defined */
+#define CNE_ETH_SPEED_NUM_10M     10         /**<  10 Mbps */
+#define CNE_ETH_SPEED_NUM_100M    100        /**< 100 Mbps */
+#define CNE_ETH_SPEED_NUM_1G      1000       /**<   1 Gbps */
+#define CNE_ETH_SPEED_NUM_2_5G    2500       /**< 2.5 Gbps */
+#define CNE_ETH_SPEED_NUM_5G      5000       /**<   5 Gbps */
+#define CNE_ETH_SPEED_NUM_10G     10000      /**<  10 Gbps */
+#define CNE_ETH_SPEED_NUM_20G     20000      /**<  20 Gbps */
+#define CNE_ETH_SPEED_NUM_25G     25000      /**<  25 Gbps */
+#define CNE_ETH_SPEED_NUM_40G     40000      /**<  40 Gbps */
+#define CNE_ETH_SPEED_NUM_50G     50000      /**<  50 Gbps */
+#define CNE_ETH_SPEED_NUM_56G     56000      /**<  56 Gbps */
+#define CNE_ETH_SPEED_NUM_100G    100000     /**< 100 Gbps */
+#define CNE_ETH_SPEED_NUM_200G    200000     /**< 200 Gbps */
+#define CNE_ETH_SPEED_NUM_UNKNOWN UINT32_MAX /**< Unknown */
+
+/**
  * A structure used to retrieve netdev offload information.
  */
 __extension__ struct offloads {

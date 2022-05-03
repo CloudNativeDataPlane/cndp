@@ -248,6 +248,18 @@ cnet_netif_find_by_netdev(char *netdev_name)
     return NULL;
 }
 
+struct netif *
+cnet_netif_find_by_lport(int lport)
+{
+    struct netif *netif;
+
+    vec_foreach_ptr (netif, this_cnet->netifs) {
+        if (netif && netif->lpid == lport)
+            return netif;
+    }
+    return NULL;
+}
+
 int
 cnet_is_ifname_valid(char *ifname)
 {

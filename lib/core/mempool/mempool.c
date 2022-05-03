@@ -528,3 +528,30 @@ mempool_cache_len(mempool_t *_mp, int idx)
         return -1;
     return (int)mp->cache[idx].len;
 }
+
+int
+mempool_obj_index(mempool_t *_mp, void *obj)
+{
+    struct cne_mempool *mp = _mp;
+
+    if (mp) {
+        if (obj >= mp->objmem && obj < CNE_PTR_ADD(mp->objmem, (mp->obj_cnt * mp->obj_sz))) {
+            uint64_t *addr = CNE_PTR_SUB(obj, (uintptr_t)mp->objmem);
+            uintptr_t sz   = (uintptr_t)mp->obj_sz;
+
+            return (int)((uintptr_t)addr / sz);
+        }
+    }
+    return -1;
+}
+
+void *
+mempool_obj_at_index(mempool_t *_mp, int idx)
+{
+    struct cne_mempool *mp = _mp;
+
+    if (mp)
+        return CNE_PTR_ADD(mp->objmem, (idx * mp->obj_sz));
+
+    return NULL;
+}

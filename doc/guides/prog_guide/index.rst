@@ -19,4 +19,5 @@ Programmer's Guide
     graph_lib
     crypto
     xskdev_buffer_mgmt
+    cnet
     glossary

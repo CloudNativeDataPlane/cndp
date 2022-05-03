@@ -25,6 +25,7 @@
 #include <pktdev_api.h>         // for pktdev_port_count
 #include <pktdev_core.h>        // for cne_pktdev, pktdev_data
 #include <pmd_ring.h>
+#include <uid.h>
 
 #include <cnet_route.h>
 #include <cnet_route4.h>
@@ -123,6 +124,10 @@ cnet_stop(void)
         vec_free(cnet->drvs);
         vec_free(cnet->netifs);
 
+        if (uid_unregister(cnet->chnl_uids) < 0)
+            CNE_ERR("Unable to unregister UID\n");
+        vec_free(cnet->chnl_descriptors);
+
         __cnet = NULL;
         memset(&cnet_data, 0, sizeof(cnet_data));
         cnet_unlock();
@@ -157,34 +162,46 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
 {
     struct cnet *cnet = &cnet_data;
 
-    if (pthread_spin_init(&__cnet_lock, PTHREAD_PROCESS_PRIVATE))
-        CNE_ERR("Unable to initialize spinlock\n");
-
     memset(cnet, 0, sizeof(struct cnet));
 
-    cnet->flags = CNET_PUNT_ENABLED;
+    if (pthread_spin_init(&__cnet_lock, PTHREAD_PROCESS_PRIVATE))
+        CNE_ERR_GOTO(err, "Unable to initialize spinlock\n");
+
+    cnet->flags = ((CNET_ENABLE_PUNTING) ? CNET_PUNT_ENABLED : 0);
     cnet->flags |= ((CNET_ENABLE_TCP) ? CNET_TCP_ENABLED : 0);
 
     cnet->num_chnls = CNET_NUM_CHANNELS;
 
+    cnet->chnl_uids = uid_register("CHNL_UIDs", cnet->num_chnls);
+    if (!cnet->chnl_uids)
+        CNE_ERR_GOTO(err, "Unable to allocate UID values\n");
+
+    /* Vector of chnl descriptors indexed by chnl UID number */
+    cnet->chnl_descriptors = vec_alloc(cnet->chnl_descriptors, cnet->num_chnls);
+    if (cnet->chnl_descriptors == NULL)
+        CNE_ERR_GOTO(err, "Unable to allocate channel descriptor array\n");
+
     cnet->stks = vec_alloc(cnet->stks, STK_VEC_COUNT);
     if (!cnet->stks)
-        CNE_RET("Unable to allocate stk vector\n");
+        CNE_ERR_GOTO(err, "Unable to allocate stk vector\n");
 
     cnet->netifs = vec_alloc(cnet->netifs, CNE_MAX_ETHPORTS);
-    if (!cnet->netifs) {
-        vec_free(cnet->stks);
-        cnet->stks = NULL;
-        CNE_RET("Unable to allocate netif vector\n");
-    }
+    if (!cnet->netifs)
+        CNE_ERR_GOTO(err, "Unable to allocate netif vector\n");
 
     cnet->drvs = vec_alloc(cnet->drvs, CNE_MAX_ETHPORTS);
-    if (!cnet->drvs) {
-        vec_free(cnet->netifs);
-        cnet->netifs = NULL;
-        vec_free(cnet->stks);
-        cnet->stks = NULL;
-        CNE_RET("Unable to allocate driver vector\n");
-    }
+    if (!cnet->drvs)
+        CNE_ERR_GOTO(err, "Unable to allocate driver vector\n");
+
     __cnet = cnet;
+    return;
+
+err:
+    if (uid_unregister(cnet->chnl_uids) < 0)
+        CNE_ERR("Unable to unregister UID\n");
+    vec_free(cnet->chnl_descriptors);
+    vec_free(cnet->netifs);
+    vec_free(cnet->stks);
+
+    memset(cnet, 0, sizeof(struct cnet));
 }
