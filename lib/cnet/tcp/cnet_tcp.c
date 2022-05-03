@@ -359,7 +359,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
             char ip[INET6_ADDRSTRLEN + 4] = {0};
 
             CNE_ERR("No netif match %s\n",
-                    inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
+                    inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL) ?: "Invalid IP");
             pktmbuf_free(mbuf);
             return -1;
         }
@@ -367,7 +367,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
             char ip[INET6_ADDRSTRLEN + 4] = {0};
 
             CNE_WARN("Route lookup failed %s\n",
-                     inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
+                     inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL) ?: "Invalid IP");
             pktmbuf_free(mbuf);
             return -1;
         }
@@ -376,9 +376,10 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
         if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
             char ip[INET6_ADDRSTRLEN + 4] = {0};
 
-            CNE_WARN("cnet_ipv4_compare(%s) failed\n",
-                     inet_ntop4(ip, sizeof(ip), (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr,
-                                NULL));
+            CNE_WARN(
+                "cnet_ipv4_compare(%s) failed\n",
+                inet_ntop4(ip, sizeof(ip), (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL)
+                    ?: "Invalid IP");
             pktmbuf_free(mbuf);
             return -1;
         }
