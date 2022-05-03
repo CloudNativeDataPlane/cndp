@@ -115,8 +115,10 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  *
  * @param vec
  *   The vector pointer
- * @param elem
+ * @param nelem
  *   The number of elements in the vector to allocate from
+ * @param esize
+ *   Size in bytes of the elements in the vector
  * @return
  *   The pointer to the vector list or NULL if failed.
  */
