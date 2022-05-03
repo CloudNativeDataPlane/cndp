@@ -143,6 +143,7 @@ vec_main(int argc, char **argv)
     char **argvopt;
     int option_index;
     static const struct option lgopts[] = {{NULL, 0, 0, 0}};
+    bool ret;
 
     argvopt = argv;
 
@@ -161,35 +162,29 @@ vec_main(int argc, char **argv)
     tst = tst_start("Vec non-pointer");
 
     for (int i = 0; i < cne_countof(tdata); i++) {
-        bool ret = test1(&tdata[i]);
-
-        if (ret == TST_FAILED)
+        if ((ret = test1(&tdata[i])) == TST_FAILED)
             break;
     }
 
-    tst_end(tst, TST_PASSED);
+    tst_end(tst, ret);
 
     tst = tst_start("Vec pointer");
 
     for (int i = 0; i < cne_countof(tdata); i++) {
-        bool ret = test2(&tdata[i]);
-
-        if (ret == TST_FAILED)
+        if ((ret = test2(&tdata[i])) == TST_FAILED)
             break;
     }
 
-    tst_end(tst, TST_PASSED);
+    tst_end(tst, ret);
 
     tst = tst_start("Vec dynamic Allocation");
 
     for (int i = 0; i < cne_countof(tdata); i++) {
-        bool ret = test3(&tdata[i]);
-
-        if (ret == TST_FAILED)
+        if ((ret = test3(&tdata[i])) == TST_FAILED)
             break;
     }
 
-    tst_end(tst, TST_PASSED);
+    tst_end(tst, ret);
 
     return 0;
 }
