@@ -13,6 +13,8 @@
 #include <netinet/in.h>           // for ntohs
 #include <stddef.h>               // for NULL
 
+#include "../chnl/chnl_priv.h"
+#include <cnet_chnl.h>
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
 #include <cne_common.h>              // for __cne_unused
@@ -29,177 +31,57 @@
 #include <cnet_node_names.h>
 #include "tcp_output_priv.h"
 
-static inline uint16_t
-tcp_output_header(pktmbuf_t *m, uint16_t nxt)
+static inline void
+tcp_enqueue(pktmbuf_t *m, struct pcb_entry *pcb)
 {
-    struct pcb_entry *pcb;
-    struct cne_tcp_hdr *tcp;
-    int16_t len;
+    struct chnl_buf *cb;
 
-    pcb = m->userptr;
+    cb = &pcb->ch->ch_snd;
 
-    /* Build the TCP header */
-    len       = sizeof(struct cne_tcp_hdr);
-    m->l4_len = len;
-    tcp       = pktmbuf_adjust(m, struct cne_tcp_hdr *, -len);
-    if (!tcp)
-        return TCP_OUTPUT_NEXT_PKT_DROP;
-    m->tx_offload = 0;
-    m->l4_len     = sizeof(struct cne_tcp_hdr);
+    vec_add(cb->cb_vec, m);
+    cb->cb_cc += pktmbuf_data_len(m);
 
-    memset(tcp, 0, sizeof(struct cne_tcp_hdr));
-    tcp->dst_port = CIN_PORT(&pcb->key.faddr);
-    tcp->src_port = CIN_PORT(&pcb->key.laddr);
-
-    nxt = TCP_OUTPUT_NEXT_IP4_OUTPUT;
-
-    return nxt;
+    pktmbuf_refcnt_update(m, 1);
+    CNE_DEBUG("Add mbuf [orange]%p[] to send queue veclen %d\n", (void *)m, vec_len(cb->cb_vec));
 }
 
 static uint16_t
-tcp_output_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
-                        uint16_t nb_objs)
+tcp_output_node_process(struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused,
+                        void **objs, uint16_t nb_objs)
 {
-    pktmbuf_t *mbuf0, *mbuf1, *mbuf2, *mbuf3, **pkts;
-    cne_edge_t next0, next1, next2, next3;
-    cne_edge_t next_index;
-    void **to_next, **from;
-    uint16_t last_spec = 0;
-    uint16_t n_left_from;
-    uint16_t held = 0;
+    pktmbuf_t *m;
+    struct pcb_entry *pcb;
+    struct tcb_entry *tcb = NULL;
 
-    next_index = TCP_OUTPUT_NEXT_IP4_OUTPUT;
+    CNE_DEBUG(">>> Add mbufs\n");
+    for (int i = 0; i < nb_objs; i++) {
+        m = (pktmbuf_t *)objs[i];
 
-    pkts        = (pktmbuf_t **)objs;
-    from        = objs;
-    n_left_from = nb_objs;
+        pcb = (struct pcb_entry *)m->userptr;
 
-    if (n_left_from >= 4) {
-        for (int i = 0; i < 4; i++)
-            cne_prefetch0(pktmbuf_mtod_offset(pkts[i], void *, sizeof(struct cne_ether_hdr)));
-    }
+        tcp_enqueue(m, pcb);
 
-    /* Get stream for the speculated next node */
-    to_next = cne_node_next_stream_get(graph, node, next_index, nb_objs);
-    while (n_left_from >= 4) {
-        /* Prefetch next-next mbufs */
-        if (likely(n_left_from > 11)) {
-            cne_prefetch0(pkts[8]);
-            cne_prefetch0(pkts[9]);
-            cne_prefetch0(pkts[10]);
-            cne_prefetch0(pkts[11]);
+        if (!tcb)
+            tcb = pcb->tcb;
+        else if (tcb != pcb->tcb) {
+            CNE_DEBUG("TCB chagned from [orange]%p[] --> [orange]%p[]\n", tcb, pcb->tcb);
+            cnet_tcp_output(tcb);
+            tcb = pcb->tcb;
         }
-
-        /* Prefetch next mbuf data */
-        if (likely(n_left_from > 7)) {
-            cne_prefetch0(pktmbuf_mtod_offset(pkts[4], void *, pkts[4]->l2_len));
-            cne_prefetch0(pktmbuf_mtod_offset(pkts[5], void *, pkts[5]->l2_len));
-            cne_prefetch0(pktmbuf_mtod_offset(pkts[6], void *, pkts[6]->l2_len));
-            cne_prefetch0(pktmbuf_mtod_offset(pkts[7], void *, pkts[7]->l2_len));
-        }
-
-        mbuf0 = pkts[0];
-        mbuf1 = pkts[1];
-        mbuf2 = pkts[2];
-        mbuf3 = pkts[3];
-
-        pkts += 4;
-        n_left_from -= 4;
-
-        next0 = tcp_output_header(mbuf0, TCP_OUTPUT_NEXT_PKT_DROP);
-        next1 = tcp_output_header(mbuf1, TCP_OUTPUT_NEXT_PKT_DROP);
-        next2 = tcp_output_header(mbuf2, TCP_OUTPUT_NEXT_PKT_DROP);
-        next3 = tcp_output_header(mbuf3, TCP_OUTPUT_NEXT_PKT_DROP);
-
-        /* Enqueue four to next node */
-        cne_edge_t fix_spec = (next_index ^ next0) | (next_index ^ next1) | (next_index ^ next2) |
-                              (next_index ^ next3);
-
-        if (unlikely(fix_spec)) {
-            /* Copy things successfully speculated till now */
-            memcpy(to_next, from, last_spec * sizeof(from[0]));
-            from += last_spec;
-            to_next += last_spec;
-            held += last_spec;
-            last_spec = 0;
-
-            /* Next0 */
-            if (next_index == next0) {
-                to_next[0] = from[0];
-                to_next++;
-                held++;
-            } else
-                cne_node_enqueue_x1(graph, node, next0, from[0]);
-
-            /* Next1 */
-            if (next_index == next1) {
-                to_next[0] = from[1];
-                to_next++;
-                held++;
-            } else
-                cne_node_enqueue_x1(graph, node, next1, from[1]);
-
-            /* Next2 */
-            if (next_index == next2) {
-                to_next[0] = from[2];
-                to_next++;
-                held++;
-            } else
-                cne_node_enqueue_x1(graph, node, next2, from[2]);
-
-            /* Next3 */
-            if (next_index == next3) {
-                to_next[0] = from[3];
-                to_next++;
-                held++;
-            } else
-                cne_node_enqueue_x1(graph, node, next3, from[3]);
-
-            from += 4;
-
-        } else
-            last_spec += 4;
     }
 
-    while (n_left_from > 0) {
-        mbuf0 = pkts[0];
-
-        pkts += 1;
-        n_left_from -= 1;
-
-        next0 = tcp_output_header(mbuf0, TCP_OUTPUT_NEXT_PKT_DROP);
-
-        if (unlikely(next_index ^ next0)) {
-            /* Copy things successfully speculated till now */
-            memcpy(to_next, from, last_spec * sizeof(from[0]));
-            from += last_spec;
-            to_next += last_spec;
-            held += last_spec;
-            last_spec = 0;
-
-            cne_node_enqueue_x1(graph, node, next0, from[0]);
-            from += 1;
-        } else
-            last_spec += 1;
+    if (tcb) {
+        CNE_DEBUG("Call TCP output for TCB [orange]%p[]\n", tcb);
+        cnet_tcp_output(tcb);
     }
-
-    /* !!! Home run !!! */
-    if (likely(last_spec == nb_objs)) {
-        cne_node_next_stream_move(graph, node, next_index);
-        return nb_objs;
-    }
-
-    held += last_spec;
-
-    /* Copy things successfully speculated till now */
-    memcpy(to_next, from, last_spec * sizeof(from[0]));
-    cne_node_next_stream_put(graph, node, next_index, held);
+    CNE_DEBUG("<<< Add mbufs\n");
 
     return nb_objs;
 }
 
 static struct cne_node_register tcp_output_node_base = {
     .process = tcp_output_node_process,
+    .flags   = CNE_NODE_INPUT_F,
     .name    = TCP_OUTPUT_NODE_NAME,
 
     .nb_edges = TCP_OUTPUT_NEXT_MAX,

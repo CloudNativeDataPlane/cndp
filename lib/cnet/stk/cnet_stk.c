@@ -50,9 +50,6 @@ _stk_create(struct cnet *cnet)
         stk->tid = gettid();       /* Grab the process ID */
         stk->lid = cne_lcore_id(); /* setup a set of values for the stack with defaults */
 
-        TAILQ_INIT(&stk->chnls);
-        TAILQ_INIT(&stk->tcbs);
-
         if (cne_mutex_create(&stk->mutex, PTHREAD_MUTEX_RECURSIVE)) {
             cnet_unlock();
             CNE_ERR_RET("Unable to initialize mutex\n");
@@ -88,8 +85,6 @@ cnet_stk_initialize(struct cnet *cnet)
     /* Bump the order value to allow other stk instances to run */
     atomic_fetch_add(&this_cnet->stk_order, 1);
 
-    stk->running = 1;
-
     return 0;
 }
 
@@ -114,6 +109,8 @@ stk_destroy(void *_stk)
         if (cne_mutex_destroy(&stk->mutex))
             CNE_ERR("cne_mutex_destroy(stk->mutex) failed\n");
 
+        vec_free(stk->chnlopt);
+        mempool_destroy(stk->chnl_objs);
         memset(stk, 0, sizeof(*stk));
         free(stk);
     }

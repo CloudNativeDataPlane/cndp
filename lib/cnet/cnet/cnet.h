@@ -18,7 +18,8 @@
 #include <cne_atomic.h>        // for atomic_uint_least16_t, atomic_fetch_add
 #include <stdint.h>            // for uint16_t, int32_t
 
-#include "cne_common.h"        // for CNE_MAX_ETHPORTS, __cne_cache_aligned
+#include <cne_common.h>        // for CNE_MAX_ETHPORTS, __cne_cache_aligned
+#include <uid.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,8 @@ struct cnet {
     uint32_t num_routes;                 /**< Number of routes */
     uint32_t num_arps;                   /**< Number of ARP entries */
     uint16_t flags;                      /**< Flags enable Punting, TCP, ... */
+    u_id_t chnl_uids;                    /**< UID for channel descriptor like values */
+    void **chnl_descriptors;             /**< List of channel descriptors pointers */
     void *netlink_info;                  /**< Netlink information structure */
     struct stk_s **stks;                 /**< Vector list of stk_entry pointers */
     struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */

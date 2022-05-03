@@ -24,33 +24,31 @@
 #include <pktdev.h>           // for pktdev_rx_burst
 #include <pktmbuf.h>          // for pktmbuf_t, pktmbuf_data_len
 #include <pktmbuf_ptype.h>
+#include "chnl_priv.h"
 #include <cnet_chnl.h>        // for cnet_chnl_get
 #include <cnet_node_names.h>
 
 static inline void
-__callback(struct pcb_entry *pcb, pktmbuf_t **mbufs, int len)
+__callback(struct pcb_entry *pcb)
 {
-    int n = 0;
+    if (pcb->ch->ch_callback) {
+        chnl_type_t ctype = (pcb->ip_proto == IPPROTO_TCP) ? CHNL_TCP_RECV_TYPE
+                                                           : CHNL_UDP_RECV_TYPE;
 
-    if (len && pcb && pcb->ch && pcb->ch->callback)
-        n = pcb->ch->callback(pcb->ch, mbufs, len);
-    if (n != len)
-        pktmbuf_free_bulk(&mbufs[n], len - n);
+        pcb->ch->ch_callback(ctype, pcb->ch->ch_cd);
+    }
 }
 
 static uint16_t
-chnl_callback_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
-                           uint16_t nb_objs)
+chnl_callback_node_process(struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused,
+                           void **objs, uint16_t nb_objs)
 {
-    pktmbuf_t *mbuf0, **pkts, **mbufs;
+    pktmbuf_t *mbuf, **pkts;
     struct pcb_entry *pcb, *ppcb = NULL;
-    uint16_t n_left_from, mbuf_cnt;
-
-    (void)graph;
-    (void)node;
+    uint16_t n_left_from;
+    struct chnl_buf *cb;
 
     pkts        = (pktmbuf_t **)objs;
-    mbufs       = pkts;
     n_left_from = nb_objs;
 
     if (n_left_from >= 4) {
@@ -60,31 +58,35 @@ chnl_callback_node_process(struct cne_graph *graph, struct cne_node *node, void 
         cne_prefetch0(pkts[3]);
     }
 
-    mbuf_cnt = 0;
     while (n_left_from > 0) {
         if (likely(n_left_from > 3))
             cne_prefetch0(pkts[4]);
 
-        mbuf0 = pkts[0];
+        mbuf = pkts[0];
 
-        pkts += 1;
-        n_left_from -= 1;
+        pkts++;
+        n_left_from--;
 
-        pcb = mbuf0->userptr;
+        pcb = mbuf->userptr;
+        if (!pcb || !pcb->ch) {
+            pktmbuf_free(mbuf);
+            CNE_ERR("PCB or Chnl pointer is NULL\n");
+            continue;
+        }
         if (!ppcb)
             ppcb = pcb;
-
-        if (ppcb != pcb) {
-            __callback(ppcb, mbufs, mbuf_cnt);
-            ppcb     = pcb;
-            mbufs    = pkts;
-            mbuf_cnt = 0;
+        else if (ppcb != pcb) {
+            __callback(ppcb);
+            ppcb = pcb;
         }
-        mbuf_cnt++;
+
+        cb = &pcb->ch->ch_rcv;
+        vec_add(cb->cb_vec, mbuf);
+        cb->cb_cc += pktmbuf_data_len(mbuf);
     }
 
-    if (ppcb && mbuf_cnt)
-        __callback(ppcb, mbufs, mbuf_cnt);
+    if (ppcb)
+        __callback(ppcb);
 
     return nb_objs;
 }

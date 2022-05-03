@@ -11,8 +11,9 @@
 
 #include <cnet.h>        // for cnet_add_instance
 #include <cnet_reg.h>
-#include <cnet_stk.h>              // for stk_entry, per_thread_stk, this_stk, pro...
-#include <cne_inet.h>              // for inet_ntop4, in_caddr, CIN_PORT, in_caddr...
+#include <cnet_stk.h>        // for stk_entry, per_thread_stk, this_stk, pro...
+#include <cne_inet.h>        // for inet_ntop4, in_caddr, CIN_PORT, in_caddr...
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>             // for chnl, chnl_buf, chnl_OK, chnl_connect2_c...
 #include <cnet_pcb.h>              // for cnet_pcb_alloc, pcb_entry, pcb_key, cnet...
 #include <cnet_udp.h>              // for udp_entry
@@ -25,6 +26,8 @@
 #include <sys/socket.h>            // for MSG_DONTWAIT
 #include <sys/types.h>             // for ssize_t
 #include <cnet_meta.h>
+#include <cne_ring.h>
+#include <cnet_node_names.h>
 
 #include "cne_common.h"          // for __cne_unused, CNE_SET_USED
 #include "cne_log.h"             // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_WARNING
@@ -32,65 +35,6 @@
 #include "cnet_const.h"          // for __errno_set, UDP_IO, CNET_UDP_CHNL_PRIO
 #include "cnet_protosw.h"        // for
 #include "pktmbuf.h"             // for pktmbuf_free, pktmbuf_data_len, pktmbuf_t
-
-/*
- * This routine initializes the UDP-specific portions of a new channel.
- *
- * RETURNS: 0 or -1.
- */
-static int
-udp_chnl_channel(struct chnl *ch, int domain __cne_unused, int type __cne_unused,
-                 int proto __cne_unused)
-{
-    stk_t *stk = this_stk;
-    struct pcb_entry *pcb;
-
-    ch->ch_rcv.cb_size = stk->udp->rcv_size;
-    ch->ch_snd.cb_size = stk->udp->snd_size;
-
-    if ((pcb = cnet_pcb_alloc(&stk->udp->udp_hd, IPPROTO_UDP)) == NULL)
-        return __errno_set(ENOBUFS);
-
-    if (stk->udp->cksum_on)
-        pcb->opt_flag |= UDP_CHKSUM_FLAG;
-
-    ch->ch_pcb = pcb;
-
-    return 0;
-}
-
-static int
-udp_chnl_channel2(struct chnl *ch1, struct chnl *ch2)
-{
-    stk_t *stk = this_stk;
-    struct pcb_entry *pcb1, *pcb2;
-
-    ch1->ch_rcv.cb_size = stk->udp->rcv_size;
-    ch1->ch_snd.cb_size = stk->udp->snd_size;
-
-    if ((pcb1 = cnet_pcb_alloc(&stk->udp->udp_hd, IPPROTO_UDP)) == NULL)
-        return __errno_set(ENOBUFS);
-
-    if (stk->udp->cksum_on)
-        pcb1->opt_flag |= UDP_CHKSUM_FLAG;
-
-    ch1->ch_pcb = pcb1;
-
-    ch2->ch_rcv.cb_size = stk->udp->rcv_size;
-    ch2->ch_snd.cb_size = stk->udp->snd_size;
-
-    if ((pcb2 = cnet_pcb_alloc(&stk->udp->udp_hd, IPPROTO_UDP)) == NULL) {
-        cnet_pcb_free(pcb1);
-        return __errno_set(ENOBUFS);
-    }
-
-    if (stk->udp->cksum_on)
-        pcb2->opt_flag |= UDP_CHKSUM_FLAG;
-
-    ch2->ch_pcb = pcb2;
-
-    return 0;
-}
 
 /*
  * This routine is the protocol-specific bind() back-end function for
@@ -103,40 +47,99 @@ udp_chnl_bind(struct chnl *ch, struct in_caddr *to, int tolen)
 {
     int ret;
 
+    if (!ch)
+        return -1;
     ret = chnl_bind_common(ch, to, tolen, &this_stk->udp->udp_hd);
     if (ret == 0)
-        ch->ch_state |= _ISCONNECTED;
+        chnl_state_set(ch, _ISCONNECTED);
 
     return ret;
+}
+
+static int
+udp_accept(struct chnl *ch __cne_unused, struct in_caddr *addr __cne_unused,
+           int *addrlen __cne_unused)
+{
+    return -1;
+}
+
+static int
+udp_listen(struct chnl *ch __cne_unused, int backlog __cne_unused)
+{
+    return 0;
+}
+
+/*
+ * This routine is the protocol-specific bind() back-end function for receives.
+ */
+static int
+udp_chnl_recv(struct chnl *ch, pktmbuf_t **mbufs, int nb_mbufs)
+{
+    uint32_t sz = 0;
+    int tlen, n = 0;
+
+    if (nb_mbufs == 0)
+        return 0;
+
+    if (!ch || !mbufs)
+        return __errno_set(EFAULT);
+
+    tlen = vec_len(ch->ch_rcv.cb_vec);
+    if (tlen > 0) {
+        n = (tlen > nb_mbufs) ? nb_mbufs : tlen;
+        memcpy(mbufs, ch->ch_rcv.cb_vec, sizeof(pktmbuf_t *) * n);
+
+        tlen -= n;
+        memmove(ch->ch_rcv.cb_vec, ch->ch_rcv.cb_vec + (sizeof(pktmbuf_t *) * n),
+                tlen * sizeof(pktmbuf_t *));
+        vec_set_len(ch->ch_rcv.cb_vec, tlen);
+    }
+    for (int i = 0; i < n; i++)
+        sz += pktmbuf_data_len(mbufs[i]);
+
+    ch->ch_rcv.cb_cc -= sz;
+
+    return n;
 }
 
 /*
  * This routine is the protocol-specific send() back-end function for
  * UDP channels.
  *
+ * Sending for UDP is different from TCP sending data, the reason is TCP data
+ * may need to be retransmitted and UDP is best effort. In this case we assume that
+ * data is consumed by this routine and we do not have to deal with send buffer
+ * limitation. CNET does not attempt to retransmit or copy data into a channel buffer,
+ * which would have a limited size, performance hit and would need to be managed
+ * via a buffer size. This means you can not get an error about
+ * the send buffer being full.
+ *
+ * This routine will enqueue the packets to the 'chnl_send' node to be passed to the
+ * UDP output node.
  */
 static int
 udp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 {
     struct in_caddr *to;
 
-    if (ch->ch_node == NULL)
-        ch->ch_node = cne_graph_node_get(this_stk->graph->id, cne_node_from_name("chnl_send"));
-    if (!ch->ch_node)
+    if (!ch)
         return -1;
+    if (!ch->ch_node) {
+        ch->ch_node =
+            cne_graph_node_get(this_stk->graph->id, cne_node_from_name(UDP_OUTPUT_NODE_NAME));
+        if (!ch->ch_node)
+            return __errno_set(EFAULT);
+    }
+
     for (int i = 0; i < nb_mbufs; i++) {
         pktmbuf_t *m = mbufs[i];
         struct cnet_metadata *md;
-
-        /* Was the socket shut down or closed while we were waiting? */
-        if (is_set(ch->ch_state, _CANTSENDMORE | _CHNL_FREE))
-            continue;
 
         md = cnet_mbuf_metadata(m);
 
         to = &md->faddr;
         if (CIN_LEN(to) == 0) {
-            if (chnl_connect(ch, (struct sockaddr *)to, to->cin_len) < 0)
+            if (chnl_connect(ch->ch_cd, (struct sockaddr *)to, to->cin_len) < 0)
                 continue;
         }
 
@@ -154,30 +157,15 @@ udp_shutdown(struct chnl *ch __cne_unused, int how __cne_unused)
     return 0;
 }
 
-static struct chnl *
-udp_accept(struct chnl *ch __cne_unused, struct in_caddr *addr __cne_unused,
-           int *addrlen __cne_unused)
-{
-    return NULL;
-}
-
-static int
-udp_listen(struct chnl *ch __cne_unused, int backlog __cne_unused)
-{
-    return 0;
-}
-
 static struct proto_funcs udpFuncs = {
-    .channel_func  = udp_chnl_channel,     /**< Channel Initialize routine */
-    .channel2_func = udp_chnl_channel2,    /**< Channel2 Initialize routine */
-    .close_func    = chnl_OK,              /**< close routine */
-    .send_func     = udp_chnl_send,        /**< send routine */
-    .bind_func     = udp_chnl_bind,        /**< bind routine */
-    .connect_func  = chnl_connect_common,  /**< connect routine */
-    .connect2_func = chnl_connect2_common, /**< connect2 routine */
-    .shutdown_func = udp_shutdown,         /**< shutdown routine*/
-    .accept_func   = udp_accept,           /**< accept routine */
-    .listen_func   = udp_listen            /**< listen routine */
+    .close_func    = chnl_OK,             /**< close routine */
+    .recv_func     = udp_chnl_recv,       /**< recv routine */
+    .send_func     = udp_chnl_send,       /**< send routine */
+    .bind_func     = udp_chnl_bind,       /**< bind routine */
+    .connect_func  = chnl_connect_common, /**< connect routine */
+    .shutdown_func = udp_shutdown,        /**< shutdown routine*/
+    .accept_func   = udp_accept,          /**< accept routine */
+    .listen_func   = udp_listen           /**< listen routine */
 };
 
 static int

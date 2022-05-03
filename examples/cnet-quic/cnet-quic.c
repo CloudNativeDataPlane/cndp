@@ -46,6 +46,7 @@
 #include <ip4_node_api.h>            // for cnet_node_ip4_forward_add, cnet_nod...
 #include <cnet_netlink.h>
 #include <cne_inet.h>        // for cnet_inet
+#include <cnet_node_names.h>
 
 #include "cnet-quic.h"
 #include "cne.h"               // for cne_id, cne_init, cne_on_exit
@@ -114,6 +115,7 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
     gi->graph = cne_graph_lookup(graph_name);
     if (!gi->graph)
         CNE_ERR_GOTO(err, "cne_graph_lookup(): graph '%s' not found\n", graph_name);
+    this_stk->graph = gi->graph;
 
     free(gi->patterns);
 
@@ -156,7 +158,6 @@ thread_func(void *arg)
 
     if (initialize_graph(thd, gi))
         CNE_ERR_GOTO(err, "Initialize_graph() failed\n");
-    this_stk->graph = gi->graph;
 
     if (open_quic_channel() < 0)
         CNE_ERR_GOTO(err, "Unable to create QUIC channel\n");

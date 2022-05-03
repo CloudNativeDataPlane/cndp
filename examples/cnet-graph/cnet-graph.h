@@ -32,9 +32,10 @@ extern "C" {
 #include "metrics.h"        // for metrics_info_t
 #include "pktmbuf.h"        // for pktmbuf_t
 
-#define MAX_THREADS 16
-#define MAX_BURST   256
-#define DST_LPORT   5
+#define MAX_THREADS    16
+#define BURST_SIZE     128
+#define MAX_BURST_SIZE 256
+#define DST_LPORT      5
 
 enum {
     FWD_DEBUG_STATS      = (1 << 0), /**< Show debug stats */
@@ -44,17 +45,43 @@ enum {
     FWD_ENABLE_UDP_CKSUM = (1 << 4), /**< Enable the UDP checksum function */
 };
 
+#define MODE_DROP     "drop"     /**< Drop the received packets */
+#define MODE_RX_ONLY  "rx-only"  /**< Alias for MODE_DROP */
+#define MODE_LB       "lb"       /**< Loopback mode */
+#define MODE_LOOPBACK "loopback" /**< Alias for MODE_LB */
+#define MODE_TX_ONLY  "tx-only"  /**< Transmit only */
+#define MODE_CONNECT  "connect"  /**< Open a connection */
+
+// clang-format off
+typedef enum {
+    UNKNOWN_TEST,
+    DROP_TEST,
+    LOOPBACK_TEST,
+    TXONLY_TEST,
+    MAX_TESTS
+} test_t;
+
+#define MODE_MAP_DATA                   \
+    {                                   \
+        {MODE_DROP,     DROP_TEST},     \
+        {MODE_RX_ONLY,  DROP_TEST},     \
+        {MODE_LB,       LOOPBACK_TEST}, \
+        {MODE_LOOPBACK, LOOPBACK_TEST}, \
+        {MODE_TX_ONLY,  TXONLY_TEST}    \
+    }
+// clang-format on
+
 #define NO_METRICS_TAG "no-metrics" /**< json tag for no-metrics */
 #define NO_RESTAPI_TAG "no-restapi" /**< json tag for no-restapi */
 #define ENABLE_CLI_TAG "cli"        /**< json tag to enable/disable CLI */
 
 struct fwd_port {
-    int lport;                      /**< PKTDEV lport id */
-    pktmbuf_t *rx_mbufs[MAX_BURST]; /**< RX mbufs array */
-    uint64_t ipackets;              /**< previous rx packets */
-    uint64_t opackets;              /**< previous tx packets */
-    uint64_t ibytes;                /**< previous rx bytes */
-    uint64_t obytes;                /**< previous tx bytes */
+    int lport;                           /**< PKTDEV lport id */
+    pktmbuf_t *rx_mbufs[MAX_BURST_SIZE]; /**< RX mbufs array */
+    uint64_t ipackets;                   /**< previous rx packets */
+    uint64_t opackets;                   /**< previous tx packets */
+    uint64_t ibytes;                     /**< previous rx bytes */
+    uint64_t obytes;                     /**< previous tx bytes */
 };
 
 struct app_options {
@@ -74,22 +101,62 @@ typedef struct graph_info_s {
     const char **patterns;
 } graph_info_t;
 
+#define MAX_GRAPH_COUNT 128
+
 struct cnet_info {
-    struct cnet *cnet;
-    jcfg_info_t *jinfo;        /**< JSON-C configuration */
-    uint32_t flags;            /**< Application set of flags */
-    volatile int timer_quit;   /**< flags to start and stop the application */
-    struct app_options opts;   /**< Application options*/
-    pthread_barrier_t barrier; /**< Barrier for all threads */
-    bool barrier_inited;
-    graph_info_t graph_info[16];
-    void *netlink;
+    struct cnet *cnet;                        /**< CNET structure pointer */
+    test_t test;                              /**< Test type to be run */
+    int burst;                                /**< Burst Size */
+    jcfg_info_t *jinfo;                       /**< JSON-C configuration */
+    uint32_t flags;                           /**< Application set of flags */
+    volatile int timer_quit;                  /**< flags to start and stop the application */
+    struct app_options opts;                  /**< Application options*/
+    pthread_barrier_t barrier;                /**< Barrier for all threads */
+    bool barrier_inited;                      /**< Barrier for all threads */
+    graph_info_t graph_info[MAX_GRAPH_COUNT]; /**< Graph information */
+    void *netlink;                            /**< Network information */
+    char *connect;                            /**< Connection string */
 };
 
 extern struct cnet_info *cinfo; /**< global application information pointer */
 
+#define MAX_STRLEN_SIZE 16
+
+/**
+ * Routine to convert the type string to a enum value
+ *
+ * @param type
+ *   The string mode type used to compare to known modes
+ * @return
+ *   The index value of the mode or UNKNOWN value is returned.
+ */
+static inline uint8_t
+get_app_mode(const char *type)
+{
+    if (type) {
+        size_t nlen = strnlen(type, MAX_STRLEN_SIZE);
+        struct {
+            const char *name;
+            int mode;
+        } modes[] = MODE_MAP_DATA;
+
+        for (int i = 0; i < cne_countof(modes); i++)
+            if (!strncasecmp(type, modes[i].name, nlen))
+                return modes[i].mode;
+
+        cne_printf("[yellow]*** [magenta]Unknown mode[]: '[red]%s[]'\n", type);
+        cne_printf("    [magenta]Known modes[]: ");
+        for (int i = 0; i < cne_countof(modes); i++)
+            cne_printf("'[cyan]%s[]' ", modes[i].name);
+        cne_printf("\n");
+    }
+
+    return UNKNOWN_TEST;
+}
+
 int parse_args(int argc, char **argv);
 void thread_func(void *arg);
+void thread_timer_func(void *arg);
 void netlink_thread(void *arg);
 int enable_metrics(void);
 

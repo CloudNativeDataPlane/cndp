@@ -42,7 +42,6 @@
  * CNET TCP protocol routines and constants.
  */
 
-#include <cnet_chnl.h>
 #include "cnet_const.h"        // for bool_t
 #include "cnet_pcb.h"          // for pcb_hd
 
@@ -120,7 +119,7 @@ tstampGEQ(uint32_t a, uint32_t b)
 #define TCP_PAWS_IDLE (24 * 24 * 60 * 60 * 1000)
 
 /* TCP states (numeric values match those in RFC2452) */
-enum {
+typedef enum {
     TCPS_FREE = 0,
     TCPS_CLOSED,      /**< TCB is Closed */
     TCPS_LISTEN,      /**< TCB is listening */
@@ -133,7 +132,7 @@ enum {
     TCPS_LAST_ACK,    /**< Connection is in Last ACK state */
     TCPS_FIN_WAIT_2,  /**< Connection is in FIN wait 2 state */
     TCPS_TIME_WAIT    /**< Connection is in time wait state */
-};
+} tcb_state_t;
 
 #define TCP_INPUT_STATES                                                                        \
     {                                                                                           \
@@ -142,8 +141,8 @@ enum {
     }
 
 #define TCPS_HAVE_RCVD_SYN(s) ((s) >= TCPS_SYN_RCVD)
-#define TCPS_HAVE_RCVD_FIN(s) \
-    ((s) > TCPS_ESTABLISHED && (s) != TCPS_FIN_WAIT_1 && (s) != TCPS_FIN_WAIT_2)
+#define TCPS_HAVE_ESTABLISHED (s)((s) >= TCPS_ESTABLISHED)
+#define TCPS_HAVE_RCVD_FIN(s) ((s) >= TCPS_TIME_WAIT)
 
 /* tcp_hdr.flags TCP Header flags and seg_entry.flags */
 enum {
@@ -282,11 +281,10 @@ enum {
 #define seqEQ(a, b)  ((int)((a) - (b)) == 0)
 #define seqNE(a, b)  ((int)((a) - (b)) != 0)
 
-#define TCP_LINGERTIME           120 /**< Max seconds for SO_LINGER */
-#define TCP_MAXRXTSHIFT          12  /**< Max retransmissions */
+#define TCP_MAXRXTSHIFT          12 /**< Max retransmissions */
 #define TCP_RETRANSMIT_THRESHOLD 3
 
-#define MAX_TCP_RCV_SIZE (512 * 1024)
+#define MAX_TCP_RCV_SIZE (128 * 1024)
 #define MAX_TCP_SND_SIZE MAX_TCP_RCV_SIZE
 
 /* Macro to deal with cne_mbuf pointer in TCP header */
@@ -329,7 +327,8 @@ struct seg_entry {
 enum {
     SEG_TS_PRESENT  = 0x8000, /**< Timestamp is present */
     SEG_MSS_PRESENT = 0x4000, /**< MSS option is present */
-    SEG_WS_PRESENT  = 0x2000  /**< Window Scale present */
+    SEG_WS_PRESENT  = 0x2000, /**< Window Scale present */
+    SEG_SACK_PERMIT = 0x1000  /**< SACK permission flag, which is not supported at this time. */
 };
 
 enum {
@@ -341,10 +340,9 @@ struct stk_s;
 struct tcp_entry;
 struct netif;
 
-struct tcp_vec {
-    pthread_cond_t cond;   /**< Condition variable to wait on */
-    pthread_mutex_t mutex; /**< Mutex for condition variable */
-    struct pcb_entry **vec;
+struct tcp_q {
+    TAILQ_HEAD(, pcb_entry) head; /**< Head of the PCB backlog queue */
+    atomic_uint_least32_t cnt;    /**< Number of entries in the list */
 };
 
 /* TCP Transmission Control Block */
@@ -352,21 +350,21 @@ struct tcb_entry {
     TAILQ_ENTRY(tcb_entry) entry; /**< Pointer to the next free tcb_entry structure */
 
     pktmbuf_t **reassemble;
-    struct tcp_vec backlog_q;       /**< Backlog queue of connections */
-    struct pcb_entry **half_open_q; /**< Half open queue of connections */
+    struct tcp_q backlog_q;   /**< Backlog queue of connections */
+    struct tcp_q half_open_q; /**< Half open queue of connections */
 
     struct netif *netif;    /**< netif pointer */
     struct tcp_entry *tcp;  /**< Pointer to the TCP entry */
     struct pcb_entry *pcb;  /**< Pointer to PCB structure */
     struct pcb_entry *ppcb; /**< Pointer to Parent PCB */
 
-    uint32_t tflags;  /**< TCP Flags, lower bits are output flags */
-    uint32_t persist; /**< Persist value */
-    int16_t state;    /**< TCP Input State */
-    uint16_t max_mss; /**< Maximum Segment Size */
+    uint32_t tflags;   /**< TCP Flags, lower bits are output flags */
+    uint32_t persist;  /**< Persist value */
+    tcb_state_t state; /**< TCP Input State */
+    uint16_t max_mss;  /**< Maximum Segment Size */
 
-    int16_t timers[TCP_NTIMERS]; /**< TCP timers */
-    int32_t qLimit;              /**< backlog limit for (3 * qLimit)/2 */
+    int16_t timers[TCP_NTIMERS] __cne_aligned(8); /**< TCP timers */
+    int32_t qLimit;                               /**< backlog limit for (3 * qLimit)/2 */
 
     /* RFC1323 variables */
     uint8_t snd_scale;      /**< Send Window scale */
@@ -379,7 +377,7 @@ struct tcb_entry {
 
     /* Send segment information */
     seq_t snd_una;         /**< Send unacked bytes */
-    seq_t snd_nxt;         /**< Send next */
+    seq_t snd_nxt;         /**< Send next sequence */
     seq_t snd_up;          /**< Urgent pointer */
     seq_t snd_wl1;         /**< Segment Sequence number used for last window update */
     seq_t snd_wl2;         /**< segment acknowledgment number used for last window update */
@@ -391,18 +389,16 @@ struct tcb_entry {
     uint32_t max_sndwnd;   /**< Max Send window seen */
 
     /* Receive Segment information */
-    uint32_t rcv_wnd; /**< Receive Window */
-    seq_t rcv_nxt;    /**< Receive Next */
-    seq_t rcv_up;
+    seq_t rcv_wnd;      /**< Receive Window */
+    seq_t rcv_nxt;      /**< Receive Next */
     seq_t rcv_irs;      /**< Initial Receive Sequence number */
     seq_t rcv_adv;      /**< Advertised window */
     int32_t rcv_bsize;  /**< Receive Buffer size */
     seq_t rcv_ssthresh; /**< Receive Slow Start threshold */
+    uint16_t snd_urp;   /**< Send Urgent pointer */
+    uint16_t rcv_urp;   /**< Receive Urgent pointer */
 
-    uint16_t snd_urp; /**< Send Urgent pointer */
-    uint16_t rcv_urp; /**< Receive Urgent pointer */
-
-    /* Retransmittion timeout values */
+    /* Retransmission timeout values */
     seq_t rttseq;        /**< Round Trip Time Sequence number */
     seq_t total_retrans; /**< Total retransmits */
     int16_t rtt;         /**< RTT in milli-seconds */
@@ -416,45 +412,73 @@ struct tcb_entry {
 };
 
 /* tcb_entry.tflags values */
+// clang-format off
 enum {
-    TCBF_PASSIVE_OPEN = 0x10000000, /**< Passive open */
-    TCBF_FORCE_TX     = 0x20000000, /**< Do an ACK now from persist */
-    TCBF_DELAYED_ACK  = 0x40000000, /**< DELAYED ACK */
-    TCBF_FREE_BIT_1   = 0x80000000,
+    TCBF_PASSIVE_OPEN    = 0x10000000, /**< Passive open */
+    TCBF_FORCE_TX        = 0x20000000, /**< Do an ACK now from persist */
+    TCBF_DELAYED_ACK     = 0x40000000, /**< DELAYED ACK */
+    TCBF_FREE_BIT_1      = 0x80000000,
 
-    TCBF_RFC1122_URG = 0x01000000, /**< RFC1122 Urgent */
-    TCBF_BOUND       = 0x02000000, /**< TCB is Bound */
-    TCBF_FREE_BIT_2  = 0x04000000,
-    TCBF_FREE_BIT_3  = 0x08000000,
+    TCBF_RFC1122_URG     = 0x01000000, /**< RFC1122 Urgent */
+    TCBF_BOUND           = 0x02000000, /**< TCB is Bound */
+    TCBF_FREE_BIT_2      = 0x04000000,
+    TCBF_FREE_BIT_3      = 0x08000000,
 
-    TCBF_REQ_TSTAMP = 0x00100000, /**< Reguested Timestamp option */
-    TCBF_RCVD_SCALE = 0x00200000, /**< Window Scaling received */
-    TCBF_REQ_SCALE  = 0x00400000, /**< Requested Window Scaling */
-    TCBF_SEND_URG   = 0x00800000, /**< Send urgent data */
+    TCBF_REQ_TSTAMP      = 0x00100000, /**< Requested Timestamp option */
+    TCBF_RCVD_SCALE      = 0x00200000, /**< Window Scaling received */
+    TCBF_REQ_SCALE       = 0x00400000, /**< Requested Window Scaling */
+    TCBF_SEND_URG        = 0x00800000, /**< Send urgent data */
 
-    TCBF_ACK_NOW     = 0x00010000, /**< ACK Now */
-    TCBF_SENT_FIN    = 0x00020000, /**< FIN has been sent */
-    TCBF_SACK_PERMIT = 0x00040000, /**< I could SACK */
-    TCBF_RCVD_TSTAMP = 0x00080000, /**< Received Timestamp in SYN */
+    TCBF_ACK_NOW         = 0x00010000, /**< ACK Now */
+    TCBF_SENT_FIN        = 0x00020000, /**< FIN has been sent */
+    TCBF_SACK_PERMIT     = 0x00040000, /**< SACK Permit is not supported, look at SEG_SACK_PERMIT */
+    TCBF_RCVD_TSTAMP     = 0x00080000, /**< Received Timestamp in SYN */
 
-    TCBF_NODELAY       = 0x00001000, /**< don't delay packets */
-    TCBF_NAGLE_CREDIT  = 0x00002000, /**< Nagle credit flag */
-    TCBF_OUR_FIN_ACKED = 0x00004000, /**< Our FIN has been acked */
-    TCBF_NEED_OUTPUT   = 0x00008000, /**< Need output */
+    TCBF_NODELAY         = 0x00001000, /**< don't delay packets */
+    TCBF_NAGLE_CREDIT    = 0x00002000, /**< Nagle credit flag */
+    TCBF_OUR_FIN_ACKED   = 0x00004000, /**< Our FIN has been acked */
+    TCBF_FREE_BIT_4      = 0x00008000,
 
-    TCBF_FREE_BIT_4      = 0x00000100,
+    TCBF_FREE_BIT_5      = 0x00000100,
     TCBF_NEED_FAST_REXMT = 0x00000200, /**< Need a fast Retransmit */
     TCBF_NOPUSH          = 0x00000400, /**< no push */
     TCBF_NOOPT           = 0x00000800, /**< don't use TCP options */
 };
 
-#define TCB_FLAGS                                                                                 \
-    {                                                                                             \
-        "Free 1", "DELAYED ACK", "FORCE_TX", "PASSIVE_OPEN", "Free 2", "Free 3", "BOUND",         \
-            "RFC1122_URG", "SEND_URG", "REQ_SCALE", "RCVD_SCALE", "REQ_TSTAMP", "RCVD_TSTAMP",    \
-            "SACK_PERMIT", "SENT_FIN", "ACK_NOW", "NEED_OUTPUT", "OUR_FIN_ACKED", "NAGLE_CREDIT", \
-            "NO DELAY", "NOOPT", "NOPUSH", "Need Fast Rexmt"                                      \
+#define TCB_FLAGS           \
+    {                       \
+        "Free_1",           \
+        "DELAYED_ACK",      \
+        "FORCE_TX",         \
+        "PASSIVE_OPEN",     \
+                            \
+        "Free_3",           \
+        "Free_2",           \
+        "BOUND",            \
+        "RFC1122_URG",      \
+                            \
+        "SEND_URG",         \
+        "REQ_SCALE",        \
+        "RCVD_SCALE",       \
+        "REQ_TSTAMP",       \
+                            \
+        "RCVD_TSTAMP",      \
+        "SACK_PERMIT",      \
+        "SENT_FIN",         \
+        "ACK_NOW",          \
+                            \
+        "Free_4",           \
+        "OUR_FIN_ACKED",    \
+        "NAGLE_CREDIT",     \
+        "NO_DELAY",         \
+                            \
+        "NOOPT",            \
+        "NOPUSH",           \
+        "NeedFastRexmt",    \
+        "Free_5",           \
+        NULL                \
     }
+// clang-format on
 
 extern const char *tcb_in_states[];
 
@@ -462,7 +486,6 @@ struct chnl;
 
 struct tcp_entry {
     TAILQ_ENTRY(tcb_entry) entry;
-    uint32_t now_tick;  /**< 100ms counter for timeout handlers */
     uint32_t rcv_size;  /**< TCP Receive Size */
     uint32_t snd_size;  /**< TCP Send Size */
     uint32_t snd_ISS;   /**< TCP Send ISS value */
@@ -476,8 +499,40 @@ struct tcp_entry {
     struct pcb_hd tcp_hd; /**< PCB header information */
 };
 
-#define INC_TCP_STAT(x) \
-    do {                \
+/**
+ * TCP counters.
+ */
+typedef struct tcp_stats {
+    uint64_t _TCPS_CLOSED; /**< TCP State counters */
+    uint64_t _TCPS_LISTEN;
+    uint64_t _TCPS_SYN_SENT;
+    uint64_t _TCPS_SYN_RCVD;
+    uint64_t _TCPS_ESTABLISHED;
+    uint64_t _TCPS_CLOSE_WAIT;
+    uint64_t _TCPS_FIN_WAIT_1;
+    uint64_t _TCPS_CLOSING;
+    uint64_t _TCPS_LAST_ACK;
+    uint64_t _TCPS_FIN_WAIT_2;
+    uint64_t _TCPS_TIME_WAIT;
+
+    uint64_t _no_syn_rcvd;    /**< TCP No SYN Rcvd Count */
+    uint64_t _invalid_ack;    /**< TCP invalid Acknowledgement Count */
+    uint64_t _passive_open;   /**< TCP Passive Open Count */
+    uint64_t _tcp_rst;        /**< TCP connection reset Count */
+    uint64_t _ack_predicted;  /**< TCP ACK prediction Count */
+    uint64_t _data_predicted; /**< TCP Data prediction Count */
+    uint64_t _rx_total;       /**< TCP received count */
+    uint64_t _rx_short;       /**< TCP received short count */
+    uint64_t _rx_badoff;      /**< TCP received bad offset count */
+    uint64_t _delayed_ack;    /**< TCP delayed ACK count */
+    uint64_t _tcp_rexmit;     /**< TCP retransmission count */
+    uint64_t _resets_sent;    /**< TCP resets count */
+    uint64_t _tcp_connect;    /**< TCP connections count */
+} tcp_stats_t;
+
+#define INC_TCP_STAT(x)              \
+    do {                             \
+        this_stk->tcp_stats->_##x++; \
     } while (/*CONSTCOND*/ 0)
 
 static inline void
@@ -499,12 +554,9 @@ tcp_range_set(int val, int tvmin, int tvmax)
 static inline void
 tcb_kill_timers(struct tcb_entry *tcb)
 {
-    uint16_t *p = (uint16_t *)&tcb->timers[0];
+    uint64_t *p = (uint64_t *)(uintptr_t)tcb->timers;
 
-    *p++ = 0;
-    *p++ = 0;
-    *p++ = 0;
-    *p   = 0;
+    p[0] = 0;
 }
 
 /**
@@ -513,16 +565,23 @@ tcb_kill_timers(struct tcb_entry *tcb)
 static inline struct tcb_entry *
 tcb_alloc(void)
 {
-    struct tcb_entry *tcb;
+    struct tcb_entry *tcb = NULL;
+    stk_t *stk            = this_stk;
 
-    if (mempool_get(this_stk->tcb_objs, (void *)&tcb) < 0)
+    if (mempool_get(stk->tcb_objs, (void *)&tcb) < 0)
         return NULL;
 
-    //    cne_rwlock_write_lock(CNE_EAL_TAILQ_RWLOCK);
+    if (stk_lock()) {
+        int idx = mempool_obj_index(stk->tcb_objs, tcb);
 
-    TAILQ_INSERT_TAIL(&this_stk->tcbs, tcb, entry);
-
-    //    cne_rwlock_write_unlock(CNE_EAL_TAILQ_RWLOCK);
+        if (idx < 0) {
+            mempool_put(stk->tcb_objs, (void *)tcb);
+            stk_unlock();
+            CNE_NULL_RET("TCB pointer is invalid\n");
+        }
+        bit_set(stk->tcbs, idx);
+        stk_unlock();
+    }
 
     return tcb;
 }
@@ -530,13 +589,23 @@ tcb_alloc(void)
 static inline void
 tcb_free(struct tcb_entry *tcb)
 {
-    //    cne_rwlock_write_lock(CNE_EAL_TAILQ_RWLOCK);
+    stk_t *stk = this_stk;
 
-    TAILQ_REMOVE(&this_stk->tcbs, tcb, entry);
+    if (tcb) {
+        if (stk_lock()) {
+            int idx = mempool_obj_index(stk->tcb_objs, tcb);
 
-    //    cne_rwlock_write_unlock(CNE_EAL_TAILQ_RWLOCK);
+            if (idx < 0) {
+                CNE_ERR("invalid TCB pointer\n");
+                return;
+            }
+            bit_clear(stk->tcbs, idx);
+            memset(tcb, 0, sizeof(struct tcb_entry));
+            stk_unlock();
+        }
 
-    mempool_put(this_stk->tcb_objs, tcb);
+        mempool_put(stk->tcb_objs, tcb);
+    }
 }
 
 static inline void
@@ -553,24 +622,111 @@ tcp_flags_dump(const char *msg, uint8_t flags)
     cne_printf("\n");
 }
 
-CNDP_API int tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp);
+#if CNET_TCP_DUMP_ENABLED
+#define TCP_DUMP(tcp)                                                                 \
+    do {                                                                              \
+        cne_printf("[cyan]([orange]%s[cyan]:[orange]%d[cyan]) ", __func__, __LINE__); \
+        cnet_tcp_dump(NULL, tcp);                                                     \
+    } while (0)
+#else
+#define TCP_DUMP(tcp) \
+    do {              \
+    } while (0)
+#endif
 
+/**
+ * The TCP input routine
+ *
+ * @param pcb
+ *   The PCB pointer for this connection
+ * @param mbuf
+ *   The mbuf to process in TCP input
+ * @return
+ *   0 on success or -1 on error.
+ */
+CNDP_API int cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf);
+
+/**
+ * The TCP output routine.
+ *
+ * @param tcb
+ *   The TCB to process output packets from.
+ */
+CNDP_API void cnet_tcp_output(struct tcb_entry *tcb);
+
+/**
+ * The TCP connect function give the PCB to use for the connection
+ *
+ * @param pcb
+ *   The PCB pointer in which to do the connection request.
+ * @return
+ *   0 on success or -1 on error
+ */
 CNDP_API int cnet_tcp_connect(struct pcb_entry *pcb);
+
+/**
+ * Create a new TCB for the given PCB pointer.
+ *
+ * @param pcb
+ *   The PCB to create the TCB from.
+ * @return
+ *   TCB pointer or NULL on failure.
+ */
 CNDP_API struct tcb_entry *cnet_tcb_new(struct pcb_entry *pcb);
-CNDP_API void tcp_abort(struct pcb_entry *pcb);
-CNDP_API int tcp_close(struct pcb_entry *pcb);
+
+/**
+ * Abort the TCP connection
+ *
+ * @param pcb
+ *   The PCB pointer in which to start the abort sequence.
+ */
+CNDP_API void cnet_tcp_abort(struct pcb_entry *pcb);
+
+/**
+ * Close the TCP connection for the given PCB
+ *
+ * @param pcb
+ *   The PCB in which to start the connect close sequence
+ * @return
+ *   -1 on error or 0 on success
+ */
+CNDP_API int cnet_tcp_close(struct pcb_entry *pcb);
+
+/**
+ * Remove an entry from the queue
+ * @internal
+ *
+ * @param tq
+ *   The tcp_q structure pointer
+ * @return
+ *   NULL on error or pointer removed.
+ */
+void *tcp_q_pop(struct tcp_q *tq);
+
+/**
+ * Dump out the TCP header and information
+ *
+ * @param msg
+ *   A caller supplied message or NULL if none
+ * @param tcp
+ *   The TCP header to dump
+ */
 CNDP_API void cnet_tcp_dump(const char *msg, struct cne_tcp_hdr *tcp);
+
+/**
+ * List out all of the active TCB structures
+ *
+ * @param stk
+ *   The stack instance to dump the TCB from
+ * @param tcb
+ *   The TCB structure to dump or NULL for all TCB structures.
+ */
 CNDP_API void cnet_tcb_list(stk_t *stk, struct tcb_entry *tcb);
 
 /**
- * @brief Internal function to process timer events.
- *
+ * Dump out all TCBs in all stack instances.
  */
-void __tcp_process_timers(void);
-
-CNDP_API void *tcp_vec_qpop(struct tcp_vec *tvec, uint16_t wait_flag);
-
-CNDP_API int cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf);
+CNDP_API void cnet_tcb_dump(void);
 
 #ifdef __cplusplus
 }

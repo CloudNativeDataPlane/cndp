@@ -39,6 +39,8 @@
 #include <ip4_node_api.h>            // for cnet_node_ip4_forward_add, cnet_nod...
 #include <cnet_netlink.h>
 #include <cne_inet.h>        // for cnet_inet
+#include <cnet_node_names.h>
+#include <hexdump.h>
 
 #include "cnet-graph.h"
 #include "cne.h"               // for cne_id, cne_init, cne_on_exit
@@ -46,6 +48,8 @@
 
 static struct cnet_info cnet_info;
 struct cnet_info *cinfo = &cnet_info;
+
+typedef int (*cb_types_t)(int cd);
 
 #define foreach_thd_lport(_t, _lp) \
     for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
@@ -77,8 +81,9 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
 
     snprintf(graph_name, sizeof(graph_name), "cnet_%d", cne_id());
 
-    cne_printf("[magenta]Graph Name[]: '[orange]%s[]', [magenta]Thread name [orange]%s[]\n",
-               graph_name, thd->name);
+    if (cinfo->flags & FWD_DEBUG_STATS)
+        cne_printf("[magenta]Graph Name[]: '[orange]%s[]', [magenta]Thread name [orange]%s[]\n",
+                   graph_name, thd->name);
     ret = jcfg_option_array_get(cinfo->jinfo, thd->name, &pattern_array);
     if (ret < 0)
         CNE_ERR_GOTO(err, "Unable to find %s option name\n", thd->name);
@@ -86,18 +91,21 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
     if (pattern_array->array_sz == 0)
         CNE_ERR_GOTO(err, "Thread %s does not have any graph patterns\n", thd->name);
 
-    cne_printf("  [magenta]Patterns[]: ");
+    if (cinfo->flags & FWD_DEBUG_STATS)
+        cne_printf("  [magenta]Patterns[]: ");
     for (int i = 0; i < pattern_array->array_sz; i++) {
         char *pat = pattern_array->arr[i]->str;
 
         if ((CNET_ENABLE_TCP == 0) && !strncasecmp("tcp*", pat, 4))
             continue;
-        cne_printf("'[orange]%s[]' ", pat);
+        if (cinfo->flags & FWD_DEBUG_STATS)
+            cne_printf("'[orange]%s[]' ", pat);
 
         if (add_graph_pattern(gi, pat))
             goto err;
     }
-    cne_printf("\n");
+    if (cinfo->flags & FWD_DEBUG_STATS)
+        cne_printf("\n");
 
     foreach_thd_lport (thd, lport) {
         snprintf(node_name, sizeof(node_name), "eth_rx-%u", lport->lpid);
@@ -112,6 +120,7 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
     gi->graph = cne_graph_lookup(graph_name);
     if (!gi->graph)
         CNE_ERR_GOTO(err, "cne_graph_lookup(): graph '%s' not found\n", graph_name);
+    this_stk->graph = gi->graph;
 
     free(gi->patterns);
 
@@ -122,92 +131,138 @@ err:
     return -1;
 }
 
-static int
-udp_recv_callback(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
-{
-    return chnl_send(ch, mbufs, nb_mbufs); /* Return number of mbufs processed */
-}
+#define RECV_NB_MBUFS 128
 
 static int
-tcp_recv_callback(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+udp_recv(int cd)
 {
-    CNE_SET_USED(ch);
-    CNE_SET_USED(mbufs);
-    CNE_SET_USED(nb_mbufs);
+    pktmbuf_t *mbufs[RECV_NB_MBUFS];
+    ssize_t nb_mbufs;
 
-    return 0;
-}
+    switch (cinfo->test) {
+    case DROP_TEST:
+        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+        if (nb_mbufs > 0)
+            pktmbuf_free_bulk(mbufs, nb_mbufs);
+        else if (nb_mbufs < 0)
+            CNE_ERR("Receive packets failed\n");
+        break;
 
-static int
-app_create_channel(int domain, int type, int proto, const char *name, int port, chnl_cb_t cb)
-{
-    struct in_caddr addr;
-    struct chnl *ch = NULL;
-    uint32_t opt;
+    case LOOPBACK_TEST:
+        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+        if (nb_mbufs > 0) {
+            if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
+                pktmbuf_free_bulk(mbufs, nb_mbufs);
+                CNE_ERR("Unable to send packets\n");
+            }
+        } else if (nb_mbufs < 0)
+            CNE_ERR("Receive packets failed\n");
+        break;
 
-    ch = channel(domain, type, proto, cb);
-    if (!ch)
-        CNE_ERR_RET("channel call failed\n");
+    case TXONLY_TEST:
+        break;
 
-    in_caddr_zero(&addr);
-
-    opt = 1;
-    chnl_set_opt(ch, SO_CHANNEL, SO_REUSEADDR, &opt, sizeof(uint32_t));
-
-    opt = (cinfo->flags & FWD_ENABLE_UDP_CKSUM) ? 1 : 0;
-    chnl_set_opt(ch, proto, SO_UDP_CHKSUM, &opt, sizeof(uint32_t));
-
-    if (inet_pton(AF_INET, name, (void *)&addr.cin_addr.s_addr) != 1)
-        CNE_ERR_RET("Unable to convert IP address to network order\n");
-
-    addr.cin_family = domain;
-    addr.cin_len    = (domain == AF_INET) ? sizeof(struct in_addr) : sizeof(struct in6_addr);
-    addr.cin_port   = htobe16(port);
-
-    if (chnl_bind(ch, (struct sockaddr *)&addr, sizeof(struct in_caddr)) == -1)
-        CNE_ERR_RET("chnl_bind() failed\n");
-
-    if (type == SOCK_STREAM)
-        chnl_listen(ch, CNET_TCP_BACKLOG_COUNT);
-
-    return 0;
-}
-
-static int
-app_parse_chnl(char *chnl_str)
-{
-    char *info[5];
-    char tmp_line[128];
-    chnl_cb_t fn;
-    int domain, typ, proto, port_id, ret;
-
-    strlcpy(tmp_line, chnl_str, sizeof(tmp_line));
-    ret = cne_strtok(tmp_line, ":", info, cne_countof(info));
-    if (ret != 4)
-        CNE_ERR_RET("Invalid number of values in channel description\n");
-
-    domain = typ = 0;
-    if (!strncasecmp(info[0], "udp4", 4)) {
-        domain = AF_INET;
-        typ    = SOCK_DGRAM;
-    } else if (!strncasecmp(info[0], "tcp4", 4)) {
-        if (CNET_ENABLE_TCP) {
-            domain = AF_INET;
-            typ    = SOCK_STREAM;
-        } else {
-            cne_printf(" [cyan]TCP is disabled[]");
-            return 1;
-        }
-    } else {
-        cne_printf(" [cyan]Invalid socket type specified[]");
-        return 1;
+    default:
+        break;
     }
 
-    proto   = atoi(info[1]);
-    port_id = atoi(info[3]);
-    fn      = (typ == SOCK_STREAM) ? tcp_recv_callback : udp_recv_callback;
+    return 0;
+}
 
-    return app_create_channel(domain, typ, proto, info[2], port_id, fn);
+static int
+udp_close(int cd)
+{
+    CNE_DEBUG("Close channel %d\n", cd);
+    return 0;
+}
+
+static int
+tcp_accept(int cd)
+{
+    int ncd;
+    struct sockaddr addr = {0};
+    socklen_t addr_len;
+
+    addr_len = sizeof(struct sockaddr_in);
+    ncd      = chnl_accept(cd, &addr, &addr_len);
+    if (ncd < 0)
+        CNE_ERR_RET("Accept returned an error from %d descriptor\n", cd);
+    CNE_DEBUG("Accept new chnl %d\n", ncd);
+
+    return 0;
+}
+
+static int
+tcp_recv(int cd)
+{
+    pktmbuf_t *mbufs[RECV_NB_MBUFS];
+    int nb_mbufs;
+
+    switch (cinfo->test) {
+    case DROP_TEST:
+        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+        if (nb_mbufs <= 0) {
+            if (nb_mbufs < 0 && errno != ENOTCONN)
+                CNE_ERR("Receive packets failed: %d %s\n", errno, strerror(errno));
+            break;
+        }
+
+        if (cne_log_get_level() >= CNE_LOG_DEBUG) {
+            for (int i = 0; i < nb_mbufs; i++) {
+                if (write(fileno(stdout), pktmbuf_mtod(mbufs[i], char *),
+                          pktmbuf_data_len(mbufs[i])) < 0)
+                    CNE_WARN("Write of %d bytes failed\n", pktmbuf_data_len(mbufs[i]));
+            }
+        }
+
+        pktmbuf_free_bulk(mbufs, nb_mbufs);
+        break;
+
+    case LOOPBACK_TEST:
+        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+        if (nb_mbufs <= 0) {
+            if (nb_mbufs < 0)
+                CNE_ERR("Receive packets failed\n");
+            break;
+        }
+
+        CNE_DEBUG("Loopback Received %d\n", nb_mbufs);
+        if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
+            pktmbuf_free_bulk(mbufs, nb_mbufs);
+            CNE_ERR("Unable to send packets\n");
+        }
+        break;
+
+    case TXONLY_TEST:
+        break;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static int
+tcp_close(int cd __cne_unused)
+{
+    CNE_DEBUG("Close channel %d\n", cd);
+    if (chnl_close(cd) < 0)
+        CNE_ERR_RET("unable to close connection on %d channel\n", cd);
+    return 0;
+}
+
+static int
+proto_callback(int ctype, int cd)
+{
+    static cb_types_t funcs[CHNL_CALLBACK_TYPES] = {
+        udp_recv, udp_close, tcp_accept, tcp_recv, tcp_close,
+    };
+
+    if (ctype >= 0 && ctype < CHNL_CALLBACK_TYPES)
+        return funcs[ctype](cd);
+
+    return -1;
 }
 
 /* Main processing loop */
@@ -219,7 +274,7 @@ thread_func(void *arg)
     char chnl_name[CNE_GRAPH_NAMESIZE + 1];
     graph_info_t *gi;
     pthread_t pid = pthread_self();
-    int tid, ret;
+    int tid;
 
     if (thd->group->lcore_cnt > 0) {
         if (pthread_setaffinity_np(pid, sizeof(cpu_set_t), &thd->group->lcore_bitmap) < 0)
@@ -244,36 +299,34 @@ thread_func(void *arg)
 
     if (initialize_graph(thd, gi))
         CNE_ERR_GOTO(err, "Initialize_graph() failed\n");
-    this_stk->graph = gi->graph;
 
     /* Construct the options key name <thread-name>-chnl */
     snprintf(chnl_name, sizeof(chnl_name), "%s-chnl", thd->name);
 
-    ret = jcfg_option_array_get(cinfo->jinfo, chnl_name, &chnl_array);
-    if (ret < 0) {
-        CNE_WARN("Unable to find %s option name\n", thd->name);
-        goto skip;
-    }
+    if (jcfg_option_array_get(cinfo->jinfo, chnl_name, &chnl_array) < 0)
+        CNE_ERR_GOTO(skip, "Unable to find %s option name\n", thd->name);
 
-    if (chnl_array->array_sz == 0) {
-        CNE_WARN("Thread %s does not have any graph patterns\n", thd->name);
-        goto skip;
-    }
+    if (chnl_array->array_sz == 0)
+        CNE_ERR_GOTO(skip, "Thread %s does not have any graph patterns\n", thd->name);
 
-    cne_printf("  [magenta]Channels[]: [cyan]%s[]\n%-12s", chnl_name, "");
+    if (cinfo->flags & FWD_DEBUG_STATS)
+        cne_printf("  [magenta]Channels[]: [cyan]%s[]\n%-12s", chnl_name, "");
     for (int i = 0; i < chnl_array->array_sz; i++) {
         char *s = chnl_array->arr[i]->str;
 
         if (!s || (s[0] == '\0'))
             CNE_ERR_GOTO(err, "string is NULL or empty\n");
 
-        cne_printf("'[orange]%s[]'", s);
-        ret = app_parse_chnl(s);
-        if (ret < 0)
+        if (cinfo->flags & FWD_DEBUG_STATS)
+            cne_printf("'[orange]%s[]'", s);
+        if (chnl_open(s, (cinfo->flags & FWD_ENABLE_UDP_CKSUM) ? CHNL_ENABLE_UDP_CHECKSUM : 0,
+                      proto_callback) < 0)
             break;
-        cne_printf("\n%-12s", "");
+        if (cinfo->flags & FWD_DEBUG_STATS)
+            cne_printf("\n%-12s", "");
     }
-    cne_printf("\r");
+    if (cinfo->flags & FWD_DEBUG_STATS)
+        cne_printf("\r");
 
 skip:
     while (likely(!thd->quit))
@@ -281,7 +334,34 @@ skip:
 
     return;
 err:
-    (void)pthread_barrier_wait(&cinfo->barrier);
+    if (pthread_barrier_wait(&cinfo->barrier))
+        CNE_ERR("Barrier wait failed: %s\n", strerror(errno));
+}
+
+void
+thread_timer_func(void *arg)
+{
+    jcfg_thd_t *thd = arg;
+
+    if (thd->group->lcore_cnt > 0) {
+        pthread_t pid = pthread_self();
+
+        if (pthread_setaffinity_np(pid, sizeof(cpu_set_t), &thd->group->lcore_bitmap) < 0)
+            CNE_RET("pthread_setaffinity_np('%s') failed\n", thd->name);
+    }
+
+    CNE_DEBUG("Timer assigned to lcore %d\n", cne_lcore_id());
+
+    cne_timer_subsystem_init();
+
+    /* Wait for main thread to initialize */
+    if (pthread_barrier_wait(&cinfo->barrier) > 0)
+        CNE_RET("Failed to wait for barrier\n");
+
+    while (likely(!thd->quit))
+        cne_timer_manage();
+
+    CNE_DEBUG("Timer assigned to lcore %d, terminating\n", cne_lcore_id());
 }
 
 static int
@@ -294,10 +374,10 @@ _thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int
 
     if (thd->lport_cnt) {
         foreach_thd_lport (thd, lport) {
-            cne_printf("    [magenta]lport [red]%d[] - '[cyan]%s[]'", lport->lpid, lport->name);
+            cne_printf("    [orange]Close[] [magenta]lport [red]%d[] - '[cyan]%s[]'\n", lport->lpid,
+                       lport->name);
             if (pktdev_close(lport->lpid) < 0)
                 CNE_ERR("pktdev_close() returned error\n");
-            cne_printf("[magenta] closed[]\n");
         }
     }
     return 0;
@@ -382,11 +462,10 @@ cli_tree(void)
 int
 main(int argc, char **argv)
 {
-    int signals[] = {SIGINT, SIGTERM, SIGUSR1};
+    const char *tests[] = {"Unknown", "Drop", "Loopback", "Tx Only", NULL};
+    int signals[]       = {SIGINT, SIGTERM, SIGUSR1};
 
     memset(&cnet_info, 0, sizeof(struct cnet_info));
-
-    cne_timer_subsystem_init();
 
     if (cne_init() < 0 || parse_args(argc, argv))
         CNE_ERR_GOTO(leave, "cne_init() failed\n");
@@ -394,6 +473,10 @@ main(int argc, char **argv)
     if (cne_on_exit(__on_exit, cinfo, signals, cne_countof(signals)) < 0)
         CNE_ERR_GOTO(leave, "cne_on_exit() failed\n");
 
+    cne_printf("\n[yellow]*** [cyan:-:italic]CNET-GRAPH Application[], "
+               "[green]Mode[]: [magenta:-:italic]%s[], "
+               "[green]Burst Size[]: [magenta]%d[] \n",
+               tests[cinfo->test], cinfo->burst);
     cne_printf("\n*** [yellow]cnet-graph[], [blue]PID[]: [green]%d[] [blue]lcore[]: [green]%d[]\n",
                getpid(), cne_lcore_id());
 

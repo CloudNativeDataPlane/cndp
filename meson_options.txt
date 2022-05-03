@@ -31,7 +31,7 @@ option('cnet_num_tcbs', type: 'integer', value: '512',
     description: 'Max number of TCBs')
 
 option('cnet_num_channels', type: 'integer', value: '512',
-    description: 'Max number of TCBs,Channels,Routes')
+    description: 'Max number of Channels')
 
 option('cnet_num_routes', type: 'integer', value: '512',
     description: 'Max number of Routes')
@@ -63,7 +63,7 @@ option('json_test_dir', type: 'string',
 # The binaries are located in ./usr/local/bin in the CNDP source directory.
 #
 option('linux_source_dir', type: 'string',
-	value:'/usr/src/linux-source-5.11.0',
+	value:'/usr/src/linux-source-5.13.0',
 	description: 'location of Linux sources')
 
 option('machine', type: 'string', value: 'native',

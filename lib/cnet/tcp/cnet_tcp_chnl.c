@@ -4,7 +4,7 @@
 
 /* cnet_tcp_chnl.c - TCP chnl support routines. */
 
-/**
+/*
  * This module is the interface between the generic sockets module and the TCP
  * protocol processing module.
  */
@@ -13,9 +13,10 @@
 #include <cnet.h>               // for cnet_add_instance
 #include <cnet_stk.h>           // for stk_entry, per_thread_stk, this_stk, prot...
 #include <cne_inet.h>           // for CIN_PORT, in_caddr, CIN_LEN
-#include <cnet_chnl.h>          // for chnl, chnl_buf, chnl_cb_wait, _ISCONNECTED
-#include <cnet_pcb.h>           // for pcb_entry, pcb_key, cnet_pcb_alloc, pcb_hd
-#include <cnet_tcp.h>           // for tcb_entry, tcp_entry, cnet_tcb_new, tcp_a...
+#include "../chnl/chnl_priv.h"
+#include <cnet_chnl.h>        // for chnl, chnl_buf, _ISCONNECTED
+#include <cnet_pcb.h>         // for pcb_entry, pcb_key, cnet_pcb_alloc, pcb_hd
+#include <cnet_tcp.h>         // for tcb_entry, tcp_entry, cnet_tcb_new, tcp_a...
 #include <cnet_tcp_chnl.h>
 #include <cnet_chnl_opt.h>        // for cnet_chnl_opt_add, chnl_optval_get, chnl_...
 #include <errno.h>                // for ENOPROTOOPT, EINVAL, EFAULT, ENOBUFS, EIS...
@@ -24,6 +25,7 @@
 #include <sys/socket.h>           // for linger, MSG_DONTWAIT, SOL_SOCKET
 #include <sys/types.h>            // for ssize_t
 #include <pktdev.h>
+#include <cnet_node_names.h>
 
 #include "cne_common.h"        // for __cne_unused, CNE_MIN
 #include "cne_log.h"           // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_...
@@ -33,61 +35,69 @@
 #include "cnet_protosw.h"        // for
 #include "pktmbuf.h"             // for pktmbuf_tailroom, pktmbuf_t
 
-/**
+/*
  * Drop the acked data from the chnl queue and free any complete
  * packet structures.
  */
 void
 cnet_drop_acked_data(struct chnl_buf *cb, int32_t acked)
 {
-    if (pthread_mutex_lock(&cb->mutex))
+    int idx, len, free_cnt = 0;
+
+    if (!stk_lock())
         CNE_RET("Unable to acquire mutex\n");
 
+    len = vec_len(cb->cb_vec);
+
+    CNE_DEBUG("\n");
+    CNE_DEBUG(">>> Begin Ack %d bytes. vec_len %d\n", acked, len);
+
     /* For the number of bytes acked we need to adjust the resend queue */
-    while (acked > 0) {
+    for (idx = 0; acked > 0 && idx < len; idx++) {
         pktmbuf_t *m;
         int32_t size;
 
-        if (vec_len(cb->cb_vec) == 0) {
-            CNE_WARN("list empty, break\n");
-            break;
-        }
-
         /* get the pointer to the packet on the send queue */
-        m = vec_at_index(cb->cb_vec, 0);
+        m = vec_at_index(cb->cb_vec, idx);
 
         size = pktmbuf_data_len(m);
-
-        /*
-         * When the amount acked is greater then the packet size, the packet
-         * can be removed from the send_queue and freed.
-         */
-        if (size <= acked)
-            pktmbuf_free(vec_at_index(cb->cb_vec, 0));
-        else {
-            /*
-             * Acked only part of the packet data, need to adjust it packet.
-             *
-             * Fixup packet and make sure the IP/TCP header is long word
-             * aligned, when we need to retransmit the packet.
-             *
-             * Note: The TCP header could have NOP option bytes to align the
-             * TCP header on a long word boundary.
-             */
-            pktmbuf_data_off(m) += acked;
-
-            size = acked; /* Adjust size to the amount acked */
+        if (size == 0) {
+            CNE_WARN("[magenta]mbuf [orange]%p [magenta]length is [orange]Zero[] @ [cyan]%d[]\n",
+                     (void *)m, idx);
+            continue;
         }
-        acked -= size;
+
+        size = CNE_MIN(size, acked);
+
+        if (pktmbuf_adj_offset(m, size) == NULL) {
+            CNE_ERR("Acked data %d > %d size of mbuf\n", acked, size);
+            break;
+        }
+        CNE_DEBUG("Acked %d bytes, data offset %d, data len %d\n", size, pktmbuf_data_off(m),
+                  pktmbuf_data_len(m));
+
+        /* Adjust size to the amount acked */
         cb->cb_cc -= size;
+        acked -= size;
+
+        /* When data length becomes zero we can free this mbuf */
+        if (pktmbuf_data_len(m) == 0) {
+            pktmbuf_refcnt_update(m, -1);
+            free_cnt++;
+        }
     }
-    if (pthread_mutex_unlock(&cb->mutex))
-        CNE_RET("Unable to release lock\n");
+
+    CNE_DEBUG("Free [orange]%3d[] mbufs\n", free_cnt);
+    if (free_cnt) {
+        pktmbuf_free_bulk(cb->cb_vec, free_cnt);
+
+        vec_remove(cb->cb_vec, free_cnt);
+    }
+    CNE_DEBUG("<<< Data left to ack [orange]%d[] bytes\n", acked);
+
+    stk_unlock();
 }
 
-/**
- * This routine determines the scaling factor the receive buffer in channels.
- */
 void
 cnet_tcp_chnl_scale_set(struct tcb_entry *tcb, struct chnl *ch)
 {
@@ -101,70 +111,71 @@ cnet_tcp_chnl_scale_set(struct tcb_entry *tcb, struct chnl *ch)
         tcb->req_recv_scale++;
 }
 
-/**
- * This routine initializes the TCP-specific portions of a new socket.
- */
 static int
-tcp_chnl_channel(struct chnl *ch, int domain __cne_unused, int type __cne_unused,
-                 int proto __cne_unused)
+tcp_chnl_accept(struct chnl *ch, struct in_caddr *addr, int *addrlen)
 {
-    stk_t *stk = this_stk;
+    struct tcb_entry *tcb;
+    struct pcb_entry *pcb;
+    struct chnl *nch;
 
-    ch->ch_rcv.cb_size = stk->tcp->rcv_size;
-    ch->ch_snd.cb_size = stk->tcp->snd_size;
+    if (!ch || !addr || !addrlen)
+        return __errno_set(EFAULT);
 
-    /* Set up the lower layer output routine */
-    ch->ch_proto->proto = IPPROTO_TCP;
-
-    /* Add the pcb to the chnl */
-    if ((ch->ch_pcb = cnet_pcb_alloc(&this_stk->tcp->tcp_hd, IPPROTO_TCP)) == NULL) {
-        CNE_WARN("PCB allocate failed\n");
-        errno = ENOBUFS;
-        return -1;
+    if (*addrlen > (int)sizeof(struct in_caddr)) {
+        CNE_DEBUG("Address length is incorrect %d should be %lu\n", *addrlen,
+                  sizeof(struct in_caddr));
     }
 
-    return 0;
+    /* Obtain the listening TCB pointer */
+    if ((tcb = ch->ch_pcb->tcb) == NULL)
+        CNE_ERR_RET_VAL(__errno_set(EFAULT), "TCB is Null\n");
+
+    /* Must be in the correct state to do an accept call */
+    if (tcb->state != TCPS_LISTEN)
+        CNE_ERR_RET_VAL(__errno_set(EINVAL), "Invalid state <%s>\n", tcb_in_states[tcb->state]);
+
+    /* Try to find a waiting chnl in the Backlog queue */
+    pcb = tcp_q_pop(&tcb->backlog_q);
+    if (!pcb)
+        return __errno_set(EWOULDBLOCK);
+
+    if ((nch = pcb->ch) == NULL)
+        return __errno_set(EFAULT);
+
+    /* copy the peer address to the user's buffer, if present
+     * POSIX says: "If the actual length of the address is greater than the
+     * length of the supplied sockaddr structure, the stored address shall be
+     * truncated."
+     */
+    if (addr) {
+        *addrlen = CNE_MIN(*addrlen, CIN_LEN(&pcb->key.faddr));
+        memcpy(addr, &pcb->key.faddr, *addrlen);
+    }
+    return nch->ch_cd;
 }
 
-static int
-tcp_chnl_channel2(struct chnl *ch1, struct chnl *ch2)
-{
-    int ret;
-
-    ret = tcp_chnl_channel(ch1, 0, 0, 0);
-    if (ret)
-        return -1;
-    return tcp_chnl_channel(ch2, 0, 0, 0);
-}
-
-/**
- * This routine is the protocol-specific bind() back-end function for
- * TCP sockets.
- */
 static int
 tcp_chnl_bind(struct chnl *ch, struct in_caddr *addr, int32_t len)
 {
+    stk_t *stk = this_stk;
     struct tcb_entry *tcb;
 
-    /* cannot rebind a tcp chnl */
-    if (CIN_PORT(&ch->ch_pcb->key.laddr) != 0) {
-        CNE_NOTICE("laddr port is not zero %d!\n", CIN_PORT(&ch->ch_pcb->key.laddr));
-        return __errno_set(EINVAL);
-    }
+    if (!ch || !stk)
+        return __errno_set(EFAULT);
 
-    if (chnl_bind_common(ch, addr, len, &this_stk->tcp->tcp_hd) == -1) {
-        CNE_ERR("cnet_bind_common failed\n");
-        return -1;
-    }
+    /* cannot rebind a tcp chnl */
+    if (CIN_PORT(&ch->ch_pcb->key.laddr) != 0)
+        return __errno_set(EINVAL);
+
+    if (chnl_bind_common(ch, addr, len, &stk->tcp->tcp_hd) == -1)
+        CNE_ERR_RET("cnet_bind_common failed\n");
 
     /* Add the pointer back to the chnl structure in the PCB. */
     ch->ch_pcb->ch = ch;
 
     /* will return the tcb pointer if already allocated */
-    if ((tcb = cnet_tcb_new(ch->ch_pcb)) == NULL) {
-        CNE_WARN("TCB Null\n");
-        return __errno_set(ENOBUFS);
-    }
+    if ((tcb = cnet_tcb_new(ch->ch_pcb)) == NULL)
+        CNE_ERR_RET_VAL(__errno_set(ENOBUFS), "cnet_tcb_new failed\n");
 
     cnet_tcp_chnl_scale_set(tcb, ch);
 
@@ -173,130 +184,19 @@ tcp_chnl_bind(struct chnl *ch, struct in_caddr *addr, int32_t len)
     return 0;
 }
 
-/**
- * This routine is the protocol-specific send() back-end function for
- * TCP sockets.
- */
-static int
-tcp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
-{
-    /* Do not allow data to be sent before connection is complete */
-    if (is_clr(ch->ch_state, _ISCONNECTED)) {
-        CNE_ERR("Not connected\n");
-        __errno_set(ENOTCONN);
-        return -1;
-    }
-
-    if (chnl_cant_snd_more(ch) || is_set(ch->ch_state, _CHNL_FREE)) {
-        __errno_set(EPIPE);
-        return -1;
-    }
-
-    if (ch->ch_node == NULL)
-        ch->ch_node = cne_graph_node_get(this_stk->graph->id, cne_node_from_name("chnl_send"));
-    if (!ch->ch_node)
-        return -1;
-    for (int i = 0; i < nb_mbufs; i++)
-        mbufs[i]->userptr = ch->ch_pcb;
-
-    cne_node_add_objects_to_input(this_stk->graph, ch->ch_node, (void **)mbufs, nb_mbufs);
-
-    return nb_mbufs;
-}
-
-/**
- * This routine is the protocol-specific listen() back-end function for
- * TCP sockets.
- */
-static int
-tcp_chnl_listen(struct chnl *ch, int32_t backlog)
-{
-    struct tcb_entry *tcb = ch->ch_pcb->tcb;
-
-    /* tcb is null if chnl is not bound */
-    if (!tcb) {
-        CNE_ERR("Socket Not bound\n");
-        return __errno_set(EFAULT);
-    }
-
-    if (tcb->state > TCPS_LISTEN) {
-        CNE_ERR("Invalid state %d\n", tcb->state);
-        return __errno_set(EISCONN);
-    }
-
-    /* Make sure the backlog value is not larger then CNET_TCP_BACKLOG_COUNT */
-    tcb->qLimit = ((backlog >= 0) && (backlog <= CNET_TCP_BACKLOG_COUNT)) ? backlog
-                                                                          : CNET_TCP_BACKLOG_COUNT;
-
-    tcb->state = TCPS_LISTEN;
-    tcb->tflags |= TCBF_PASSIVE_OPEN;
-
-    return 0;
-}
-
-/**
- * This routine is the protocol-specific accept() back-end function for
- * TCP sockets.
- */
-static struct chnl *
-tcp_chnl_accept(struct chnl *ch, struct in_caddr *addr, int *addrlen)
-{
-    struct tcb_entry *tcb;
-    struct pcb_entry *pcb;
-    struct chnl *chNew;
-
-    if (!addr && !addrlen)
-        return __errno_set_null(EFAULT);
-
-    if (*addrlen > (int)sizeof(struct in_caddr)) {
-        CNE_DEBUG("Address length is incorrect %d should be %lu\n", *addrlen,
-                  sizeof(struct in_caddr));
-    }
-
-    /* Obtain the listening TCB pointer */
-    if ((tcb = ch->ch_pcb->tcb) == NULL) {
-        CNE_ERR("TCB is Null\n");
-        return __errno_set_null(EFAULT);
-    }
-
-    /* Must be in the correct state to do an accept call */
-    if (tcb->state != TCPS_LISTEN) {
-        CNE_ERR("Invalid state <%s>\n", tcb_in_states[tcb->state]);
-        return __errno_set_null(EINVAL);
-    }
-
-    /* Try to find a waiting chnl in the Backlog queue */
-    pcb = tcp_vec_qpop(&tcb->backlog_q, 1);
-    if (!pcb)
-        return __errno_set_null(EWOULDBLOCK);
-
-    if ((chNew = pcb->ch) == NULL)
-        return __errno_set_null(EFAULT);
-
-    chNew->ch_state &= ~_NOFDREF;
-
-    /* copy the peer address to the user's buffer, if present */
-    /* POSIX says: "If the actual length of the address is greater than the
-     * length of the supplied sockaddr structure, the stored address shall be
-     * truncated."
-     */
-    if (addr) {
-        *addrlen = CNE_MIN(*addrlen, CIN_LEN(&pcb->key.faddr));
-        memcpy(addr, &pcb->key.faddr, *addrlen);
-    }
-    return chNew;
-}
-
 static int
 tcp_connect(struct chnl *ch, struct in_caddr *to __cne_unused, int slen __cne_unused)
 {
     struct tcb_entry *tcb;
 
+    if (!ch)
+        return __errno_set(EFAULT);
+
     /* If we're called after a non-blocking connect(), report progress */
-    if (is_set(ch->ch_state, _ISCONNECTING))
+    if (chnl_state_tst(ch, _ISCONNECTING))
         return __errno_set(EALREADY);
 
-    if (is_set(ch->ch_state, (_ISCONNECTED | _ISDISCONNECTING)))
+    if (chnl_state_tst(ch, _ISCONNECTED) || chnl_state_tst(ch, _ISDISCONNECTING))
         return __errno_set(EISCONN);
 
     /* return errors from non-blocking connect - ECONNREFUSED, ETIMEDOUT */
@@ -304,7 +204,8 @@ tcp_connect(struct chnl *ch, struct in_caddr *to __cne_unused, int slen __cne_un
         return __errno_set(ch->ch_error);
 
     /* connection is shutdown/closed, but no ch_error (already reported?) */
-    if (ch->ch_state & (_ISDISCONNECTED | _CANTSENDMORE | _CANTRECVMORE))
+    if (chnl_state_tst(ch, _ISDISCONNECTED) ||
+        is_set(ch->ch_state, (_CANTSENDMORE | _CANTRECVMORE)))
         return __errno_set(EINVAL);
 
     /* Add the pointer back to the chnl structure in the PCB. */
@@ -317,28 +218,9 @@ tcp_connect(struct chnl *ch, struct in_caddr *to __cne_unused, int slen __cne_un
 
     cnet_tcp_chnl_scale_set(tcb, ch);
 
-    (void)cnet_tcp_connect(ch->ch_pcb);
-
-    if (ch->ch_state & _ISCONNECTED)
-        return 0;
-
-    if (ch->ch_state & _NBIO)
-        return __errno_set(EINPROGRESS);
-
-    if (chnl_cb_wait(ch, &ch->ch_snd) == -1)
-        return -1;
-
-    if (ch->ch_state & _ISCONNECTED)
-        return 0;
-
-    /* otherwise look for an asynchronous error, e.g. ECONNREFUSED */
-    return __errno_set(ch->ch_error);
+    return cnet_tcp_connect(ch->ch_pcb);
 }
 
-/**
- * This routine is the protocol-specific connect() back-end function for
- * TCP sockets.
- */
 static int
 tcp_chnl_connect(struct chnl *ch, struct in_caddr *to, int slen)
 {
@@ -346,21 +228,106 @@ tcp_chnl_connect(struct chnl *ch, struct in_caddr *to, int slen)
 }
 
 static int
-tcp_chnl_connect2(struct chnl *ch1, struct chnl *ch2)
+tcp_chnl_listen(struct chnl *ch, int32_t backlog)
 {
-    int ret;
+    struct tcb_entry *tcb;
 
-    ret = tcp_connect(ch1, NULL, 0);
-
-    if (ret)
+    if (!ch)
         return -1;
-    return tcp_connect(ch2, NULL, 0);
+    tcb = ch->ch_pcb->tcb;
+
+    /* tcb is null if chnl is not bound */
+    if (!tcb || !tcb->pcb)
+        CNE_ERR_RET_VAL(__errno_set(EFAULT), "Channel Not bound\n");
+
+    if (tcb->state > TCPS_LISTEN)
+        CNE_ERR_RET_VAL(__errno_set(EISCONN), "Invalid state %d\n", tcb->state);
+
+    /* Make sure the backlog value is not larger then CNET_TCP_BACKLOG_COUNT */
+    tcb->qLimit = ((backlog >= 0) && (backlog <= CNET_TCP_BACKLOG_COUNT)) ? backlog
+                                                                          : CNET_TCP_BACKLOG_COUNT;
+
+    tcb->state = TCPS_LISTEN;
+    tcb->tflags |= TCBF_PASSIVE_OPEN;
+
+    return 0;
 }
 
-/**
- * This routine is the protocol-specific shutdown() back-end function for
- * TCP sockets. The <so> pointer must be validated in the caller routine.
+static int
+tcp_chnl_recv(struct chnl *ch, pktmbuf_t **mbufs, int nb_mbufs)
+{
+    uint32_t sz = 0;
+    int tlen, n = 0;
+
+    if (nb_mbufs == 0)
+        return 0;
+
+    if (!ch || !mbufs)
+        return __errno_set(EFAULT);
+
+    tlen = vec_len(ch->ch_rcv.cb_vec);
+    if (tlen > 0) {
+        n = CNE_MIN(tlen, nb_mbufs);
+
+        CNE_DEBUG("Number of mbufs to recv [orange]%3d[], nb_mbufs [cyan]%3d[]\n", n, nb_mbufs);
+        memmove(mbufs, ch->ch_rcv.cb_vec, sizeof(pktmbuf_t *) * n);
+
+        vec_remove(ch->ch_rcv.cb_vec, n);
+
+        for (int i = 0; i < n; i++)
+            sz += pktmbuf_data_len(mbufs[i]);
+
+        ch->ch_rcv.cb_cc -= sz;
+    }
+
+    return n;
+}
+
+/*
+ * This routine is the protocol-specific send() back-end function for
+ * TCP channels.
  *
+ * A TCP channel needs to hold onto mbufs or data for retransmission if needed,
+ * which means we need to manage the send buffer. The send buffers is a vector
+ * of mbufs and as data is acked we remove or adjust mbuf vector.
+ *
+ * Because we must hold onto mbufs for retransmission, we put the mbufs in a vector
+ * to be held waiting for ACKs to removed or adjusted based on ACKed data.
+ *
+ * This routine will enqueue the packets to the 'chnl_send' node to be passed to the
+ * TCP output node.
+ */
+static int
+tcp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
+{
+    if (!ch)
+        return __errno_set(EFAULT);
+
+    if (!ch->ch_node) {
+        ch->ch_node =
+            cne_graph_node_get(this_stk->graph->id, cne_node_from_name(TCP_OUTPUT_NODE_NAME));
+        if (!ch->ch_node)
+            return __errno_set(EFAULT);
+    }
+
+    /* Do not allow data to be sent before connection is complete */
+    if (!chnl_state_tst(ch, _ISCONNECTED))
+        return __errno_set(ENOTCONN);
+
+    CNE_DEBUG("[cyan]Enqueue [orange]%d [cyan]mbufs[]\n", nb_mbufs);
+
+    for (int i = 0; i < nb_mbufs; i++) {
+        pktmbuf_t *m = mbufs[i];
+
+        m->userptr = ch->ch_pcb;
+    }
+
+    cne_node_add_objects_to_input(this_stk->graph, ch->ch_node, (void **)mbufs, nb_mbufs);
+
+    return nb_mbufs;
+}
+
+/*
  * Shutting down the send side initiates a protocol-level connection
  * close (send FIN and progress to FIN_WAIT_1 state).
  */
@@ -368,68 +335,49 @@ static int
 tcp_chnl_shutdown(struct chnl *ch, int32_t how)
 {
     /* The ch pointer is validated in the caller routine. */
-    if (ch->ch_pcb == NULL)
+    if (!ch || ch->ch_pcb == NULL)
         return 0;
 
     /* Shutdown the send side, when we have a tcb */
     if (is_set(how, SHUT_BIT_WR))
-        /* ignore the return status as the connection is closing */
-        (void)tcp_close(ch->ch_pcb);
+        return cnet_tcp_close(ch->ch_pcb);
 
     return 0;
 }
 
-/**
- * This routine is the protocol-specific close() back-end function for
- * TCP sockets. If ch->ch_pcb is null then return OK, as the entry has already
- * been released.
- */
 static int
 tcp_chnl_close(struct chnl *ch)
 {
-    struct pcb_entry *pcb = ch->ch_pcb;
-    bool doAbort, doBlock;
+    struct pcb_entry *pcb;
+    bool doAbort;
 
+    if (!ch)
+        return -1;
+
+    pcb = ch->ch_pcb;
     if (pcb == NULL)
         return 0;
 
-    doAbort = !(ch->ch_state & _ISCONNECTED) ||
-              ((ch->ch_options & SO_LINGER) && (ch->ch_linger == 0));
+    doAbort = !chnl_state_tst(ch, _ISCONNECTED);
 
     if (doAbort)
-        tcp_abort(pcb);
-    else if (tcp_close(pcb)) {
-        doBlock = (ch->ch_options & SO_LINGER) && (ch->ch_linger > 0);
+        cnet_tcp_abort(pcb);
+    else if (cnet_tcp_close(pcb)) {
+        chnl_state_set(ch, _ISDISCONNECTING);
 
-        if (doBlock) {
-            /* Set up the linger timeout value */
-            ch->ch_rcv.cb_timeo = ch->ch_linger * this_stk->tcp->now_tick;
-
-            /* When lingering close timed out, abort the connection. */
-            if (chnl_cb_wait(ch, &ch->ch_rcv) == -1)
-                tcp_abort(pcb);
-        } else {
-            /* let the callback free the socket/pcb/tcb */
-            ch->ch_state |= _ISDISCONNECTING;
-
-            /* returns -1 if the TCB can not be freed immediately */
-            return -1;
-        }
+        /* returns -1 if the TCB can not be freed immediately */
+        return -1;
     }
 
     return 0;
 }
 
-/**
- * This routine sets TCP options associated with a socket.
- */
 static int
 tcp_chnl_opt_set(struct chnl *ch, int level, int optname, const void *optval, uint32_t optlen)
 {
     uint32_t val;
-    struct linger const *li;
 
-    if (ch->ch_proto->proto != IPPROTO_TCP)
+    if (!ch || ch->ch_proto->proto != IPPROTO_TCP)
         return __errno_set(ENOPROTOOPT);
 
     val = chnl_optval_get(optval, optlen);
@@ -443,26 +391,7 @@ tcp_chnl_opt_set(struct chnl *ch, int level, int optname, const void *optval, ui
 
     switch (level) {
     case SO_CHANNEL:
-        switch (optname) {
-        case SO_LINGER:
-            if (optlen != sizeof(struct linger))
-                return __errno_set(EINVAL);
-
-            li = (struct linger const *)optval;
-            setsockoptBit(ch->ch_options, optname, li->l_onoff);
-            ch->ch_linger = (uint16_t)li->l_linger;
-            break;
-
-        case SO_OOBINLINE:
-            /* We only support OOBINLINE; don't try to turn it off */
-            if (val == 0)
-                return __errno_set(EINVAL);
-            break;
-
-        default:
-            return __errno_set(ENOPROTOOPT);
-        }
-        break;
+        return __errno_set(ENOPROTOOPT);
 
     case SOL_TCP:
         switch (optname) {
@@ -487,21 +416,17 @@ tcp_chnl_opt_set(struct chnl *ch, int level, int optname, const void *optval, ui
     return 0;
 }
 
-/**
- * This routine gets TCP options associated with a socket.
- */
 static int
 tcp_chnl_opt_get(struct chnl *ch, int level, int optname, void *optval, uint32_t *optlen)
 {
     uint64_t opt[8]      = {0};
-    struct linger *resL  = (struct linger *)opt;
     void *resP           = (void *)opt;
     int *resI            = (int *)opt;
     struct tcp_info tcpi = {0};
     struct tcb_entry *tcb;
     uint32_t len;
 
-    if (ch->ch_proto->proto != IPPROTO_TCP)
+    if (!ch || ch->ch_proto->proto != IPPROTO_TCP)
         return __errno_set(ENOPROTOOPT);
 
     len = CNE_MIN(*optlen, sizeof(int)); /* most options are int */
@@ -509,17 +434,6 @@ tcp_chnl_opt_get(struct chnl *ch, int level, int optname, void *optval, uint32_t
     switch (level) {
     case SO_CHANNEL:
         switch (optname) {
-        case SO_LINGER:
-            resL->l_linger = (int)ch->ch_linger;
-            resL->l_onoff  = (int)((ch->ch_options & optname) != 0);
-            len            = CNE_MIN(*optlen, sizeof(struct linger));
-            break;
-
-        /* OOBINLINE is always on */
-        case SO_OOBINLINE:
-            *resI = 1;
-            break;
-
         case SO_ACCEPTCONN:
             *resI = (int)((ch->ch_pcb->tcb != (struct tcb_entry *)NULL) &&
                           (ch->ch_pcb->tcb->state == TCPS_LISTEN));
@@ -592,13 +506,11 @@ tcp_chnl_opt_get(struct chnl *ch, int level, int optname, void *optval, uint32_t
 }
 
 static struct proto_funcs tcpFuncs = {
-    .channel_func  = tcp_chnl_channel,  /* Socket init routine */
-    .channel2_func = tcp_chnl_channel2, /* Socket2 init routine */
     .close_func    = tcp_chnl_close,    /* close routine */
+    .recv_func     = tcp_chnl_recv,     /* receive routine */
     .send_func     = tcp_chnl_send,     /* send routine */
     .bind_func     = tcp_chnl_bind,     /* bind routine */
     .connect_func  = tcp_chnl_connect,  /* connect routine */
-    .connect2_func = tcp_chnl_connect2, /* connect2 routine */
     .shutdown_func = tcp_chnl_shutdown, /* shutdown routine*/
     .accept_func   = tcp_chnl_accept,   /* accept routine */
     .listen_func   = tcp_chnl_listen    /* listen routine */
@@ -626,13 +538,7 @@ tcp_chnl_create(void *_stk __cne_unused)
     return 0;
 }
 
-static int
-tcp_chnl_destroy(void *_stk __cne_unused)
-{
-    return 0;
-}
-
 CNE_INIT_PRIO(cnet_tcp_chnl_constructor, STACK)
 {
-    cnet_add_instance("TCP chnl", CNET_TCP_CHNL_PRIO, tcp_chnl_create, tcp_chnl_destroy);
+    cnet_add_instance("TCP chnl", CNET_TCP_CHNL_PRIO, tcp_chnl_create, NULL);
 }

@@ -6,7 +6,8 @@
 #include <cnet.h>           // for cnet_add_instance
 #include <cne_vec.h>        // for vec_add, vec_alloc_ptr, vec_at_index
 #include <cnet_reg.h>
-#include <cnet_stk.h>         // for stk_entry, per_thread_stk, this_stk
+#include <cnet_stk.h>        // for stk_entry, per_thread_stk, this_stk
+#include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>        // for chnl_domain_str, chnl_protocol_str, chnl_type...
 #include <string.h>           // for strlen
 

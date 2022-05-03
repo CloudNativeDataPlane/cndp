@@ -191,6 +191,18 @@ CNDP_API int cnet_ipv4_stats_dump(struct stk_s *stk);
  */
 CNDP_API void cnet_ipv4_dump(const char *msg, struct cne_ipv4_hdr *ip);
 
+#if CNET_IP4_DUMP_ENABLED
+#define IP4_DUMP(ip)                                                                  \
+    do {                                                                              \
+        cne_printf("[cyan]([orange]%s[cyan]:[orange]%d[cyan]) ", __func__, __LINE__); \
+        cnet_ipv4_dump(NULL, ip);                                                     \
+    } while (0)
+#else
+#define IP4_DUMP(ip) \
+    do {             \
+    } while (0)
+#endif
+
 #ifdef __cplusplus
 }
 #endif
