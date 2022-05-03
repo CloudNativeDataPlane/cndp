@@ -77,8 +77,8 @@ cnet_ipv4_dump(const char *msg, struct cne_ipv4_hdr *ip)
 
     cne_printf("[magenta]<<<< [orange]%s [magenta]>>>>[]\n", msg);
     cne_printf("      Src %s Dst %s cksum %04x version %d hlen %d %02x\n",
-               inet_ntop4(ip1, sizeof(ip1), (struct in_addr *)&ip->src_addr, NULL),
-               inet_ntop4(ip2, sizeof(ip2), (struct in_addr *)&ip->dst_addr, NULL),
+               inet_ntop4(ip1, sizeof(ip1), (struct in_addr *)&ip->src_addr, NULL) ?: "Invalid IP",
+               inet_ntop4(ip2, sizeof(ip2), (struct in_addr *)&ip->dst_addr, NULL) ?: "Invalid IP",
                be16toh(ip->hdr_checksum), ip->version_ihl >> 4, (ip->version_ihl & 0x0f) << 2,
                ip->version_ihl);
     cne_printf("      offset %d next_proto %d id %d ttl %d tlen %d tos %d\n", ip->fragment_offset,
