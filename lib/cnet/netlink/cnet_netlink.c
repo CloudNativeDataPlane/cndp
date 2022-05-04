@@ -12,16 +12,16 @@
 #include <arpa/inet.h>
 #include <bsd/string.h>
 
-#include <cne_common.h>        // for
-#include <cne_ether.h>         // for
-#include <cne_thread.h>        // for
+#include <cne_common.h>
+#include <net/cne_ether.h>
+#include <cne_thread.h>
 
-#include <cnet_const.h>        // for
-#include <cnet_reg.h>          // for
-#include <cnet_stk.h>          // for
-#include <cnet_inet.h>         // for
-#include <cnet_netif.h>        // for
-#include <cnet_arp.h>          // for
+#include <cnet_const.h>
+#include <cnet_reg.h>
+#include <cnet_stk.h>
+#include <cne_inet.h>
+#include <cnet_netif.h>
+#include <cnet_arp.h>
 
 #include <netlink/socket.h>
 #include <netlink/route/link.h>
@@ -32,9 +32,8 @@
 
 #include <pthread.h>
 
-#include <cne_common.h>        // for
-#include <cne_log.h>           // for cne_panic
-#include <hexdump.h>           // for
+#include <cne_log.h>        // for cne_panic
+#include <hexdump.h>
 #include <cne_rwlock.h>
 
 #include "cnet_netlink.h"

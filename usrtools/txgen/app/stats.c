@@ -13,13 +13,14 @@
 #include <stdint.h>              // for uint32_t
 #include <string.h>              // for memset
 #include <unistd.h>              // for usleep
+#include <endian.h>
 
-#include "cmds.h"             // for txgen_flags_string, txgen_link_state, txge...
-#include "display.h"          // for display_set_color, display_dashline
-#include "txgen.h"            // for COLUMN_WIDTH_0, COLUMN_WIDTH_1, txgen, txg...
-#include "_inet.h"            // for inet_ntop4, pg_ipaddr, pg_ipaddr::(anonymous)
-#include "cne_ether.h"        // for inet_mtoa
-#include "cne_lport.h"        // for lport_stats_t
+#include "cmds.h"                 // for txgen_flags_string, txgen_link_state, txge...
+#include "display.h"              // for display_set_color, display_dashline
+#include "txgen.h"                // for COLUMN_WIDTH_0, COLUMN_WIDTH_1, txgen, txg...
+#include "cne_inet.h"             // for inet_ntop4, ip4addr, ip4addr::(anonymous)
+#include <net/cne_ether.h>        // for inet_mtoa
+#include "cne_lport.h"            // for lport_stats_t
 #include "cne_log.h"
 #include "ether.h"               // for eth_stats_t
 #include "jcfg.h"                // for jcfg_lport_t
@@ -47,6 +48,7 @@ txgen_print_static_data(void)
     char buff[32], *b;
     uint32_t pid, ip_row;
     uint32_t col, row;
+    struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
 
     display_set_color("default");
     display_set_color("top.page");
@@ -139,15 +141,17 @@ txgen_print_static_data(void)
         snprintf(buff, sizeof(buff), "%d/%5d/%5d", pkt->ttl, pkt->sport, pkt->dport);
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, buff);
         snprintf(buff, sizeof(buff), "%s / %s", "IPv4",
-                 (pkt->ipProto == CNE_IPPROTO_TCP) ? "TCP" : "UDP");
+                 (pkt->ipProto == IPPROTO_TCP) ? "TCP" : "UDP");
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, buff);
 
         display_set_color("stats.ip");
         memset(buff, 0, sizeof(buff));
-        b = inet_ntop4(buff, sizeof(buff), htonl(pkt->ip_dst_addr.ipv4.s_addr), 0xFFFFFFFF);
+        ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
+        b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
         memset(buff, 0, sizeof(buff));
-        b = inet_ntop4(buff, sizeof(buff), htonl(pkt->ip_src_addr.ipv4.s_addr), pkt->ip_mask);
+        ip_src.s_addr = be32toh(pkt->ip_src_addr.s_addr);
+        b             = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
         display_set_color("stats.mac");
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1,

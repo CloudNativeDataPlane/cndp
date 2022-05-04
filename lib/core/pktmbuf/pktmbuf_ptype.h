@@ -3,6 +3,11 @@
  * Copyright 2014-2016 6WIND S.A.
  */
 
+#include <net/cne_ip.h>
+#include <net/cne_udp.h>
+#include <net/cne_tcp.h>
+#include <net/cne_sctp.h>
+
 #ifndef _PKTMBUF_PTYPE_H_
 #define _PKTMBUF_PTYPE_H_
 
@@ -68,6 +73,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * Structure containing header lengths associated to a packet, filled
+ * by cne_get_ptype().
+ */
+struct cne_net_hdr_lens {
+    uint8_t l2_len;        /**< L2 header length */
+    uint8_t inner_l2_len;  /**< Inner L2 header length */
+    uint16_t l3_len;       /**< L3 header length */
+    uint16_t inner_l3_len; /**< Inner L3 header length */
+    uint16_t tunnel_len;   /**< Tunnel length */
+    uint8_t l4_len;        /**< L4 header length */
+    uint8_t inner_l4_len;  /**< Inner L4 header length */
+};
 
 /**
  * No packet type information.
@@ -687,6 +706,40 @@ extern "C" {
                 CNE_PTYPE_INNER_L4_MASK))
 
 /**
+ * Parse an Ethernet packet to get its packet type.
+ *
+ * This function parses the network headers in mbuf data and return its
+ * packet type.
+ *
+ * If it is provided by the user, it also fills a cne_net_hdr_lens
+ * structure that contains the lengths of the parsed network
+ * headers. Each length field is valid only if the associated packet
+ * type is set. For instance, hdr_lens->l2_len is valid only if
+ * (retval & CNE_PTYPE_L2_MASK) != CNE_PTYPE_UNKNOWN.
+ *
+ * Supported packet types are:
+ *   L2: Ether, VLAN, QinQ
+ *   L3: IPv4, IPv6
+ *   L4: TCP, UDP, SCTP
+ *   Tunnels: IPv4, IPv6, GRE, NVGRE
+ *
+ * @param m
+ *   The packet mbuf to be parsed.
+ * @param hdr_lens
+ *   A pointer to a structure where the header lengths will be returned,
+ *   or NULL.
+ * @param layers
+ *   List of layers to parse. The function will stop at the first
+ *   empty layer. Examples:
+ *   - To parse all known layers, use CNE_PTYPE_ALL_MASK.
+ *   - To parse only L2 and L3, use CNE_PTYPE_L2_MASK | CNE_PTYPE_L3_MASK
+ * @return
+ *   The packet type of the packet.
+ */
+CNDP_API uint32_t cne_get_ptype(const pktmbuf_t *m, struct cne_net_hdr_lens *hdr_lens,
+                                uint32_t layers);
+
+/**
  * Get the name of the l2 packet type
  *
  * @param ptype
@@ -694,7 +747,7 @@ extern "C" {
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_l2_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_l2_name(uint32_t ptype);
 
 /**
  * Get the name of the l3 packet type
@@ -704,7 +757,7 @@ const char *cne_get_ptype_l2_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_l3_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_l3_name(uint32_t ptype);
 
 /**
  * Get the name of the l4 packet type
@@ -714,7 +767,7 @@ const char *cne_get_ptype_l3_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_l4_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_l4_name(uint32_t ptype);
 
 /**
  * Get the name of the tunnel packet type
@@ -724,7 +777,7 @@ const char *cne_get_ptype_l4_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_tunnel_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_tunnel_name(uint32_t ptype);
 
 /**
  * Get the name of the inner_l2 packet type
@@ -734,7 +787,7 @@ const char *cne_get_ptype_tunnel_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_inner_l2_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_inner_l2_name(uint32_t ptype);
 
 /**
  * Get the name of the inner_l3 packet type
@@ -744,7 +797,7 @@ const char *cne_get_ptype_inner_l2_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_inner_l3_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_inner_l3_name(uint32_t ptype);
 
 /**
  * Get the name of the inner_l4 packet type
@@ -754,7 +807,7 @@ const char *cne_get_ptype_inner_l3_name(uint32_t ptype);
  * @return
  *   A non-null string describing the packet type.
  */
-const char *cne_get_ptype_inner_l4_name(uint32_t ptype);
+CNDP_API const char *cne_get_ptype_inner_l4_name(uint32_t ptype);
 
 /**
  * Write the packet type name into the buffer
@@ -769,7 +822,7 @@ const char *cne_get_ptype_inner_l4_name(uint32_t ptype);
  *   - 0 on success
  *   - (-1) if the buffer is too small
  */
-int cne_get_ptype_name(uint32_t ptype, char *buf, size_t buflen);
+CNDP_API int cne_get_ptype_name(uint32_t ptype, char *buf, size_t buflen);
 
 #ifdef __cplusplus
 }

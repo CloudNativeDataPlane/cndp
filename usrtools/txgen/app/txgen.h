@@ -46,7 +46,7 @@
 #include <cne_prefetch.h>
 #include <cne_system.h>
 #include <cne_branch_prediction.h>
-#include <cne_ether.h>
+#include <net/cne_ether.h>
 #include <pktdev.h>        // for PKTDEV_FOREACH
 #include <cne_ring.h>
 #include <mempool.h>
@@ -55,7 +55,7 @@
 #include <net/cne_udp.h>
 #include <net/cne_tcp.h>
 #include <metrics.h>        // for metrics_info_t
-#include <_inet.h>
+#include <cne_inet.h>
 #include <_pcap.h>
 #include <cksum.h>
 #include <jcfg.h>        // for jcfg_info_t

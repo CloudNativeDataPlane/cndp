@@ -2,11 +2,11 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-#include <cne_ether.h>             // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
+#include <net/cne_ether.h>         // for CNE_ETHER_TYPE_IPV4, cne_ether_hdr
 #include <hexdump.h>               // for cne_hexdump
 #include <cnet.h>                  // for cnet_add_instance
 #include <cnet_stk.h>              // for stk_entry, per_thread_stk, this_stk
-#include <cnet_inet.h>             // for in_caddr_create, inet_ntop4, in_c...
+#include <cne_inet.h>              // for in_caddr_create, inet_ntop4, in_c...
 #include <cnet_drv.h>              // for drv_entry
 #include <cnet_netif.h>            // for netif, cnet_netif_from_index...
 #include <cnet_chnl.h>             // for
@@ -72,11 +72,15 @@ cnet_ipv4_stats_dump(stk_t *stk)
 void
 cnet_ipv4_dump(const char *msg, struct cne_ipv4_hdr *ip)
 {
+    char ip1[IP4_ADDR_STRLEN] = {0};
+    char ip2[IP4_ADDR_STRLEN] = {0};
+
     cne_printf("[magenta]<<<< [orange]%s [magenta]>>>>[]\n", msg);
     cne_printf("      Src %s Dst %s cksum %04x version %d hlen %d %02x\n",
-               inet_ntop4((struct in_addr *)&ip->src_addr, NULL),
-               inet_ntop4((struct in_addr *)&ip->dst_addr, NULL), be16toh(ip->hdr_checksum),
-               ip->version_ihl >> 4, (ip->version_ihl & 0x0f) << 2, ip->version_ihl);
+               inet_ntop4(ip1, sizeof(ip1), (struct in_addr *)&ip->src_addr, NULL) ?: "Invalid IP",
+               inet_ntop4(ip2, sizeof(ip2), (struct in_addr *)&ip->dst_addr, NULL) ?: "Invalid IP",
+               be16toh(ip->hdr_checksum), ip->version_ihl >> 4, (ip->version_ihl & 0x0f) << 2,
+               ip->version_ihl);
     cne_printf("      offset %d next_proto %d id %d ttl %d tlen %d tos %d\n", ip->fragment_offset,
                ip->next_proto_id, ip->packet_id, ip->time_to_live, be16toh(ip->total_length),
                ip->type_of_service);

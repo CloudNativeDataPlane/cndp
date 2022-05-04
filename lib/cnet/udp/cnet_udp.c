@@ -4,7 +4,7 @@
 
 #include <cnet.h>                  // for cnet_add_instance
 #include <cnet_stk.h>              // for stk_entry, per_thread_stk, proto_...
-#include <cnet_inet.h>             // for inet_ntop4, in_caddr_copy, in_cad...
+#include <cne_inet.h>              // for inet_ntop4, in_caddr_copy, in_cad...
 #include <cnet_pcb.h>              // for pcb_entry, pcb_key, pcb_hd, cnet_...
 #include <cnet_ip_common.h>        // for ip_info
 #include <cnet_netif.h>            // for net_addr, cnet_ipv4_compare, netif
@@ -17,7 +17,7 @@
 #include <cnet_route4.h>        // for
 
 #include "cne_branch_prediction.h"        // for unlikely, likely
-#include "cne_ether.h"                    // for cne_ether_hdr
+#include <net/cne_ether.h>                // for cne_ether_hdr
 #include "net/cne_ip.h"                   // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "cne_log.h"                      // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_W...
 #include "net/cne_udp.h"                  // for cne_udp_hdr

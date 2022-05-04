@@ -40,7 +40,7 @@ struct cnet {
     CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
     struct stk_s **stks;                 /**< Vector list of stk_entry pointers */
     struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */
-    struct netif **netifs;               /**< List of active netif strucutures */
+    struct netif **netifs;               /**< List of active netif structures */
     struct cne_mempool *rt4_obj;         /**< Route IPv4 table pointer */
     struct cne_mempool *arp_obj;         /**< ARP object structures */
     struct fib_info *rt4_finfo;          /**< Pointer to the IPv4 FIB information structure */

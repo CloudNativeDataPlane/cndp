@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2019-2022 Intel Corporation
 
+subdir('tun')
 subdir('net')
 
 # These need to be here as some headers are being installed twice. In this case, the

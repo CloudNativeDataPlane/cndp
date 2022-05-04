@@ -25,21 +25,9 @@ extern "C" {
 /* Stack tick rate in milliseconds */
 #define MS_PER_TICK 10
 
-#define cnet_prefetch(n, v) cne_prefetch0((char *)((uintptr_t)v + (n * CNE_CACHE_LINE_SIZE)));
-
 /* Determine if a bit is set or cleared as a boolean expression */
 #define is_set(x, y) (((x) & (y)) != 0)
 #define is_clr(x, y) (((x) & (y)) == 0)
-
-/* Determine the offset of a member in a structure */
-#ifndef __offsetof
-#define __offsetof(_t, _m) __builtin_offsetof(_t, _m)
-#endif
-#define __countof(_x)     (sizeof(_x) / sizeof(_x[0]))
-#define __roundup(_x, _y) ((((_x) + ((_y)-1)) / (_y)) * (_y))
-#define __ctz(_v)         __builtin_ctz(_v)
-#define __prefixbits(_v)  ((__typeof__(_v))(sizeof(_v) * 8) - __ctz(_v))
-#define __numbytes(_v)    ((__prefixbits(_v) + 7) / 8)
 
 /**
  * short definition to set a function does not return

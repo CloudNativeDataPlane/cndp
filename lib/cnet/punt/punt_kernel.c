@@ -2,15 +2,15 @@
  * Copyright (c) 2021-2022 Intel Corporation
  */
 
-#include <cne_ether.h>         // for ether_addr_copy, cne_ether_hdr, ether_ad...
-#include <cnet.h>              // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>          // for proto_in_ifunc
-#include <cnet_inet.h>         // for inet_ntop4, CIN_ADDR
-#include <cnet_drv.h>          // for drv_entry
-#include <cnet_route.h>        // for
-#include <cnet_arp.h>          // for arp_entry
-#include <cnet_netif.h>        // for netif, cnet_ipv4_compare
-#include <netinet/in.h>        // for ntohs
+#include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
+#include <cnet.h>                 // for cnet_add_instance, cnet, per_thread_cnet
+#include <cnet_stk.h>             // for proto_in_ifunc
+#include <cne_inet.h>             // for inet_ntop4, CIN_ADDR
+#include <cnet_drv.h>             // for drv_entry
+#include <cnet_route.h>           // for
+#include <cnet_arp.h>             // for arp_entry
+#include <cnet_netif.h>           // for netif, cnet_ipv4_compare
+#include <netinet/in.h>           // for ntohs
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>
@@ -50,13 +50,14 @@ punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
 {
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
     struct iovec v[cnt];
+    int fd;
 
-    if (ctx->tinfo->tun_fd >= 0) {
+    if ((fd = tun_get_fd(ctx->tinfo)) >= 0) {
         for (int i = 0; i < cnt; i++) {
-            v[i].iov_base = pktmbuf_mtod(mbufs[i], char *);
+            v[i].iov_base = pktmbuf_mtod(mbufs[i], void *);
             v[i].iov_len  = pktmbuf_data_len(mbufs[i]);
         }
-        if (writev(ctx->tinfo->tun_fd, v, cnt) < 0)
+        if (writev(fd, v, cnt) < 0)
             CNE_WARN("Unable to send packets: %s\n", strerror(errno));
     }
 }
@@ -125,7 +126,10 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 {
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
 
-    ctx->tinfo = tun_alloc(TUN_DEVICE_TYPE, "punt%d");
+    if (!ctx)
+        CNE_ERR_RET("Context pointer is NULL\n");
+
+    ctx->tinfo = tun_alloc(IFF_TUN | IFF_NO_PI, "punt%d");
     if (!ctx->tinfo)
         CNE_ERR_RET("Unable to open TUN/TAP socket\n");
 

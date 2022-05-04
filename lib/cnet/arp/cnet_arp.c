@@ -2,10 +2,9 @@
  * Copyright (c) 2017-2022 Intel Corporation
  */
 
-#include <mempool.h>           // for mempool_destroy, mempool_get, mem...
-#include <cnet_ether.h>        // for eth_addr_swap
-#include <cne_hash.h>          // for cne_hash_add_key_data, cne_hash_d...
-#include <endian.h>            // for htobe16
+#include <mempool.h>         // for mempool_destroy, mempool_get, mem...
+#include <cne_hash.h>        // for cne_hash_add_key_data, cne_hash_d...
+#include <endian.h>          // for htobe16
 #ifdef CNE_MACHINE_CPUFLAG_SSE4_2
 #include <cne_hash_crc.h>        // for cne_hash_crc
 
@@ -18,7 +17,7 @@
 
 #include <cnet.h>                  // for cnet_add_instance
 #include <cnet_stk.h>              // for stk_entry, per_thread_stk, this_stk
-#include <cnet_inet.h>             // for inet_ntop4, inet_addr_copy
+#include <cne_inet.h>              // for inet_ntop4, inet_addr_copy
 #include <cnet_drv.h>              // for drv_entry
 #include <cnet_netif.h>            // for netif, net_addr, cnet_netif_match...
 #include <cnet_eth.h>              // for IPV4_ADDR_SIZE
@@ -27,10 +26,10 @@
 #include <cnet_ip_common.h>        // for ETH_HW_TYPE
 #include <cnet_arp.h>
 
-#include "cne_arp.h"                      // for cne_arp_hdr, cne_arp_ipv4, CNE_AR...
+#include <net/cne_ether.h>                // for ether_addr_copy, ether_format_addr
+#include <net/cne_arp.h>                  // for cne_arp_hdr, cne_arp_ipv4, CNE_AR...
 #include "cne_branch_prediction.h"        // for unlikely
 #include "cne_build_config.h"             // for CNE_MACHINE_CPUFLAG_SSE4_2
-#include "cne_ether.h"                    // for ether_addr_copy, ether_format_addr
 #include "cne_log.h"                      // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_W...
 #include "cne_mmap.h"                     // for MMAP_HUGEPAGE_DEFAULT
 #include "cne_vec.h"                      // for vec_len
@@ -83,6 +82,8 @@ cnet_arp_add(int netif_idx, struct in_addr *addr, struct ether_addr *mac, int pe
 
     entry = cnet_arp_alloc();
     if (entry) {
+        char ipaddr[IP4_ADDR_STRLEN] = {0};
+
         inet_addr_copy(&entry->pa, addr);
 
         entry->netif_idx = netif_idx;
@@ -91,12 +92,16 @@ cnet_arp_add(int netif_idx, struct in_addr *addr, struct ether_addr *mac, int pe
 
         ret = fib_info_alloc(fi, entry);
         if (ret < 0)
-            CNE_WARN("FIB allocate failed for %s\n", inet_ntop4(&entry->pa, &mask));
+            CNE_WARN("FIB allocate failed for %s\n",
+                     inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask) ?: "Invalid IP");
 
         idx = ret;
         if (cne_fib_add(fi->fib, addr->s_addr, 32, idx)) {
             fib_info_free(fi, idx);
-            CNE_NULL_RET("ARP add failed for %s\n", inet_ntop4(&entry->pa, &mask));
+            CNE_ERR("ARP add failed for %s\n",
+                    inet_ntop4(ipaddr, sizeof(ipaddr), &entry->pa, &mask) ?: "Invalid IP");
+            cnet_arp_free(entry);
+            return NULL;
         }
     }
     return entry;
@@ -132,9 +137,10 @@ _arp_show(struct arp_entry *entry, void *arg __cne_unused)
     struct netif *netif;
     char buf[64];
     struct in_addr addr;
+    char ip[IP4_ADDR_STRLEN] = {0};
 
     addr.s_addr = be32toh(entry->pa.s_addr);
-    cne_printf("  [orange]%-15s[] ", inet_ntop4(&addr, NULL));
+    cne_printf("  [orange]%-15s[] ", inet_ntop4(ip, sizeof(ip), &addr, NULL) ?: "Invalid IP");
     ether_format_addr(buf, sizeof(buf), &entry->ha);
     cne_printf("[yellow]%-17s[] ", buf);
 

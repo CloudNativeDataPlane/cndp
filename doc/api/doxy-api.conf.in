@@ -62,7 +62,6 @@ INPUT                   = @TOPDIR@/doc/api/doxy-api-index.md \
                           @TOPDIR@/lib/usr/clib/thread \
                           @TOPDIR@/lib/usr/clib/timer \
                           @TOPDIR@/lib/usr/clib/utils \
-                          @TOPDIR@/lib/usr/clib/vec \
                           @TOPDIR@/lib/usr/slib/csock \
                           @TOPDIR@/lib/usr/slib/ibroker
 

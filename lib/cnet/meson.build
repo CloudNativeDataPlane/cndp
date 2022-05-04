@@ -23,9 +23,9 @@ def_deps = [
     timer,
     thread,
     utils,
-    net,
     graph,
     jcfg,
+    tun,
     ]
 
 dirs = [ # list is not sorted and must be in this order.

@@ -16,17 +16,18 @@
 #include <stdio.h>               // for fprintf, snprintf, fclose, fileno, fopen
 #include <stdlib.h>              // for strtod
 #include <unistd.h>              // for usleep
+#include <endian.h>
 
 #include "txgen.h"        // for txgen_packet_ctor, txgen, txgen_t, txgen_c...
 #include "cmds.h"
-#include "display.h"           // for display_resume, display_pause, ...
-#include "_inet.h"             // for pg_ipaddr, pg_ipaddr::(anonymous), inet_ntop4
-#include "_pcap.h"             // for pcap_info_t
-#include "capture.h"           // for txgen_set_capture
-#include "cli.h"               // for cli_quit
-#include "cne.h"               // for copyright_msg, powered_by
-#include "cne_common.h"        // for __cne_unused
-#include "cne_ether.h"         // for inet_mtoa, CNE_ETHER_TYPE_IPV4
+#include "display.h"              // for display_resume, display_pause, ...
+#include "cne_inet.h"             // for ip4addr, ip4addr::(anonymous), inet_ntop4
+#include "_pcap.h"                // for pcap_info_t
+#include "capture.h"              // for txgen_set_capture
+#include "cli.h"                  // for cli_quit
+#include "cne.h"                  // for copyright_msg, powered_by
+#include "cne_common.h"           // for __cne_unused
+#include <net/cne_ether.h>        // for inet_mtoa, CNE_ETHER_TYPE_IPV4
 #include "cne_log.h"
 #include "jcfg.h"                // for jcfg_lport_t, jcfg_info_t, jcfg_lport_foreach
 #include "netdev_funcs.h"        // for netdev_link, ETH_LINK_FULL_DUPLEX
@@ -46,6 +47,7 @@ _dump_lport(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unu
     char buff[64], *b;
     FILE *fd = arg;
     uint32_t flags;
+    struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
     int pid;
 
     info = &txgen.info[lport->lpid];
@@ -79,11 +81,13 @@ _dump_lport(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unu
     fprintf(fd, "set %d dport %d\n", pid, pkt->dport);
     fprintf(fd, "set %d type %s\n", lport->lpid,
             (pkt->ethType == CNE_ETHER_TYPE_IPV4) ? "ipv4" : "unknown");
-    fprintf(fd, "set %d proto %s\n", lport->lpid,
-            (pkt->ipProto == CNE_IPPROTO_TCP) ? "tcp" : "udp");
-    b = inet_ntop4(buff, sizeof(buff), ntohl(pkt->ip_dst_addr.ipv4.s_addr), 0xFFFFFFFF);
+    fprintf(fd, "set %d proto %s\n", lport->lpid, (pkt->ipProto == IPPROTO_TCP) ? "tcp" : "udp");
+
+    ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
+    b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
     fprintf(fd, "set %d dst ip %s\n", pid, (b) ? b : "InvalidIP");
-    b = inet_ntop4(buff, sizeof(buff), ntohl(pkt->ip_src_addr.ipv4.s_addr), pkt->ip_mask);
+    ip_dst.s_addr = be32toh(pkt->ip_src_addr.s_addr);
+    b             = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
     fprintf(fd, "set %d src ip %s\n", pid, (b) ? b : "InvalidIP");
     fprintf(fd, "set %d dst mac %s\n", pid, inet_mtoa(buff, sizeof(buff), &pkt->eth_dst_addr));
     fprintf(fd, "set %d src mac %s\n", pid, inet_mtoa(buff, sizeof(buff), &pkt->eth_src_addr));
@@ -445,7 +449,7 @@ txgen_stop_transmitting(port_info_t *info)
 void
 single_set_proto(port_info_t *info, char *type)
 {
-    info->pkt.ipProto = (type[0] == 'u') ? CNE_IPPROTO_UDP : CNE_IPPROTO_TCP;
+    info->pkt.ipProto = (type[0] == 'u') ? IPPROTO_UDP : IPPROTO_TCP;
 
     /* ICMP only works on IPv4 packets. */
     if (type[0] == 'i')
@@ -536,7 +540,7 @@ txgen_port_defaults(uint32_t pid)
     pkt->sport   = DEFAULT_SRC_PORT;
     pkt->dport   = DEFAULT_DST_PORT;
     pkt->ttl     = DEFAULT_TTL;
-    pkt->ipProto = CNE_IPPROTO_TCP;
+    pkt->ipProto = IPPROTO_TCP;
     pkt->ethType = CNE_ETHER_TYPE_IPV4;
 
     atomic_exchange(&info->transmit_count, DEFAULT_TX_COUNT);
@@ -547,11 +551,11 @@ txgen_port_defaults(uint32_t pid)
 
     pkt->ip_mask = DEFAULT_NETMASK;
     if ((pid & 1) == 0) {
-        pkt->ip_src_addr.ipv4.s_addr = DEFAULT_IP_ADDR | (pid << 8) | 1;
-        pkt->ip_dst_addr.ipv4.s_addr = DEFAULT_IP_ADDR | ((pid + 1) << 8) | 1;
+        pkt->ip_src_addr.s_addr = DEFAULT_IP_ADDR | (pid << 8) | 1;
+        pkt->ip_dst_addr.s_addr = DEFAULT_IP_ADDR | ((pid + 1) << 8) | 1;
     } else {
-        pkt->ip_src_addr.ipv4.s_addr = DEFAULT_IP_ADDR | (pid << 8) | 1;
-        pkt->ip_dst_addr.ipv4.s_addr = DEFAULT_IP_ADDR | ((pid - 1) << 8) | 1;
+        pkt->ip_src_addr.s_addr = DEFAULT_IP_ADDR | (pid << 8) | 1;
+        pkt->ip_dst_addr.s_addr = DEFAULT_IP_ADDR | ((pid - 1) << 8) | 1;
     }
 
     memset(&pkt->eth_dst_addr, 0, sizeof(pkt->eth_dst_addr));
@@ -752,13 +756,13 @@ single_set_tx_rate(port_info_t *info, const char *r)
  * SEE ALSO:
  */
 void
-single_set_ipaddr(port_info_t *info, char type, struct pg_ipaddr *ip, int ip_ver)
+single_set_ipaddr(port_info_t *info, char type, struct in_addr *ip, int prefixlen)
 {
-    if (type == 's' && ip_ver == 4) {
-        info->pkt.ip_mask                 = size_to_mask(ip->prefixlen);
-        info->pkt.ip_src_addr.ipv4.s_addr = ntohl(ip->ipv4.s_addr);
-    } else if (type == 'd' && ip_ver == 4)
-        info->pkt.ip_dst_addr.ipv4.s_addr = ntohl(ip->ipv4.s_addr);
+    if (type == 's') {
+        info->pkt.ip_mask            = __size_to_mask(prefixlen);
+        info->pkt.ip_src_addr.s_addr = ntohl(ip->s_addr);
+    } else
+        info->pkt.ip_dst_addr.s_addr = ntohl(ip->s_addr);
 
     txgen_packet_ctor(info);
 }

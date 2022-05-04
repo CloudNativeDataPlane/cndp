@@ -30,13 +30,6 @@ enum {
     ETHER_TYPE_TRANSP_ETH_BR  = 0x6558  /**< Transparent Ethernet Bridge */
 };
 
-#if 0
-struct ip_info {
-    struct in_caddr laddr; /**< local address */
-    struct in_caddr faddr; /**< foreign address */
-};
-#endif
-
 #ifdef __cplusplus
 }
 #endif

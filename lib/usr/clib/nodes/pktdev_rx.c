@@ -7,7 +7,7 @@
 #include <cne_graph_worker.h>        // for cne_node, cne_node_next_stream_move
 #include <pktmbuf.h>                 // for pktmbuf_t, pktmbuf_mtod, pktmbuf_s::(a...
 #include <pktmbuf_ptype.h>           // for CNE_PTYPE_L3_IPV4_EXT_UNKNOWN, CNE_PTY...
-#include <cne_ether.h>               // for cne_ether_hdr
+#include <net/cne_ether.h>           // for cne_ether_hdr
 #include <net/ethernet.h>            // for ETHERTYPE_IP, ETHERTYPE_IPV6
 #include <netinet/in.h>              // for htons
 #include <stdint.h>                  // for uint16_t, uint32_t

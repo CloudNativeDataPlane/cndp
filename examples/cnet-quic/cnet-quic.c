@@ -29,7 +29,7 @@
 #include <cne_system.h>                   // for cne_lcore_id
 #include <cne_vect.h>                     // for xmm_t
 #include <net/cne_ip.h>                   // for CNE_IPV4
-#include <cne_ether.h>                    // for ether_addr_copy, ETHER_LOCAL_ADMI...
+#include <net/cne_ether.h>                // for ether_addr_copy, ETHER_LOCAL_ADMI...
 #include <cne_timer.h>
 #include <jcfg.h>        // for jcfg_thd_t, jcfg_lport_t, jcfg_lg...
 #include <cli.h>
@@ -46,7 +46,7 @@
 #include <eth_node_api.h>            // for cnet_node_eth_config, cnet_node_pkt...
 #include <ip4_node_api.h>            // for cnet_node_ip4_forward_add, cnet_nod...
 #include <cnet_netlink.h>
-#include <cnet_inet.h>        // for cnet_inet
+#include <cne_inet.h>        // for cnet_inet
 
 #include "cnet-quic.h"
 #include "cne.h"               // for cne_id, cne_init, cne_on_exit

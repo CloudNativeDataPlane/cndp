@@ -10,11 +10,10 @@
  * CNET packet support routines.
  */
 
-#include <cne_ether.h>
+#include <net/cne_ether.h>
 #include <net/cne_udp.h>
 #include <net/cne_tcp.h>
 #include <net/cne_icmp.h>
-#include <cnet_ether.h>
 #include <cnet_ip_common.h>
 
 #ifdef __cplusplus

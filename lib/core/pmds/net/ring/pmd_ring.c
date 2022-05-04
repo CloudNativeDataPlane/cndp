@@ -27,12 +27,6 @@
 // IWYU pragma: no_forward_declare pktmbuf_s
 // IWYU pragma: no_forward_declare cne_mempool
 
-#define CNE_PMD_RING_MAX_RX_RINGS 16
-#define CNE_PMD_RING_MAX_TX_RINGS 16
-
-#define CNE_PMD_RING_IFNAME_ARG "iface"
-#define CNE_PMD_RING_QCNT_ARG   "qcnt"
-
 struct ring_internal_args {
     cne_ring_t *rxq;
     cne_ring_t *txq;

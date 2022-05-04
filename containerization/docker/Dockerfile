@@ -41,7 +41,7 @@ COPY VERSION Makefile meson.build meson_options.txt ./
 RUN make && make install
 
 # Build the prometheus-metrics app
-WORKDIR /cndp/lang/go/cndp.org/prometheus/
+WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
 # Setup container to run CNDP applications
@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y \
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
-COPY --from=build /cndp/lang/go/cndp.org/prometheus/prometheus /usr/bin/
+COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
 COPY --from=build /usr/lib64/libbpf.so.0 /usr/lib/
 
 # Copy configurations from the host
@@ -70,4 +70,4 @@ WORKDIR /root
 COPY tools/jsonc_gen.sh .
 RUN chmod +rwx jsonc_gen.sh
 COPY containerization/docker/fwd.jsonc .
-COPY lang/go/cndp.org/prometheus/prom_cfg.json .
+COPY lang/go/stats/prometheus/prom_cfg.json .

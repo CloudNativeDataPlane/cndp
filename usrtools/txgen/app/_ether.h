@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#include <cne_ether.h>
+#include <net/cne_ether.h>
 
 #ifdef __cplusplus
 }

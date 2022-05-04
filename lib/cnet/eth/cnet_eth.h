@@ -10,14 +10,13 @@
  * CNET Ethernet support routines.
  */
 
-#include <mempool.h>        // for mempool_t
-#include <cnet_ether.h>
+#include <mempool.h>             // for mempool_t
 #include <endian.h>              // for htole64
 #include <net/ethernet.h>        // for ether_addr
 #include <stdint.h>              // for uint64_t, uint16_t, uint8_t
 
 #include "cnet_const.h"        // for iofunc_t
-#include "cnet_inet.h"         // for _in_addr
+#include "cne_inet.h"          // for _in_addr
 #include "cnet_netif.h"        // for netif
 
 #ifdef __cplusplus

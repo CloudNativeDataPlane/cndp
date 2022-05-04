@@ -10,14 +10,13 @@
  * CNET ARP routines.
  */
 
-#include <cne_arp.h>
+#include <net/cne_arp.h>
 #include <net/cne_ip.h>
-#include <cnet_ether.h>
 #include <net/ethernet.h>        // for ether_addr
 #include <stdint.h>              // for uint8_t, uint16_t
 
-#include "cnet_inet.h"        // for _in_addr
-#include "pktmbuf.h"          // for pktmbuf_t
+#include "cne_inet.h"        // for _in_addr
+#include "pktmbuf.h"         // for pktmbuf_t
 
 #ifdef __cplusplus
 extern "C" {

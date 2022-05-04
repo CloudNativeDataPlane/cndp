@@ -124,6 +124,7 @@ int
 vt_color_parse(char *buff, int len)
 {
     char *cbuf, *c, *b, *e;
+    int b_index = 0;
 
     c = index(buff, '[');
     if (!c)
@@ -139,9 +140,10 @@ vt_color_parse(char *buff, int len)
     memset(buff, 0, len);
 
     /* Parse cbuf for the color tuple and fill in buff */
-    for (c = cbuf, b = buff; *c != '\0';) {
+    for (c = cbuf, b = buff; *c != '\0' && b_index < len;) {
         if (*c != '[') {
             *b++ = *c++; /* Fill buffer with text up to '[' */
+            b_index++;
             len--;
             continue;
         }
@@ -149,14 +151,16 @@ vt_color_parse(char *buff, int len)
         e = index(c, ']');
         if (!e) {
             *b++ = *c++; /* ']' not found assume only a '[' in text */
+            b_index++;
             len--;
             continue;
         }
 
         /* Convert the color into a set of vt100 codes */
-        if (color_begin(c, ++e, &b, len) == 0)
+        if (color_begin(c, ++e, &b, len) == 0) {
             *b++ = *c++;
-        else
+            b_index++;
+        } else
             c = e; /* move pointer to after closing bracket */
     }
     free(cbuf);

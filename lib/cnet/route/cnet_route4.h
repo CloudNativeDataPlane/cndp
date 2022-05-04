@@ -16,7 +16,7 @@
 
 #include "cne_common.h"        // for __cne_cache_aligned
 #include "cnet_const.h"        // for match_t, rt_attach_t, vfunc_t
-#include "cnet_inet.h"         // for in_caddr
+#include "cne_inet.h"          // for in_caddr
 #include "cnet_stk.h"          // for this_stk
 #include "cnet_route.h"
 
@@ -120,36 +120,6 @@ CNDP_API void cne_route4_timer(void);
  *   -1 on error or 0 on success.
  */
 CNDP_API int cne_route4_notify(void);
-
-#if 0 /* TODO: determine if we need these routines to be created */
-/**
- * @brief Lookup a bulk of IPv4 route entries.
- *
- * @param dip
- *   The IPv4 destination IP address array to lookup.
- * @param nh
- *   The array of nexthop information values to be returned.
- * @param n
- *   The number of destination IPv4 addresses and the max number of nexthop entries to return.
- * @return
- *   -1 on error or 0 on success.
- */
-CNDP_API int cnet_route4_lookup_bulk(uint32_t *dip, uint64_t *nh, int n);
-
-/**
- * @brief Lookup a bulk of IPv4 route entries.
- *
- * @param dip
- *   The IPv4 destination IP address array to lookup.
- * @param nh
- *   The array of nexthop information values to be returned.
- * @param n
- *   The number of destination IPv4 addresses and the max number of nexthop entries to return.
- * @return
- *   -1 on error or 0 on success.
- */
-CNDP_API int cnet_route4_lookup(uint32_t *dip, uint64_t *nh);
-#endif
 
 /**
  * @brief Insert IPv4 route into the routing table.

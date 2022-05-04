@@ -6,7 +6,7 @@
 #include <cne_vec.h>        // for vec_ptr_at_index, vec_add_ptr, vec_...
 #include <cne_stdio.h>
 #include <cnet_stk.h>
-#include <cnet_inet.h>            // for _in_addr
+#include <cne_inet.h>             // for _in_addr
 #include <cnet_drv.h>             // for drv_entry
 #include <cnet_netif.h>           // for net_addr, netif, cnet_ipv4_ipaddr_delete
 #include <cnet_route4.h>          // for cnet_route4_setup
