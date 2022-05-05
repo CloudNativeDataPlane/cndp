@@ -27,7 +27,7 @@
 
 - name: Unarchive libbpf
   unarchive:
-    src: https://github.com/libbpf/libbpf/archive/refs/tags/v0.3.tar.gz
+    src: https://github.com/libbpf/libbpf/archive/refs/tags/v0.5.0.tar.gz
     dest: /tmp
     remote_src: yes
   when: bpf_static_installed.stat.exists == False or bpf_shared_installed.stat.exists == False
@@ -37,7 +37,7 @@
 
 - name: Install libbpf
   make:
-    chdir: /tmp/libbpf-0.3/src
+    chdir: /tmp/libbpf-0.5.0/src
     target: install
     params:
       NUM_THREADS: "{{ num_threads }}"
