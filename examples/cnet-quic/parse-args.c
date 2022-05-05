@@ -202,6 +202,7 @@ print_usage(char *prog_name)
                "  -V             JCFG information verbose\n"
                "  -P             JCFG debug parsing\n"
                "  -U             Disable UDP checksum (default enabled)\n"
+               "  -L [level]     Enable a logging level\n"
                "  -h             Display the help information\n",
                prog_name);
 }
@@ -223,6 +224,7 @@ parse_args(int argc, char **argv)
     const int old_optind   = optind;
     const int old_optopt   = optopt;
     char *const old_optarg = optarg;
+    char log_level[16]     = {0};
 
     cinfo->flags = FWD_ENABLE_UDP_CKSUM;
 
@@ -231,7 +233,7 @@ parse_args(int argc, char **argv)
 
     /* Parse the input arguments. */
     for (;;) {
-        opt = getopt_long(argc, argvopt, "hc:s:dCDPVUu", lgopts, &option_index);
+        opt = getopt_long(argc, argvopt, "hc:s:dCDPVUuL:", lgopts, &option_index);
         if (opt == EOF)
             break;
 
@@ -271,6 +273,15 @@ parse_args(int argc, char **argv)
 
         case 'V':
             flags |= JCFG_INFO_VERBOSE;
+            break;
+
+        case 'L':
+            strlcpy(log_level, optarg, sizeof(log_level));
+            if (cne_log_set_level_str(log_level)) {
+                CNE_ERR("Invalid command option\n");
+                print_usage(argv[0]);
+                return -1;
+            }
             break;
 
         default:
