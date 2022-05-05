@@ -46,7 +46,7 @@ cne_ring_get_memsize_elem(unsigned int esize, unsigned int count)
             "Requested number of elements is invalid, must be power of 2, and not exceed %u\n",
             CNE_RING_SZ_MASK);
 
-    sz = sizeof(struct cne_ring) + count * esize;
+    sz = sizeof(struct cne_ring) + (ssize_t)count * esize;
     sz = CNE_ALIGN(sz, CNE_CACHE_LINE_SIZE);
     return sz;
 }
