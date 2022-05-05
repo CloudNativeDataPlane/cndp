@@ -931,7 +931,7 @@ xskdev_socket_create(struct lport_cfg *c)
         ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx,
                                  &xi->txq.tx, &cfg);
     if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket.\n");
+        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #else
     if (xi->shared_umem)
         CNE_INFO("Shared UMEM is enabled, but not supported by kernel or libbpf\n");
@@ -939,7 +939,7 @@ xskdev_socket_create(struct lport_cfg *c)
     ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx, &xi->txq.tx,
                              &cfg);
     if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket.\n");
+        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #endif
 
     xi->rxq.fds.fd     = xsk_socket__fd(xi->rxq.xsk);
@@ -952,11 +952,11 @@ xskdev_socket_create(struct lport_cfg *c)
     if (xi->unprivileged) {
         ret = xsk_socket__update_xskmap(xi->rxq.xsk, xi->xsk_map_fd);
         if (ret)
-            CNE_ERR_GOTO(err, "Update of BPF map failed(%d)\n", ret);
+            CNE_ERR_GOTO(err, "Update of BPF map failed. %s\n", strerror(errno));
     } else {
         /* Getting the program ID must be after the xdp_socket__create() call */
         if (bpf_get_link_xdp_id(xi->if_index, &xi->prog_id, xi->xdp_flags))
-            CNE_ERR_GOTO(err, "bpf_get_link_xdp_id failed\n");
+            CNE_ERR_GOTO(err, "bpf_get_link_xdp_id failed. %s\n", strerror(errno));
     }
 
     CNE_DEBUG("Program ID %u, if_index %d, if_name '%s'\n", xi->prog_id, xi->if_index, xi->ifname);

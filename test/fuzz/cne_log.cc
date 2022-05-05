@@ -27,7 +27,7 @@ LLVMFuzzerTestOneInput(const uint8_t *data_, size_t size)
         if (data[i] == '%')
             data[i] = 'f';
     }
-    cne_log(size % CNE_LAST_LOG, (const char *)data, 0, "%s\n", __func__);
+    cne_log(size % CNE_LOG_LAST, (const char *)data, 0, "%s\n", __func__);
     free(data);
     return 0;
 }
