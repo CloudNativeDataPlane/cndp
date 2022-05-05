@@ -19,12 +19,12 @@ RUN apt-get update && apt-get install -y \
     libpcap-dev \
     wget
 
-# Build and install libbpf
+# Build and install libbpf version >=0.3.0 and <=0.6.1
 SHELL ["/bin/bash", "-c"]
 RUN set -o pipefail \
-    && wget -q -O - https://github.com/libbpf/libbpf/archive/refs/tags/v0.3.tar.gz \
+    && wget -q -O - https://github.com/libbpf/libbpf/archive/refs/tags/v0.5.0.tar.gz \
     | tar -xzC / \
-    && make -j -C /libbpf-0.3/src install
+    && make -j -C /libbpf-0.5.0/src install
 
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp

@@ -145,35 +145,28 @@ On a NUMA machine with two nodes, pages should be allocated explicitly on separa
    For 1GB pages, it is not possible to reserve the hugepage memory after the system has booted.
 
 Prerequisites
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
-apt proxy
-^^^^^^^^^^
-If required, create a proxy.conf and configure the apt proxy settings.
+If behind a proxy server you may need to setup a number of configurations to allow access via the server.
+Some commands i.e. apt-get, git, ssh, curl, wget and others will need configuration to work correctly.
+Please refer to apt-get, git and other documentations to enable access through a proxy server.
 
-.. code-block:: console
-
-   cat << EOF | sudo tee -a /etc/apt/apt.conf.d/proxy.conf
-   Acquire::http::Proxy "http://user:password@proxy.server:port/";
-   Acquire::https::Proxy "https://user:password@proxy.server:port/";
-   EOF
-
-Optionally update apt.
+Optionally update apt-get.
 
 .. code-block:: console
 
-   sudo apt update
+   sudo apt-get update
 
 Apt-get is used to install the required packages to build CNDP and its dependencies.
 
-libbpf
-^^^^^^^
+Build libbpf
+~~~~~~~~~~~~
 
 The `libbpf <https://github.com/libbpf/libbpf>`_ is a dependency of CNDP. Starting with Ubuntu 20.10
-it can be installed using apt. For earlier Ubuntu versions, or for users who want the latest code,
-it can be installed from source.
+the libbpf libraries can be installed using apt-get. For earlier Ubuntu versions, or for users who
+want the latest code, it can be installed from source.
 
-**Install using apt**
+**Install using apt-get**
 
 .. code-block:: console
 
@@ -185,20 +178,30 @@ Install packages to build libbpf
 
 .. code-block:: console
 
-   sudo apt install -y build-essential pkg-config libelf-dev
+   sudo apt-get install -y build-essential pkg-config libelf-dev
 
 Clone, build, and install libbpf
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: console
 
    git clone https://github.com/libbpf/libbpf.git
-   cd libbpf/src
-   make
-   sudo make install
+   cd libbpf
+   git checkout v0.5.0   # or you can use v0.6.1 if needing a newer version
+   make -C src
+   sudo make -C src install
+   export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
+
+Edit the file /etc/ld.so.conf.d/x86_64-linux-gnu.conf and add the line /usr/lib64 to the
+bottom of the file.
+
+.. code-block:: console
+
+   sudo vim /etc/ld.so.conf.d/x86_64-linux-gnu.conf   # add /usr/lib64 to file
+   sudo ldconfig     # force ldconfig to detect changes
 
 Build CNDP
-~~~~~~~~~~~
+~~~~~~~~~~
 
 Install packages to build CNDP
 
@@ -211,10 +214,10 @@ Optionally install packages to build documentation
 
 .. code-block:: console
 
-   sudo apt install -y doxygen python3-sphinx
+   sudo apt-get install -y doxygen python3-sphinx
 
 Clone and build CNDP
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: console
 
@@ -248,10 +251,10 @@ or to build the docs
 
 
 Run CNDP examples
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 helloworld
-"""""""""""
+""""""""""
 
 The most basic example is ``helloworld``.
 
@@ -303,18 +306,6 @@ updated from the package manager to one which natively supports many AF_XDP feat
 Prerequisites
 ~~~~~~~~~~~~~
 
-apt proxy
-^^^^^^^^^
-
-If required, create a proxy.conf and configure the apt proxy settings.
-
-.. code-block:: console
-
-   cat << EOF | sudo tee -a /etc/apt/apt.conf.d/proxy.conf
-   Acquire::http::Proxy "http://user:password@proxy.server:port/";
-   Acquire::https::Proxy "https://user:password@proxy.server:port/";
-   EOF
-
 dependencies
 ^^^^^^^^^^^^
 
@@ -322,7 +313,7 @@ apt-get should now work to install the packages needed to use ansible.
 
 .. code-block:: console
 
-   sudo apt update
+   sudo apt-get update
    sudo apt-get install -y ansible
 
 .. note::

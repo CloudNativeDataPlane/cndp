@@ -7,16 +7,9 @@ instructions to run CNDP applications. For more information, refer to the CNDP d
 
 ## Prerequisites
 
-### apt proxy
-
-If required, create a proxy.conf and configure the apt proxy settings.
-
-```bash
-cat << EOF | sudo tee -a /etc/apt/apt.conf.d/proxy.conf
-Acquire::http::Proxy "http://user:password@proxy.server:port/";
-Acquire::https::Proxy "https://user:password@proxy.server:port/";
-EOF
-```
+If behind a proxy server you may need to setup a number of configurations to allow access via the server.
+Some commands i.e. apt-get, git, ssh, curl, wget and others will need configuration to work correctly.
+Please refer to apt-get, git and other documentations to enable access through a proxy server.
 
 ### dependencies
 
@@ -40,7 +33,15 @@ The [libbpf](https://github.com/libbpf/libbpf) is a dependency of CNDP. Starting
 it can be installed using apt. For earlier Ubuntu versions, or for users who want the latest code,
 it can be installed from source.
 
-### Install libbpf from package manager
+#### _Note:_
+
+Newer versions of libbpf greater than or equal to v0.7.0 require _libxdp_ to be installed. For now we
+can checkout a previous version v0.5.0 or v0.6.1 instead of installing _libxdp_.
+
+### Install libbpf-dev from package manager
+
+Use the following command on Ubuntu 20.10 and later to install the headers and libraries to build
+and run CNDP applications. If using an earlier Ubuntu version, you need to build libbpf from source.
 
 ```bash
 sudo apt-get install -y libbpf-dev
@@ -49,20 +50,24 @@ sudo apt-get install -y libbpf-dev
 ### Install libbpf from source
 
 ```bash
-https_proxy="https://user:password@proxy.server:port" git clone https://github.com/libbpf/libbpf.git
+git clone https://github.com/libbpf/libbpf.git
 cd libbpf
-git checkout ...
-make -C src
-sudo make -C src install
+git checkout v0.5.0  # or v0.6.1 if needing a newer version
+make -C src && sudo make -C src install
 ```
 
 The library and pkgconfig file is installed to /usr/lib64, which is not where the loader or
-pkg-config look. Fix this by editing the ldconfig and exporting the PKG_CONFIG_PATH.
+pkg-config looks. Fix this by editing the ldconfig file as suggested below.
 
 ```bash
 sudo vim /etc/ld.so.conf.d/x86_64-linux-gnu.conf
-# add /usr/lib64 line to the bottom of the file, save and exit.
+# add a line with /usr/lib64 to the bottom of the file, save and exit.
 sudo ldconfig
+```
+
+The following statement may be necessary if libbpf is installed from source instead of the package manager.
+
+```bash
 export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
 ```
 
