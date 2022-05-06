@@ -163,17 +163,10 @@ if nl_cli_dep.found()
 endif
 
 cne_conf.set10('HAS_XSK_UMEM_SHARED', false)
-bpf_dep = dependency('libbpf', required: false, method: 'pkg-config')
-if not bpf_dep.found()
-    bpf_dep = cc.find_library('bpf', required: false)
-endif
-
+bpf_dep = dependency('libbpf', version: ['>=0.3.0', '<=0.6.1'], required: true, method: 'pkg-config')
 if bpf_dep.found() and cc.has_header('bpf/xsk.h') and cc.has_header('linux/if_xdp.h')
     extra_ldflags += '-lbpf'
-    bpf_ver_dep = dependency('libbpf', version: '>=0.3.0', required: false, method: 'pkg-config')
-    if bpf_ver_dep.found()
-        cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
-    endif
+    cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
 endif
 
 cne_conf.set('HAS_UINTR_SUPPORT', false)

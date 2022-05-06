@@ -10,7 +10,7 @@
 #include <cne_common.h>              // for CNE_DIM, CNE_SET_USED, CNE_PRIORITY_LAST
 #include <cne_graph.h>               // for cne_node_t, cne_node_id_to_name, CNE_N...
 #include <cne_graph_worker.h>        // for cne_node, cne_node_enqueue_x1, cne_nod...
-#include <cne_vec.h>                 // for vec_add_ptr, vec_find_delete
+#include <cne_vec.h>                 // for vec_add
 #include <errno.h>                   // for ENOMEM, errno
 #include <stdbool.h>                 // for false, true
 #include <stdint.h>                  // for uint8_t, uint16_t, uint32_t, uintptr_t
@@ -339,7 +339,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         cne_printf("Failed to allocate graph common memory\n");
         return -ENOMEM;
     }
-    vec_add_ptr(test_graph_perf_vec, graph_data);
+    vec_add(test_graph_perf_vec, graph_data);
     strlcpy(graph_data->name, TEST_GRAPH_PERF, sizeof(graph_data->name));
 
     graph_data->nb_nodes = 0;
@@ -677,8 +677,6 @@ graph_fini(void)
 
     cne_graph_destroy(graph_data->graph_id);
     free(graph_data->node_data);
-
-    vec_find_delete(test_graph_perf_vec, graph_data);
     free(graph_data);
 }
 
@@ -970,9 +968,7 @@ static struct unit_test_suite graph_perf_testsuite = {
 static int
 test_graph_perf_func(void)
 {
-    if (test_graph_perf_vec)
-        vec_free(test_graph_perf_vec);
-    test_graph_perf_vec = vec_alloc_ptr(test_graph_perf_vec, 128);
+    test_graph_perf_vec = vec_free(test_graph_perf_vec);
 
     return unit_test_suite_runner(&graph_perf_testsuite);
 }

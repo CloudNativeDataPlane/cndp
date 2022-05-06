@@ -21,7 +21,6 @@
 #include <cne_common.h>              // for __cne_unused
 #include <net/cne_ip.h>              // for cne_ipv4_hdr
 #include <cne_log.h>                 // for CNE_LOG, CNE_LOG_DEBUG
-#include <cne_vec.h>                 // for vec_len, vec_ptr_at_index, vec_next_mbuf_pre...
 #include <cnet_ipv4.h>               // for IPv4_VER_LEN_VALUE
 #include <mempool.h>                 // for mempool_t
 #include <pktdev.h>                  // for pktdev_rx_burst

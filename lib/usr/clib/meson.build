@@ -7,7 +7,6 @@ dirs = [
     'thread',
     'utils',
     'timer',
-    'vec',
     'graph',
     'hmap',
     'rib',

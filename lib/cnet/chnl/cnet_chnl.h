@@ -38,7 +38,7 @@ struct stk_s;
 extern "C" {
 #endif
 
-#define CHNL_VEC_SIZE 256
+#define CHNL_VEC_SIZE 32
 #define _MIN_BUF_SIZE (3 * TCP_NORMAL_MSS) /* 1460 Normal MSS size for TCP */
 
 #ifdef _IPPORT_RESERVED

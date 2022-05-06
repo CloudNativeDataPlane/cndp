@@ -78,7 +78,7 @@ cnet_pcb_alloc(struct pcb_hd *hd, uint16_t proto)
     pcb->closed   = 0;
     pcb->ip_proto = proto;
 
-    vec_add_ptr(hd->vec, pcb);
+    vec_add(hd->vec, pcb);
 
     return pcb;
 }

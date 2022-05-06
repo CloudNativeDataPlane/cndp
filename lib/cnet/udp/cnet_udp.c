@@ -50,9 +50,6 @@ udp_create(void *_stk)
     stk->udp->snd_size     = MAX_UDP_SND_SIZE;
     stk->udp->udp_hd.lport = _IPPORT_RESERVED;
 
-    stk->udp->udp_hd.vec = vec_alloc_ptr(stk->udp->udp_hd.vec, UDP_VEC_PCB_COUNT);
-    CNE_ASSERT(stk->udp->udp_hd.vec != NULL);
-
     return 0;
 }
 
@@ -62,8 +59,14 @@ udp_destroy(void *_stk)
     stk_t *stk = _stk;
 
     if (stk->udp) {
-        vec_pool_free(stk->udp->udp_hd.vec);
+        struct pcb_entry *p;
+
+        vec_foreach_ptr (p, stk->udp->udp_hd.vec)
+            free(p);
+        vec_free(stk->udp->udp_hd.vec);
+        stk->udp->udp_hd.vec = NULL;
         free(stk->udp);
+        stk->udp = NULL;
     }
     return 0;
 }
