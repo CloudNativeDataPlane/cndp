@@ -1571,14 +1571,14 @@ tcb_cleanup(struct tcb_entry *tcb)
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_len(tcb->backlog_q.vec) = 0;
+    vec_set_len(tcb->backlog_q.vec, 0);
 
     /* Drop any half open connections */
     vec_foreach_ptr (p, tcb->half_open_q) {
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_len(tcb->half_open_q) = 0;
+    vec_set_len(tcb->half_open_q, 0);
 
     CNE_DEBUG("Half Open queue is clean\n");
 
