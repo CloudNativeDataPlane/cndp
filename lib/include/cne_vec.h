@@ -188,9 +188,26 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  * @param v
  *   The vector pointer
  * @return
- *   The vector size or number of entries in vector
+ *   The vector size or number of entries in vector or 0 if v is NULL.
  */
-#define vec_len(v) vec_header(v)->len
+#define vec_len(v) ((v) ? vec_header(v)->len : 0)
+
+/**
+ * Set vector length to the given number of entries
+ *
+ * @param v
+ *   The vector pointer
+ * @param len
+ *   The new length value to set
+ */
+static inline void
+vec_set_len(void *v, int len)
+{
+    vec_hdr_t *hdr = (vec_hdr_t *)vec_header(v);
+
+    if (hdr)
+        hdr->len = len;
+}
 
 /**
  * Return the allocated number of entries in the list.
@@ -200,7 +217,7 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  * @return
  *   The max number of entries allocated in the list.
  */
-#define vec_max_len(v) vec_header(v)->alen
+#define vec_max_len(v) ((v) ? vec_header(v)->alen : 0)
 
 /**
  * Decrease the number of vectors in the list
@@ -208,7 +225,7 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  * @param v
  *   The vector pointer
  */
-#define vec_dec_len(v) vec_header(v)->len--
+#define vec_dec_len(v) ((v) ? vec_header(v)->len-- : 0)
 
 /**
  * Return entry value at the given index offset.
@@ -244,7 +261,7 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  * @return
  *    0 if empty list or 1 if the value is valid.
  */
-#define vec_pop(vec) (vec)[--vec_header(vec)->len]
+#define vec_pop(vec) ((vec) ? (vec)[--vec_header(vec)->len] : 0)
 
 /**
  * Increment the number of entries in the vector list.
@@ -252,7 +269,7 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
  * @param v
  *   The vector pointer
  */
-#define vec_inc_len(v) vec_header(v)->len++
+#define vec_inc_len(v) ((v) ? vec_header(v)->len++ : 0)
 
 static inline int
 _vec_find_index(void **vec, void *v)
