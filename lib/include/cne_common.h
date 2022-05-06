@@ -46,7 +46,7 @@ extern "C" {
 
 /**
  * Enable the use of shared UMEM if the kernel version >= 5.10 and we detect
- * in the top-level meson.build we have the correct libbpf version >= 0.3.0
+ * in the top-level meson.build we have the correct libbpf version >= 0.3.0 <= 0.6.1
  */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) && HAS_XSK_UMEM_SHARED == 1
 #define CAN_USE_XSK_UMEM_SHARED 1
