@@ -27,9 +27,9 @@
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
 
-#define BURST_COUNT   128
-#define POLL_TIMEOUT  0
-#define MAX_NUM_TRIES 1000
+#define FQ_ADD_BURST_COUNT 64
+#define POLL_TIMEOUT       0
+#define MAX_NUM_TRIES      1000
 
 static bool xskdev_use_tx_lock = true;
 
@@ -232,12 +232,12 @@ fq_add(xskdev_info_t *xi)
 {
     struct xskdev_umem *ux   = xi->rxq.ux;
     struct xsk_ring_prod *fq = &ux->fq;
-    void *bufs[BURST_COUNT];
+    void *bufs[FQ_ADD_BURST_COUNT];
     uint16_t nb_bufs;
     uint32_t pos = 0;
     int nb;
 
-    nb_bufs = BURST_COUNT;
+    nb_bufs = FQ_ADD_BURST_COUNT;
 
     if (xskdev_buf_alloc(xi, (void **)bufs, nb_bufs) <= 0) {
         xi->stats.fq_alloc_failed++;
