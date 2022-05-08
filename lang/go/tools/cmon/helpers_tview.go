@@ -68,7 +68,7 @@ func CreateTextView(flex *tview.Flex, msg string, align, fixedSize, proportion i
 func CreateTableView(flex *tview.Flex, msg string, align, fixedSize, proportion int, focus bool) *tview.Table {
 	table := tview.NewTable().
 		SetFixed(1, 0).
-		SetSelectable(true, false)
+		SetEvaluateAllRows(true)
 
 	table.SetBorder(true).
 		SetTitle(TitleColor(msg)).
