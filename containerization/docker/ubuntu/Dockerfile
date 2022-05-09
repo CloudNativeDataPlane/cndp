@@ -69,5 +69,5 @@ COPY --from=build /usr/lib64/libbpf.so.0 /usr/lib/
 WORKDIR /root
 COPY tools/jsonc_gen.sh .
 RUN chmod +rwx jsonc_gen.sh
-COPY containerization/docker/fwd.jsonc .
+COPY containerization/docker/ubuntu/fwd.jsonc .
 COPY lang/go/stats/prometheus/prom_cfg.json .
