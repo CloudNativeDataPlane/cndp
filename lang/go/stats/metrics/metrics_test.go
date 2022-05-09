@@ -38,7 +38,7 @@ func TestCommands(t *testing.T) {
 	for _, a := range pi.AppsList() {
 		cmds, err := pi.Commands(a)
 		if err != nil {
-			t.Errorf("unable to retrive commands: %v", err)
+			t.Errorf("unable to retrieve commands: %v", err)
 		} else {
 			t.Logf("Commands     : %v\n", cmds)
 		}

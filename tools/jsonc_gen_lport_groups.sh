@@ -10,7 +10,7 @@
 #
 # CNDP_DEVICES is the space-separated list of interfaces that passed to the
 # cndpfwd app. When this script is used as part of a K8s deployment, the
-# K8s device plugin populates the CNDP_DEVICES environment varible.
+# K8s device plugin populates the CNDP_DEVICES environment variable.
 #
 # CNDP_QUEUES is the set of queue IDs used for the logical port group. Any
 # format (i.e. "0-3") supported by the CNDP json string decoder is valid.

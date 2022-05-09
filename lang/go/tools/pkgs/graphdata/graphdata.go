@@ -153,8 +153,8 @@ func NewGraph(numGraphs int) *GraphInfo {
 	return gi
 }
 
-// SetPercision of the graph entries
-func (gi *GraphInfo) SetPercision(p int) *GraphInfo {
+// SetPrecision of the graph entries
+func (gi *GraphInfo) SetPrecision(p int) *GraphInfo {
 	gi.precision = p
 
 	return gi
@@ -188,7 +188,7 @@ func (gi *GraphInfo) MakeChart(view *tview.TextView, w ...interface{}) string {
 
 	chart := asciichart.New()
 
-	// Get the inside rectange sizes
+	// Get the inside rectangle sizes
 	_, _, wOrig, hOrig := view.GetInnerRect()
 
 	// Calculate the height of the chart based on the number of charts and
@@ -216,7 +216,7 @@ func (gi *GraphInfo) MakeChart(view *tview.TextView, w ...interface{}) string {
 			SetLineColor(gi.lineColor).
 			SetCaptionColor(gi.captionColor).
 			SetTickColor(gi.tickColor).
-			SetPercision(gi.precision).
+			SetPrecision(gi.precision).
 			Plot(gd.points)
 
 		// Add a line to the multiple graph string if not the last graph

@@ -12,7 +12,7 @@ in CNDP and has a simpler interface and programming model plus it is dynamic.
 
 The primary goal of CLI is to allow the developer to create commands quickly
 and with very little compile or runtime configuration. Using standard Unix*
-like constructs which are very familar to the developer. Allowing the developer
+like constructs which are very familiar to the developer. Allowing the developer
 to construct a set of commands for development or deployment of the application.
 
 The CLI design uses a directory like design instead of a single level command
@@ -22,8 +22,8 @@ it does have some advantages over a single level command structure.
 
 One advantage allows the directory path for the command to be part of the
 information used in executing the command. The next advantage is creating
-directories to make a hierarchy of commands, plus allowing whole directroy
-trees to dynamicly come and go as required by the developer.
+directories to make a hierarchy of commands, plus allowing whole directory
+trees to dynamically come and go as required by the developer.
 
 Some of the advantages are:
 
@@ -50,7 +50,7 @@ Overview
 --------
 
 The CLI library is a simple set of APIs which allow the developer to quickly
-create a set of commands using a simple programming interface already familar
+create a set of commands using a simple programming interface already familiar
 to the developer.
 
 One of the big advantages of CLI over Cmdline is it is dynamic, which means
@@ -61,7 +61,7 @@ which is a thread based variable. Allowing the developer to have multiple CLI
 instances running at the same time on different threads if needed.
 
 Another big advantage is the calling of the backend function to support a
-command is very familar to developers as it is basically just a argc/argv
+command is very familiar to developers as it is basically just a argc/argv
 style command and the developer gets the complete command line. The function
 as access to the global thread variable called **this_cli** pointing to the
 struct cli variable.
@@ -108,7 +108,7 @@ Constant values are required in the command as in index 30 'stats'. The index
 40 is using a variable fixed set of strings option, which means one of these
 fixed strings must match in that position.
 
-Another advantage of CLI is how simple it is to add new directroies, files and
+Another advantage of CLI is how simple it is to add new directories, files and
 commands for user development. To add a command a developer needs to add an
 entry to the cli_tree structure and create a function using the above
 prototype format.
@@ -155,7 +155,7 @@ line as a function pointer needs to be given. The c_str() macro helps in
 setting up these environment variables via the cli_tree structure.
 
 The special file backed environment variable can be deleted, but can not be
-restored without a reboot or some other command puting that variable back into
+restored without a reboot or some other command putting that variable back into
 the environment.
 
 Environment variables are denoted by a $(foo) like syntax and are expanded at
@@ -388,7 +388,7 @@ The tree init routine is defined like:
 
 The above structure is used to create the tree structure at initialization
 time. The struct cli_tree or cli_tree_t typedef can be used to setup a new
-directory tree or agument the default tree.
+directory tree or augment the default tree.
 
 The elements are using a set of macros c_dir, c_file, c_cmd, c_alias and c_end.
 These macros help fill out the cli_tree_t structure for the given type of item.

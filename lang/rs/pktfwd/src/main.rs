@@ -76,7 +76,7 @@ pub unsafe extern "C" fn r_pkt_fwd_cb(lport: *mut jcfg_lport_t) -> i32 {
             let pkt_data_addr = get_pktmbuf_data(pkt_mbuf).unwrap();
             // Get pktmbut data length.
             let data_len = get_pktmbuf_data_len(pkt_mbuf);
-            // Create CNDP packet structre.
+            // Create CNDP packet structure.
             let mut cndp_ethernet_packet =
                 CndpPacket::new(pkt_data_addr, data_len as usize).unwrap();
             // Swap mac/ip/port address using Rust pnet library or use direct byte swap.
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn r_pkt_fwd_cb(lport: *mut jcfg_lport_t) -> i32 {
             //swap_mac_addresses(pkt_data_addr);
             // Get a single TX buffer
             let tx_buffer = get_item_at_index(dst_lport_index, txbuff_pptr).unwrap();
-            // Buffer TX packet for future trasmission.
+            // Buffer TX packet for future transmission.
             txbuff_add(tx_buffer, pkt_mbuf);
         }
     }
@@ -326,7 +326,7 @@ fn test_pkt_fwd(args: std::env::Args) -> i32 {
         loop {
             sleep(1);
 
-            /* Test for quiting after sleep to avoid calling print_port_stats() */
+            /* Test for quitting after sleep to avoid calling print_port_stats() */
             if FINFO.timer_quit == 1 {
                 break;
             }
@@ -346,7 +346,7 @@ fn main() {
     unsafe {
         let x = cne_init();
         if x < 0 {
-            log::debug!("Unable to initalize cne");
+            log::debug!("Unable to initialize cne");
             return;
         }
         let args = std::env::args();

@@ -83,7 +83,7 @@ struct fwd_info {
     graph_info_t graph_info[16];
 };
 
-extern struct fwd_info *fwd; /**< global application informatio pointer */
+extern struct fwd_info *fwd; /**< global application information pointer */
 
 int parse_args(int argc, char **argv);
 void thread_func(void *arg);

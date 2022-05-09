@@ -20,7 +20,7 @@ option('json_test_dir', type: 'string',
 	description: 'include path to JSON test files')
 
 # Building examples/afxdp_user we need to install linux-source code
-#   sudo -s    # switch to root privilage
+#   sudo -s    # switch to root privilege
 #   apt-get install linux-source
 #   cd /usr/src
 #   tar xjf linux-source-X.Y.Z.tar.bz2
@@ -31,7 +31,7 @@ option('json_test_dir', type: 'string',
 #   cd linux-source-X.Y.Z
 #   make menuconfig       # Save and exit the menuconfig.
 #   make headers_install
-#   exit                  # exit root privilage
+#   exit                  # exit root privilege
 #
 # After the headers_install you can build CNDP to get xdpsock_user application
 # built, which is called afxdp_user.

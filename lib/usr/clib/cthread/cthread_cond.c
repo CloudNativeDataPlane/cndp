@@ -115,7 +115,7 @@ cthread_cond_destroy(struct cthread_cond *c)
 }
 
 /*
- * Reset a condition variable to initilized state.
+ * Reset a condition variable to initialized state.
  */
 int
 cthread_cond_reset(struct cthread_cond *c)

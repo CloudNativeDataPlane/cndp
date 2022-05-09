@@ -54,7 +54,7 @@ struct punt_kernel_node_main {
  *
  * Get the PUNT Kernel node.
  *
- * @retrun
+ * @return
  *   Pointer to the PUNT Kernel node.
  */
 CNDP_API struct cne_node_register *punt_kernel_node_get(void);

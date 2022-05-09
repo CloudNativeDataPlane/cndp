@@ -104,7 +104,7 @@ int jcfg_decode_lport_groups_end(jcfg_info_t *jinfo, void *arg);
  * @param v
  *   The location to put the returned object value.
  * @return
- *   0 on sucess or -1 on error
+ *   0 on success or -1 on error
  */
 int __decoder_val_get(obj_value_t *val, uint64_t *v);
 
@@ -116,7 +116,7 @@ int __decoder_val_get(obj_value_t *val, uint64_t *v);
  * @param arr
  *   The location to put the array of returned object values.
  * @return
- *   0 on sucess or -1 on error
+ *   0 on success or -1 on error
  */
 int __decoder_array_val_get(obj_value_t *val, obj_value_t **arr);
 

@@ -249,7 +249,7 @@ tcp_chnl_accept(struct chnl *ch, struct in_caddr *addr, int *addrlen)
         return __errno_set_null(EFAULT);
 
     if (*addrlen > (int)sizeof(struct in_caddr)) {
-        CNE_DEBUG("Address length is incorrect %d shoud be %lu\n", *addrlen,
+        CNE_DEBUG("Address length is incorrect %d should be %lu\n", *addrlen,
                   sizeof(struct in_caddr));
     }
 

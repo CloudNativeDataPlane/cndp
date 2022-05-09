@@ -503,7 +503,7 @@ main(int argc, char **argv)
     for (;;) {
         sleep(1);
 
-        if (fwd->timer_quit) /* Test for quiting after sleep to avoid calling print_port_stats() */
+        if (fwd->timer_quit) /* Test for quitting after sleep to avoid calling print_port_stats() */
             break;
 
         if (fwd->opts.cli)

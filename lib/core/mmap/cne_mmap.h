@@ -39,7 +39,7 @@ typedef struct {
     uint64_t page_sz;       /**< Page size to allocate in bytes */
     uint64_t num_allocated; /**< Number of allocated memory */
     uint64_t num_freed;     /**< Number of freed memory */
-    uint64_t allocated;     /**< Number of times memory has been allocted */
+    uint64_t allocated;     /**< Number of times memory has been allocated */
     uint64_t freed;         /**< Number of times memory has been freed */
 } mmap_sizes_t;
 

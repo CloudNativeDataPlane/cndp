@@ -221,9 +221,9 @@ def generate_overview_table(output_filename, table_id, section, table_name, titl
 
         # Check for a valid ini section.
         if not config.has_section(section):
-            print("{}: File '{}' has no [{}] secton".format(warning,
-                                                            ini_filename,
-                                                            section))
+            print("{}: File '{}' has no [{}] section".format(warning,
+                                                             ini_filename,
+                                                             section))
             continue
 
         # Check for valid features names.
