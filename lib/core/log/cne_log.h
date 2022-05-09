@@ -26,17 +26,34 @@ extern "C" {
 
 #include "cne_build_config.h"        // for CNE_ENABLE_ASSERT
 
+#define foreach_cndp_log_level \
+    _(1, EMERG, emerg)         \
+    _(2, ALERT, alert)         \
+    _(3, CRIT, crit)           \
+    _(4, ERR, err)             \
+    _(5, WARNING, warn)        \
+    _(6, NOTICE, notice)       \
+    _(7, INFO, info)           \
+    _(8, DEBUG, debug)         \
+    _(9, LAST, last)
+
 /* Can't use 0, as it gives compiler warnings */
+/*
+ * The log levels are defined as follows
+ *  CNE_LOG_EMERG   System is unusable.
+ *  CNE_LOG_ALERT   Action must be taken immediately.
+ *  CNE_LOG_CRIT    Critical conditions.
+ *  CNE_LOG_ERR     Error conditions.
+ *  CNE_LOG_WARNING Warning conditions.
+ *  CNE_LOG_NOTICE  Normal but significant condition.
+ *  CNE_LOG_INFO    Informational.
+ *  CNE_LOG_DEBUG   Debug-level messages.
+ *  CNE_LOG_LAST
+ */
 enum {
-    CNE_LOG_EMERG = 1, /**< System is unusable.               */
-    CNE_LOG_ALERT,     /**< Action must be taken immediately. */
-    CNE_LOG_CRIT,      /**< Critical conditions.              */
-    CNE_LOG_ERR,       /**< Error conditions.                 */
-    CNE_LOG_WARNING,   /**< Warning conditions.               */
-    CNE_LOG_NOTICE,    /**< Normal but significant condition. */
-    CNE_LOG_INFO,      /**< Informational.                    */
-    CNE_LOG_DEBUG,     /**< Debug-level messages.             */
-    CNE_LAST_LOG
+#define _(n, uc, lc) CNE_LOG_##uc = n,
+    foreach_cndp_log_level
+#undef _
 };
 
 /**
@@ -46,6 +63,17 @@ enum {
  *   The level to be set.
  */
 CNDP_API void cne_log_set_level(uint32_t level);
+
+/**
+ * Set the log level by string.
+ *
+ * @param log_level
+ *   The level to be set.
+ *
+ * @return
+ *  0 for success, 1 on error.
+ */
+CNDP_API int cne_log_set_level_str(char *log_level);
 
 /**
  * Get the log level.
