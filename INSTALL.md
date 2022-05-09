@@ -1,17 +1,17 @@
 # CNDP - Cloud Native Data Plane
 
-## Installation Guide
+## Ubuntu Installation Instructions
 
-This document assumes you are building on an Ubuntu 21.04 host. It provides minimal
+This section assumes you are building on an Ubuntu 21.04 host. It provides minimal
 instructions to run CNDP applications. For more information, refer to the CNDP documentation.
 
-## Prerequisites
+### Ubuntu Prerequisites
 
 If behind a proxy server you may need to setup a number of configurations to allow access via the server.
 Some commands i.e. apt-get, git, ssh, curl, wget and others will need configuration to work correctly.
 Please refer to apt-get, git and other documentations to enable access through a proxy server.
 
-### dependencies
+### Ubuntu Dependencies
 
 The following package are required to build CNDP libraries and examples.
 
@@ -70,6 +70,24 @@ The following statement may be necessary if libbpf is installed from source inst
 ```bash
 export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
 ```
+
+## Fedora Installation Instructions
+
+This section assumes you are building on a Fedora 35 host with a 5.17.5 Kernel version. It provides
+minimal instructions to run CNDP applications. For more information, refer to the CNDP documentation.
+
+### Fedora dependencies
+
+The following package are required to build CNDP libraries and examples.
+
+```bash
+sudo dnf update && sudo dnf -y install @development-tools git libbsd-devel json-c-devel libnl3-devel libnl3-cli numactl-libs libbpf-devel libbpf meson ninja-build
+gcc-c++ libpcap libpcap-devel
+```
+
+## Hugepage Configuration
+
+Hugepage support is optional, but preferred as it provides a performance boost. Details of Hugepage Configuration can be found [here](https://github.com/CloudNativeDataPlane/cndp/blob/9fa83c17c75930eee2355476e23cf786a533756c/doc/guides/linux_gsg/linux_gsg.rst)
 
 ## Build CNDP
 
