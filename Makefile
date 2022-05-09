@@ -70,7 +70,11 @@ snyk: FORCE
 
 docker-image: FORCE
 	docker build -t cndp --build-arg http_proxy=${http_proxy} \
-  --build-arg https_proxy=${http_proxy} -f containerization/docker/Dockerfile .
+  --build-arg https_proxy=${http_proxy} -f containerization/docker/ubuntu/Dockerfile .
+
+docker-fed-image: FORCE
+	docker build -t cndp-fedora --build-arg http_proxy=${http_proxy} \
+  --build-arg https_proxy=${http_proxy} -f containerization/docker/fedora/Dockerfile .
 
 rust-app: FORCE
 	${Build} rust-app
@@ -80,5 +84,8 @@ rust-app-clean: FORCE
 
 docker-run: FORCE
 	docker run --privileged --network=host -it cndp bash
+
+docker-fed-run: FORCE
+	docker run --privileged --network=host -it cndp-fedora bash
 
 FORCE:
