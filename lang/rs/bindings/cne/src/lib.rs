@@ -242,7 +242,7 @@ mod tests {
         // Try reading some packets.
         let num_tries = 10;
         for _i in 0..num_tries {
-            pkts_read = port.rx_burst(&mut rx_pkts[..]).unwrap();
+            pkts_read = port.rx_burst(&mut rx_pkts[..]).unwrap() as usize;
             if pkts_read == 0 {
                 // If there are no packets read then thread can (optionally) sleep for sometime.
                 // This will reduce CPU utilization instead of reading in tight loop
@@ -257,7 +257,7 @@ mod tests {
 
         if pkts_read > 0 {
             for i in 0..pkts_read {
-                let pkt = &rx_pkts[i as usize];
+                let pkt = &rx_pkts[i];
 
                 let p = pkt.get_data_mut();
                 assert!(p.is_some());
@@ -269,9 +269,17 @@ mod tests {
             }
 
             let mut pkts_sent = 0;
-            while pkts_sent < pkts_read {
-                pkts_sent += port.tx_burst(&mut rx_pkts[..pkts_read as usize]).unwrap();
-                log::debug!("Number of packets sent = {}", pkts_sent);
+            let mut max_tries = 10;
+            // Try sending back all the packets in a loop with threshold on number of tries.
+            while pkts_sent < pkts_read && max_tries > 0 {
+                let n_pkts = port.tx_burst(&mut rx_pkts[pkts_sent..pkts_read]).unwrap() as usize;
+                pkts_sent += n_pkts;
+                max_tries -= 1;
+            }
+            log::debug!("Number of packets sent = {}", pkts_sent);
+            // Free packets which are not sent.
+            if pkts_sent < pkts_read {
+                Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read]);
             }
         }
 
