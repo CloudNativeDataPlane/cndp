@@ -434,7 +434,7 @@ tm_test_srtcm_color_aware_check(void)
      * if using blind check
      */
 
-    /* previouly have a green, test points should keep unchanged */
+    /* previously have a green, test points should keep unchanged */
     in[0] = in[1] = in[2] = in[3] = CNE_COLOR_GREEN;
     out[0]                        = CNE_COLOR_GREEN;
     out[1]                        = CNE_COLOR_YELLOW;
@@ -539,7 +539,7 @@ tm_test_trtcm_color_aware_check(void)
      * if using blind check
      */
 
-    /* previouly have a green, test points should keep unchanged */
+    /* previously have a green, test points should keep unchanged */
     in[0] = in[1] = in[2] = in[3] = CNE_COLOR_GREEN;
     out[0]                        = CNE_COLOR_GREEN;
     out[1]                        = CNE_COLOR_YELLOW;
@@ -635,7 +635,7 @@ tm_test_trtcm_rfc4115_color_aware_check(void)
      * if using blind check
      */
 
-    /* previouly have a green, test points should keep unchanged */
+    /* previously have a green, test points should keep unchanged */
     in[0] = in[1] = in[2] = in[3] = CNE_COLOR_GREEN;
     out[0]                        = CNE_COLOR_GREEN;
     out[1]                        = CNE_COLOR_YELLOW;

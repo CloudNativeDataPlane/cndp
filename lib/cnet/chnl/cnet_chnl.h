@@ -72,7 +72,7 @@ struct chnl_buf {
 #define CB_SEL    0x0008 /* someone is selecting */
 #define CB_ASYNC  0x0010 /* ASYNC I/O, need signals */
 #define CB_UPCALL 0x0020 /* someone wants an upcall */
-#define CB_NOINTR 0x0040 /* operations not interruptable */
+#define CB_NOINTR 0x0040 /* operations not interruptible */
 #define CB_AIO    0x0080 /* AIO operations queued */
 #define CB_KNOTE  0x0100 /* kernel note attached */
 
@@ -275,7 +275,7 @@ CNDP_API int chnl_cb_wait(struct chnl *ch, struct chnl_buf *cb);
  * @param cb
  *   The channel buffer structure pointer.
  * @param wakeup_type
- *   Wakeup for reading or writting.
+ *   Wakeup for reading or writing.
  */
 CNDP_API void chnl_cb_wakeup(struct chnl *ch, struct chnl_buf *cb, int wakeup_type);
 
@@ -565,7 +565,7 @@ CNDP_API int chnl_bind_common(struct chnl *ch, struct in_caddr *pAddr, int32_t l
  * @param proto
  *   The proto value
  * @param cb
- *   The callback routine to call when data is recevied.
+ *   The callback routine to call when data is received.
  * @return
  *   NULL on error or a chnl structure pointer.
  */

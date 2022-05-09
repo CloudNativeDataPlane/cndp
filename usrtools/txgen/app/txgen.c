@@ -334,7 +334,7 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
 
 /**
  *
- * txgen_packet_classify_buld - Classify a set of packets in one call.
+ * txgen_packet_classify_bulk - Classify a set of packets in one call.
  *
  * DESCRIPTION
  * Classify a list of packets and to improve classify performance.

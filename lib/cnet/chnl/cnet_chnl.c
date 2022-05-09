@@ -171,8 +171,8 @@ chnl_cbflush(struct chnl_buf *cb)
 
     if (vec_len(cb->cb_vec)) {
         pktmbuf_free_bulk(cb->cb_vec, vec_len(cb->cb_vec));
-        vec_len(cb->cb_vec) = 0;
-        cb->cb_cc           = 0;
+        vec_set_len(cb->cb_vec, 0);
+        cb->cb_cc = 0;
     }
 
     if (pthread_mutex_unlock(&cb->mutex))
@@ -311,7 +311,7 @@ chnl_copy_data(pktmbuf_t **to, pktmbuf_t **from, int len)
 
     len = vec_len(from) - vec_len(to);
     memmove(from, &from[vec_len(to)], len * sizeof(char *));
-    vec_len(from) = len;
+    vec_set_len(from, len);
 
     return bytes;
 }

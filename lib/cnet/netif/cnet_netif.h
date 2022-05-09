@@ -79,7 +79,7 @@ struct netif {
     int ifindex;                               /**< Ifindex value of network interfaces */
     uint16_t ip_ident;                         /**< IP identification value */
     uint16_t family;                           /**< Interface family */
-    uint16_t mtu;                              /**< Max Transmition Unit */
+    uint16_t mtu;                              /**< Max Transmission Unit */
     char ifname[IF_NAMESIZE + 1];              /**< ifname of interface */
     char netdev_name[IF_NAMESIZE + 1];         /**< netdev name of interface */
     struct drv_entry *drv;                     /**< Device interface structure */

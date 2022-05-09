@@ -422,7 +422,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
 }
 
 /**
- * Set up the persistance timer and maintain the shift value.
+ * Set up the persistence timer and maintain the shift value.
  */
 static inline void
 tcp_set_persist(struct tcb_entry *tcb)
@@ -567,7 +567,7 @@ tcp_output(struct tcb_entry *tcb)
 
                     win = 1; /* Send at least one byte */
                 } else {
-                    /* Turn off the persistant timer */
+                    /* Turn off the persistent timer */
                     tcb->timers[TCPT_PERSIST] = 0;
                     tcb->rxtshift             = 0;
                 }
@@ -859,7 +859,7 @@ tcp_do_output(struct tcb_entry *tcb)
 {
     /*
      * When an error is detected try and set the ch_error value to be
-     * retrived by the SO_ERROR socket option later.
+     * retrieved by the SO_ERROR socket option later.
      */
     if (tcp_output(tcb) == -1) {
         struct pcb_entry *pcb = tcb->pcb;
@@ -886,7 +886,7 @@ tcp_do_output(struct tcb_entry *tcb)
  * @param pcb
  *   Current pointer to the struct pcb_entry structure.
  * @param mbuf
- *   Pointer to the packet stucture to build the reponse segment.
+ *   Pointer to the packet structure to build the response segment.
  * @param seq
  *   The sequence number to place in the TCP header.
  * @param ack
@@ -1571,14 +1571,14 @@ tcb_cleanup(struct tcb_entry *tcb)
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_len(tcb->backlog_q.vec) = 0;
+    vec_set_len(tcb->backlog_q.vec, 0);
 
     /* Drop any half open connections */
     vec_foreach_ptr (p, tcb->half_open_q) {
         tcp_do_state_change(p, TCPS_CLOSED);
         cnet_pcb_free(p);
     }
-    vec_len(tcb->half_open_q) = 0;
+    vec_set_len(tcb->half_open_q, 0);
 
     CNE_DEBUG("Half Open queue is clean\n");
 
@@ -2207,7 +2207,7 @@ do_segment_others(struct seg_entry *seg)
      * One could tailor actual segments to fit this assumption by
      * trimming off any portions that lie outside the window (including
      * SYN and FIN), and only processing further if the segment then
-     * begins at RCV.NXT. Segments with higher begining sequence
+     * begins at RCV.NXT. Segments with higher beginning sequence
      * numbers should be held for later processing.
      */
     trim = seg->seq - (tcb->rcv_nxt + tcb->rcv_wnd);
@@ -3178,7 +3178,7 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     if (!seg->pcb->ch->ch_ch && (tcb->state == TCPS_ESTABLISHED)) {
         struct pcb_entry *p;
 
-        /* find a local sister channel if avaliable */
+        /* find a local sister channel if available */
         p = cnet_pcb_locate(&this_stk->tcp->tcp_hd, &md->laddr, &md->faddr);
         /* Cross link the channels */
         if (p)

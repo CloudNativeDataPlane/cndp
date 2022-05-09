@@ -453,7 +453,7 @@ jcfg_decode_one_lport_group_end(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lpor
     if (setup_umem(jinfo, data, lpg))
         return -1;
 
-    /* realloc() thd->lport_names and thd->lports arrays to accomodate new lports */
+    /* realloc() thd->lport_names and thd->lports arrays to accommodate new lports */
     qs_to_add = (lpg->total_q / lpg->num_thread_names) + (lpg->total_q % lpg->num_thread_names);
     for (i = 0; i < lpg->num_thread_names; i++) {
         jcfg_thd_t *thd = jcfg_lookup_thread(jinfo, lpg->thread_names[i]);

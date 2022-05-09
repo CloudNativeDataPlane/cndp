@@ -36,9 +36,9 @@ struct cne_gtp_hdr {
 
 /** GTP header length */
 #define CNE_ETHER_GTP_HLEN (sizeof(struct cne_udp_hdr) + sizeof(struct cne_gtp_hdr))
-/* GTP next protocal type */
-#define CNE_GTP_TYPE_IPV4 0x40 /**< GTP next protocal type IPv4 */
-#define CNE_GTP_TYPE_IPV6 0x60 /**< GTP next protocal type IPv6 */
+/* GTP next protocol type */
+#define CNE_GTP_TYPE_IPV4 0x40 /**< GTP next protocol type IPv4 */
+#define CNE_GTP_TYPE_IPV6 0x60 /**< GTP next protocol type IPv6 */
 /* GTP destination lport number */
 #define CNE_GTPC_UDP_PORT 2123 /**< GTP-C UDP destination port */
 #define CNE_GTPU_UDP_PORT 2152 /**< GTP-U UDP destination port */

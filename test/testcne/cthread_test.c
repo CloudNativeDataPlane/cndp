@@ -74,7 +74,7 @@ print_data(int type)
 {
     for (int i = 0; i < thread_cnt; i++) {
         thread_data_t *d = &data[i];
-        cne_printf("  [green]Finshed [yellow]%s [magenta]%d [green]count [red]%10ld[], "
+        cne_printf("  [green]Finished [yellow]%s [magenta]%d [green]count [red]%10ld[], "
                    "[green]cycles per loop [red]%6ld[]\n",
                    (type == CTHREAD_TYPE) ? "cthread" : "pthread", i, d->cnt,
                    (d->end - d->begin) / d->cnt);

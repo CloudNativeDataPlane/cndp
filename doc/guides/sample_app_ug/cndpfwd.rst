@@ -263,7 +263,7 @@ Available UDS endpoints:
   or stop all forwarding threads)
 - `/metrics/port_stats` - lists metrics for `cndpfwd` app
 
-The following UDS endpoints will only be avialable if ACL is enabled:
+The following UDS endpoints will only be available if ACL is enabled:
 
 - `/acl/rules` - lists general information about the rule table
 - `/acl/rules,r:<rule>` - show a specific ACL rule (indicated by its number) in

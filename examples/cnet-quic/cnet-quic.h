@@ -98,7 +98,7 @@ struct cnet_info {
 
 #define is_server() (cinfo->flags & QUIC_IS_SERVER)
 
-extern struct cnet_info *cinfo; /**< global application informatio pointer */
+extern struct cnet_info *cinfo; /**< global application information pointer */
 
 int parse_args(int argc, char **argv);
 void thread_func(void *arg);

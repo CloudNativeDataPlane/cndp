@@ -144,7 +144,7 @@ test_hmap(int flags)
     hmap_list_dump(NULL, 1);
 
     ret = 0;
-    cne_printf("[yellow]****[] [magenta]Retrive[] [green]all of the values of the hashmap[]\n");
+    cne_printf("[yellow]****[] [magenta]Retrieve[] [green]all of the values of the hashmap[]\n");
     for (int i = 0; vals[i].key; i++) {
         struct val_data *v = &vals[i];
 

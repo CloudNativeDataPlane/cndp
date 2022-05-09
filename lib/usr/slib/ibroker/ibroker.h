@@ -50,7 +50,7 @@ struct service_info {
     int16_t index;                /**< Index of the service */
     int16_t sid;                  /**< Server ID value */
     uint64_t call_cnt;            /**< Number of times the service was called */
-    uint64_t err_cnt;             /**< Number of time an service error occured */
+    uint64_t err_cnt;             /**< Number of time an service error occurred */
 };
 
 typedef struct ibroker_info {
@@ -189,7 +189,7 @@ IBROKER_API int ibroker_service_fd(broker_id_t bid, service_id_t sid);
  * @param sid
  *   The service_id_t value
  * @return
- *   NULL on error or not found or it returns a pointer the sevice name
+ *   NULL on error or not found or it returns a pointer the service name
  */
 IBROKER_API const char *ibroker_service_name(broker_id_t bid, service_id_t sid);
 

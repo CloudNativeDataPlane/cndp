@@ -171,7 +171,7 @@ cne_rib6_lookup_exact(struct cne_rib6 *rib, const uint8_t ip[CNE_RIB6_IPV6_ADDR_
 }
 
 /*
- *  Traverses on subtree and retreeves more specific routes
+ *  Traverses on subtree and retrieves more specific routes
  *  for a given in args ip/depth prefix
  *  last = NULL means the first invocation
  */
