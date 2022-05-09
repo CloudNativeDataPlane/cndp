@@ -171,7 +171,7 @@ CNDP_API int uds_destroy_group(const uds_group_t *group);
 CNDP_API const uds_group_t *uds_get_group_by_name(const uds_info_t *info, const char *name);
 
 /**
- * Connect to a an exising UDS without creating it. Creates a uds_info_t instance.
+ * Connect to a an existing UDS without creating it. Creates a uds_info_t instance.
  *
  * @param uds_name
  *   The name of the local domain socket to connect to.

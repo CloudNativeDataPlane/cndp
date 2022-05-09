@@ -19,6 +19,7 @@
 #include <stdint.h>              // for uint64_t, uint32_t
 #include <strings.h>             // for strcasecmp
 #include <string.h>              // for strcmp
+#include <cne_strings.h>
 
 #include "fwd.h"               // for fwd_info, fwd, app_options, enable_met...
 #include "cne_thread.h"        // for thread_create
@@ -181,6 +182,7 @@ print_usage(char *prog_name)
                "  -D             JCFG debug decoding\n"
                "  -V             JCFG information verbose\n"
                "  -P             JCFG debug parsing\n"
+               "  -L [level]     Enable a logging level\n"
                "  -h             Display the help information\n",
                prog_name);
 }
@@ -191,10 +193,11 @@ parse_args(int argc, char **argv)
     struct option lgopts[] = {{NULL, 0, 0, 0}};
     int opt, option_index, flags = 0;
     char json_file[1024] = {0};
+    char log_level[16]   = {0};
 
     /* Parse the input arguments. */
     for (;;) {
-        opt = getopt_long(argc, argv, "hc:dCDPV", lgopts, &option_index);
+        opt = getopt_long(argc, argv, "hc:dCDPVL:", lgopts, &option_index);
         if (opt == EOF)
             break;
 
@@ -226,6 +229,15 @@ parse_args(int argc, char **argv)
 
         case 'V':
             flags |= JCFG_INFO_VERBOSE;
+            break;
+
+        case 'L':
+            strlcpy(log_level, optarg, sizeof(log_level));
+            if (cne_log_set_level_str(log_level)) {
+                CNE_ERR("Invalid command option\n");
+                print_usage(argv[0]);
+                return -1;
+            }
             break;
 
         default:

@@ -1145,7 +1145,7 @@ _s(vt_restore(void), tty_printf(vt100_restore_cursor))
 /** Clear from cursor to end of line */
 _s(vt_eol(void), tty_printf(vt100_clr_eol))
 
-/** Clear from cursor to begining of line */
+/** Clear from cursor to beginning of line */
 _s(vt_cbl(void), tty_printf(vt100_clear_left))
 
 /** Clear entire line */
@@ -1154,7 +1154,7 @@ _s(vt_cel(void), tty_printf(vt100_clear_line))
 /** Clear from cursor to end of screen */
 _s(vt_clw(void), tty_printf(vt100_clr_eos))
 
-/** Clear from cursor to begining of screen */
+/** Clear from cursor to beginning of screen */
 _s(vt_clb(void), tty_printf(vt100_clear_up))
 
 /** Clear the screen, more cursor to home */
@@ -1181,7 +1181,7 @@ _s(vt_nlines(int r), tty_printf(vt100_move_down_nlines, r))
 /** Set window size, from to end of screen */
 _s(vt_setw(int t), tty_printf(vt100_setw, t))
 
-/** Cursor postion report */
+/** Cursor position report */
 _s(vt_cpos(void), tty_printf(vt100_cursor_pos))
 
 /** Cursor up N lines */
@@ -1202,7 +1202,7 @@ _s(vt_cright(void), tty_printf(vt100_right_arr))
 /** Move one character left */
 _s(vt_cleft(void), tty_printf(vt100_left_arr))
 
-/** Move cursor to begining of line */
+/** Move cursor to beginning of line */
 _s(vt_bol(void), tty_printf("\r"))
 
 /**
@@ -1397,7 +1397,7 @@ vt_color(vt_color_e fg, vt_color_e bg, vt_attr_e attr)
  * Setup for 256 RGB color methods. A routine to output RGB color codes if supported
  *
  * @param fg_bg
- *   The combinded fore/back ground color value
+ *   The combined fore/back ground color value
  * @param r
  *   The red color for RGB
  * @param g

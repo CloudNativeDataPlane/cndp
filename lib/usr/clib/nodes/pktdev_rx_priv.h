@@ -70,7 +70,7 @@ struct pktdev_rx_node_main *pktdev_rx_get_node_data_get(void);
  *
  * Get the Ethernet Rx node.
  *
- * @retrun
+ * @return
  *   Pointer to the Ethernet Rx node.
  */
 struct cne_node_register *pktdev_rx_node_get(void);

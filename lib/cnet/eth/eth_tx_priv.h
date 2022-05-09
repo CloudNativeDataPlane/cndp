@@ -49,7 +49,7 @@ struct eth_tx_node_main *eth_tx_node_data_get(void);
  *
  * Get the Ethernet Tx node.
  *
- * @retrun
+ * @return
  *   Pointer to the Ethernet Tx node.
  */
 struct cne_node_register *eth_tx_node_get(void);

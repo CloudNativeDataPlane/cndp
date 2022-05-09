@@ -7,6 +7,7 @@
 #include <stdarg.h>          // for va_list, va_end, va_start
 #include <stdlib.h>          // for abort, exit, free
 #include <cne_log.h>
+#include <cne_strings.h>
 
 #include "cne_stdio.h"        // for cne_printf, cne_snprintf
 #include "cne_tty.h"          // for tty_vprintf
@@ -25,6 +26,25 @@ cne_log_set_level(uint32_t level)
         cne_loglevel = CNE_LOG_DEBUG;
     else
         cne_loglevel = level;
+}
+
+int
+cne_log_set_level_str(char *log_level)
+{
+    if (!log_level)
+        goto out;
+
+#define _(n, uc, lc)                                             \
+    if (!strcmp((const char *)cne_strtoupper(log_level), #uc)) { \
+        int _lvl = CNE_LOG_##uc;                                 \
+        cne_log_set_level(_lvl);                                 \
+        return 0;                                                \
+    }
+    foreach_cndp_log_level;
+#undef _
+
+out:
+    return 1;
 }
 
 /* Get global log level */

@@ -72,7 +72,7 @@ func setupIRQ() *PageIRQ {
 	pg.irqNumList = nil
 	pg.redraw = true
 
-	pg.charts = gd.NewGraph(1).SetPercision(0).SetFieldWidth(9)
+	pg.charts = gd.NewGraph(1).SetPrecision(0).SetFieldWidth(9)
 	pg.charts.WithIndex(0).SetMaxPoints(128).SetName("CPU Interrupts").AddPoint(0.0)
 
 	return pg

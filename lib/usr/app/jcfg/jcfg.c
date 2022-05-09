@@ -540,7 +540,7 @@ socket_listener(void *_c)
 
         s = accept(jinfo->listen_sock, NULL, NULL);
         if (s < 0) {
-            CNE_ERR("Error with accept, jcfg_client thread quiting\n");
+            CNE_ERR("Error with accept, jcfg_client thread quitting\n");
             continue;
         }
         cne_printf("Found a connection on %d\n", s);

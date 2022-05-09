@@ -42,7 +42,7 @@ HIDE_API void uintr_handler(struct __uintr_frame *ui_frame, unsigned long vector
  * @param flags
  *   The flags to use, which is not used at this time.
  * @return
- *   0 on succes or -1 on error.
+ *   0 on success or -1 on error.
  */
 static inline int
 uintr_register_handler(void *ui_handler, unsigned int flags)
@@ -56,7 +56,7 @@ uintr_register_handler(void *ui_handler, unsigned int flags)
  * @param flags
  *   The flags to use, which is not used at this time.
  * @return
- *   0 on succes or -1 on error.
+ *   0 on success or -1 on error.
  */
 static inline int
 uintr_unregister_handler(unsigned int flags)
@@ -72,7 +72,7 @@ uintr_unregister_handler(unsigned int flags)
  * @param flags
  *   The flags to use, which is not used at this time.
  * @return
- *   0 on succes or -1 on error.
+ *   0 on success or -1 on error.
  */
 static inline int
 uintr_create_fd(service_id_t sid, unsigned int flags)
@@ -88,7 +88,7 @@ uintr_create_fd(service_id_t sid, unsigned int flags)
  * @param flags
  *   The flags to use, which is not used at this time.
  * @return
- *   0 on succes or -1 on error.
+ *   0 on success or -1 on error.
  */
 static inline int
 uintr_register_sender(int uintr_fd, unsigned int flags)
@@ -104,7 +104,7 @@ uintr_register_sender(int uintr_fd, unsigned int flags)
  * @param flags
  *   The flags to use, which is not used at this time.
  * @return
- *   0 on succes or -1 on error.
+ *   0 on success or -1 on error.
  */
 static inline int
 uintr_unregister_sender(int uintr_fd, unsigned int flags)

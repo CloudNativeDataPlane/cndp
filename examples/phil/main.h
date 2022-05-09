@@ -33,7 +33,7 @@ struct app_info {
     volatile int quit;  /**< flags to start and stop the application */
 };
 
-extern struct app_info *app; /**< global application informatio pointer */
+extern struct app_info *app; /**< global application information pointer */
 
 #define APP_VERBOSE_FLAG (1 << 0) /**< Output more information about setup and config */
 #define APP_DEBUG_STATS  (1 << 1) /**< Output more debug stats on screen */

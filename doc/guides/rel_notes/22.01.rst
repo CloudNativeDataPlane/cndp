@@ -35,7 +35,7 @@ Limitations
 ------------
 * Still need to use a full netdev (Physical Function) with CNDP at this time. Support for
   Virtual Functions and Sub-devices will follow in later releases.
-* Ethtool support is not yet enabled in the CNI and device plugin. As such, it's recomended
+* Ethtool support is not yet enabled in the CNI and device plugin. As such, it's recommended
   to use a small pool of devices for the CNDP netdev pool and pre-configure the ethtool rules
   on the netdev.
 * Logical port groups support is under active development. Logical port groups can be used with

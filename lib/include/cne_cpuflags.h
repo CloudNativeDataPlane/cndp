@@ -206,7 +206,7 @@ CNDP_API unsigned long cne_cpu_getauxval(unsigned long type);
  * as a string against the value retrieved.
  *
  * @param type
- *   Type of aux value to retrive
+ *   Type of aux value to retrieve
  *
  * @param str
  *   The string pointer to compare

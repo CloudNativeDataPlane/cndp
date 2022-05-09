@@ -95,7 +95,7 @@ txgen_set_capture(port_info_t *info, uint32_t onOff)
     capture_t *cap = {0};
 
     if (onOff == ENABLE_STATE) {
-        /* Enabling an aleady enabled port is a no-op */
+        /* Enabling an already enabled port is a no-op */
         if (txgen_tst_port_flags(info, CAPTURE_PKTS))
             return;
 

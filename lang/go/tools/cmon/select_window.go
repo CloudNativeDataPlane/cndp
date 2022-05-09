@@ -90,7 +90,7 @@ func (w *SelectWindow) AddColumn(col int, values []interface{}, color ...string)
 		w.table.Select(w.sRow, w.sCol)
 	}
 
-	// Scroll the window to the begining of the list
+	// Scroll the window to the beginning of the list
 	w.table.ScrollToBeginning()
 
 	return w
