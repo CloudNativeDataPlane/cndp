@@ -51,9 +51,11 @@ mc_create_recursive_mutex(pthread_mutex_t *mutex)
 
     if (pthread_mutexattr_init(&attr))
         CNE_ERR_RET("Unable to init mutex attributes\n");
-    else if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE))
+    else if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)) {
+        if (pthread_mutexattr_destroy(&attr))
+            CNE_ERR_RET("Failed to destroy mutex attribute\n");
         CNE_ERR_RET("Unable to set mutex attributes\n");
-    else if (pthread_mutex_init(mutex, &attr)) {
+    } else if (pthread_mutex_init(mutex, &attr)) {
         if (pthread_mutexattr_destroy(&attr))
             CNE_ERR_RET("Failed to destroy mutex attribute\n");
         CNE_ERR_RET("mutex init() failed\n");
@@ -262,7 +264,10 @@ __recv(msg_chan_t *mc, void **objs, int count, uint64_t msec)
 
         while (nb_objs == 0 && begin < stop) {
             nb_objs = cne_ring_dequeue_burst(r, objs, count, NULL);
-            begin   = cne_rdtsc_precise();
+            if (nb_objs == 0) {
+                begin = cne_rdtsc_precise();
+                cne_pause();
+            }
         }
         if (nb_objs == 0)
             mc->recv_timeouts++;
@@ -278,19 +283,15 @@ __send(msgchan_t *_mc, void **objs, int count)
 {
     msg_chan_t *mc = _mc;
     cne_ring_t *r;
-    int nb_objs = 0;
+    int nb_objs;
 
     mc->send_calls++;
 
     r = mc->rings[MC_SEND_RING];
 
-    while (count) {
-        int n = cne_ring_enqueue_burst(r, objs, count, NULL);
-
-        count -= n;
-        objs += n;
-        nb_objs += n;
-    }
+    nb_objs = cne_ring_enqueue_burst(r, objs, count, NULL);
+    if (nb_objs < 0)
+        CNE_ERR_RET("[orange]Sending to msgchan failed[]\n");
 
     mc->send_cnt += nb_objs;
     return nb_objs;
@@ -300,26 +301,31 @@ int
 mc_send(msgchan_t *_mc, void **objs, int count)
 {
     msg_chan_t *mc = _mc;
-    int nb_objs    = -1;
 
-    if (mc && objs && mc->cookie == MC_COOKIE)
-        nb_objs = __send(mc, objs, count);
+    if (!mc || !objs || mc->cookie != MC_COOKIE)
+        CNE_ERR_RET("Invalid parameters\n");
 
-    return nb_objs;
+    if (count < 0)
+        CNE_ERR_RET("Count of objects is negative\n");
+
+    return __send(mc, objs, count);
 }
 
 int
 mc_recv(msgchan_t *_mc, void **objs, int count, uint64_t msec)
 {
     msg_chan_t *mc = _mc;
-    int n          = -1;
+    int n;
 
-    if (mc && objs && mc->cookie == MC_COOKIE) {
+    if (!mc || !objs || mc->cookie != MC_COOKIE)
+        CNE_ERR_RET("Invalid parameters\n");
 
-        n = __recv(mc, objs, count, msec);
-        if (msec && n == 0)
-            mc->recv_timeouts++;
-    }
+    if (count < 0)
+        CNE_ERR_RET("Count of objects is %d\n", count);
+
+    n = __recv(mc, objs, count, msec);
+    if (msec && n == 0)
+        mc->recv_timeouts++;
 
     return n;
 }
@@ -334,8 +340,10 @@ mc_lookup(const char *name)
         int n;
 
         MC_LIST_LOCK();
+
         n = strlcpy(pname, "P:", sizeof(pname));
         strlcpy(pname + n, name, sizeof(pname) - n);
+
         TAILQ_FOREACH (mc, &mc_list_head, next) {
             if (!strncmp(pname, mc->name, strlen(pname))) {
                 MC_LIST_UNLOCK();

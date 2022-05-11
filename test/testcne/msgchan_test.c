@@ -15,6 +15,9 @@
 #define MSG_CHAN_SIZE 2048
 
 static pthread_barrier_t barrier;
+static volatile bool thread_done = false;
+static volatile int serror, cerror;
+static int verbose;
 
 static inline void
 set_object_values(void **objs, int count, int start_val)
@@ -78,13 +81,15 @@ test2(void)
     if (!mc2)
         CNE_ERR_GOTO(err, "2 mc_create() failed\n");
 
-    mc_list();
+    if (verbose)
+        mc_list();
 
     for (int i = 0; i < cne_countof(counts); i++) {
         int count = counts[i];
         int n;
 
-        cne_printf("   [cyan]Test [green]%4d [cyan]object count[]\n", count);
+        if (verbose)
+            cne_printf("   [cyan]Test [green]%4d [cyan]object count[]\n", count);
 
         memset(objs, 0, (sizeof(void *) * count));
 
@@ -107,8 +112,10 @@ test2(void)
             CNE_ERR_GOTO(err, "Value returned is invalid\n");
     }
 
-    mc_dump(mc1);
-    mc_dump(mc2);
+    if (verbose) {
+        mc_dump(mc1);
+        mc_dump(mc2);
+    }
 
     mc_destroy(mc2);
     mc_destroy(mc1);
@@ -125,39 +132,50 @@ server_func(void *arg)
 {
     msgchan_t *mc = arg;
     uint64_t vals[128];
-    bool done = false;
+    int ret;
 
     cne_printf(
         "  [orange]>>> [magenta]Server started, waiting for client thread, msgchan: [cyan]%s[]\n",
         mc_name(mc));
 
-    if (pthread_barrier_wait(&barrier) > 0)
-        return NULL;
+    ret = pthread_barrier_wait(&barrier);
+    if (ret > 0)
+        CNE_ERR_GOTO(err, "barrier wait failed: %s\n", strerror(ret));
 
-    while (!done) {
+    thread_done = false;
+    while (!thread_done) {
         int n;
 
         n = mc_recv(mc, (void **)vals, cne_countof(vals), 1);
-        if (n < 0) {
-            cne_printf(" [orange]Server[] [red]Received error[]\n");
-            break;
-        }
+        if (n < 0)
+            CNE_ERR_GOTO(err, " [orange]Server[] [red]Received error[]\n");
         if (n) {
-            int cnt = 0;
+            int cnt = 0, nn;
 
             for (int i = 0; i < n; i++) {
                 if (vals[i] == 0xdeadbeef) {
-                    done = true;
-                    break;
+                    thread_done = true;
+                    goto leave;
                 }
                 cnt++;
             }
-            mc_send(mc, (void **)vals, cnt);
+            nn = mc_send(mc, (void **)vals, cnt);
+            if (nn < 0)
+                CNE_ERR_GOTO(err, "[orange]mc_send()[] returned error\n");
+            if (nn != n)
+                CNE_ERR_GOTO(err,
+                             "[orange]mc_send()[] did not return [cyan]%d[], but got [cyan]%d[]\n",
+                             n, nn);
         }
     }
+leave:
+    if (verbose)
+        cne_printf("  [orange]<<< [magenta]Server exiting[]\n");
 
-    cne_printf("  [orange]<<< [magenta]Server exiting[]\n");
-
+    return NULL;
+err:
+    thread_done = 1;
+    serror      = -1;
     return NULL;
 }
 
@@ -167,44 +185,54 @@ client_func(void *arg)
     msgchan_t *mc = arg;
     int counts[]  = {1, 4, 8, 16, 32, 64, 128, 256};
     void *vals[256], *rvals[256];
-    int n;
+    int n, ret, k;
 
     cne_printf(
         "  [orange]>>> [magenta]Client started, waiting for server thread, msgchan: [cyan]%s[]\n",
         mc_name(mc));
 
-    if (pthread_barrier_wait(&barrier) > 0)
-        return NULL;
+    ret = pthread_barrier_wait(&barrier);
+    if (ret > 0)
+        CNE_ERR_GOTO(err, "barrier wait failed: %s\n", strerror(ret));
 
-    for (int j = 0; j < cne_countof(counts); j++) {
+    for (int j = 0; j < cne_countof(counts) && !thread_done; j++) {
         int nb = 0, cnt = counts[j];
 
-        for (int i = 0; i < 5000; i++) {
+        for (int i = 0; i < 5000 && !thread_done; i++) {
 
             set_object_values(vals, cne_countof(vals), 0xfeedbeef);
 
-            n = mc_send(mc, (void **)&vals, cnt);
-            if (n != cnt) {
-                CNE_ERR("  [magenta]Client Send [green]%3d[] != [green]1[]\n", n);
-                break;
+            k = 0;
+            while (!thread_done && cnt) {
+                n = mc_send(mc, &vals[k], cnt);
+                if (n < 0)
+                    CNE_ERR_GOTO(err, "  [magenta]Client Send [green]%3d[] != [green]%d[]\n", n,
+                                 cnt);
+                cnt -= n;
+                k += n;
             }
 
             memset(rvals, 0x55, sizeof(rvals));
 
             nb = mc_recv(mc, (void **)rvals, cne_countof(rvals), 0);
-            if (tst_object_values(rvals, nb, 0xfeedbeef)) {
-                CNE_ERR("  [magenta]Client failed[]\n");
-                break;
-            }
+            if (nb < 0 || tst_object_values(rvals, nb, 0xfeedbeef))
+                CNE_ERR_GOTO(err, "  [magenta]Client failed[]\n");
         }
     }
 
-    cne_printf("  [orange]<<< [magenta]Client exiting[]\n");
+    if (verbose)
+        cne_printf("  [orange]<<< [magenta]Client exiting[]\n");
 
-    vals[0] = (void *)(uintptr_t)0xdeadbeef;
-    if (mc_send(mc, (void **)vals, 1) != 1)
-        CNE_NULL_RET("Closing send failed\n");
+    if (!thread_done) {
+        vals[0] = (void *)(uintptr_t)0xdeadbeef;
+        if (mc_send(mc, (void **)vals, 1) != 1)
+            CNE_ERR_GOTO(err, "Closing send failed\n");
+    }
 
+    return NULL;
+err:
+    thread_done = 1;
+    cerror      = -1;
     return NULL;
 }
 
@@ -212,61 +240,101 @@ static int
 test3(void)
 {
     pthread_t s, c;
-    msgchan_t *server, *client;
-    int err;
+    msgchan_t *server = NULL, *client = NULL;
+    int err, barrier_inited = 0, sthread_inited = 0, cthread_inited = 0;
+
+    serror = cerror = 0;
 
     server = mc_create("test3", MSG_CHAN_SIZE, 0);
     if (!server)
-        CNE_ERR_RET("Creating Server message channel failed\n");
+        CNE_ERR_GOTO(err_exit, "Creating Server message channel failed\n");
 
     client = mc_create("test3", MSG_CHAN_SIZE, 0);
     if (!client)
-        CNE_ERR_RET("Creating Client message channel failed\n");
+        CNE_ERR_GOTO(err_exit, "Creating Client message channel failed\n");
 
     err = pthread_barrier_init(&barrier, NULL, 3);
-    if (err != 0)
-        CNE_ERR_RET("pthread_barrier_init() failed: %s\n", strerror(err));
+    if (err)
+        CNE_ERR_GOTO(err_exit, "barrier init failed: %s\n", strerror(err));
+    barrier_inited = 1;
 
     err = pthread_create(&s, NULL, server_func, server);
-    if (err != 0)
-        CNE_ERR_RET("Unable to start server thread: %s\n", strerror(err));
+    if (err)
+        CNE_ERR_GOTO(err_exit, "Unable to start server thread: %s\n", strerror(err));
+    sthread_inited = 1;
 
     err = pthread_create(&c, NULL, client_func, client);
-    if (err != 0)
-        CNE_ERR_RET("Unable to start client thread: %s\n", strerror(err));
+    if (err)
+        CNE_ERR_GOTO(err_exit, "Unable to start client thread: %s\n", strerror(err));
+    cthread_inited = 1;
 
-    pthread_barrier_wait(&barrier);
+    err = pthread_barrier_wait(&barrier);
+    if (err > 0)
+        CNE_ERR_GOTO(err_exit, "barrier wait failed: %s\n", strerror(err));
 
-    pthread_barrier_destroy(&barrier);
+    /*
+     * Seems to be a race condition as pthread_join() will hang if test is run
+     * multiple times in a row. We sleep to give the server/client threads a chance to run.
+     */
+    usleep(1000);
 
     err = pthread_join(s, NULL);
-    if (err != 0)
-        CNE_ERR_RET("pthread_join(server) failed: %s\n", strerror(err));
+    if (err)
+        CNE_ERR_GOTO(err_exit, "pthread_join(server) failed: %s\n", strerror(err));
 
     err = pthread_join(c, NULL);
-    if (err != 0)
-        CNE_ERR_RET("pthread_join(client) failed: %s\n", strerror(err));
+    if (err)
+        CNE_ERR_GOTO(err_exit, "pthread_join(client) failed: %s\n", strerror(err));
 
-    mc_dump(server);
-    mc_dump(client);
+    err = pthread_barrier_destroy(&barrier);
+    if (err)
+        CNE_ERR_GOTO(err_exit, "barrier destroy failed: %s\n", strerror(err));
+
+    if (verbose) {
+        mc_dump(server);
+        mc_dump(client);
+    }
 
     mc_destroy(client);
     mc_destroy(server);
 
-    return 0;
+    return (serror || cerror) ? -1 : 0;
+
+err_exit:
+    thread_done = true;
+    if (sthread_inited) {
+        err = pthread_join(s, NULL);
+        if (err)
+            CNE_ERR_RET("join(server) failed: %s\n", strerror(err));
+    }
+    if (cthread_inited) {
+        err = pthread_join(c, NULL);
+        if (err)
+            CNE_ERR_RET("join(client) failed: %s\n", strerror(err));
+    }
+    if (barrier_inited) {
+        err = pthread_barrier_destroy(&barrier);
+        if (err)
+            CNE_ERR_RET("barrier destroy failed: %s\n", strerror(err));
+    }
+    mc_destroy(client);
+    mc_destroy(server);
+
+    return -1;
 }
 
 int
 msgchan_main(int argc, char **argv)
 {
     tst_info_t *tst;
-    int verbose = 0, opt;
+    int opt;
     char **argvopt;
     int option_index;
     static const struct option lgopts[] = {{NULL, 0, 0, 0}};
 
     argvopt = argv;
 
+    verbose = 0;
     while ((opt = getopt_long(argc, argvopt, "V", lgopts, &option_index)) != EOF) {
         switch (opt) {
         case 'V':
