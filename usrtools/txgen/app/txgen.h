@@ -276,7 +276,7 @@ txgen_version(void)
  * Internal function to execute a shell command and grab the output from the
  * command.
  *
- * RETURNS: Nubmer of lines read.
+ * RETURNS: Number of lines read.
  *
  * SEE ALSO:
  */

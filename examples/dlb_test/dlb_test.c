@@ -395,7 +395,7 @@ main(int argc __cne_unused, char **argv __cne_unused)
     for (;;) {
         sleep(1);
 
-        if (fwd->timer_quit) /* Test for quiting after sleep to avoid calling print_port_stats() */
+        if (fwd->timer_quit) /* Test for quitting after sleep to avoid calling print_port_stats() */
             break;
 
         print_port_stats_all();

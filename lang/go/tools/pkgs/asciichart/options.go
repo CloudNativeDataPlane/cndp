@@ -122,8 +122,8 @@ func (ac *Chart) SetOffset(o int) *Chart {
 	return ac
 }
 
-// SetPercision set the percision of the ticker
-func (ac *Chart) SetPercision(p int) *Chart {
+// SetPrecision set the precision of the ticker
+func (ac *Chart) SetPrecision(p int) *Chart {
 
 	c := &ac.config
 

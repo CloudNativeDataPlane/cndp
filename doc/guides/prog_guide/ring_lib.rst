@@ -76,7 +76,7 @@ Use cases for the Ring library include:
 
     *  Communication between applications in CNDP
 
-    *  Running a CNDP application with a psuedo ethernet device.
+    *  Running a CNDP application with a pseudo ethernet device.
 
     *  Used by memory pool allocator
 

@@ -20,7 +20,7 @@
  * of memory.
  *
  * \is
- * \i <pBuf> Pointer to the data buffer to be checksumed.
+ * \i <pBuf> Pointer to the data buffer to be checksummed.
  * \i <size> Number of bytes to checksum.
  * \i <cksum> Previous checksum value else give 0.
  * \ie
@@ -45,10 +45,10 @@ cksum(void *pBuf, int32_t size, uint32_t cksum)
  * folding of the upper 16 bits into a 16 bit checksum.
  *
  * \is
- * \i <pBuf> the pointer to the data to be checksumed.
+ * \i <pBuf> the pointer to the data to be checksummed.
  * \i <size> the number of bytes to include in the checksum calculation.
  * \i <cksum> the initial starting checksum value allowing the developer to
- * ckecksum different pieces of memory to get a final value.
+ * checksum different pieces of memory to get a final value.
  * \ie
  *
  * RETURNS: unsigned 32 bit checksum value.
@@ -92,7 +92,7 @@ cksumUpdate(void *pBuf, int32_t size, uint32_t cksum)
 }
 
 /**
- * cksumDone - Finish up the ckecksum value by folding the checksum.
+ * cksumDone - Finish up the checksum value by folding the checksum.
  *
  * DESCRIPTION
  * Fold the carry bits back into the checksum value to complete the 16 bit

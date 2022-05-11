@@ -160,7 +160,7 @@ typedef void (*cthread_func_t)(void *);
 
 /**
  * How many cthread objects to pre-allocate as the system grows
- * applies to cthreads + stacks, TLS, mutexs, cond vars.
+ * applies to cthreads + stacks, TLS, mutexes, cond vars.
  *
  * @see _cthread_alloc()
  * @see _cond_alloc()
@@ -595,7 +595,7 @@ CNDP_API void *cthread_getspecific(unsigned int key);
 /**
  * Set cthread TLS
  *
- *  This function is modelled on pthread_set_sepcific()
+ *  This function is modelled on pthread_set_specific()
  *  It associates a thread-specific value with a key obtained via a previous
  *  call to cthread_key_create().
  *  Different threads may bind different values to the same key. These values

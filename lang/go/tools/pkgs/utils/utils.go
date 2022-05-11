@@ -41,12 +41,12 @@ func Format(units []string, v uint64, w ...interface{}) string {
 		bytes = bytes / 1024.0
 	}
 
-	percision := uint64(0)
+	precision := uint64(0)
 	for _, v := range w {
-		percision = v.(uint64)
+		precision = v.(uint64)
 	}
 
-	return fmt.Sprintf("%.*f %s", percision, bytes, units[index])
+	return fmt.Sprintf("%.*f %s", precision, bytes, units[index])
 }
 
 // FormatBytes into KB, MB, GB, ...

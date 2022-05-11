@@ -93,7 +93,7 @@ CNDP_API uint32_t gb_copy_to_buf(struct gapbuf *gb, char *dst, uint32_t size);
  * @param gb
  *   The gapbuf structure pointer.
  * @param msg
- *   Message to print out befor dump of buffer data
+ *   Message to print out before dump of buffer data
  * @return
  *   N/A
  */

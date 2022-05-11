@@ -59,7 +59,7 @@ struct fwd_info {
     struct app_options opts; /**< Application options*/
 };
 
-extern struct fwd_info *fwd; /**< global application informatio pointer */
+extern struct fwd_info *fwd; /**< global application information pointer */
 
 typedef struct {
     uint64_t enq;

@@ -122,6 +122,6 @@ Running TXGen is similar to running any of the applications.
 
 NOTE: that the threads roles for TXGen are different to thread roles from the simple examples.
 
-2. Create approprate ethtool filters if you plan on Receiving Traffic.
+2. Create appropriate ethtool filters if you plan on Receiving Traffic.
 
 3. Run the TXGen application
