@@ -1,20 +1,33 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2020-2022 Intel Corporation.
  */
-extern crate bindgen;
 
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 
 fn main() {
-    // PKG_CONFIG_PATH environment variable should be set to directory containing libcndp.pc file.
-    // If we cannot resolve cndp using pkg-config then use default library/include path.
+    let cndp_install_path = env::var("CNDP_INSTALL_PATH").ok();
     let default_lib_dir = String::from("/usr/local/lib/x86_64-linux-gnu");
     let default_include_dir = String::from("/usr/local/include");
-    let cndp_lib_dir = pkg_config::get_variable("libcndp", "libdir").unwrap_or(default_lib_dir);
-    let cndp_include_dir =
-        pkg_config::get_variable("libcndp", "includedir").unwrap_or(default_include_dir);
+
+    // If CNDP_INSTALL_PATH is passed in as a command line argument in cargo build use it
+    // to get CNDP library and include path.
+    let (cndp_lib_dir, cndp_include_dir) = match cndp_install_path {
+        Some(install_path) => (
+            install_path.to_string() + &default_lib_dir,
+            install_path.to_string() + &default_include_dir,
+        ),
+        None => {
+            // PKG_CONFIG_PATH environment variable should be set to directory containing libcndp.pc file.
+            // If we cannot resolve cndp using pkg-config then use default library/include path.
+            let cndp_lib_dir =
+                pkg_config::get_variable("libcndp", "libdir").unwrap_or(default_lib_dir);
+            let cndp_include_dir =
+                pkg_config::get_variable("libcndp", "includedir").unwrap_or(default_include_dir);
+            (cndp_lib_dir, cndp_include_dir)
+        }
+    };
 
     // Tell cargo to tell rustc to link the cndp shared library.
     println!("cargo:rustc-link-search=native={}", cndp_lib_dir);
