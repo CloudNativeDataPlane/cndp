@@ -243,7 +243,7 @@ Build the CNDP container. The docker.io prefix is used so the pod-spec can refer
 instead of "image: localhost/cndp".
 
 ```bash
-sudo -E podman build -t docker.io/cndp --format docker -f containerization/docker/Dockerfile .
+sudo -E podman build -t docker.io/cndp --format docker -f containerization/docker/ubuntu/Dockerfile .
 ```
 
 ### Deploy CNDP pod
