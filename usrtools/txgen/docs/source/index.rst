@@ -23,7 +23,7 @@ Some of the features of TXGen are:
 * The software is fully available under a BSD licence.
 
 
-TXGen was created 2020 by Keith Wiles @ intel.com
+TXGen was created 2020 @ intel.com
 
 .. only:: html
 

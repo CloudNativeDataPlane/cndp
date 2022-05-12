@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <netinet/in.h>        // for htonl, htons, in_addr
 #include <string.h>            // for memset
 

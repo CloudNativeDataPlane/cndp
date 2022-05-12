@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
-/* Created 2010 by Keith Wiles @ intel.com */
 
 #ifndef _PORT_CFG_H_
 #define _PORT_CFG_H_

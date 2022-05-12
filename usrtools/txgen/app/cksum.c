@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2014-2021> Intel Corporation. All rights reserved.
  */
-/* Created 2010 by Keith Wiles @ intel.com */
 
 #include <stdint.h>            // for uint32_t, uint16_t, int32_t, uint8_t
 #include <netinet/in.h>        // for ntohs, htonl, htons

@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <execinfo.h>        // for backtrace, backtrace_symbols
 #include <signal.h>          // for SIGUSR2, kill, SIGHUP, SIGSEGV, SIGPIPE
 #include <cne.h>             // for cne_init, cne_on_exit, copyright_msg, pow...

@@ -2,8 +2,6 @@
  * Copyright (c) <2019>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2018 by Keith Wiles @ intel.com */
-
 #include "cli-functions.h"
 
 #include <stdio.h>                // for NULL, snprintf

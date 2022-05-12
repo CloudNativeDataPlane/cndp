@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2019-2022 Intel Corporation
 //
-// Modified by Keith Wiles 2019 from https://github.com/guptarohit/asciigraph
+// Modified in 2019 from https://github.com/guptarohit/asciigraph
 
 package main
 

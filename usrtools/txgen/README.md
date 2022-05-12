@@ -11,8 +11,6 @@
 ```console
 SPDX-License-Identifier: BSD-3-Clause
 Copyright (c) 2019-2022 Intel Corporation.
-
-TXGen: Created 2019-2022 by Keith Wiles @ Intel.com
 ```
 
 ---
@@ -109,8 +107,6 @@ Usage: ./builddir/txgen/app [-h] [-c json_file]
            -h             Display the help information
 
 ```
-
-Keith Wiles @ Intel Corporation
 
 ## Building TXGen
 TXgGen is built by default when CNDP is built

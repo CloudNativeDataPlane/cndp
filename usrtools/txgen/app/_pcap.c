@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation
  */
-/* Created by Keith Wiles @ intel.com */
 
 #include <stdio.h>             // for fread, fseek, NULL, fflush, rewind, fclose
 #include <stdlib.h>            // for free, malloc

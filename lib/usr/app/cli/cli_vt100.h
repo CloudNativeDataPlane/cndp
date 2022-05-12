@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #ifndef __CLI_VT100_H_
 #define __CLI_VT100_H_
 
