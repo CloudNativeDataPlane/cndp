@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation
  */
-/* Created by Keith Wiles @ intel.com */
 
 #ifndef _PCAP_H_
 #define _PCAP_H_

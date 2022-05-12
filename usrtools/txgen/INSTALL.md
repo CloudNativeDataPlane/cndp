@@ -39,8 +39,6 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 SPDX-License-Identifier: BSD-3-Clause
 
-CNDP: Created 2019-2020 by Keith Wiles @ Intel.com
-
 ---
 
 # Installation

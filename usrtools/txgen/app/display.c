@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <sys/stat.h>        // for fchmod
 #include <stdio.h>           // for NULL, fprintf, snprintf, fclose, fileno
 #include <string.h>          // for strcmp

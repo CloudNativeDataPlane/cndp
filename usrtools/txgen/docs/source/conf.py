@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2010-2019 Keith Wiles
+# Copyright (c) 2010-2022 Intel Corporation.
 
 from sphinx.highlighting import PygmentsBridge
 from pygments.formatters.latex import LatexFormatter
 
 
 project = 'TXGen'
-copyright = '2010-2019, Keith Wiles'
+copyright = '2010-2022'
 
 version = '3.2.4'
 release = version
@@ -23,7 +23,7 @@ latex_documents = [
     ('index',
      'txgen.tex',
      'TXGen Documentation',
-     'Keith Wiles', 'manual'),
+     'Intel Corp', 'manual'),
 ]
 
 latex_preamble = """
@@ -48,14 +48,14 @@ man_pages = [
     ('index',
      'txgen',
      'TXGen Documentation',
-     ['Keith Wiles'],
+     ['Intel Corp'],
      1)
 ]
 
 texinfo_documents = [
     ('index', 'TXGen',
      'TXGen Documentation',
-     'Keith Wiles',
+     'Intel Corp',
      'TXGen',
      'One line description of project.',
      'Miscellaneous'),
