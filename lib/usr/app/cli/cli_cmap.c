@@ -18,7 +18,7 @@
  * CPUs so far.
  *
  * Written 2011 by Kenneth Jonsson, WindRiver.
- * Adapted to CNDP by Keith Wiles, WindRiver 2013-01-08
+ * Adapted to CNDP WindRiver 2013-01-08
  */
 #include <stdio.h>         // for NULL, size_t, fprintf, stderr
 #include <stdlib.h>        // for atoi

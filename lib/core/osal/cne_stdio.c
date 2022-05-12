@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #include <stdio.h>         // for vsnprintf, FILE
 #include <stdint.h>        // for int16_t
 #include <stdarg.h>        // for va_list, va_end, va_start

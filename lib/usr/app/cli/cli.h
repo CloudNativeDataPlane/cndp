@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2021> Intel Corporation.
  */
-/* Created by Keith Wiles @ intel.com */
 
 #ifndef _CLI_H_
 #define _CLI_H_

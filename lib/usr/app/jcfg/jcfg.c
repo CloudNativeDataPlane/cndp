@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2019-2020 by Keith Wiles @ intel.com */
-
 #include <poll.h>                       // for pollfd, poll, POLLIN
 #include <sys/stat.h>                   // for stat, chmod, mkdir, S_ISDIR
 #include <fcntl.h>                      // for open, O_RDONLY

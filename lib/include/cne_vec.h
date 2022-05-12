@@ -2,8 +2,6 @@
  * Copyright (c) 2016-2022 Intel Corporation
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #ifndef __CNE_VEC_H
 #define __CNE_VEC_H
 

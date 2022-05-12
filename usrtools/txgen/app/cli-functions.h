@@ -2,8 +2,6 @@
  * Copyright (c) <2019>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2018 by Keith Wiles @ intel.com */
-
 #ifndef _CLI_COMMANDS_H_
 #define _CLI_COMMANDS_H_
 

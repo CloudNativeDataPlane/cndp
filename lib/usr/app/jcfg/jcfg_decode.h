@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
-/* Created 2019-2020 by Keith Wiles @ intel.com */
 
 #ifndef _JCFG_DECODE_H_
 #define _JCFG_DECODE_H_

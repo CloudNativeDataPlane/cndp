@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #ifndef _TXGEN_H_
 #define _TXGEN_H_
 

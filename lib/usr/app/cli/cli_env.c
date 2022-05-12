@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2021> Intel Corporation.
  */
-/* Created by: Keith Wiles @ intel */
 #include <cli_env.h>
 #include <alloca.h>        // for alloca
 #include <stdint.h>        // for uintptr_t

@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #ifndef __VT100_OUT_H_
 #define __VT100_OUT_H_
 

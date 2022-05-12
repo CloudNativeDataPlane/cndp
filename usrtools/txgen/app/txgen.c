@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <stdint.h>            // for uint64_t, uint8_t, uint16_t, uint...
 #include <sched.h>             // for cpu_set_t
 #include <cne_system.h>        // for cne_get_timer_hz

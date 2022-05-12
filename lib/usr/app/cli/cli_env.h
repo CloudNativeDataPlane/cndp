@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2021> Intel Corporation.
  */
-/* Create by: Keith Wiles @ intel.com */
 
 #include <sys/queue.h>        // for TAILQ_ENTRY, TAILQ_HEAD
 
