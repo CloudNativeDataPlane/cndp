@@ -20,6 +20,8 @@ project('CNDP', 'C', 'cpp',
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
+cndp_source_root = meson.current_source_dir()
+cndp_build_root = meson.current_build_dir()
 enable_asserts = get_option('enable_asserts')
 cne_verbose = get_option('verbose')
 cndp_libs = []
