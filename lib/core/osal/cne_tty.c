@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 // IWYU pragma: no_include <bits/termios-c_lflag.h>
 // IWYU pragma: no_include <bits/termios-tcflow.h>
 // IWYU pragma: no_include <bits/termios-struct.h>

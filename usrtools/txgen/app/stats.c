@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <stdio.h>               // for snprintf, NULL
 #include <pktdev.h>              // for PKTDEV_FOREACH
 #include <pktdev_api.h>          // for pktdev_port_count, pktdev_stats_get

@@ -11,8 +11,6 @@
 ```console
 SPDX-License-Identifier: BSD-3-Clause
 Copyright (c) 2019-2022 Intel Corporation.
-
-TXGen: Created 2019-2022 by Keith Wiles @ Intel.com
 ```
 
 ---
@@ -110,8 +108,6 @@ Usage: ./builddir/txgen/app [-h] [-c json_file]
 
 ```
 
-Keith Wiles @ Intel Corporation
-
 ## Building TXGen
 TXgGen is built by default when CNDP is built
 
@@ -122,6 +118,6 @@ Running TXGen is similar to running any of the applications.
 
 NOTE: that the threads roles for TXGen are different to thread roles from the simple examples.
 
-2. Create approprate ethtool filters if you plan on Receiving Traffic.
+2. Create appropriate ethtool filters if you plan on Receiving Traffic.
 
 3. Run the TXGen application

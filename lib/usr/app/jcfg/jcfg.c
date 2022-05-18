@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2019-2020 by Keith Wiles @ intel.com */
-
 #include <poll.h>                       // for pollfd, poll, POLLIN
 #include <sys/stat.h>                   // for stat, chmod, mkdir, S_ISDIR
 #include <fcntl.h>                      // for open, O_RDONLY
@@ -540,7 +538,7 @@ socket_listener(void *_c)
 
         s = accept(jinfo->listen_sock, NULL, NULL);
         if (s < 0) {
-            CNE_ERR("Error with accept, jcfg_client thread quiting\n");
+            CNE_ERR("Error with accept, jcfg_client thread quitting\n");
             continue;
         }
         cne_printf("Found a connection on %d\n", s);

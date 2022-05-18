@@ -125,7 +125,7 @@ CNDP_API int cli_set_history(uint32_t nb_hist);
  * @note Uses the thread variable this_cli
  *
  * @return
- *   pointer to the pervious history line wrap if needed
+ *   pointer to the previous history line wrap if needed
  */
 CNDP_API char *cli_history_prev(void);
 

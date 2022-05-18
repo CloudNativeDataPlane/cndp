@@ -174,7 +174,7 @@ fn ctrl_channel() -> Result<Receiver<()>, ctrlc::Error> {
 fn loopback(port: &Port) -> Result<(), CneError> {
     let mut rx_pkts = [Packet::default(); Packet::MAX_BURST];
 
-    let pkts_read = port.rx_burst(&mut rx_pkts[..])?;
+    let pkts_read = port.rx_burst(&mut rx_pkts[..])? as usize;
     log::debug!("Number of packets read = {}", pkts_read);
 
     if pkts_read > 0 {
@@ -188,11 +188,18 @@ fn loopback(port: &Port) -> Result<(), CneError> {
         }
 
         let mut pkts_sent = 0;
-        while pkts_sent < pkts_read {
-            let tx_sent = port.tx_burst(&mut rx_pkts[pkts_sent as usize..pkts_read as usize])?;
+        let mut max_tries = 10;
+        // Try sending back all the packets in a loop with threshold on number of tries.
+        while pkts_sent < pkts_read && max_tries > 0 {
+            let tx_sent = port.tx_burst(&mut rx_pkts[pkts_sent..pkts_read])? as usize;
             pkts_sent += tx_sent;
+            max_tries -= 1;
         }
         log::debug!("Number of packets sent = {}", pkts_sent);
+        // Free packets which are not sent.
+        if pkts_sent < pkts_read {
+            Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read]);
+        }
     }
 
     Ok(())

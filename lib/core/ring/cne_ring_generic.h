@@ -103,7 +103,7 @@ update_tail(struct cne_ring_headtail *ht, uint32_t old_val, uint32_t new_val, ui
      */
     if (!single) {
         uint64_t timo = 1000;
-        /* Need another implementation of this here. Not preemptable. */
+        /* Need another implementation of this here. Not preemptible. */
         while (unlikely(atomic_load_explicit(&ht->tail, CNE_MEMORY_ORDER(relaxed)) != old_val)) {
             if (--timo == 0) {
                 timo = 1000;

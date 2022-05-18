@@ -22,7 +22,7 @@ def_deps = [build_cfg, osal, include, log, cne, cli, thread, jcfg]
 
 foreach d:dirs
     cflags = []
-    deps =  def_deps  # reset the deps to the orignal values
+    deps =  def_deps  # reset the deps to the original values
 
     sources = []
     headers = []

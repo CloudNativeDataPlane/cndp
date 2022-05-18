@@ -302,7 +302,7 @@ CNDP_API int hmap_del(hmap_t *hmap, const char *prefix, const char *key);
  * @param _kvp
  *   The address to place the key/value pair structure pointer
  * @param next
- *   The next entry to interate as an index value.
+ *   The next entry to iterate as an index value.
  * @return
  *   0 on success or -1 on error
  */

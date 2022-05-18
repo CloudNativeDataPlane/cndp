@@ -308,7 +308,7 @@ For information on how to install crictl : https://kubernetes.io/docs/tasks/debu
 sudo crictl images
 ```
 
-### Create Network attachment defintion for AF_XDP interface
+### Create Network attachment definition for AF_XDP interface
 
 > **_NOTE:_** make sure any interfaces you wish to add to the Pod are in an UP state and do not have IP addresses configured.
 

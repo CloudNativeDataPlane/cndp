@@ -800,7 +800,7 @@ run_server(struct chnl *ch, pktmbuf_t *mbuf)
                             (ret == 0 && token_buf.type == QUICLY_ADDRESS_TOKEN_TYPE_RETRY))) {
                     /* Token that looks like retry was unusable, and we require retry.
                      * There's no chance of the handshake succeeding. Therefore, send
-                     * close without aquiring state. */
+                     * close without acquiring state. */
                     uint8_t payload[ctx.transport_params.max_udp_payload_size];
                     size_t payload_len = quicly_send_close_invalid_token(
                         &ctx, packet.version, packet.cid.src, packet.cid.dest.encrypted, err_desc,

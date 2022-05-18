@@ -385,7 +385,7 @@ phil_demo_start(void *arg)
         phil->philos_attr = &philos_attr;
         phil->forks_attr  = &forks_attr;
         phil->stats       = &stats;
-        snprintf(name, sizeof(name), "Philospher-%d", i);
+        snprintf(name, sizeof(name), "Philosopher-%d", i);
         phil->cthd = cthread_create(name, philosopher_run, phil);
         if (!phil->cthd)
             CNE_RET("Unable to start philosopher cthread %d\n", i);

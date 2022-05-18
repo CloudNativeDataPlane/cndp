@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation
  */
-/* Created by Keith Wiles @ intel.com */
 
 #include <pktmbuf.h>              // for DEFAULT_MBUF_SIZE, MBUF_INVALID_PORT
 #include <net/cne_ether.h>        // for inet_mtoa, cne_ether_hdr, CNE_ETH...

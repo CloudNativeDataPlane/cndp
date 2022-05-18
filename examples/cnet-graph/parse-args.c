@@ -24,6 +24,7 @@
 #include <cnet.h>
 #include <cnet_netlink.h>
 #include <cnet_netif.h>
+#include <cne_strings.h>
 
 #include "cnet-graph.h"        // for fwd_info, fwd, app_options, enable_met...
 #include "cne_thread.h"        // for thread_create
@@ -192,6 +193,7 @@ print_usage(char *prog_name)
                "  -V             JCFG information verbose\n"
                "  -P             JCFG debug parsing\n"
                "  -U             Disable UDP checksum (default enabled)\n"
+               "  -L [level]     Enable a logging level\n"
                "  -h             Display the help information\n",
                prog_name);
 }
@@ -206,12 +208,13 @@ parse_args(int argc, char **argv)
     // clang-format on
     int opt, option_index, flags = 0;
     char json_file[1024] = {0};
+    char log_level[16]   = {0};
 
     cinfo->flags = FWD_ENABLE_UDP_CKSUM;
 
     /* Parse the input arguments. */
     for (;;) {
-        opt = getopt_long(argc, argv, "hc:s:dCDPVUu", lgopts, &option_index);
+        opt = getopt_long(argc, argv, "hc:s:dCDPVUuL:", lgopts, &option_index);
         if (opt == EOF)
             break;
 
@@ -251,6 +254,15 @@ parse_args(int argc, char **argv)
 
         case 'V':
             flags |= JCFG_INFO_VERBOSE;
+            break;
+
+        case 'L':
+            strlcpy(log_level, optarg, sizeof(log_level));
+            if (cne_log_set_level_str(log_level)) {
+                CNE_ERR("Invalid command option\n");
+                print_usage(argv[0]);
+                return -1;
+            }
             break;
 
         default:

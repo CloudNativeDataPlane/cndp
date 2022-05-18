@@ -4,7 +4,7 @@
 Ring PMD
 ========
 
-Allows the creation of psuedo ethernet devices by providing PMD APIs to a fixed
+Allows the creation of pseudo ethernet devices by providing PMD APIs to a fixed
 size, lockless, multi/single producer, multi/single consumer FIFO (CNDP Ring)
 that behaves as if it was a physical NIC. This allows for the running of CNDP
 applications without any ethernet devices, instead a pair of CNDP rings can be

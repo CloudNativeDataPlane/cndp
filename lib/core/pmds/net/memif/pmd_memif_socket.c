@@ -181,7 +181,7 @@ cne_memif_regions_init(struct cne_pktdev *dev)
     int ret;
 
     /* Todo Zero Copy */
-    /* create one memory region contaning rings and buffers */
+    /* create one memory region containing rings and buffers */
     ret = cne_memif_region_init_shm(dev, /* has buffers */ 1);
     if (ret < 0)
         return ret;

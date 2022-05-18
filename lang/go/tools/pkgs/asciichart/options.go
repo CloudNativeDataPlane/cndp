@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2019-2022 Intel Corporation
 //
-// Modified by Keith Wiles 2019 from https://github.com/guptarohit/asciigraph
+// Modified in 2019 from https://github.com/guptarohit/asciigraph
 
 package asciichart
 
@@ -122,8 +122,8 @@ func (ac *Chart) SetOffset(o int) *Chart {
 	return ac
 }
 
-// SetPercision set the percision of the ticker
-func (ac *Chart) SetPercision(p int) *Chart {
+// SetPrecision set the precision of the ticker
+func (ac *Chart) SetPrecision(p int) *Chart {
 
 	c := &ac.config
 

@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #ifndef __CNE_STDIO_H_
 #define __CNE_STDIO_H_
 

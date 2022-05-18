@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2019-2020 by Keith Wiles @ intel.com */
-
 // IWYU pragma: no_include <json-c/json_types.h>
 
 #include <json-c/json_object.h>        // for json_object_get_type, json_object_ar...

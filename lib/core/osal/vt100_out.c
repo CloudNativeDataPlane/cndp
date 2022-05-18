@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-/* Created by Keith Wiles @ intel.com */
-
 #include <stdio.h>              // for NULL
 #include <string.h>             // for strlen, memset, strcpy, strncmp
 #include <cne_common.h>         // for CNE_PTR_CAST, cne_countof

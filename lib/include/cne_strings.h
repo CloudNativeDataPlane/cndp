@@ -164,7 +164,7 @@ cne_strtok(char *str, const char *delim, char *entries[], int maxtokens)
  * @param str
  *   String to be tokenized and will be modified, null terminated
  * @param delim
- *   A null terminated list of delimitors
+ *   A null terminated list of delimiters
  * @param argv
  *   A pointer to an array to place the token pointers
  * @param maxtokens
@@ -258,6 +258,47 @@ cne_strqtok(char *str, const char *delim, char *argv[], int maxtokens)
     argv[argc] = NULL;
 
     return argc;
+}
+
+/**
+ * Convert characters in \p str to lowercase.
+ *
+ * @param str
+ *   String to convert to lowercase
+ * @return
+ *   For success lower case string, NULL on error
+ */
+static __inline__ char *
+cne_strtolower(char *str)
+{
+    if (!str)
+        return NULL;
+
+    for (int i = 0; i <= (int)(strlen(str)); i++)
+        str[i] = tolower(str[i]);
+
+    return str;
+}
+
+/**
+ * Convert characters in \p str to uppercase.
+ *
+ * @param str
+ *   String to convert to uppercase
+ *
+ * @return
+ *   For success upper case string, NULL on error
+ */
+static __inline__ char *
+cne_strtoupper(char *str)
+{
+    if (!str)
+        return NULL;
+
+    for (int i = 0; i <= (int)(strlen(str)); i++)
+        str[i] = toupper(str[i]);
+
+    return str;
 }
 
 /**

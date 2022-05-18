@@ -407,7 +407,7 @@ CNDP_API int pktdev_port_remove(int lport_id);
  * Dump out a lport_cfg_t structure.
  *
  * @param f
- *   The FILE desciptor to use or NULL for stdout.
+ *   The FILE descriptor to use or NULL for stdout.
  * @param c
  *   The lport_cfg_t pointer
  */

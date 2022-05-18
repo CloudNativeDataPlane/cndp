@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <stdint.h>            // for uint64_t, uint8_t, uint16_t, uint...
 #include <sched.h>             // for cpu_set_t
 #include <cne_system.h>        // for cne_get_timer_hz
@@ -334,7 +332,7 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
 
 /**
  *
- * txgen_packet_classify_buld - Classify a set of packets in one call.
+ * txgen_packet_classify_bulk - Classify a set of packets in one call.
  *
  * DESCRIPTION
  * Classify a list of packets and to improve classify performance.

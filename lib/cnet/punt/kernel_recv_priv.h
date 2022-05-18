@@ -65,7 +65,7 @@ struct kernel_recv_node_main *kernel_recv_get_node_data_get(void);
  *
  * Get the Kernel Recv node.
  *
- * @retrun
+ * @return
  *   Pointer to the Kernel Recv node.
  */
 CNDP_API struct cne_node_register *kernel_recv_node_get(void);

@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2010 by Keith Wiles @ intel.com */
-
 #include <stdatomic.h>           // for atomic_load, atomic_exchange
 #include <string.h>              // for memset, memcpy, strcmp, strncmp, strcpy, NULL
 #include <sys/stat.h>            // for fchmod

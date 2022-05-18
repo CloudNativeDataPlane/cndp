@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2014-2021> Intel Corporation. All rights reserved.
  */
-/* Created 2010 by Keith Wiles @ intel.com */
 
 #ifndef __CKSUM_H
 #define __CKSUM_H

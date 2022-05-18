@@ -12,7 +12,7 @@ import (
 )
 
 // etimers is a package to handle timers for the performance monitor tool.
-// A number of timers needed to be handled in a consistant way and from a single
+// A number of timers needed to be handled in a consistent way and from a single
 // go routine.
 
 // EventTimers to process when timer expires
@@ -71,7 +71,7 @@ func (te *EventTimers) Start() {
 	// Create a go routine that handles all of the timer events
 	go func() {
 
-		// Loop forever until a quit message is recieved over the channel
+		// Loop forever until a quit message is received over the channel
 	ForLoop:
 		for {
 			select {
@@ -129,12 +129,12 @@ func (te *EventTimers) doAction(a *EventAction) {
 	// Handle the action for a given event
 	switch action {
 	case "add":
-		// Add a new action to the list atomicly
+		// Add a new action to the list atomically
 		tlog.DebugPrintf("Add Action: %s\n", a.Name)
 		te.list[a.Name] = a
 
 	case "remove":
-		// Remove an action atomicly
+		// Remove an action atomically
 		tlog.DebugPrintf("Remove Action: %s\n", a.Name)
 		if _, ok := te.list[a.Name]; ok {
 			tlog.DebugPrintf("Removed: %s\n", a.Name)

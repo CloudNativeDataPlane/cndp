@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2021> Intel Corporation.
  */
-/* Created by Keith Wiles @ intel.com */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
 
@@ -295,7 +294,7 @@ cli_add_dir(const char *name, struct cli_node *dir)
 
     if (p[0] == '/') { /* Start from root */
         dir = cli->root.tqh_first;
-        p++;           /* Skip the / in the orignal path */
+        p++;           /* Skip the / in the original path */
         path[0] = '/'; /* Add root to the path */
     }
 
@@ -452,7 +451,7 @@ cli_execute(void)
     /* gb_copy_to_buf() forces linebuf to be null terminated */
     gb_copy_to_buf(gb, line, sz);
 
-    /* Trim the string of whitspace on front and back */
+    /* Trim the string of whitespace on front and back */
     p = strtrim(line);
     if (!strlen(p))
         return 0;

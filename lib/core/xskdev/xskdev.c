@@ -27,9 +27,9 @@
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
 
-#define BURST_COUNT   128
-#define POLL_TIMEOUT  0
-#define MAX_NUM_TRIES 1000
+#define FQ_ADD_BURST_COUNT 64
+#define POLL_TIMEOUT       0
+#define MAX_NUM_TRIES      1000
 
 static bool xskdev_use_tx_lock = true;
 
@@ -232,12 +232,12 @@ fq_add(xskdev_info_t *xi)
 {
     struct xskdev_umem *ux   = xi->rxq.ux;
     struct xsk_ring_prod *fq = &ux->fq;
-    void *bufs[BURST_COUNT];
+    void *bufs[FQ_ADD_BURST_COUNT];
     uint16_t nb_bufs;
     uint32_t pos = 0;
     int nb;
 
-    nb_bufs = BURST_COUNT;
+    nb_bufs = FQ_ADD_BURST_COUNT;
 
     if (xskdev_buf_alloc(xi, (void **)bufs, nb_bufs) <= 0) {
         xi->stats.fq_alloc_failed++;
@@ -931,7 +931,7 @@ xskdev_socket_create(struct lport_cfg *c)
         ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx,
                                  &xi->txq.tx, &cfg);
     if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket.\n");
+        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #else
     if (xi->shared_umem)
         CNE_INFO("Shared UMEM is enabled, but not supported by kernel or libbpf\n");
@@ -939,7 +939,7 @@ xskdev_socket_create(struct lport_cfg *c)
     ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx, &xi->txq.tx,
                              &cfg);
     if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket.\n");
+        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #endif
 
     xi->rxq.fds.fd     = xsk_socket__fd(xi->rxq.xsk);
@@ -952,11 +952,11 @@ xskdev_socket_create(struct lport_cfg *c)
     if (xi->unprivileged) {
         ret = xsk_socket__update_xskmap(xi->rxq.xsk, xi->xsk_map_fd);
         if (ret)
-            CNE_ERR_GOTO(err, "Update of BPF map failed(%d)\n", ret);
+            CNE_ERR_GOTO(err, "Update of BPF map failed. %s\n", strerror(errno));
     } else {
         /* Getting the program ID must be after the xdp_socket__create() call */
         if (bpf_get_link_xdp_id(xi->if_index, &xi->prog_id, xi->xdp_flags))
-            CNE_ERR_GOTO(err, "bpf_get_link_xdp_id failed\n");
+            CNE_ERR_GOTO(err, "bpf_get_link_xdp_id failed. %s\n", strerror(errno));
     }
 
     CNE_DEBUG("Program ID %u, if_index %d, if_name '%s'\n", xi->prog_id, xi->if_index, xi->ifname);

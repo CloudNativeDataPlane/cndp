@@ -22,7 +22,8 @@ import (
 
 const (
 	// cmtVersion string
-	cmtVersion = "20.11.0"
+	cmtVersion = "22.04.0"
+	timerSteps = 4
 )
 
 // PanelInfo for title and primitive
@@ -123,13 +124,14 @@ func main() {
 
 	app := cmon.app
 
-	cmon.timers = etimers.New(time.Second/4, 4)
+	cmon.timers = etimers.New(time.Second/timerSteps, timerSteps)
 	cmon.timers.Start()
 
 	panels := []Panels{
 		SysInfoPanelSetup,
 		ProcessPanelSetup,
 		IRQPanelSetup,
+		NetstatPanelSetup,
 	}
 
 	// The bottom row has some info on where we are.

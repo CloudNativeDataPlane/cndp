@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
-/* Created 2019-2020 by Keith Wiles @ intel.com */
 
 #ifndef _JCFG_DECODE_H_
 #define _JCFG_DECODE_H_
@@ -104,7 +103,7 @@ int jcfg_decode_lport_groups_end(jcfg_info_t *jinfo, void *arg);
  * @param v
  *   The location to put the returned object value.
  * @return
- *   0 on sucess or -1 on error
+ *   0 on success or -1 on error
  */
 int __decoder_val_get(obj_value_t *val, uint64_t *v);
 
@@ -116,7 +115,7 @@ int __decoder_val_get(obj_value_t *val, uint64_t *v);
  * @param arr
  *   The location to put the array of returned object values.
  * @return
- *   0 on sucess or -1 on error
+ *   0 on success or -1 on error
  */
 int __decoder_array_val_get(obj_value_t *val, obj_value_t **arr);
 

@@ -73,7 +73,7 @@ test_valid_kvargs(void)
 
     count = 0;
     /* call check_handler() for all entries with key="unexistant_key" */
-    ret = kvargs_process(kvlist, "nonexistant_key", check_handler, NULL);
+    ret = kvargs_process(kvlist, "nonexistent_key", check_handler, NULL);
     TST_ASSERT_SUCCESS_AND_CLEANUP(ret, "failed to process (%s)", _cleanup, kvlist, args);
 
     TST_ASSERT_EQUAL_AND_CLEANUP(count, 0, "invalid count value %d", _cleanup, kvlist, count);

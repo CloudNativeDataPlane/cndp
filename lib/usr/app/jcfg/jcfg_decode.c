@@ -2,8 +2,6 @@
  * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
  */
 
-/* Created 2019-2020 by Keith Wiles @ intel.com */
-
 #include <string.h>                    // for strcmp, NULL, strdup, size_t
 #include <json-c/json_object.h>        // for json_object_get_type, json_object_ar...
 #include <json-c/json_visit.h>         // for json_c_visit_userfunc, JSON_C_VISIT_...

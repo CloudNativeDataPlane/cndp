@@ -61,7 +61,7 @@ The Rx/Tx buffers are somewhat defined by the AF_XDP UMEM buffer layout.
 Pktmbuf and UMEM layout
 -----------------------
 
-The AF_XDP design uses a UMEM buffer and rings to move data from usespace to kernel. The rings
+The AF_XDP design uses a UMEM buffer and rings to move data from userspace to kernel. The rings
 operate on UMEM buffer offsets instead of memory points to account for kernel and userspace having
 different address spaces. A UMEM is one large memory array of buffers for packet data to be sent and
 received to remove having to copy the packet to/from the kernel/userspace.

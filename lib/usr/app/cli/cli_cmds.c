@@ -642,7 +642,7 @@ static struct cli_map cli_env_map[] = {
 };
 
 static const char *cli_env_help[] = {
-    "env                       - Display current evironment variables",
+    "env                       - Display current environment variables",
     "env get <string>          - Get the requested variable",
     "env set <string> <string> - Set the given variable to string",
     "env del <string>          - Delete the given variable",
@@ -814,7 +814,7 @@ cli_default_tree_init(void)
 
     if (ret < 0) {
         this_cli->flags &= ~CLI_DEFAULT_TREE;
-        CNE_ERR_RET_VAL(ret, "Unable to add commands or directoies\n");
+        CNE_ERR_RET_VAL(ret, "Unable to add commands or directories\n");
     }
 
     return ret;

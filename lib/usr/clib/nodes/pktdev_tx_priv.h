@@ -50,7 +50,7 @@ struct pktdev_tx_node_main *pktdev_tx_node_data_get(void);
  *
  * Get the Ethernet Tx node.
  *
- * @retrun
+ * @return
  *   Pointer to the Ethernet Tx node.
  */
 struct cne_node_register *pktdev_tx_node_get(void);

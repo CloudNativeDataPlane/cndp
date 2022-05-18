@@ -86,7 +86,7 @@ graph_nodes_populate(struct graph *_graph)
         if (pid != CNE_NODE_ID_INVALID) { /* Cloned node */
             parent = cne_node_id_to_name(pid);
             if (!parent)
-                strncpy(node->parent, "?unkwown?", CNE_GRAPH_NAMESIZE);
+                strncpy(node->parent, "?unknown?", CNE_GRAPH_NAMESIZE);
             else
                 memcpy(node->parent, parent, CNE_GRAPH_NAMESIZE);
         }

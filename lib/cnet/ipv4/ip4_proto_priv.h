@@ -24,7 +24,7 @@ enum cne_node_ip4_proto_next {
 #if CNET_ENABLE_TCP
     CNE_NODE_IP4_INPUT_PROTO_TCP, /**< TCP protocol. */
 #endif
-    CNE_NODE_IP4_INPUT_PROTO_MAX, /**< Number of next nodes of protcol node.*/
+    CNE_NODE_IP4_INPUT_PROTO_MAX, /**< Number of next nodes of protocol node.*/
 };
 
 #ifdef __cplusplus
