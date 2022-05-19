@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation.
+
+[package]
+name = "echo_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# cndp-cne package is in cndp repo.
+# Cargo will crawl the entire cndp repo looking for cndp-cne package.
+cndp-cne = {git = "https://github.com/CloudNativeDataPlane/cndp", branch = "main" }
+crossbeam-channel = "0.5.4"
+clap = "2.33.3"
+ctrlc = "3.2.2"
+env_logger = "0.9.0"
+log = "0.4"
+pnet ="0.30.0"
+
