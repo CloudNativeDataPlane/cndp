@@ -13,7 +13,16 @@ extern "C" {
 struct kernel_recv_node_elem;
 struct kernel_recv_node_ctx;
 
-#define KERN_RECV_MBUF_COUNT (4 * 1024) /**< Number of mbufs for kernel receive */
+#define KERN_RECV_MBUF_COUNT  (4 * 1024) /**< Number of mbufs for kernel receive */
+#define KERN_RECV_CACHE_COUNT 64
+
+typedef struct kernel_recv_info {
+    pktmbuf_info_t *pi;
+    mmap_t *mm;
+    uint16_t idx;
+    uint16_t cnt;
+    pktmbuf_t *rx_bufs[KERN_RECV_CACHE_COUNT];
+} kernel_recv_info_t;
 
 /**
  * @internal
@@ -21,8 +30,8 @@ struct kernel_recv_node_ctx;
  * Kernel Recv node context structure.
  */
 typedef struct kernel_recv_node_ctx {
-    struct tap_info *tinfo;
-    pktmbuf_info_t *pi;
+    int sock;
+    kernel_recv_info_t *recv_info;
 } kernel_recv_node_ctx_t;
 
 /**
