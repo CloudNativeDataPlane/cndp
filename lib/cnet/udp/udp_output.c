@@ -58,8 +58,7 @@ udp_output_header(pktmbuf_t *m, uint16_t nxt)
 }
 
 static uint16_t
-udp_output_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
-                        uint16_t nb_objs)
+udp_output_node_do(struct cne_graph *graph, struct cne_node *node, void **objs, uint16_t nb_objs)
 {
     pktmbuf_t *mbuf0, *mbuf1, *mbuf2, *mbuf3, **pkts;
     cne_edge_t next0, next1, next2, next3;
@@ -199,17 +198,16 @@ udp_output_node_process(struct cne_graph *graph, struct cne_node *node, void **o
     return nb_objs;
 }
 
-static int
-udp_output_node_init(const struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused)
+static uint16_t
+udp_output_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
+                        uint16_t nb_objs)
 {
-    return 0;
+    return udp_output_node_do(graph, node, objs, nb_objs);
 }
 
 static struct cne_node_register udp_output_node_base = {
     .process = udp_output_node_process,
     .name    = UDP_OUTPUT_NODE_NAME,
-
-    .init = udp_output_node_init,
 
     .nb_edges = UDP_OUTPUT_NEXT_MAX,
     .next_nodes =

@@ -5,7 +5,7 @@
 /* cnet_udp_chnl.c - UDP chnl support routines. */
 
 /**
- * This module is the interface between the generic sockets module and the UDP
+ * This module is the interface between the generic channels module and the UDP
  * protocol processing module.
  */
 
@@ -33,8 +33,8 @@
 #include "cnet_protosw.h"        // for
 #include "pktmbuf.h"             // for pktmbuf_free, pktmbuf_data_len, pktmbuf_t
 
-/**
- * This routine initializes the UDP-specific portions of a new socket.
+/*
+ * This routine initializes the UDP-specific portions of a new channel.
  *
  * RETURNS: 0 or -1.
  */
@@ -92,9 +92,9 @@ udp_chnl_channel2(struct chnl *ch1, struct chnl *ch2)
     return 0;
 }
 
-/**
+/*
  * This routine is the protocol-specific bind() back-end function for
- * UDP sockets.
+ * UDP channels.
  *
  * RETURNS: 0 or -1.
  */
@@ -110,9 +110,9 @@ udp_chnl_bind(struct chnl *ch, struct in_caddr *to, int tolen)
     return ret;
 }
 
-/**
+/*
  * This routine is the protocol-specific send() back-end function for
- * UDP sockets.
+ * UDP channels.
  *
  */
 static int
@@ -140,7 +140,6 @@ udp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
                 continue;
         }
 
-        /* When userptr is NULL we free the mbuf later */
         m->userptr = ch->ch_pcb;
     }
 
@@ -156,12 +155,9 @@ udp_shutdown(struct chnl *ch __cne_unused, int how __cne_unused)
 }
 
 static struct chnl *
-udp_accept(struct chnl *ch, struct in_caddr *addr, int *addrlen)
+udp_accept(struct chnl *ch __cne_unused, struct in_caddr *addr __cne_unused,
+           int *addrlen __cne_unused)
 {
-    CNE_SET_USED(ch);
-    CNE_SET_USED(addr);
-    CNE_SET_USED(addrlen);
-
     return NULL;
 }
 
@@ -172,7 +168,7 @@ udp_listen(struct chnl *ch __cne_unused, int backlog __cne_unused)
 }
 
 static struct proto_funcs udpFuncs = {
-    .channel_func  = udp_chnl_channel,     /**< Socket Initialize routine */
+    .channel_func  = udp_chnl_channel,     /**< Channel Initialize routine */
     .channel2_func = udp_chnl_channel2,    /**< Channel2 Initialize routine */
     .close_func    = chnl_OK,              /**< close routine */
     .send_func     = udp_chnl_send,        /**< send routine */
