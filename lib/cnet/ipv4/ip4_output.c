@@ -265,15 +265,6 @@ ip4_output_node_process(struct cne_graph *graph, struct cne_node *node, void **o
     return nb_objs;
 }
 
-static int
-ip4_output_node_init(const struct cne_graph *graph, struct cne_node *node)
-{
-    CNE_SET_USED(graph);
-    CNE_SET_USED(node);
-
-    return 0;
-}
-
 int
 ip4_output_set_next(uint16_t port_id, uint16_t next_index)
 {
@@ -290,8 +281,6 @@ ip4_output_set_next(uint16_t port_id, uint16_t next_index)
 static struct cne_node_register ip4_output_node = {
     .process = ip4_output_node_process,
     .name    = IP4_OUTPUT_NODE_NAME,
-
-    .init = ip4_output_node_init,
 
     .nb_edges = IP4_OUTPUT_NEXT_MAX,
     .next_nodes =

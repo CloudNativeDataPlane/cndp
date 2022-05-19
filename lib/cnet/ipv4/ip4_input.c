@@ -246,20 +246,9 @@ cne_node_ip4_add_input(struct cne_fib *fib, uint32_t ip, uint8_t depth, uint32_t
     return cne_fib_add(fib, ip, depth, nh);
 }
 
-static int
-ip4_input_node_init(const struct cne_graph *graph, struct cne_node *node)
-{
-    CNE_SET_USED(graph);
-    CNE_SET_USED(node);
-
-    return 0;
-}
-
 static struct cne_node_register ip4_input_node = {
     .process = ip4_input_node_process,
     .name    = IP4_INPUT_NODE_NAME,
-
-    .init = ip4_input_node_init,
 
     .nb_edges = CNE_NODE_IP4_INPUT_NEXT_MAX,
     .next_nodes =
