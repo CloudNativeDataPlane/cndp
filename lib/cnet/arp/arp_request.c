@@ -211,11 +211,22 @@ arp_request_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
     return 0;
 }
 
+static void
+arp_request_node_fini(const struct cne_graph *graph __cne_unused, struct cne_node *node)
+{
+    arp_request_node_ctx_t *ctx = (arp_request_node_ctx_t *)node->ctx;
+
+    if (ctx->s >= 0)
+        close(ctx->s);
+    ctx->s = -1;
+}
+
 static struct cne_node_register arp_request_node_base = {
     .process = arp_request_node_process,
     .name    = ARP_REQUEST_NODE_NAME,
 
     .init = arp_request_node_init,
+    .fini = arp_request_node_fini,
 
     .nb_edges = ARP_REQUEST_NEXT_MAX,
     .next_nodes =
