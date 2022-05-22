@@ -14,6 +14,7 @@ dirs = [
     'meter',
     'nodes',
     'cthread',
+    'msgchan',
 ]
 
 foreach d:dirs

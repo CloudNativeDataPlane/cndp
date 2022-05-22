@@ -46,6 +46,7 @@
 #endif
 #include "meter_test.h"        // for meter_main
 #include "vec_test.h"          // for vec_main
+#include "msgchan_test.h"
 
 struct struct_sizes {
     const char *name;
@@ -120,6 +121,7 @@ all_tests(int argc, char **argv)
     mempool_main(argc, argv);
     mmap_main(argc, argv);
     meter_main(argc, argv);
+    msgchan_main(argc, argv);
     pkt_main(argc, argv);
     pktcpy_main(argc, argv);
     pktdev_main(argc, argv);
@@ -166,6 +168,7 @@ static struct cli_tree default_tree[] = {
     c_cmd("mempool", mempool_main, "Run MEMPOOL test"),
     c_cmd("mmap", mmap_main, "Run MMAP test"),
     c_cmd("meter", meter_main, "Run Meter test"),
+    c_cmd("msgchan", msgchan_main, "Run Message Channel test"),
     c_cmd("pkt", pkt_main, "Run PKT test"),
     c_cmd("pktcpy", pktcpy_main, "Run pktcpy test"),
     c_cmd("pktdev", pktdev_main, "Run the pktdev tests"),
