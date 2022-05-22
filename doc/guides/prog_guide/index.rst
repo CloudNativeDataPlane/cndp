@@ -14,6 +14,7 @@ Programmer's Guide
     overview
     ring_lib
     mempool_lib
+    msgchan
     pktmbuf_lib
     graph_lib
     crypto
