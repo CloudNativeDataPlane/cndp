@@ -317,7 +317,6 @@ cne_memif_free_regions(struct cne_pktdev *dev)
     for (i = 0; i < proc_private->regions_num; i++) {
         r = proc_private->regions[i];
         if (r != NULL) {
-            /* This is memzone */
             if (i > 0 && (pmd->flags & CNE_ETH_MEMIF_FLAG_ZERO_COPY)) {
                 r->addr = NULL;
                 if (r->fd > 0)
@@ -556,7 +555,7 @@ cne_pmd_memif_socket_rx(void *queue, pktmbuf_t **bufs, uint16_t nb_pkts)
         do {
             dst_len = mbuf_size - dst_off;
             if (dst_len == 0) {
-                MIF_LOG(ERR, "CDNP MTU-overflow");
+                MIF_LOG(ERR, "CNDP MTU-overflow");
             }
             cp_len = CNE_MIN(dst_len, src_len);
 
@@ -829,7 +828,7 @@ cne_memif_create(struct cne_pktdev *dev, enum cne_memif_role_t role, cne_memif_i
     internals->role = role;
     internals->pi   = pi;
 
-    /* Zero-copy flag irelevant to server. */
+    /* Zero-copy flag irrelevant to server. */
     if (internals->role == CNE_MEMIF_ROLE_SERVER)
         internals->flags &= ~CNE_ETH_MEMIF_FLAG_ZERO_COPY;
 
@@ -929,12 +928,12 @@ cne_pmd_memif_socket_remove(int pid)
     struct cne_pktdev *dev = NULL;
     char name[64]          = {0};
 
-    CNE_LOG(DEBUG, "Removing memif_socket ethdev\n");
+    CNE_LOG(DEBUG, "Removing memif_socket pktdev\n");
 
     if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
         return -ENODEV;
 
-    /* find the ethdev entry */
+    /* find the pktdev entry */
     dev = pktdev_allocated(name);
     if (dev == NULL)
         return -1;
