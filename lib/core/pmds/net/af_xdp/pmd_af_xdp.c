@@ -130,7 +130,7 @@ pmd_dev_close(struct cne_pktdev *dev)
 {
     struct pmd_lport *lport = dev->data->dev_private;
 
-    CNE_LOG(DEBUG, "Closing AF_XDP ethdev\n");
+    CNE_LOG(DEBUG, "Closing AF_XDP\n");
 
     if (lport->xi)
         xskdev_socket_destroy(lport->xi);
@@ -238,12 +238,12 @@ pmd_af_xdp_remove(int pid)
     struct cne_pktdev *dev = NULL;
     char name[64]          = {0};
 
-    CNE_LOG(DEBUG, "Removing AF_XDP ethdev\n");
+    CNE_LOG(DEBUG, "Removing AF_XDP\n");
 
     if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
         return -ENODEV;
 
-    /* find the ethdev entry */
+    /* find the device entry */
     dev = pktdev_allocated(name);
     if (dev == NULL)
         return -1;

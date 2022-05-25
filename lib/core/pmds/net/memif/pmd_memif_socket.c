@@ -928,12 +928,12 @@ cne_pmd_memif_socket_remove(int pid)
     struct cne_pktdev *dev = NULL;
     char name[64]          = {0};
 
-    CNE_LOG(DEBUG, "Removing memif_socket pktdev\n");
+    CNE_LOG(DEBUG, "Removing memif_socket\n");
 
     if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
         return -ENODEV;
 
-    /* find the pktdev entry */
+    /* find the device entry */
     dev = pktdev_allocated(name);
     if (dev == NULL)
         return -1;

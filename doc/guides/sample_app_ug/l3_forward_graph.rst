@@ -71,7 +71,7 @@ This causes the ``pktdev_rx`` and ``pktdev_tx`` nodes as to be cloned as ``pktde
             ether_addr_copy(&addr, (struct ether_addr *)(val_eth + lportid) + 1);
         }
 
-        /* Ethdev node config, skip rx queue mapping */
+        /* Pktdev node config, skip rx queue mapping */
         if (cne_node_eth_config(pktdev_conf, nb_conf))
             CNE_ERR_RET("cne_node_eth_config: failed\n");
 

@@ -56,7 +56,7 @@ typedef int (*eth_stats_get_t)(struct cne_pktdev *dev, lport_stats_t *igb_stats)
  * Reset global I/O statistics of an Ethernet device to 0.
  *
  * @param dev
- *   ethdev handle of lport.
+ *   pktdev handle of lport.
  *
  * @return
  *   Negative errno value on error, 0 on success.
@@ -153,7 +153,7 @@ typedef int (*eth_mac_addr_set_t)(struct cne_pktdev *dev, struct ether_addr *mac
 typedef int (*eth_pkt_alloc)(struct cne_pktdev *dev, pktmbuf_t **bufs, uint16_t nb_pkts);
 
 /**
- * Possible states of an ethdev lport.
+ * Possible states of an pktdev lport.
  */
 enum pktdev_state {
     PKTDEV_UNUSED = 0, /** Device is unused before being probed. */
@@ -223,7 +223,7 @@ struct pktdev_data {
 /**
  * @internal
  * The pool of *cne_pktdev* structures. The size of the pool
- * is configured at compile-time in the <cne_ethdev.c> file.
+ * is configured at compile-time in the <pktdev.c> file.
  */
 extern struct cne_pktdev cne_pktdevices[];
 
