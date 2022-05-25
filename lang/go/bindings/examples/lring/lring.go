@@ -58,7 +58,7 @@ func init() {
 	stringFlags[C.RING_F_EXACT_SZ] = RingFlagExactSize
 }
 
-// Counvert the ring options from strings to a flag value
+// Convert the ring options from strings to a flag value
 func convertRingOptions(strFlags []string) uint {
 
 	var flags uint = 0
