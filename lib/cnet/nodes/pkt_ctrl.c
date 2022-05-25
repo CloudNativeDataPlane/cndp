@@ -60,7 +60,7 @@ cnet_eth_node_config(struct pkt_eth_node_config *conf, uint16_t nb_confs)
             if (id == CNE_NODE_ID_INVALID)
                 CNE_ERR_RET_VAL(-EIO, "Unable to clone rx node %s\n", name);
 
-            /* Add it to list of ethdev rx nodes for lookup */
+            /* Add it to list of rx nodes for lookup */
             elem = calloc(1, sizeof(eth_rx_node_elem_t));
             if (!elem)
                 goto err;

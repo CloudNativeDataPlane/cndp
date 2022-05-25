@@ -53,7 +53,7 @@ cne_node_eth_config(struct cne_node_pktdev_config *conf, uint16_t nb_confs)
             if (id == CNE_NODE_ID_INVALID)
                 return -EIO;
 
-            /* Add it to list of ethdev rx nodes for lookup */
+            /* Add it to list of device rx nodes for lookup */
             elem = calloc(1, sizeof(pktdev_rx_node_elem_t));
             if (!elem)
                 return -1;
@@ -72,7 +72,7 @@ cne_node_eth_config(struct cne_node_pktdev_config *conf, uint16_t nb_confs)
         id                           = cne_node_clone(tx_node->id, name);
         tx_node_data->nodes[port_id] = id;
 
-        node_dbg("ethdev", "Tx node %s-%s: is at %u", tx_node->name, name, id);
+        node_dbg("pktdev", "Tx node %s-%s: is at %u", tx_node->name, name, id);
 
         /* Prepare the actual name of the cloned node */
         snprintf(name, sizeof(name), "pktdev_tx-%u", port_id);

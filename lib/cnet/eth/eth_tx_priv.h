@@ -31,7 +31,7 @@ struct eth_tx_node_ctx {
  * Ethernet Tx node main structure.
  */
 struct eth_tx_node_main {
-    uint32_t nodes[CNE_MAX_ETHPORTS]; /**< Tx nodes for each ethdev port. */
+    uint32_t nodes[CNE_MAX_ETHPORTS]; /**< Tx nodes for each device port. */
 };
 
 /**

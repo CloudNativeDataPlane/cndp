@@ -32,10 +32,10 @@ struct cne_node_pktdev_config {
 };
 
 /**
- * Initializes ethdev nodes.
+ * Initializes device nodes.
  *
  * @param cfg
- *   Array of ethdev config that identifies which port's
+ *   Array of device configs that identifies which port's
  *   pktdev_rx and pktdev_tx nodes need to be created
  *   and queue association.
  * @param cnt
