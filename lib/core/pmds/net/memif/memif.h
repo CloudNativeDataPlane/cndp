@@ -61,8 +61,8 @@ typedef uint8_t cne_memif_log2_ring_size_t;
  */
 typedef struct __cne_packed {
     uint8_t name[CNE_MEMIF_NAME_SZ];               /**< Client app name */
-    cne_memif_version_t min_version;               /**< lowest suppocned memif version */
-    cne_memif_version_t max_version;               /**< highest suppocned memif version */
+    cne_memif_version_t min_version;               /**< lowest supported memif version */
+    cne_memif_version_t max_version;               /**< highest supported memif version */
     cne_memif_region_index_t max_region;           /**< maximum num of regions */
     cne_memif_ring_index_t max_s2c_ring;           /**< maximum num of S2C ring */
     cne_memif_ring_index_t max_c2s_ring;           /**< maximum num of C2S rings */

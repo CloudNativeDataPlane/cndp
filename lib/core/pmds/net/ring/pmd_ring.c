@@ -272,12 +272,12 @@ pmd_ring_remove(int pid)
     struct cne_pktdev *dev = NULL;
     char name[64]          = {0};
 
-    CNE_DEBUG("Removing RING ethdev\n");
+    CNE_DEBUG("Removing RING device\n");
 
     if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
         return -ENODEV;
 
-    /* find the ethdev entry */
+    /* find the device entry */
     dev = pktdev_allocated(name);
     if (!dev)
         return -1;

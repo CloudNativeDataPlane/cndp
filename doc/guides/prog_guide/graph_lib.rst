@@ -173,7 +173,7 @@ This method enables the use case of Rx and Tx nodes where multiple of those node
 need to be cloned based on the number of CPU available in the system.
 The cloned nodes will be identical, except the ``"context memory"``.
 Context memory will have information of port, queue pair in case of Rx and Tx
-ethdev nodes.
+device nodes.
 
 Create the graph object
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -189,11 +189,11 @@ Example of a graph object creation:
 
 .. code-block:: console
 
-   {"ethdev_rx-0-0", ip4*, ethdev_tx-*"}
+   {"pktdev_rx-0-0", ip4*, pktdev_tx-*"}
 
-In the above example, A graph object will be created with ethdev Rx
+In the above example, A graph object will be created with pktdev Rx
 node of port 0 and queue 0, all ipv4* nodes in the system,
-and ethdev tx node of all ports.
+and pktdev tx node of all ports.
 
 Multicore graph processing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,7 +267,7 @@ Broadly speaking, there are two different types of nodes.
 Static nodes
 ~~~~~~~~~~~~
 The first kind of nodes are those that have a fixed ``next_nodes[]`` for the
-complete burst (like ethdev_rx, ethdev_tx) and it is simple to write.
+complete burst (like pktdev_rx, pktdev_tx) and it is simple to write.
 ``process()`` function can move the obj burst to the next node either using
 ``cne_node_next_stream_move()`` or using ``cne_node_next_stream_get()`` and
 ``cne_node_next_stream_put()``.
@@ -347,22 +347,22 @@ Inbuilt Nodes
 CNDP provides a set of nodes for data processing. The following section
 details the documentation for the same.
 
-ethdev_rx
+pktdev_rx
 ~~~~~~~~~
 This node does ``cne_eth_rx_burst()`` into stream buffer passed to it
 (src node stream) and does ``cne_node_next_stream_move()`` only when
 there are packets received. Each ``cne_node`` works only on one Rx port and
 queue that it gets from node->ctx. For each (port X, rx_queue Y),
-a cne_node is cloned from  ethdev_rx_base_node as ``ethdev_rx-X-Y`` in
+a cne_node is cloned from  pktdev_rx_base_node as ``pktdev_rx-X-Y`` in
 ``cne_node_eth_config()`` along with updating ``node->ctx``.
 Each graph needs to be associated  with a unique cne_node for a (port, rx_queue).
 
-ethdev_tx
+pktdev_tx
 ~~~~~~~~~
 This node does ``cne_eth_tx_burst()`` for a burst of objs received by it.
 It sends the burst to a fixed Tx Port and Queue information from
 node->ctx. For each (port X), this ``cne_node`` is cloned from
-ethdev_tx_node_base as "ethdev_tx-X" in ``cne_node_eth_config()``
+pktdev_tx_node_base as "pktdev_tx-X" in ``cne_node_eth_config()``
 along with updating node->context.
 
 Since each graph doesn't need more than one Txq, per port, a Txq is assigned
@@ -392,7 +392,7 @@ ip4_rewrite
 This node gets packets from ``ip4_lookup`` node with next-hop id for each
 packet is embedded in ``node_mbuf_priv1(mbuf)->nh``. This id is used
 to determine the L2 header to be written to the packet before sending
-the packet out to a particular ethdev_tx node.
+the packet out to a particular pktdev_tx node.
 ``cne_node_ip4_rewrite_add()`` is control path API to add next-hop info.
 
 null

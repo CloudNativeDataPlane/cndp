@@ -240,7 +240,7 @@ extern "C" {
  * It can be used for tunnels which are not standards or listed above.
  * It is preferred to use specific tunnel flags like CNE_MBUF_F_TX_TUNNEL_GRE
  * or CNE_MBUF_F_TX_TUNNEL_IPIP if possible.
- * The ethdev must be configured with CNE_ETH_TX_OFFLOAD_IP_TNL_TSO.
+ * The device must be configured with CNE_ETH_TX_OFFLOAD_IP_TNL_TSO.
  * Outer and inner checksums are done according to the existing flags like
  * CNE_MBUF_F_TX_xxx_CKSUM.
  * Specific tunnel headers that contain payload length, sequence id
@@ -253,7 +253,7 @@ extern "C" {
  * It can be used for tunnels which are not standards or listed above.
  * It is preferred to use specific tunnel flags like CNE_MBUF_F_TX_TUNNEL_VXLAN
  * if possible.
- * The ethdev must be configured with CNE_ETH_TX_OFFLOAD_UDP_TNL_TSO.
+ * The device must be configured with CNE_ETH_TX_OFFLOAD_UDP_TNL_TSO.
  * Outer and inner checksums are done according to the existing flags like
  * CNE_MBUF_F_TX_xxx_CKSUM.
  * Specific tunnel headers that contain payload length, sequence id
