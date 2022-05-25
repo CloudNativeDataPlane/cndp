@@ -39,6 +39,33 @@
 #include "kernel_recv_priv.h"
 #include "tun_alloc.h"
 
+static inline pktmbuf_t *
+alloc_rx_mbuf(kernel_recv_info_t *rx)
+{
+    if (rx->idx >= rx->cnt) {
+        uint16_t cnt;
+
+        rx->idx = 0; /* Reset the index value to start of rx_bufs array */
+        rx->cnt = 0;
+
+        cnt = pktmbuf_alloc_bulk(rx->pi, rx->rx_bufs, KERN_RECV_CACHE_COUNT);
+        if (cnt <= 0)
+            return NULL;
+
+        rx->cnt = cnt;
+    }
+
+    return rx->rx_bufs[rx->idx++];
+}
+
+static inline void
+free_rx_mbuf(kernel_recv_info_t *rx)
+{
+    if (rx->idx <= 0)
+        CNE_RET("rx_mbuf array is empty\n");
+    rx->idx--;
+}
+
 static inline void
 mbuf_update(pktmbuf_t **mbufs, uint16_t nb_pkts)
 {
@@ -121,38 +148,41 @@ recv_pkt_parse(void **objs, uint16_t nb_pkts)
 static uint16_t
 kernel_recv_node_do(struct cne_graph *graph, struct cne_node *node, kernel_recv_node_ctx_t *ctx)
 {
-    uint16_t len = 0, count = 0, nb_pkts;
-    int fd, nb_cnt          = 0;
+    kernel_recv_info_t *rx;
+    int fd;
 
     if (!ctx)
         return 0;
+    rx = ctx->recv_info;
 
-    if ((fd = tun_get_fd(ctx->tinfo)) > 0) {
+    fd = ctx->sock;
+    if (fd > 0) {
         pktmbuf_t **mbufs;
+        uint16_t len = 0, count = 0;
+        int nb_cnt;
 
         /* Get pkts from port */
-        nb_pkts = (node->size >= CNE_GRAPH_BURST_SIZE) ? CNE_GRAPH_BURST_SIZE : node->size;
-
-        if ((nb_cnt = pktmbuf_alloc_bulk(ctx->pi, (pktmbuf_t **)node->objs, nb_pkts)) < 0)
-            return 0;
+        nb_cnt = (node->size >= CNE_GRAPH_BURST_SIZE) ? CNE_GRAPH_BURST_SIZE : node->size;
 
         mbufs = (pktmbuf_t **)node->objs;
         for (int i = 0; i < nb_cnt; i++) {
-            pktmbuf_t *m = *mbufs;
+            pktmbuf_t *m = alloc_rx_mbuf(rx);
+
+            if (!m)
+                break;
 
             len = read(fd, pktmbuf_mtod(m, char *), pktmbuf_tailroom(m));
-            if (len == 0 || len == 0xFFFF)
+            if (len == 0 || len == 0xFFFF) {
+                free_rx_mbuf(rx);
                 break;
-            mbufs++;
+            }
+            *mbufs++ = m;
 
             pktmbuf_port(m)     = node->id;
             pktmbuf_data_len(m) = len;
 
             count++;
         }
-
-        if (count < nb_cnt)
-            pktmbuf_free_bulk(mbufs, nb_cnt - count);
 
         if (count) {
             recv_pkt_parse(node->objs, count);
@@ -181,7 +211,8 @@ kernel_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **
     if (!ctx)
         return 0;
 
-    if ((fd = tun_get_fd(ctx->tinfo)) > 0) {
+    fd = ctx->sock;
+    if (fd > 0) {
         struct pollfd fds = {.fd = fd, .events = POLLIN};
 
         if (poll(&fds, 1, 0) > 0) {
@@ -200,32 +231,50 @@ kernel_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
     pktmbuf_info_t *pi;
     mmap_t *mm;
 
-    if (!ctx)
-        CNE_ERR_RET("Node context pointer is NULL\n");
+    ctx->recv_info = calloc(1, sizeof(kernel_recv_info_t));
+    if (!ctx->recv_info)
+        CNE_ERR_RET("Kernel recv_info is NULL\n");
 
-    ctx->tinfo = tun_alloc(IFF_TUN | IFF_NO_PI, "krecv%d");
-    if (!ctx->tinfo)
-        CNE_ERR_RET("Unable to open TUN/TAP socket\n");
+    ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (ctx->sock < 0)
+        CNE_ERR_RET("Unable to open RAW socket\n");
 
     /* Allocate a memory region and pktmbuf info structure to be used in receiving
      * packets from the kernel */
     mm = mmap_alloc(KERN_RECV_MBUF_COUNT, DEFAULT_MBUF_SIZE, MMAP_HUGEPAGE_DEFAULT);
     if (!mm) {
-        tun_free(ctx->tinfo);
+        close(ctx->sock);
+        ctx->sock = -1;
         CNE_ERR_RET("mmap_alloc() failed\n");
     }
 
     pi = pktmbuf_pool_create(mmap_addr(mm), KERN_RECV_MBUF_COUNT, DEFAULT_MBUF_SIZE, 0, NULL);
     if (!pi) {
         mmap_free(mm);
-        tun_free(ctx->tinfo);
+        close(ctx->sock);
+        ctx->sock = -1;
         CNE_ERR_RET("pktmbuf_pool_create() failed\n");
     }
-    pktmbuf_info_name_set(pi, tun_get_name(ctx->tinfo));
-    ctx->pi = pi;
+    pktmbuf_info_name_set(pi, graph->name);
+    ctx->recv_info->pi = pi;
+    ctx->recv_info->mm = mm;
 
-    tun_dump(NULL, ctx->tinfo);
     return 0;
+}
+
+static void
+kernel_recv_node_fini(const struct cne_graph *graph __cne_unused, struct cne_node *node)
+{
+    kernel_recv_node_ctx_t *ctx = (kernel_recv_node_ctx_t *)node->ctx;
+
+    close(ctx->sock);
+    ctx->sock = -1;
+    if (ctx->recv_info) {
+        pktmbuf_destroy(ctx->recv_info->pi);
+        mmap_free(ctx->recv_info->mm);
+        free(ctx->recv_info);
+    }
+    ctx->recv_info = NULL;
 }
 
 static struct cne_node_register kernel_recv_node_base = {
@@ -234,6 +283,7 @@ static struct cne_node_register kernel_recv_node_base = {
     .name    = KERNEL_RECV_NODE_NAME,
 
     .init = kernel_recv_node_init,
+    .fini = kernel_recv_node_fini,
 
     .nb_edges = KERNEL_RECV_NEXT_MAX,
     .next_nodes =

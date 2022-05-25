@@ -291,12 +291,12 @@ docker save cndp -o cndp.tar
 ctr -n=k8s.io images import cndp.tar
 ```
 
-Import the CNDP device plugin docker image.
+Import the AF_XDP device plugin docker image.
 
 ```bash
-docker save cndp-device-plugin -o cndp-device-plugin.tar
+docker save afxdp-device-plugin -o afxdp-device-plugin.tar
 
-ctr -n=k8s.io images import cndp-device-plugin.tar
+ctr -n=k8s.io images import afxdp-device-plugin.tar
 
 ```
 

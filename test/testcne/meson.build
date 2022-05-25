@@ -16,6 +16,7 @@ subdir('files/json') # Copy files for jcfg test
 # Keep lists sorted
 sources = files(
     'acl_test.c',
+    'cne_register_test.c',
     'cli_cmds.c',
     'cthread_test.c',
     'dsa_test.c',
@@ -108,6 +109,7 @@ testcne = executable('test-cne',
 
 test_names = [
     'acl',
+    'cne',
     'dsa',
     'fib',
     'fib_perf',

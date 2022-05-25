@@ -24,19 +24,9 @@ pkt_drop_process(struct cne_graph *graph, struct cne_node *node, void **objs, ui
     return nb_objs;
 }
 
-static int
-pkt_drop_node_init(const struct cne_graph *graph, struct cne_node *node)
-{
-    CNE_SET_USED(graph);
-    CNE_SET_USED(node);
-
-    return 0;
-}
-
 static struct cne_node_register pkt_drop_node = {
     .process = pkt_drop_process,
     .name    = PKT_DROP_NODE_NAME,
-    .init    = pkt_drop_node_init,
 };
 
 CNE_NODE_REGISTER(pkt_drop_node);

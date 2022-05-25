@@ -162,17 +162,9 @@ chnl_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     return nb_objs;
 }
 
-static int
-chnl_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused)
-{
-    return 0;
-}
-
 static struct cne_node_register chnl_recv_node_base = {
     .process = chnl_recv_node_process,
     .name    = CHNL_RECV_NODE_NAME,
-
-    .init = chnl_recv_node_init,
 
     .nb_edges = CHNL_RECV_NEXT_MAX,
     .next_nodes =

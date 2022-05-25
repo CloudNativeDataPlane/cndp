@@ -21,7 +21,7 @@ typedef struct punt_kernel_node_elem punt_kernel_node_elem_t;
  * PUNT Kernel node context structure.
  */
 typedef struct punt_kernel_node_ctx {
-    struct tap_info *tinfo;
+    int sock;
 } punt_kernel_node_ctx_t;
 
 /**

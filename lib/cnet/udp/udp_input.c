@@ -47,6 +47,7 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
 
     md = cnet_mbuf_metadata(m);
 
+    /* Assume we point to the L3 header here */
     uip = pktmbuf_mtod(m, struct udpip4_s *);
 
     /* Convert this into AVX instructions */
@@ -69,7 +70,7 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
         in_caddr_copy(&md->faddr, &key.faddr); /* Save the foreign address */
         in_caddr_copy(&md->laddr, &key.laddr); /* Save the local address */
 
-        /* skip to the Payload of the packet */
+        /* skip to the Payload by skipping the L3 + L4 headers */
         pktmbuf_adj_offset(m, m->l3_len + m->l4_len);
 
         return UDP_INPUT_NEXT_CHNL_RECV;
@@ -222,17 +223,9 @@ udp_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     return nb_objs;
 }
 
-static int
-udp_input_node_init(const struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused)
-{
-    return 0;
-}
-
 static struct cne_node_register udp_input_node_base = {
     .process = udp_input_node_process,
     .name    = UDP_INPUT_NODE_NAME,
-
-    .init = udp_input_node_init,
 
     .nb_edges = UDP_INPUT_NEXT_MAX,
     .next_nodes =

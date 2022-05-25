@@ -12,34 +12,35 @@
 #include <cli.h>             // for c_cmd, cli_path_string, cli_add_bin_path
 #include <tst_info.h>        // for tst_error
 
-#include "testcne.h"             // for init_tree, my_prompt, setup_cli
-#include "acl_test.h"            // for acl_main
-#include "cthread_test.h"        // for cthread_main
-#include "dsa_test.h"            // for dsa_main
-#include "jcfg_test.h"           // for jcfg_main
-#include "loop_test.h"           // for loop_main
-#include "mbuf_test.h"           // for mbuf_main
-#include "mempool_test.h"        // for mempool_main
-#include "mmap_test.h"           // for mmap_main
-#include "pktcpy_test.h"         // for pktcpy_main
-#include "cne_lport.h"           // for lport_stats_t
-#include "pkt_test.h"            // for pkt_main
-#include "ring_test.h"           // for ring_main
-#include "ring_api.h"            // for ring_api_main
-#include "ring_profile.h"        // for ring_profile
-#include "thread_test.h"         // for thread_main
-#include "uid_test.h"            // for uid_main
-#include "pktdev_test.h"         // for pktdev_main
-#include "kvargs_test.h"         // for kvargs_main
-#include "graph_test.h"          // for graph_main, graph_perf_main
-#include "hmap_test.h"           // for hmap_main
-#include "timer_test.h"          // for timer_main
-#include "xskdev_test.h"         // for xskdev_main
-#include "netdev_funcs.h"        // for netdev_link
-#include "log_test.h"            // for log_main
-#include "hash_test.h"           // for hash_main, hash_perf_main
-#include "rib_test.h"            // for rib_main, rib6_main
-#include "fib_test.h"            // for fib_main, fib_perf_main, fib6_main, fib6_perf_main
+#include "testcne.h"                  // for init_tree, my_prompt, setup_cli
+#include "acl_test.h"                 // for acl_main
+#include "cne_register_test.h"        // for cne_register_main
+#include "cthread_test.h"             // for cthread_main
+#include "dsa_test.h"                 // for dsa_main
+#include "jcfg_test.h"                // for jcfg_main
+#include "loop_test.h"                // for loop_main
+#include "mbuf_test.h"                // for mbuf_main
+#include "mempool_test.h"             // for mempool_main
+#include "mmap_test.h"                // for mmap_main
+#include "pktcpy_test.h"              // for pktcpy_main
+#include "cne_lport.h"                // for lport_stats_t
+#include "pkt_test.h"                 // for pkt_main
+#include "ring_test.h"                // for ring_main
+#include "ring_api.h"                 // for ring_api_main
+#include "ring_profile.h"             // for ring_profile
+#include "thread_test.h"              // for thread_main
+#include "uid_test.h"                 // for uid_main
+#include "pktdev_test.h"              // for pktdev_main
+#include "kvargs_test.h"              // for kvargs_main
+#include "graph_test.h"               // for graph_main, graph_perf_main
+#include "hmap_test.h"                // for hmap_main
+#include "timer_test.h"               // for timer_main
+#include "xskdev_test.h"              // for xskdev_main
+#include "netdev_funcs.h"             // for netdev_link
+#include "log_test.h"                 // for log_main
+#include "hash_test.h"                // for hash_main, hash_perf_main
+#include "rib_test.h"                 // for rib_main, rib6_main
+#include "fib_test.h"                 // for fib_main, fib_perf_main, fib6_main, fib6_perf_main
 #ifdef HAS_UINTR_SUPPORT
 #include "ibroker_test.h"        // for ibroker_main
 #endif
@@ -97,6 +98,7 @@ static int
 all_tests(int argc, char **argv)
 {
     acl_main(argc, argv);
+    cne_register_main(argc, argv);
     cthread_main(argc, argv);
     dsa_main(argc, argv);
     fib_main(argc, argv);
@@ -141,6 +143,7 @@ static struct cli_tree default_tree[] = {
 
     c_cmd("acl", acl_main, "Run the ACL tests"),
     c_cmd("all", all_tests, "Run all tests"),
+    c_cmd("cne", cne_register_main, "Run the CNE registration tests"),
     c_cmd("cthread", cthread_main, "Run the cthread API test"),
     c_cmd("dsa", dsa_main, "Run the dsa API test"),
     c_cmd("fib", fib_main, "Run the FIB test"),

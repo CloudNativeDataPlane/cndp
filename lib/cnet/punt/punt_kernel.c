@@ -14,6 +14,7 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>
+#include <linux/un.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <stddef.h>        // for NULL
@@ -37,10 +38,10 @@
 #include <cnet_eth.h>
 #include <net/cne_udp.h>
 #include <hexdump.h>
+#include <cnet_tcp.h>
 
 #include <cnet_node_names.h>
 #include "punt_kernel_priv.h"
-#include "tun_alloc.h"
 
 #define PREFETCH_CNT 6
 
@@ -48,28 +49,35 @@ static __cne_always_inline void
 punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
 {
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
-    struct iovec v[cnt];
-    int fd;
 
-    if ((fd = tun_get_fd(ctx->tinfo)) >= 0) {
+    if (ctx->sock >= 0) {
+        struct cne_ipv4_hdr *ip4;
+        struct sockaddr_in sin = {0};
+        size_t len;
+        char *buf;
+
         for (int i = 0; i < cnt; i++) {
-            v[i].iov_base = pktmbuf_mtod(mbufs[i], void *);
-            v[i].iov_len  = pktmbuf_data_len(mbufs[i]);
+            ip4 = pktmbuf_mtod(mbufs[i], struct cne_ipv4_hdr *);
+            len = pktmbuf_data_len(mbufs[i]);
+            buf = (char *)ip4;
+
+            sin.sin_family      = AF_INET;
+            sin.sin_port        = 0;
+            sin.sin_addr.s_addr = ip4->dst_addr;
+
+            if (sendto(ctx->sock, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+                CNE_WARN("Unable to send packets: %s\n", strerror(errno));
         }
-        if (writev(fd, v, cnt) < 0)
-            CNE_WARN("Unable to send packets: %s\n", strerror(errno));
     }
 }
 
 static uint16_t
-punt_kernel_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
+punt_kernel_node_process(struct cne_graph *graph __cne_unused, struct cne_node *node, void **objs,
                          uint16_t nb_objs)
 {
     uint16_t n_left_from;
     pktmbuf_t *mbufs[PREFETCH_CNT], **pkts;
     int k;
-
-    CNE_SET_USED(graph);
 
     pkts        = (pktmbuf_t **)objs;
     n_left_from = nb_objs;
@@ -125,16 +133,22 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 {
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
 
-    if (!ctx)
-        CNE_ERR_RET("Context pointer is NULL\n");
-
-    ctx->tinfo = tun_alloc(IFF_TUN | IFF_NO_PI, "punt%d");
-    if (!ctx->tinfo)
-        CNE_ERR_RET("Unable to open TUN/TAP socket\n");
-
-    tun_dump(NULL, ctx->tinfo);
+    ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    if (ctx->sock < 0)
+        CNE_ERR_RET("Unable to open RAW socket\n");
 
     return 0;
+}
+
+static void
+punt_kernel_node_fini(const struct cne_graph *graph __cne_unused, struct cne_node *node)
+{
+    punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
+
+    if (ctx->sock >= 0) {
+        close(ctx->sock);
+        ctx->sock = -1;
+    }
 }
 
 static struct cne_node_register punt_kernel_node_base = {
@@ -142,6 +156,7 @@ static struct cne_node_register punt_kernel_node_base = {
     .name    = PUNT_KERNEL_NODE_NAME,
 
     .init = punt_kernel_node_init,
+    .fini = punt_kernel_node_fini,
 
     .nb_edges = PUNT_KERNEL_NEXT_MAX,
     .next_nodes =
