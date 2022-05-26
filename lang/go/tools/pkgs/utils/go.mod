@@ -3,6 +3,7 @@ module github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/utils
 go 1.18
 
 require github.com/shirou/gopsutil v3.21.11+incompatible
+require gopkg.in/yaml.v3 v3.0.0
 
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
