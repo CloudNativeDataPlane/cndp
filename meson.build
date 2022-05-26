@@ -5,7 +5,7 @@ project('CNDP', 'C', 'cpp',
     # Get version number from file.
     # Fallback to "more" for Windows compatibility.
     version: run_command(find_program('cat', 'more'),
-        files('VERSION')).stdout().strip(),
+        files('VERSION'), check: true).stdout().strip(),
     license: 'BSD',
     default_options: [
         'buildtype=release',
@@ -231,7 +231,7 @@ endforeach
 compile_time_cpuflags = []
 
 # get binutils version for the workaround of Bug 97
-ldver = run_command('ld', '-v').stdout().strip()
+ldver = run_command('ld', '-v', check: true).stdout().strip()
 if ldver.contains('2.30') and cc.has_argument('-mno-avx512f')
     machine_args += '-mno-avx512f'
     message('Binutils 2.30 detected, disabling AVX512 support as workaround for bug #97')
@@ -365,8 +365,8 @@ cndp_a_name = 'libcndp.a'
 cndp_so_name = 'libcndp.so'
 
 mklib = find_program('tools/mklib.sh')
-run_command(mklib, cndp_a_name, libcndp_a)
-run_command(mklib, cndp_so_name, libcndp_so)
+run_command(mklib, cndp_a_name, libcndp_a, check: true)
+run_command(mklib, cndp_so_name, libcndp_so, check: true)
 
 cndp_a = custom_target('libcndp_a_target',
     output: cndp_a_name,
