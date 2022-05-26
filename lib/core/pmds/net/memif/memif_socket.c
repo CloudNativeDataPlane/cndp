@@ -205,7 +205,7 @@ cne_memif_msg_receive_init(struct cne_memif_control_channel *cc, cne_memif_msg_t
             pmd->cc = cc;
 
             if (i->mode != CNE_MEMIF_INTERFACE_MODE_ETHERNET) {
-                cne_memif_msg_enq_disconnect(pmd->cc, "Only ethernet mode suppocned", 0);
+                cne_memif_msg_enq_disconnect(pmd->cc, "Only ethernet mode supported", 0);
                 return -1;
             }
 

@@ -258,7 +258,7 @@ pmd_dev_close(struct cne_pktdev *dev)
 {
     struct pmd_lport *lport;
 
-    CNE_LOG(DEBUG, "Closing TUN/TAP ethdev on socket\n");
+    CNE_LOG(DEBUG, "Closing TUN/TAP on socket\n");
 
     if (dev && dev->data) {
         lport = dev->data->dev_private;

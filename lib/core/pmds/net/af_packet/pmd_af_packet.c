@@ -207,7 +207,7 @@ pmd_dev_close(struct cne_pktdev *dev)
     struct pmd_lport *lport;
     struct tpacket_req *rq;
 
-    CNE_LOG(DEBUG, "Closing AF_PACKET ethdev on socket\n");
+    CNE_LOG(DEBUG, "Closing AF_PACKET on socket\n");
 
     lport = dev->data->dev_private;
     rq    = &lport->tp_req;

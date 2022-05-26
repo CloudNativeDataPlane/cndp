@@ -248,7 +248,7 @@ initialize(void)
     for (uint16_t lportid = 0; lportid < pktdev_port_count(); lportid++)
         pkt_conf[nb_conf++].port_id = lportid;
 
-    /* Ethdev node config, skip rx queue mapping */
+    /* Pktdev node config, skip rx queue mapping */
     if (cnet_eth_node_config(pkt_conf, nb_conf))
         CNE_ERR_RET("cnet_eth_node_config: failed\n");
 
