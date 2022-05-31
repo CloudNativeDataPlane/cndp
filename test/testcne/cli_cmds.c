@@ -21,6 +21,7 @@
 #include "loop_test.h"                // for loop_main
 #include "mbuf_test.h"                // for mbuf_main
 #include "mempool_test.h"             // for mempool_main
+#include "metrics_test.h"             // for metrics_main
 #include "mmap_test.h"                // for mmap_main
 #include "pktcpy_test.h"              // for pktcpy_main
 #include "cne_lport.h"                // for lport_stats_t
@@ -119,6 +120,7 @@ all_tests(int argc, char **argv)
     log_main(argc, argv);
     mbuf_main(argc, argv);
     mempool_main(argc, argv);
+    metrics_main(argc, argv);
     mmap_main(argc, argv);
     meter_main(argc, argv);
     msgchan_main(argc, argv);
@@ -166,6 +168,7 @@ static struct cli_tree default_tree[] = {
     c_cmd("loop", loop_main, "Port loop test"),
     c_cmd("mbuf", mbuf_main, "Run MBUF test"),
     c_cmd("mempool", mempool_main, "Run MEMPOOL test"),
+    c_cmd("metrics", metrics_main, "Run Metrics test"),
     c_cmd("mmap", mmap_main, "Run MMAP test"),
     c_cmd("meter", meter_main, "Run Meter test"),
     c_cmd("msgchan", msgchan_main, "Run Message Channel test"),
