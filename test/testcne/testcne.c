@@ -126,5 +126,6 @@ main(int argc, char **argv)
     if (cne_unregister(tidx) < 0)
         CNE_ERR("cne_unregister(%d) failed\n", tidx);
 
-    return tst_summary() ? EXIT_FAILURE : EXIT_SUCCESS;
+    tst_summary();
+    return tst_exit_code();
 }

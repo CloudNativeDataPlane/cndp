@@ -16,10 +16,21 @@
 struct tst_stat {
     atomic_uint fail;
     atomic_uint pass;
+    atomic_uint skip;
 };
 
 /* Global test statistics updated by tst_end(). */
 static struct tst_stat tst_stats;
+
+int
+tst_exit_code(void)
+{
+    if (atomic_load(&tst_stats.fail))
+        return EXIT_FAILURE;
+    else if (atomic_load(&tst_stats.skip))
+        return EXIT_SKIPPED;
+    return EXIT_SUCCESS;
+}
 
 uint32_t
 tst_summary(void)
@@ -31,6 +42,7 @@ tst_summary(void)
     cne_printf("-------------\n");
     cne_printf("Fail: %u\n", fail);
     cne_printf("Pass: %u\n", atomic_load(&tst_stats.pass));
+    cne_printf("Skip: %u\n", atomic_load(&tst_stats.skip));
 
     return fail;
 }
@@ -60,19 +72,35 @@ tst_start(const char *msg)
 }
 
 void
-tst_end(tst_info_t *tst, bool passed)
+tst_end(tst_info_t *tst, int result)
 {
     if (!tst)
         cne_panic("tst cannot be NULL\n");
 
     cne_printf("[cyan]<<<< [yellow]%s [green]Tests[]: [magenta]done.[]\n\n", tst->name);
 
-    if (passed == TST_PASSED)
+    if (result == TST_PASSED)
         atomic_fetch_add(&tst_stats.pass, 1);
+    else if (result == TST_SKIPPED)
+        atomic_fetch_add(&tst_stats.skip, 1);
     else
         atomic_fetch_add(&tst_stats.fail, 1);
     free(tst->name);
     free(tst);
+}
+
+void
+tst_skip(const char *fmt, ...)
+{
+    va_list va_list;
+
+    va_start(va_list, fmt);
+    cne_printf("[yellow]  ** [green]SKIP[] - [green]TEST[]: [cyan]");
+    vprintf(fmt, va_list);
+    cne_printf("[]\n");
+    va_end(va_list);
+
+    fflush(stdout);
 }
 
 void

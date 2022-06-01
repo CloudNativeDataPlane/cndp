@@ -20,14 +20,30 @@ extern "C" {
 
 #include <cne_log.h>
 
-#define TST_PASSED true  /**< used for tst_end() when a test passes */
-#define TST_FAILED false /**< used for tst_end() when a test fails */
+/** An exit code of 77 indicates a test is skipped */
+#define EXIT_SKIPPED 77
+
+enum {
+    TST_FAILED = 0, /**< used for tst_end() when a test fails */
+    TST_PASSED,     /**< used for tst_end() when a test passes */
+    TST_SKIPPED,    /**< used for tst_end() when a test is skipped */
+};
 
 typedef struct {
     char *name; /**< Name of the test cne_strdup'ed */
     int lid;    /**< lcore id */
     int sid;    /**< socket id */
 } tst_info_t;
+
+/**
+ * Get an appropriate exit code used by a test application
+ *
+ * @return
+ *   EXIT_FAILURE if any test fails
+ *   EXIT_SKIPPED if any test is skipped, but none fail
+ *   EXIT_SUCCESS if all tests pass
+ */
+int tst_exit_code(void);
 
 /**
  * Print a summary of test results
@@ -54,19 +70,21 @@ tst_info_t *tst_start(const char *name);
 /**
  * End a test
  *
- * This function records the pass/fail status and frees the tst_info structure.
+ * This function records the pass/fail/skip status and frees the tst_info structure.
  *
  * @param tst
  *   pointer to tst_info structure
- * @param passed
- *   TST_PASSED if the test passed or TST_FAILED if the test failed
+ * @param result
+ *   TST_PASSED if the test passed
+ *   TST_FAILED if the test failed
+ *   TST_SKIPPED if the test was skipped
  */
-void tst_end(tst_info_t *tst, bool passed);
+void tst_end(tst_info_t *tst, int result);
 
 /**
  * The following functions are used for colorful logging
  *
- * Also prepend the message with one of PASS/FAIL/INFO strings.
+ * Also prepend the message with one of PASS/FAIL/INFO/SKIP strings.
  *
  * @param fmt
  *   printf like format
@@ -76,6 +94,7 @@ void tst_end(tst_info_t *tst, bool passed);
 void tst_ok(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 0)));
 void tst_error(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 0)));
 void tst_info(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 0)));
+void tst_skip(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 0)));
 
 #define TST_ASSERT_RETURN(cond, msg, ...)                                                   \
     do {                                                                                    \
