@@ -240,6 +240,11 @@ setup_umem(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lport_group_t *lpg)
     else
         umem->mtype = mmap_type_by_name((const char *)v);
 
+    /* All lports in the group use the same region */
+    umem->rinfo = calloc(1, sizeof(*umem->rinfo));
+    if (!umem->rinfo)
+        CNE_ERR_GOTO(err_out, "Out of memory\n");
+
     umem->region_cnt      = 1;
     umem->rinfo[0].bufcnt = umem->bufcnt;
 
@@ -256,8 +261,10 @@ setup_umem(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lport_group_t *lpg)
     return 0;
 
 err_out:
-    if (umem)
+    if (umem) {
+        free(umem->rinfo);
         free(umem->name);
+    }
     free(umem);
     return -1;
 }
