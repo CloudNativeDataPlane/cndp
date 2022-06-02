@@ -130,7 +130,6 @@ test_names = [
     'mempool',
     'mmap',
     'pkt',
-    'pktcopy',
     'ring',
     'sizeof',
     'thread',
@@ -145,6 +144,7 @@ test_names_with_iface = [
 test_names_long_runtime = [
     'cthread',
     'hash_perf',
+    'pktcpy',
     'rib',
     'rib6',
     'ring_api',
@@ -155,16 +155,17 @@ test_names_long_runtime = [
 # Run each test as a separate meson 'test' so they run in parallel and have their own timeout
 # Tests in this first group are short and do not need to run as root or have a real network
 foreach n:test_names
-    test(n, testcne, suite: ['default', 'short'], timeout: 60, args: [n])
+    test(n, testcne, suite: ['default', 'short'], timeout: 60, args: ['--no-color', n])
 endforeach
 
 # Require real network interface, cannot be run in parallel, and must be root.
 # The interface must be passed as a "--test-args='-- -i <iface>'" parameter
 foreach n:test_names_with_iface
-   test(n, testcne, suite: ['root-iface-short'], is_parallel: false, timeout: 60, args: [n])
+   test(n, testcne, suite: ['root-iface-short'], is_parallel: false, timeout: 60,
+        args: ['--no-color', n])
 endforeach
 
 # These tests take a long time to run, up to 30 minutes
 foreach n:test_names_long_runtime
-   test(n, testcne, suite: ['long'], timeout: 60*30, args: [n])
+   test(n, testcne, suite: ['long'], timeout: 60*30, args: ['--no-color', n])
 endforeach
