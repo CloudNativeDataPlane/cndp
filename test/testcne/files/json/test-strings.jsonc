@@ -2,3 +2,4 @@
 { "defaults": {} }
 { "defaults": { "foo": "null", "bar": 2, "foobar": 3 }}
 { "defaults": [ 10, 12, 13, "str"] }
+{ "user1-data": { "a key": "a value" }}

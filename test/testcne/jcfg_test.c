@@ -138,18 +138,18 @@ test_json_files(const char *path, int flags)
         cne_printf("\n** Process file  : %s\n\n", pent->d_name);
         snprintf(fullpath, sizeof(fullpath), "%s/%s", path, pent->d_name);
 
-        if (strcmp(pent->d_name, "test-strings.jsonc"))
+        if (!strcmp(pent->d_name, "test-strings.jsonc"))
             TST_ASSERT_GOTO(jcfg_add_decoder(USER1_DATA_TAG, _user1_decode) >= 0,
                             "jcfg_add_decoder(%s) failed\n", err, USER1_DATA_TAG);
 
         jinfo = jcfg_parser(flags, fullpath);
         if (!jinfo)
-            break;
+            continue;
 
         if (jcfg_process(jinfo, flags, process_callback, NULL))
             CNE_ERR_RET("*** Invalid configuration ***\n");
 
-        if (strcmp(pent->d_name, "test-strings.jsonc"))
+        if (!strcmp(pent->d_name, "test-strings.jsonc"))
             TST_ASSERT_GOTO(jcfg_del_decoder(USER1_DATA_TAG) == 0, "jcfg_del_decoder(%s) failed\n",
                             err, USER1_DATA_TAG);
 
