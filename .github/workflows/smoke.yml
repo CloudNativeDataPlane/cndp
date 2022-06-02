@@ -35,3 +35,9 @@ jobs:
 
     - name: Short test
       run: meson test -C builddir --suite short
+
+    - name: Upload testlog
+      uses: actions/upload-artifact@v3
+      with:
+        name: testlog.txt
+        path: ${{ github.workspace }}/builddir/meson-logs/testlog.txt
