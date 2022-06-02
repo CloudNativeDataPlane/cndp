@@ -128,6 +128,7 @@ test_names = [
     'log',
     'mbuf',
     'mempool',
+    'metrics',
     'mmap',
     'pkt',
     'pktcopy',
