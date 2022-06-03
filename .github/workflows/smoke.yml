@@ -38,6 +38,7 @@ jobs:
 
     - name: Upload testlog
       uses: actions/upload-artifact@v3
+      if: success() || failure()
       with:
         name: testlog.txt
         path: ${{ github.workspace }}/builddir/meson-logs/testlog.txt
