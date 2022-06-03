@@ -19,7 +19,7 @@
 #include "cnet_protosw.h"        // for protosw_entry
 
 /**
- * This library provides an extension mechanism for socket option
+ * This library provides an extension mechanism for channel option
  * processing.  Protocol processing modules can register to receive
  * setsockopt() and getsockopt() calls for options that are not
  * understood by the core setsockopt() and getsockopt() functions.
@@ -27,7 +27,7 @@
 
 /**
  * Add a sockopt switch structure.  There can be multiple handlers for each
- * level (e.g. IPPROTO_IP handlers for raw socket options, multicast options,
+ * level (e.g. IPPROTO_IP handlers for raw channel options, multicast options,
  * etc).
  *
  * RETURNS: 0, or -1 if the switch table is full
@@ -355,7 +355,6 @@ chnl_optval_get(const void *optval, uint32_t optlen)
 int
 chnl_set_opt(struct chnl *ch, int level, int optname, const void *optval, int optlen)
 {
-    /*tv_t *tv; FIXME */
     uint32_t val = 0;
     int rs       = 0;
 

@@ -55,7 +55,7 @@ enum {
 };
 
 /**
- * @brief Get the currect cnet structure pointer.
+ * @brief Get the current cnet structure pointer.
  *
  * @return
  *   Pointer to struct cnet* or NULL on error.

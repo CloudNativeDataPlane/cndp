@@ -16,7 +16,7 @@
 #include "cmds.h"                 // for txgen_flags_string, txgen_link_state, txge...
 #include "display.h"              // for display_set_color, display_dashline
 #include "txgen.h"                // for COLUMN_WIDTH_0, COLUMN_WIDTH_1, txgen, txg...
-#include "cne_inet.h"             // for inet_ntop4, ip4addr, ip4addr::(anonymous)
+#include "cne_inet.h"             // for inet_ntop4
 #include <net/cne_ether.h>        // for inet_mtoa
 #include "cne_lport.h"            // for lport_stats_t
 #include "cne_log.h"

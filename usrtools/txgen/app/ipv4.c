@@ -7,7 +7,7 @@
 
 #include "txgen.h"        // for txgen, txgen_t
 #include "ipv4.h"
-#include "cne_inet.h"          // for ip4addr, ip4addr::(anonymous), IPv4_VERSION
+#include "cne_inet.h"          // for IPv4_VERSION
 #include "net/cne_ip.h"        // for cne_ipv4_hdr, cne_ipv4_cksum
 
 /**

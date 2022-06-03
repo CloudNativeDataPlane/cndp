@@ -680,7 +680,7 @@ xskdev_recv_xsk_fd(xskdev_info_t *xi)
     len = strlcat(xsk_map_fd_msg, xi->ifname, sizeof(xsk_map_fd_msg));
 
     if (send(xi->uds_info->sock, xsk_map_fd_msg, len, 0) <= 0)
-        CNE_ERR_RET("Failed to send /xsk_map_fd mesg\n");
+        CNE_ERR_RET("Failed to send /xsk_map_fd message\n");
     else
         CNE_DEBUG("Sent %s msg\n", xsk_map_fd_msg);
 

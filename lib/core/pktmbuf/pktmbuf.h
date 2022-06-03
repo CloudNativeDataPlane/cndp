@@ -759,9 +759,7 @@ __pktmbuf_free_bulk(pktmbuf_pending_t *p, pktmbuf_t *m)
 static inline void
 pktmbuf_free_bulk(pktmbuf_t **mbufs, unsigned int count)
 {
-    pktmbuf_pending_t pend;
-    memset(&pend, 0, sizeof(pend));
-    pend.pending_sz = PKTMBUF_PENDING_SZ;
+    pktmbuf_pending_t pend = {.pending_sz = PKTMBUF_PENDING_SZ};
 
     if (count == 0)
         return;

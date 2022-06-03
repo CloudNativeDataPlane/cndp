@@ -7,7 +7,7 @@
 
 #include "txgen.h"        // for DEFAULT_ACK_NUMBER, DEFAULT_PKT_NUMBER, DEF...
 #include "tcp.h"
-#include "cne_inet.h"           // for ip4addr, ip4addr::(anonymous), TCP_ACK_FLAG
+#include "cne_inet.h"           // for TCP_ACK_FLAG
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_tcp.h"        // for cne_tcp_hdr

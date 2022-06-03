@@ -82,7 +82,7 @@ struct netif {
     uint16_t mtu;                              /**< Max Transmission Unit */
     char ifname[IF_NAMESIZE + 1];              /**< ifname of interface */
     char netdev_name[IF_NAMESIZE + 1];         /**< netdev name of interface */
-    struct drv_entry *drv;                     /**< Device interface structure */
+    struct drv_entry *drv;                     /**< Driver interface structure */
     struct rt4_entry *rt_cached;               /**< Route Cache */
     struct inet4_addr ip4_addrs[NUM_IP_ADDRS]; /**< Multiple IP addresses for Interface */
     struct ether_addr mac;                     /**< MAC address of interface */

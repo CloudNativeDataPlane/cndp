@@ -6,7 +6,7 @@
 #include <stdint.h>            // for uint16_t
 
 #include "udp.h"
-#include "cne_inet.h"           // for ip4addr, ip4addr::(anonymous)
+#include "cne_inet.h"
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_udp.h"        // for cne_udp_hdr
