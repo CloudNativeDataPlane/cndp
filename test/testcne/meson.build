@@ -128,12 +128,15 @@ test_names = [
     'log',
     'mbuf',
     'mempool',
+    'meter',
+    'metrics',
     'mmap',
     'pkt',
     'ring',
     'sizeof',
     'thread',
     'uid',
+    'vec',
 ]
 
 test_names_with_iface = [
