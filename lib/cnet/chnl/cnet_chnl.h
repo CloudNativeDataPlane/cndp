@@ -417,7 +417,7 @@ ch_writeable(struct chnl *ch)
     int ret;
 
     if (!ch) {
-        CNE_ERR("Channal is NULL\n");
+        CNE_ERR("Channel is NULL\n");
         return 0;
     }
 
@@ -482,7 +482,7 @@ CNDP_API void chnl_cleanup(struct chnl *ch);
  * @param pro
  *   The proto type value
  * @param pcb
- *   The PCB structure pointer to update.
+ *   The parent PCB pointer, can be NULL.
  * @return
  *   NULL on error or pointer to channel structure.
  */

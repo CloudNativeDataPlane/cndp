@@ -144,10 +144,10 @@ CNDP_API struct pcb_entry *cnet_pcb_lookup(struct pcb_hd *hd, struct pcb_key *ke
 CNDP_API void cnet_pcb_dump(stk_t *stk);
 
 /**
- * @brief Dump out the details information for the stack PCB list.
+ * Dump out the details information for the stack PCB list.
  *
  * @param stk
- *   The stack instance pointer to use for dumping the data.
+ *   The stack instance pointer to use for dumping all PCBs in instance.
  * @return
  *   N/A
  */

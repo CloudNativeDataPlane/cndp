@@ -65,7 +65,7 @@ _chnl_buf_init(mempool_t *mp, void *opaque_arg __cne_unused, void *_b, unsigned 
         vec_free(ch->ch_rcv.cb_vec);
 }
 
-/**
+/*
  * This routine allocates a chnl structure from the free list,
  * and initializes it for use.
  */
@@ -104,7 +104,7 @@ chnl_alloc(void)
     return ch;
 }
 
-/**
+/*
  * This routine re-initializes a chnl structure, and returns it to the free
  * list.
  */
@@ -160,7 +160,7 @@ chnl_free(struct chnl *ch)
     mempool_put(stk->chnl_objs, (void *)ch);
 }
 
-/**
+/*
  * This routine flushes all queued data in a chnl buffer.
  */
 static void
@@ -179,18 +179,14 @@ chnl_cbflush(struct chnl_buf *cb)
         CNE_RET("Unable to release lock\n");
 }
 
-/**
- * This routine is called as the last part of the close() sequence,
- * to flush all queued data, wake up all tasks blocked on the chnl,
- * and to release all associated data structures back to their free lists.
+/*
+ * This routine is called as the last part of the close() sequence.
  */
 void
 chnl_cleanup(struct chnl *ch)
 {
-    if (!ch) {
-        CNE_ERR("Socket NULL\n");
-        return;
-    }
+    if (!ch)
+        CNE_RET("Channel NULL\n");
 
     if (ch->ch_state & _CHNL_FREE)
         CNE_RET("Already free!\n");
@@ -222,7 +218,7 @@ chnl_cleanup(struct chnl *ch)
     chnl_free(ch);
 }
 
-/**
+/*
  * This routine waits on a chnl buffer semaphore, which could mean the caller
  * is waiting for data for a read or space to write data. The CB_WAIT flag is
  * set to indicate to chnl_sbwakeup() when some thead or threads are waiting on
@@ -260,7 +256,7 @@ chnl_cb_wait(struct chnl *ch, struct chnl_buf *cb)
     return rc;
 }
 
-/**
+/*
  * The routine wakes up threads waiting on a read, write and/or select states to
  * change allowing the waiting threads to be awoken. The waiting threads are on
  * the chnl buffer condition variable for reading data or space to write
@@ -316,10 +312,10 @@ chnl_copy_data(pktmbuf_t **to, pktmbuf_t **from, int len)
     return bytes;
 }
 
-/**
+/*
  * This routine opens a chnl and returns a chnl descriptor.
  * The chnl descriptor is passed to the other chnl routines to identify the
- * packet.
+ * channel to process.
  */
 struct chnl *
 channel(int domain, int type, int proto, chnl_cb_t cb)
@@ -335,14 +331,14 @@ channel(int domain, int type, int proto, chnl_cb_t cb)
     return ch;
 }
 
-/**
+/*
  * This routine allocates and initializes a new chnl structure.
  *
  * If the <ppcb> or parent PCB is not null then use some information from
  * the parent chnl structure.
  *
  * @return
- *   struct chnl pointer, or NULL.
+ *   struct chnl pointer or NULL.
  */
 struct chnl *
 __chnl_create(int32_t dom, int32_t type, int32_t pro, struct pcb_entry *ppcb)
@@ -429,7 +425,7 @@ __chnl_create(int32_t dom, int32_t type, int32_t pro, struct pcb_entry *ppcb)
     return ch;
 }
 
-/**
+/*
  * This routine shuts down the receive and/or send side of a connection.
  *
  * On a TCP chnl, shutting down the send side initiates a protocol-level
@@ -474,7 +470,7 @@ chnl_shutdown(struct chnl *ch, int how)
     return status;
 }
 
-/**
+/*
  * This routine associates a network address (also referred to as its "name")
  * with a chnl ch that other processes can connect or send to it.
  * When a chnl is created with chnl(), it belongs to an address family
@@ -512,7 +508,7 @@ leave:
     return rs;
 }
 
-/**
+/*
  * If <ch> is a stream chnl, this routine establishes a virtual circuit
  * between <ch> and another chnl specified by <name>.  If <ch> is a datagram
  * packet, it permanently specifies the peer to which messages are sent.
@@ -599,7 +595,7 @@ chnl_connect2(struct chnl *ch1, struct chnl *ch2)
     return rs;
 }
 
-/**
+/*
  * This routine enables connections to a stream chnl. After enabling
  * connections with listen(), connections are actually accepted by accept().
  */
@@ -616,7 +612,7 @@ chnl_listen(struct chnl *ch, int backlog)
     return rs;
 }
 
-/**
+/*
  * This routine accepts an incoming connection on a parent chnl <s>, and
  * returns a new child chnl created for the connection.  The parent chnl
  * must be bound to an address with bind(), and enabled for accepting new
@@ -640,7 +636,7 @@ chnl_accept(struct chnl *ch, struct sockaddr *sa, socklen_t *addrlen)
     return new_ch;
 }
 
-/**
+/*
  * This routine gets the current name for the specified chnl.
  *
  * @param ch
@@ -682,7 +678,7 @@ chnl_getchnlname(struct chnl *ch, struct sockaddr *sa, socklen_t *namelen)
     return 0;
 }
 
-/**
+/*
  * This routine gets the name of the peer connected to the specified chnl.
  *
  * @param ch
@@ -752,7 +748,7 @@ sendit(struct chnl *ch, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbuf
     return ch->ch_proto->funcs->send_func(ch, mbufs, nb_mbufs);
 }
 
-/**
+/*
  * This routine transmits data to a previously connected chnl.
  *
  * @param ch
@@ -810,7 +806,7 @@ chnl_fcntl(struct chnl *ch __cne_unused, int cmd __cne_unused, ...)
     return 0;
 }
 
-/**
+/*
  * This routine implements the bulk of the bind() function, for all chnl
  * types.  It takes an additional argument pHd, which is a pointer to a
  * 'struct pcb_hd' structure.  There is one 'struct pcb_hd' per protocol, and it
@@ -857,7 +853,7 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
     in_caddr_copy(&key.laddr, &laddr);
     in_caddr_copy(&key.faddr, &zero_faddr);
 
-    /* If lport is unassigned, obtain the next ephemeral port value */
+    /* If local port is unassigned, obtain the next ephemeral port value */
     if (CIN_PORT(&laddr) == 0) {
         uint16_t prevPort = hd->lport;
 
@@ -911,7 +907,7 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
     return 0;
 }
 
-/**
+/*
  * This routine is the protocol-specific connect() back-end function for
  * datagram chnls.
  */
@@ -989,7 +985,7 @@ chnl_list(stk_t *stk)
     }
 }
 
-/**
+/*
  * This is a protocol back-end routine for operations that don't need to do
  * any further work.
  *
@@ -1001,7 +997,7 @@ chnl_OK(struct chnl *ch __cne_unused)
     return 0;
 }
 
-/**
+/*
  * This is a protocol back-end routine for operations that don't need to do
  * any further work.
  *
@@ -1013,7 +1009,7 @@ chnl_NULL(struct chnl *ch __cne_unused)
     return NULL;
 }
 
-/**
+/*
  * This is a protocol back-end routine for operations that are not supported
  * by the protocol.
  *

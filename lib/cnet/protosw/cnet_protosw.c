@@ -15,7 +15,7 @@
 
 /**
  * This module manages the list of "protocol switch" structures, each of which
- * corresponds to a socket type, e.g. {AF_INET, SOCK_DGRAM, IPPROTO_UDP}.
+ * corresponds to a channel type, e.g. {AF_INET, SOCK_DGRAM, IPPROTO_UDP}.
  */
 static struct protosw_entry *ipproto_table[CNET_MAX_IPPROTO];
 

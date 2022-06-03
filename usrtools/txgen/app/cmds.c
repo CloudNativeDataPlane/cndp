@@ -19,7 +19,7 @@
 #include "txgen.h"        // for txgen_packet_ctor, txgen, txgen_t, txgen_c...
 #include "cmds.h"
 #include "display.h"              // for display_resume, display_pause, ...
-#include "cne_inet.h"             // for ip4addr, ip4addr::(anonymous), inet_ntop4
+#include "cne_inet.h"             // for inet_ntop4
 #include "_pcap.h"                // for pcap_info_t
 #include "capture.h"              // for txgen_set_capture
 #include "cli.h"                  // for cli_quit
