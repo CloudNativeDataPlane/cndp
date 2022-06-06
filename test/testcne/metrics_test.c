@@ -34,9 +34,11 @@ metrics_test(void)
 
     ret = metrics_init(NULL);
     if (ret < 0) {
+        ret = errno;
         tst_error("Unable to initialize metrics library, %s\n", strerror(errno));
         free(client);
-        return -1;
+        /* return errno if this test fails due to permission error */
+        return (ret == EPERM) || (ret == EACCES) ? ret : -1;
     }
 
     tst_ok("PASS --- TEST: Metrics library initialized\n");
@@ -93,15 +95,17 @@ int
 metrics_main(int argc __cne_unused, char **argv __cne_unused)
 {
     tst_info_t *tst;
+    int err;
 
     tst = tst_start("Metrics");
 
-    if (metrics_test() < 0)
-        goto err;
+    err = metrics_test();
+    if (err < 0)
+        tst_end(tst, TST_FAILED);
+    else if (err == EPERM || err == EACCES)
+        tst_end(tst, TST_SKIPPED);
+    else
+        tst_end(tst, TST_PASSED);
 
-    tst_end(tst, TST_PASSED);
-    return 0;
-err:
-    tst_end(tst, TST_FAILED);
-    return -1;
+    return err < 0 ? -1 : 0;
 }
