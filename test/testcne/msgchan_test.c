@@ -305,17 +305,17 @@ err_exit:
     if (sthread_inited) {
         err = pthread_join(s, NULL);
         if (err)
-            CNE_ERR_RET("join(server) failed: %s\n", strerror(err));
+            CNE_ERR("join(server) failed: %s\n", strerror(err));
     }
     if (cthread_inited) {
         err = pthread_join(c, NULL);
         if (err)
-            CNE_ERR_RET("join(client) failed: %s\n", strerror(err));
+            CNE_ERR("join(client) failed: %s\n", strerror(err));
     }
     if (barrier_inited) {
         err = pthread_barrier_destroy(&barrier);
         if (err)
-            CNE_ERR_RET("barrier destroy failed: %s\n", strerror(err));
+            CNE_ERR("barrier destroy failed: %s\n", strerror(err));
     }
     mc_destroy(client);
     mc_destroy(server);
