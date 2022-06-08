@@ -158,8 +158,7 @@ cne_unregister(int tidx)
     if (e->magic_id != CNE_MAGIC_ID || e->uid != tidx)
         return -1;
 
-    if (uid_free(__cne.pool, e->uid) < 0)
-        return -1;
+    uid_free(__cne.pool, e->uid);
 
     e->uid      = -1;
     e->magic_id = 0;

@@ -126,10 +126,7 @@ uid_main(int argc, char **argv)
 
             uid = rand() % t->cnt;
 
-            if (uid_free(t->e, uid) < 0) {
-                tst_error("Failed to free UID for %s:%d\n", t->name, uid);
-                goto err;
-            }
+            uid_free(t->e, uid);
         }
     }
 

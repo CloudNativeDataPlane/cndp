@@ -27,6 +27,7 @@ typedef struct uid_entry {
     uint16_t max_ids;             /**< Max number of IDs */
     int32_t bitmap_sz;            /**< Size of bitmap array in bits */
     bitstr_t *bitmap;             /**< Pointer to the bitmap array */
+    pthread_mutex_t mutex;        /**< Mutex for alloc/free operations */
 } uid_entry_t;
 
 typedef struct uid_s {
