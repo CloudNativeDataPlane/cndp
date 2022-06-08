@@ -10,11 +10,61 @@
 #include <bsd/sys/bitstring.h>        // for bit_alloc, bit_clear, bit_ffs, bit_nset
 #include <limits.h>                   // for CHAR_BIT
 #include <stdlib.h>                   // for free, calloc
+#include <pthread.h>
+#include <cne_log.h>
+#include <cne_mutex_helper.h>
 
 #include "uid_private.h"        // for uid_entry, uid_private_t, uid_entry::...
 #include "uid.h"
 
 static uid_private_t __uid;
+static pthread_mutex_t uid_list_mutex;
+
+static inline int
+uid_list_lock(void)
+{
+    int ret = pthread_mutex_lock(&uid_list_mutex);
+
+    if (ret == 0)
+        return 1;
+    CNE_WARN("failed: %s\n", strerror(ret));
+    return 0;
+}
+
+static inline void
+uid_list_unlock(void)
+{
+    int ret = pthread_mutex_unlock(&uid_list_mutex);
+
+    if (ret)
+        CNE_WARN("failed: %s\n", strerror(ret));
+}
+
+static inline int
+uid_lock(struct uid_entry *e)
+{
+    if (e) {
+        int ret = pthread_mutex_lock(&e->mutex);
+
+        if (ret == 0)
+            return 1;
+        CNE_WARN("failed: %s\n", strerror(ret));
+    } else
+        CNE_ERR("UID pointer is NULL\n");
+
+    return 0;
+}
+
+static inline void
+uid_unlock(struct uid_entry *e)
+{
+    if (e) {
+        int ret = pthread_mutex_unlock(&e->mutex);
+
+        if (ret)
+            CNE_WARN("failed: (%d) %s\n", ret, strerror(ret));
+    }
+}
 
 u_id_t
 uid_find_by_name(const char *name)
@@ -22,11 +72,14 @@ uid_find_by_name(const char *name)
     struct uid_entry *e, *ret = NULL;
 
     if (name && name[0] != '\0') {
-        STAILQ_FOREACH (e, &__uid.list, next) {
-            if (!strcmp(name, e->name)) {
-                ret = e;
-                break;
+        if (uid_list_lock()) {
+            STAILQ_FOREACH (e, &__uid.list, next) {
+                if (!strcmp(name, e->name)) {
+                    ret = e;
+                    break;
+                }
             }
+            uid_list_unlock();
         }
     }
 
@@ -77,8 +130,14 @@ uid_register(const char *name, uint16_t cnt)
     }
     bit_nset(e->bitmap, 0, e->max_ids - 1);
 
-    STAILQ_INSERT_TAIL(&__uid.list, e, next);
-    __uid.list_cnt++;
+    if (uid_list_lock()) {
+        STAILQ_INSERT_TAIL(&__uid.list, e, next);
+        __uid.list_cnt++;
+        uid_list_unlock();
+    } else {
+        free(e);
+        return NULL;
+    }
 
     return e;
 }
@@ -91,8 +150,12 @@ uid_unregister(u_id_t _e)
     if (!e)
         return -1;
 
-    STAILQ_REMOVE(&__uid.list, e, uid_entry, next);
-    __uid.list_cnt--;
+    if (uid_list_lock()) {
+        STAILQ_REMOVE(&__uid.list, e, uid_entry, next);
+        __uid.list_cnt--;
+        uid_list_unlock();
+    } else
+        CNE_ERR("unable to lock UID list\n");
 
     free(e->bitmap);
     free(e);
@@ -104,44 +167,36 @@ int
 uid_alloc(u_id_t _e)
 {
     struct uid_entry *e = _e;
+    int uid             = -1;
 
-    if (!e)
-        return -1;
-
-    if (e->allocated < e->max_ids) {
-        int uid;
-
-        bit_ffs(e->bitmap, (e->max_ids), (&uid));
-        bit_clear(e->bitmap, uid);
-        e->allocated++;
-
-        return uid;
+    if (e && e->allocated < e->max_ids) {
+        if (uid_lock(e)) {
+            bit_ffs(e->bitmap, (e->max_ids), (&uid));
+            bit_clear(e->bitmap, uid);
+            e->allocated++;
+            uid_unlock(e);
+        }
     }
 
-    return -1;
+    return uid;
 }
 
-int
+void
 uid_free(u_id_t _e, int uid)
 {
     struct uid_entry *e = _e;
 
-    if (!e)
-        return -1;
-
-    if (uid < 0)
-        return -1;
-
-    /* prevent out of range access */
-    if (uid >= e->max_ids)
-        return -1;
-
-    if (!bit_test(e->bitmap, uid)) {
-        bit_set(e->bitmap, uid);
-        e->allocated--;
+    if (e) {
+        if (uid >= 0 && uid < e->max_ids) {
+            if (uid_lock(e)) {
+                if (!bit_test(e->bitmap, uid)) {
+                    bit_set(e->bitmap, uid);
+                    e->allocated--;
+                }
+                uid_unlock(e);
+            }
+        }
     }
-
-    return 0;
 }
 
 void
@@ -164,6 +219,10 @@ CNE_INIT_PRIO(uid_initialize, INIT)
 {
     if (__uid.magic_id != UID_MAGIC_ID) {
         STAILQ_INIT(&__uid.list);
+
+        if (cne_mutex_create(&uid_list_mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
+            CNE_RET("mutex init(uid_list_mutex) failed\n");
+
         __uid.list_cnt = 0;
         __uid.magic_id = UID_MAGIC_ID;
     }

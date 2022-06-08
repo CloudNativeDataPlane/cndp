@@ -94,10 +94,8 @@ CNDP_API int uid_alloc(u_id_t _e);
  *   The UID to free the index value to
  * @param idx
  *   The index value to free or release
- * @return
- *   -1 on error or 0 on success
  */
-CNDP_API int uid_free(u_id_t _e, int idx);
+CNDP_API void uid_free(u_id_t _e, int idx);
 
 /**
  * Dump out all of the UID structures.
