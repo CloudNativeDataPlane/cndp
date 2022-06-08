@@ -8,6 +8,7 @@
 #include <stdlib.h>               // for free, calloc, malloc, qsort
 #include <string.h>               // for strlen, strncmp, strerror, strdup, strnlen
 #include <pthread.h>              // for pthread_mutex_init, pthread_mutex_lock
+#include <cne_mutex_helper.h>
 
 #include "hmap.h"
 #include "cne_stdio.h"        // for cne_fprintf
@@ -152,7 +153,6 @@ hmap_t *
 hmap_create(const char *name, uint32_t max_capacity, hmap_funcs_t *funcs)
 {
     hmap_t *hmap = NULL;
-    pthread_mutexattr_t attr;
 
     if (!name)
         name = "HMAP";
@@ -168,7 +168,7 @@ hmap_create(const char *name, uint32_t max_capacity, hmap_funcs_t *funcs)
 
     /*
      * if max_capacity is zero, set to HMAP_DEFAULT_CAPACITY
-     * if max_capacity is less than HMAP_STARTING_CAPAPCITY, set to HMAP_STARTING_CAPACITY
+     * if max_capacity is less than HMAP_STARTING_CAPACITY, set to HMAP_STARTING_CAPACITY
      */
     if (max_capacity == 0)
         max_capacity = HMAP_DEFAULT_CAPACITY;
@@ -186,15 +186,8 @@ hmap_create(const char *name, uint32_t max_capacity, hmap_funcs_t *funcs)
     if (hmap_set_funcs(hmap, funcs) < 0)
         CNE_ERR_GOTO(err_leave, "Unable to set function pointers\n");
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-    if (pthread_mutex_init(&hmap->mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
-        CNE_ERR_GOTO(err_leave, "mutex init(hmap->mutex) failed\n");
-    }
-
-    pthread_mutexattr_destroy(&attr);
+    if (cne_mutex_create(&hmap->mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
+        CNE_ERR_GOTO(err_leave, "mutex init(hmap->mutex) failed: %s\n", strerror(errno));
 
     hmap_list_lock();
     TAILQ_INSERT_TAIL(&hmap_list, hmap, next);
@@ -236,7 +229,7 @@ hmap_destroy(hmap_t *hmap)
 
     hmap_unlock(hmap);
 
-    if (pthread_mutex_destroy(&hmap->mutex))
+    if (cne_mutex_destroy(&hmap->mutex))
         CNE_ERR_RET("Destroy of mutex failed\n");
 
     free(hmap);
@@ -585,16 +578,8 @@ hmap_list_dump(FILE *f, int sort)
 
 CNE_INIT_PRIO(hmap_constructor, LAST)
 {
-    pthread_mutexattr_t attr;
-
     TAILQ_INIT(&hmap_list);
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-    if (pthread_mutex_init(&hmap_list_mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
+    if (cne_mutex_create(&hmap_list_mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
         CNE_RET("mutex init(hmap_list_mutex) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
 }

@@ -6,6 +6,7 @@
 #include <errno.h>        // for ENODEV, errno
 #include <pthread.h>
 
+#include <cne_mutex_helper.h>
 #include "metrics.h"
 
 static uds_info_t *default_info;
@@ -140,14 +141,6 @@ metrics_port_stats(metrics_client_t *c, char *name, lport_stats_t *s)
 
 CNE_INIT_PRIO(metrics_constructor, INIT)
 {
-    pthread_mutexattr_t attr;
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-    if (pthread_mutex_init(&metrics_mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
+    if (cne_mutex_create(&metrics_mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
         CNE_RET("mutex init(metrics_mutex) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
 }

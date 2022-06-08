@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <cne_spinlock.h>
 #include <cne_cycles.h>
+#include <cne_mutex_helper.h>
 
 #include "msgchan_priv.h"
 #include "msgchan.h"
@@ -40,30 +41,6 @@ static pthread_mutex_t mc_list_mutex;
 #define MC_LIST_LOCK()   mc_list_lock()
 #define MC_LIST_UNLOCK() mc_list_unlock()
 #endif
-
-static inline int
-mc_create_recursive_mutex(pthread_mutex_t *mutex)
-{
-    pthread_mutexattr_t attr;
-
-    if (mutex == NULL)
-        CNE_ERR_RET("mutex pointer is NULL\n");
-
-    if (pthread_mutexattr_init(&attr))
-        CNE_ERR_RET("Unable to init mutex attributes\n");
-    else if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)) {
-        if (pthread_mutexattr_destroy(&attr))
-            CNE_ERR_RET("Failed to destroy mutex attribute\n");
-        CNE_ERR_RET("Unable to set mutex attributes\n");
-    } else if (pthread_mutex_init(mutex, &attr)) {
-        if (pthread_mutexattr_destroy(&attr))
-            CNE_ERR_RET("Failed to destroy mutex attribute\n");
-        CNE_ERR_RET("mutex init() failed\n");
-    } else if (pthread_mutexattr_destroy(&attr))
-        CNE_ERR_RET("Unable to destroy mutex attributes\n");
-
-    return 0;
-}
 
 static inline void
 mc_list_lock(void)
@@ -173,7 +150,7 @@ mc_create(const char *name, int sz, uint32_t flags)
     if ((mc->rings[MC_SEND_RING] = cne_ring_create(rname, 0, sz, flags)) == NULL)
         CNE_ERR_GOTO(err, "Failed to create Send ring\n");
 
-    if (mc_create_recursive_mutex(&mc->mutex))
+    if (cne_mutex_create(&mc->mutex, PTHREAD_MUTEX_RECURSIVE))
         CNE_ERR_GOTO(err, "creating recursive mutex failed\n");
 
     mc->mutex_inited = true;
@@ -190,7 +167,7 @@ err:
         cne_ring_free(mc->rings[MC_RECV_RING]);
         cne_ring_free(mc->rings[MC_SEND_RING]);
 
-        if (mc->mutex_inited && pthread_mutex_destroy(&mc->mutex))
+        if (mc->mutex_inited && cne_mutex_destroy(&mc->mutex))
             CNE_ERR("Unable to destroy mutex\n");
         memset(mc, 0, sizeof(msg_chan_t));
         free(mc);
@@ -227,7 +204,7 @@ mc_destroy(msgchan_t *_mc)
 
             memset(mc, 0, sizeof(msg_chan_t));
 
-            if (mc->mutex_inited && pthread_mutex_destroy(&mc->mutex))
+            if (mc->mutex_inited && cne_mutex_destroy(&mc->mutex))
                 CNE_ERR("Unable to destroy mutex\n");
 
             free(mc);
@@ -429,6 +406,6 @@ CNE_INIT_PRIO(mc_constructor, LAST)
 {
     TAILQ_INIT(&mc_list_head);
 
-    if (mc_create_recursive_mutex(&mc_list_mutex))
+    if (cne_mutex_create(&mc_list_mutex, PTHREAD_MUTEX_RECURSIVE))
         CNE_ERR("creating recursive mutex failed\n");
 }

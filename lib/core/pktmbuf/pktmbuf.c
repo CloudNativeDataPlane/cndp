@@ -14,6 +14,8 @@
 #include <stdlib.h>        // for calloc, free
 #include <pthread.h>
 
+#include <cne_mutex_helper.h>
+
 static TAILQ_HEAD(pktmbuf_info_list, pktmbuf_info_s) pinfo_list;
 static pthread_mutex_t pinfo_list_mutex;
 
@@ -681,16 +683,8 @@ pktmbuf_info_dump(void)
 
 CNE_INIT_PRIO(pinfo_constructor, START)
 {
-    pthread_mutexattr_t attr;
-
     TAILQ_INIT(&pinfo_list);
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-    if (pthread_mutex_init(&pinfo_list_mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
+    if (cne_mutex_create(&pinfo_list_mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
         CNE_RET("mutex init(pinfo_list_mutex) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
 }

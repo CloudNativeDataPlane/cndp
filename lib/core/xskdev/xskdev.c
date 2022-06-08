@@ -23,6 +23,7 @@
 #include <stdbool.h>              // for bool
 #include <linux/sched.h>          // for sched_yield
 #include <netdev_funcs.h>         // for netdev_get_ring_params
+#include <cne_mutex_helper.h>
 
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
@@ -822,9 +823,9 @@ xskdev_socket_create(struct lport_cfg *c)
     }
 
     if (xskdev_use_tx_lock) {
-        ret = pthread_mutex_init(&xi->tx_lock, NULL);
+        ret = cne_mutex_create(&xi->tx_lock, 0);
         if (ret)
-            CNE_ERR_GOTO(err, "Failed to initialize xskdev tx lock: %d: %s\n", ret, strerror(ret));
+            CNE_ERR_GOTO(err, "Failed to initialize xskdev tx lock: %s\n", strerror(errno));
     }
 
     xi->if_index = if_index;
@@ -1006,10 +1007,10 @@ xskdev_socket_destroy(xskdev_info_t *xi)
             }
 
             if (xskdev_use_tx_lock) {
-                int err = pthread_mutex_destroy(&xi->tx_lock);
+                int err = cne_mutex_destroy(&xi->tx_lock);
 
                 if (err)
-                    CNE_ERR("Failed to destroy xskdev tx lock: %d: %s\n", err, strerror(err));
+                    CNE_ERR("Failed to destroy xskdev tx lock: %s\n", strerror(errno));
             }
             xskdev_list_lock();
             if (xi->next.tqe_prev)
@@ -1196,16 +1197,8 @@ xskdev_print_stats(const char *name, lport_stats_t *s, bool dbg_stats)
 
 CNE_INIT_PRIO(xskdev_constructor, START)
 {
-    pthread_mutexattr_t attr;
-
     TAILQ_INIT(&xskdev_list);
 
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-    if (pthread_mutex_init(&xskdev_list_mutex, &attr)) {
-        pthread_mutexattr_destroy(&attr);
+    if (cne_mutex_create(&xskdev_list_mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
         CNE_RET("mutex init(xskdev_list_mutex) failed\n");
-    }
-    pthread_mutexattr_destroy(&attr);
 }
