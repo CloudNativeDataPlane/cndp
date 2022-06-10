@@ -135,6 +135,7 @@ uid_register(const char *name, uint16_t cnt)
         __uid.list_cnt++;
         uid_list_unlock();
     } else {
+        free(e->bitmap);
         free(e);
         return NULL;
     }
