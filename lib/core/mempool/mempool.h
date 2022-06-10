@@ -181,12 +181,10 @@ CNDP_API uint32_t mempool_obj_iter(mempool_t *mp, mempool_obj_cb_t *obj_cb, void
 /**
  * Dump the status of the mempool to a file.
  *
- * @param f
- *   A pointer to a file for output
  * @param mp
  *   A pointer to the mempool structure.
  */
-CNDP_API void mempool_dump(FILE *f, mempool_t *mp);
+CNDP_API void mempool_dump(mempool_t *mp);
 
 /**
  * Get a pointer to the per-thread default mempool cache.

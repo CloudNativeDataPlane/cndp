@@ -254,7 +254,7 @@ __obj_dump(const char *msg, struct cne_mempool *mp)
     if (mp == NULL)
         return;
     cne_printf("[magenta]=== [cyan]%s[]\n", msg);
-    mempool_dump(NULL, mp);
+    mempool_dump(mp);
 }
 
 static int
