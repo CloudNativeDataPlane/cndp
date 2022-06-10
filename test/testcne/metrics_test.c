@@ -75,6 +75,9 @@ metrics_test(void)
 
     tst_ok("PASS --- TEST: Added lport stats to metrics buffer\n");
 
+    free(client->buffer);
+    client->buffer = NULL;
+
     ret = metrics_destroy();
     if (ret < 0) {
         tst_error("Unable to remove registered metrics commands, %s\n", strerror(errno));
