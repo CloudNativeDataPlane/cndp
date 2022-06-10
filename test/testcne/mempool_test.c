@@ -125,7 +125,7 @@ mempool_main(int argc, char **argv)
 
         if (verbose) {
             vt_color(VT_BLUE, VT_NO_CHANGE, VT_OFF);
-            mempool_dump(NULL, mp);
+            mempool_dump(mp);
             vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
             cne_printf("\n");
         }

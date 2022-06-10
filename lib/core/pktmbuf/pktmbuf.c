@@ -666,7 +666,7 @@ __info_dump(pktmbuf_info_t *pi)
         "[cyan]%'d [magenta]cache[]: [cyan]%'d [magenta]pool[]: [cyan]%p[]\n  ",
         name, pi->addr, pi->bufcnt, pi->bufsz, pi->cache_sz, pi->pd);
     if (pi->pd)
-        mempool_dump(NULL, pi->pd);
+        mempool_dump(pi->pd);
 }
 
 void

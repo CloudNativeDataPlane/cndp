@@ -436,32 +436,46 @@ mempool_empty(const mempool_t *_mp)
 
 /* dump the status of the mempool on the console */
 void
-mempool_dump(FILE *f, mempool_t *_mp)
+mempool_dump(mempool_t *_mp)
 {
     struct cne_mempool *mp = _mp;
     unsigned common_count;
 
-    if (!f)
-        f = stdout;
-
     if (mp == NULL)
         return;
 
-    cne_fprintf(f, "mempool @ %p", (void *)mp);
-    cne_fprintf(f, " ring=%p\n", mp->objring);
-    cne_fprintf(f, "   obj_cnt=%" PRIu32, mp->obj_cnt);
-    cne_fprintf(f, " obj_sz=%" PRIu32, mp->obj_sz);
+    cne_printf("[orange]mempool @ [cyan]%p [magenta]ring [cyan]%p[]\n", (void *)mp, mp->objring);
+    cne_printf("   [magenta]obj_cnt [cyan]%" PRIu32 "[]", mp->obj_cnt);
+    cne_printf(" [magenta]obj_sz [cyan]%" PRIu32 "[]", mp->obj_sz);
 
     common_count = mempool_ring_get_count(mp);
-    cne_fprintf(f, " free ring_cnt=%u\n", common_count);
+    cne_printf(" [magenta]free ring_cnt [cyan]%" PRIu32 " [magenta]cache size [cyan]%" PRIu32
+               "[]\n",
+               common_count, mp->cache_sz);
+
+    if (mp->stats) {
+        cne_printf("   [magenta]Put         Bulk[]: [cyan]%12" PRIu64 "[]\n", mp->stats->put_bulk);
+        cne_printf("   [magenta]Put         Objs[]: [cyan]%12" PRIu64 "[]\n", mp->stats->put_objs);
+        cne_printf("   [magenta]Get Success Bulk[]: [cyan]%12" PRIu64 "[]\n",
+                   mp->stats->get_success_bulk);
+        cne_printf("   [magenta]Get Success Objs[]: [cyan]%12" PRIu64 "[]\n",
+                   mp->stats->get_success_objs);
+        cne_printf("   [magenta]Get failed  Bulk[]: [cyan]%12" PRIu64 "[]\n",
+                   mp->stats->get_fail_bulk);
+        cne_printf("   [magenta]Get failed  Objs[]: [cyan]%12" PRIu64 "[]\n",
+                   mp->stats->get_fail_objs);
+    }
 
     if (!mp->cache_sz)
         return;
 
-    for (int i = 0; i < cne_max_threads(); i++) {
+    cne_printf("   [orange]Cache Info[]:\n");
+    for (uint32_t i = 0; i < (uint32_t)cne_max_threads(); i++) {
         struct mempool_cache *cache = &mp->cache[i];
         if (cache && cache->len)
-            cne_fprintf(f, "  cache %3d: len %4d\n", i, cache->len);
+            cne_printf("     [magenta]cache [cyan]%3" PRIu32 "[]: [magenta]len [cyan]%4" PRIu32
+                       "[]\n",
+                       i, cache->len);
     }
 }
 

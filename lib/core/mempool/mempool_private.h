@@ -43,8 +43,6 @@ struct mempool_stats {
     uint64_t get_success_objs; /**< Objects successfully allocated. */
     uint64_t get_fail_bulk;    /**< Failed allocation number. */
     uint64_t get_fail_objs;    /**< Objects that failed to be allocated. */
-    uint64_t get_success_blks; /**< Successful allocation number of contiguous blocks. */
-    uint64_t get_fail_blks;    /**< Failed allocation number of contiguous blocks. */
 } __cne_cache_aligned;
 
 /**
