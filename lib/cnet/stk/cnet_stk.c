@@ -22,6 +22,7 @@
 #include <bsd/string.h>
 #include <pmd_ring.h>
 #include <cnet_netlink.h>
+#include <cne_mutex_helper.h>
 
 #include <cne_spinlock.h>
 
@@ -41,8 +42,6 @@ _stk_create(struct cnet *cnet)
         CNE_ERR_RET("Unable to allocate stk structure\n");
 
     if (cnet_lock()) {
-        pthread_mutexattr_t attr;
-
         stk_set(stk); /* Set the this_stk pointer for this thread */
 
         /* Add this stk pointer to the vector list in CNET */
@@ -56,17 +55,10 @@ _stk_create(struct cnet *cnet)
         TAILQ_INIT(&stk->chnls);
         TAILQ_INIT(&stk->tcbs);
 
-        if (pthread_mutexattr_init(&attr)) {
+        if (cne_mutex_create(&stk->mutex, PTHREAD_MUTEX_RECURSIVE)) {
             cnet_unlock();
-            CNE_ERR_RET("Unable to initialize mutex attribute\n");
-        }
-
-        if (pthread_mutex_init(&stk->mutex, &attr)) {
-            cnet_unlock();
-            pthread_mutexattr_destroy(&attr);
             CNE_ERR_RET("Unable to initialize mutex\n");
         }
-        pthread_mutexattr_destroy(&attr);
 
         cnet_unlock();
     }
@@ -127,6 +119,9 @@ stk_destroy(void *_stk)
     stk_t *stk = _stk;
 
     if (stk) {
+        if (cne_mutex_destroy(&stk->mutex))
+            CNE_ERR("cne_mutex_destroy(stk->mutex) failed\n");
+
         memset(stk, 0, sizeof(*stk));
         free(stk);
     }

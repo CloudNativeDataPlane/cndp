@@ -30,20 +30,36 @@ extern "C" {
 static inline int
 cne_mutex_create(pthread_mutex_t *mutex, int flags)
 {
-    int ret = EFAULT;
+    pthread_mutexattr_t attr;
+    int inited = 0, ret = EFAULT;
 
-    if (mutex) {
-        pthread_mutexattr_t attr;
+    if (!mutex)
+        goto err;
 
-        ret = pthread_mutexattr_init(&attr);
-        if (ret == 0) {
-            ret = pthread_mutexattr_settype(&attr, flags);
-            if (ret == 0) {
-                ret = pthread_mutex_init(mutex, &attr);
-                if (ret == 0 && pthread_mutexattr_destroy(&attr) == 0)
-                    return 0;
-            }
-        }
+#define __do(_exp)    \
+    do {              \
+        ret = _exp;   \
+        if (ret)      \
+            goto err; \
+    } while (0 /* CONSTCOND */)
+
+    __do(pthread_mutexattr_init(&attr));
+    inited = 1;
+
+    __do(pthread_mutexattr_settype(&attr, flags));
+
+    __do(pthread_mutex_init(mutex, &attr));
+
+    __do(pthread_mutexattr_destroy(&attr));
+
+#undef __do
+
+    return 0;
+err:
+    if (inited) {
+        /* Do not lose the previous error value */
+        if (pthread_mutexattr_destroy(&attr))
+            CNE_DEBUG("unable to destroy mutex attribute, but is not the root cause\n");
     }
 
     errno = ret;
