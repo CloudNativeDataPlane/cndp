@@ -51,8 +51,6 @@ void txgen_quit(void);
 void txgen_set_port_number(uint16_t port_number);
 void txgen_port_defaults(uint32_t pid);
 
-struct ip4addr;
-
 /* Single */
 void single_set_ipaddr(port_info_t *info, char type, struct in_addr *ip, int prefixlen);
 void single_set_proto(port_info_t *info, char *type);
