@@ -179,6 +179,11 @@
             "netdevs": ["eth2", "eth3", "eth4"],
             "queues": ["1-2", 4, 8, "5"],
             "threads": ["fwd:0", "fwd:1"]
+        },
+        "rss1": {
+            "netdevs": ["eth8"],
+            "queues": [8],
+            "threads": ["fwd:0"]
         }
     }
 }

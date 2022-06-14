@@ -482,6 +482,7 @@ jcfg_decode_one_lport_group_end(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lpor
             if (!p)
                 CNE_ERR_RET("Out of memory\n");
             thd->lports = p;
+            thd->lport_sz += qs_to_add;
         }
     }
 
