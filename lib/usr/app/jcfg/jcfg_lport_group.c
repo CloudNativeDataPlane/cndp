@@ -21,6 +21,9 @@
 #include "cne_lport.h"
 #include "netdev_funcs.h"
 
+/* The name of the umem used by default for all lport groups */
+#define LPORT_GROUP_UMEM_NAME "lport-group"
+
 /* Wrap strol to parse null-terminated string as u16 decimal value */
 static int
 parse_u16(const char *str, char **endp, uint16_t *value)
@@ -196,80 +199,6 @@ free_lport_group_obj(jcfg_lport_group_t *lpg)
 }
 
 static int
-setup_umem(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lport_group_t *lpg)
-{
-    jcfg_umem_t *umem;
-    char *v = NULL;
-    int idx;
-
-    if (lpg->umem)
-        /* umem is already configured */
-        return 0;
-
-    umem = calloc(1, sizeof(*umem));
-    if (!umem)
-        CNE_ERR_GOTO(err_out, "Out of memory\n");
-
-    if (lpg->name)
-        umem->name = strdup(lpg->name);
-
-    umem->cbtype = JCFG_UMEM_TYPE;
-    if (jcfg_default_get_u16(jinfo, "rxdesc", &umem->rxdesc))
-        umem->rxdesc = LPORT_DFLT_RX_NUM_DESCS;
-    else
-        umem->rxdesc *= 1024;
-
-    if (jcfg_default_get_u16(jinfo, "txdesc", &umem->txdesc))
-        umem->txdesc = LPORT_DFLT_TX_NUM_DESCS;
-    else
-        umem->txdesc *= 1024;
-
-    if (jcfg_default_get_u32(jinfo, "bufcnt", &umem->bufcnt))
-        /* Estimate the number of buffers */
-        umem->bufcnt = (umem->rxdesc * 3 + umem->txdesc * 3) * lpg->total_q;
-    else
-        umem->bufcnt *= 1024;
-
-    if (jcfg_default_get_u32(jinfo, "bufsz", &umem->bufsz))
-        umem->bufsz = DEFAULT_MBUF_SIZE;
-    else
-        umem->bufsz *= 1024;
-
-    if (jcfg_default_get_string(jinfo, "mtype", &v))
-        umem->mtype = MMAP_HUGEPAGE_4KB;
-    else
-        umem->mtype = mmap_type_by_name((const char *)v);
-
-    /* All lports in the group use the same region */
-    umem->rinfo = calloc(1, sizeof(*umem->rinfo));
-    if (!umem->rinfo)
-        CNE_ERR_GOTO(err_out, "Out of memory\n");
-
-    umem->region_cnt      = 1;
-    umem->rinfo[0].bufcnt = umem->bufcnt;
-
-    /* add umem to list of all umems */
-    idx = jcfg_list_add(&data->umem_list, umem);
-    if (idx < 0)
-        CNE_ERR_GOTO(err_out, "Out of memory\n");
-    umem->idx = idx;
-
-    STAILQ_INSERT_TAIL(&data->umems, umem, next);
-    data->umem_count++;
-
-    lpg->umem = umem;
-    return 0;
-
-err_out:
-    if (umem) {
-        free(umem->rinfo);
-        free(umem->name);
-    }
-    free(umem);
-    return -1;
-}
-
-static int
 setup_lport(jcfg_data_t *data, jcfg_lport_group_t *lpg, const char *netdev, uint16_t qid,
             jcfg_thd_t *thd)
 {
@@ -314,8 +243,7 @@ setup_lport(jcfg_data_t *data, jcfg_lport_group_t *lpg, const char *netdev, uint
      */
     if (lpg->pmd_opts)
         lport->pmd_opts = strdup(lpg->pmd_opts);
-    if (lpg->umem->name)
-        lport->umem_name = strdup(lpg->umem->name);
+    lport->umem_name    = strdup(lpg->umem_name);
     lport->umem         = lpg->umem;
     lport->busy_timeout = lpg->busy_timeout;
     lport->busy_budget  = lpg->busy_budget;
@@ -456,9 +384,16 @@ jcfg_decode_one_lport_group_end(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lpor
     if (!lpg->total_q)
         CNE_ERR_RET("lport group '%s' needs at least one queue\n", lpg->name);
 
-    /* Create a umem if one is not already configured */
-    if (setup_umem(jinfo, data, lpg))
-        return -1;
+    /* Assign a umem */
+    if (!lpg->umem_name)
+        CNE_ERR_RET("lport group '%s' needs a umem\n", lpg->name);
+
+    /* The requested umem must already exist, unless the lport group uses the common umem,
+     * which can only be created after all lport groups are processed.
+     */
+    lpg->umem = jcfg_lookup_umem(jinfo, lpg->umem_name);
+    if (!lpg->umem && strncmp(lpg->umem_name, LPORT_GROUP_UMEM_NAME, JCFG_MAX_STRING_SIZE))
+        CNE_ERR_RET("UMEM '%s' not found\n", lpg->umem_name);
 
     /* realloc() thd->lport_names and thd->lports arrays to accommodate new lports */
     qs_to_add = (lpg->total_q / lpg->num_thread_names) + (lpg->total_q % lpg->num_thread_names);
@@ -493,6 +428,101 @@ jcfg_decode_one_lport_group_end(jcfg_info_t *jinfo, jcfg_data_t *data, jcfg_lpor
         return setup_lports_without_qlist(jinfo, data, lpg);
 }
 
+static int
+setup_common_umem(jcfg_info_t *jinfo, jcfg_data_t *data)
+{
+    uint32_t total_lport = 0;
+    jcfg_lport_group_t *lpg;
+    jcfg_lport_t *lport;
+    jcfg_umem_t *umem;
+    char *v = NULL;
+    int idx;
+
+    /* User can override the common umem by specifying parameters in the jcfg. If
+     * this were the case, the lports will have already been assigned the umem.
+     */
+    if (jcfg_lookup_umem(jinfo, LPORT_GROUP_UMEM_NAME))
+        return 0;
+
+    /* Count total lports using the common umem */
+    STAILQ_FOREACH (lport, &data->lports, next)
+        if (!strncmp(lport->umem_name, LPORT_GROUP_UMEM_NAME, JCFG_MAX_STRING_SIZE))
+            total_lport++;
+
+    if (!total_lport)
+        return 0;
+
+    umem = calloc(1, sizeof(*umem));
+    if (!umem)
+        CNE_ERR_GOTO(err_out, "Out of memory\n");
+
+    umem->name   = strdup(LPORT_GROUP_UMEM_NAME);
+    umem->cbtype = JCFG_UMEM_TYPE;
+
+    if (jcfg_default_get_u16(jinfo, "rxdesc", &umem->rxdesc))
+        umem->rxdesc = LPORT_DFLT_RX_NUM_DESCS;
+    else
+        umem->rxdesc *= 1024;
+
+    if (jcfg_default_get_u16(jinfo, "txdesc", &umem->txdesc))
+        umem->txdesc = LPORT_DFLT_TX_NUM_DESCS;
+    else
+        umem->txdesc *= 1024;
+
+    if (jcfg_default_get_u32(jinfo, "bufcnt", &umem->bufcnt))
+        /* Estimate the number of buffers */
+        umem->bufcnt = (umem->rxdesc * 3 + umem->txdesc * 3) * total_lport;
+    else
+        umem->bufcnt *= 1024;
+
+    if (jcfg_default_get_u32(jinfo, "bufsz", &umem->bufsz))
+        umem->bufsz = DEFAULT_MBUF_SIZE;
+    else
+        umem->bufsz *= 1024;
+
+    if (jcfg_default_get_string(jinfo, "mtype", &v))
+        umem->mtype = MMAP_HUGEPAGE_4KB;
+    else
+        umem->mtype = mmap_type_by_name((const char *)v);
+
+    /* All lports use the same region */
+    umem->rinfo = calloc(1, sizeof(*umem->rinfo));
+    if (!umem->rinfo)
+        CNE_ERR_GOTO(err_out, "Out of memory\n");
+
+    umem->region_cnt      = 1;
+    umem->rinfo[0].bufcnt = umem->bufcnt;
+
+    /* add umem to list of all umems */
+    idx = jcfg_list_add(&data->umem_list, umem);
+    if (idx < 0)
+        CNE_ERR_GOTO(err_out, "Out of memory\n");
+    umem->idx = idx;
+
+    STAILQ_INSERT_TAIL(&data->umems, umem, next);
+    data->umem_count++;
+
+    /* Assign the umem to each lport group using the common umem */
+    STAILQ_FOREACH (lpg, &data->lport_groups, next)
+        if (!strncmp(lpg->umem_name, LPORT_GROUP_UMEM_NAME, JCFG_MAX_STRING_SIZE))
+            lpg->umem = umem;
+
+    /* Assign the umem to each of the lports using the common umem */
+    STAILQ_FOREACH (lport, &data->lports, next)
+        if (!strncmp(lport->umem_name, LPORT_GROUP_UMEM_NAME, JCFG_MAX_STRING_SIZE))
+            lport->umem = umem;
+
+    return 0;
+
+err_out:
+    if (umem) {
+        free(umem->rinfo);
+        free(umem->name);
+    }
+    free(umem);
+    return -1;
+}
+
 int
 jcfg_decode_lport_groups_end(jcfg_info_t *jinfo, void *arg __cne_unused)
 {
@@ -507,6 +537,9 @@ jcfg_decode_lport_groups_end(jcfg_info_t *jinfo, void *arg __cne_unused)
     STAILQ_FOREACH (lpg, &data->lport_groups, next)
         if (jcfg_decode_one_lport_group_end(jinfo, data, lpg))
             goto err_out;
+
+    if (setup_common_umem(jinfo, data))
+        goto err_out;
 
     return 0;
 
@@ -752,6 +785,9 @@ _lport_group(struct json_object *obj, int flags, struct json_object *parent __cn
                             JCFG_LPORT_GROUP_QUEUES_NAME);
     } else
         CNE_WARN("Unknown lport group key (%s)\n", key);
+
+    if (!lpg->umem_name)
+        lpg->umem_name = strdup(LPORT_GROUP_UMEM_NAME);
 
     return JSON_C_VISIT_RETURN_CONTINUE;
 }
