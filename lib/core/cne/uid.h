@@ -98,6 +98,18 @@ CNDP_API int uid_alloc(u_id_t _e);
 CNDP_API void uid_free(u_id_t _e, int idx);
 
 /**
+ * Test to see if a bit is set in the bitmap (or cleared in this case)
+ *
+ * @param e
+ *   The u_id_t structure pointer to be tested using the uid bit index.
+ * @param uid
+ *   The uid bit to test, if the bit is cleared then it is allocated.
+ * @return
+ *   0 on not set and 1 on set.
+ */
+CNDP_API int uid_test(u_id_t *e, int uid);
+
+/**
  * Dump out all of the UID structures.
  *
  * @param f
