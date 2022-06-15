@@ -41,6 +41,14 @@ struct in_caddr {
     struct in_addr cin_addr;
 };
 
+/* Common Channel address, internet style. */
+struct in6_caddr {
+    uint8_t cin_family;
+    uint8_t cin_len;
+    uint16_t cin_port;
+    struct in6_addr cin_addr;
+};
+
 /* macros for casting struct in_caddr */
 #define CIN_PORT(sa)   (sa)->cin_port
 #define CIN_FAMILY(sa) (sa)->cin_family

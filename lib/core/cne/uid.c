@@ -49,8 +49,7 @@ uid_lock(struct uid_entry *e)
         if (ret == 0)
             return 1;
         CNE_WARN("failed: %s\n", strerror(ret));
-    } else
-        CNE_ERR("UID pointer is NULL\n");
+    }
 
     return 0;
 }
@@ -74,7 +73,7 @@ uid_find_by_name(const char *name)
     if (name && name[0] != '\0') {
         if (uid_list_lock()) {
             STAILQ_FOREACH (e, &__uid.list, next) {
-                if (!strcmp(name, e->name)) {
+                if (!strncmp(name, e->name, sizeof(e->name))) {
                     ret = e;
                     break;
                 }
@@ -83,6 +82,21 @@ uid_find_by_name(const char *name)
         }
     }
 
+    return ret;
+}
+
+int
+uid_test(u_id_t *_e, int uid)
+{
+    struct uid_entry *e = (struct uid_entry *)_e;
+    int ret             = 0;
+
+    if (e) {
+        if (uid_lock(e)) {
+            ret = (bit_test(e->bitmap, uid) == 0);
+            uid_unlock(e);
+        }
+    }
     return ret;
 }
 
@@ -102,6 +116,47 @@ uid_allocated(u_id_t _e)
     return (!e) ? 0 : e->allocated;
 }
 
+static inline void
+entry_destroy(struct uid_entry *e)
+{
+    if (e) {
+        /* use the max_ids to detect mutex was created */
+        if (e->max_ids && cne_mutex_destroy(&e->mutex) < 0)
+            CNE_ERR("Unable to destroy mutex\n");
+        free(e->bitmap);
+        free(e);
+    }
+}
+
+static inline struct uid_entry *
+entry_create(const char *name, int cnt)
+{
+    struct uid_entry *e;
+
+    e = calloc(1, sizeof(struct uid_entry));
+    if (e) {
+        strlcpy(e->name, name, sizeof(e->name));
+
+        e->bitmap_sz = bitstr_size(cnt) * CHAR_BIT;
+        e->bitmap    = bit_alloc(e->bitmap_sz);
+        if (!e->bitmap)
+            goto err;
+
+        /* Set all of the bits to one (not allocated) to allow bit_ffs() to work */
+        bit_nset(e->bitmap, 0, cnt - 1);
+
+        if (cne_mutex_create(&e->mutex, 0) < 0)
+            goto err;
+
+        e->max_ids = cnt;
+    }
+
+    return e;
+err:
+    entry_destroy(e);
+    return NULL;
+}
+
 u_id_t
 uid_register(const char *name, uint16_t cnt)
 {
@@ -114,33 +169,19 @@ uid_register(const char *name, uint16_t cnt)
     if (e)
         return e;
 
-    e = calloc(1, sizeof(struct uid_entry));
-    if (!e)
-        return NULL;
-
-    strlcpy(e->name, name, sizeof(e->name));
-
-    e->max_ids = cnt;
-
-    e->bitmap_sz = bitstr_size(cnt) * CHAR_BIT;
-    e->bitmap    = bit_alloc(e->bitmap_sz);
-    if (!e->bitmap) {
-        free(e);
-        return NULL;
-    }
-    bit_nset(e->bitmap, 0, e->max_ids - 1);
-
-    if (uid_list_lock()) {
+    e = entry_create(name, cnt);
+    if (e) {
+        if (!uid_list_lock())
+            goto err;
         STAILQ_INSERT_TAIL(&__uid.list, e, next);
         __uid.list_cnt++;
         uid_list_unlock();
-    } else {
-        free(e->bitmap);
-        free(e);
-        return NULL;
     }
 
     return e;
+err:
+    entry_destroy(e);
+    return NULL;
 }
 
 int
@@ -148,20 +189,20 @@ uid_unregister(u_id_t _e)
 {
     struct uid_entry *e = _e;
 
-    if (!e)
-        return -1;
+    if (e) {
+        if (uid_list_lock()) {
+            STAILQ_REMOVE(&__uid.list, e, uid_entry, next);
 
-    if (uid_list_lock()) {
-        STAILQ_REMOVE(&__uid.list, e, uid_entry, next);
-        __uid.list_cnt--;
-        uid_list_unlock();
-    } else
-        CNE_ERR("unable to lock UID list\n");
+            __uid.list_cnt--;
 
-    free(e->bitmap);
-    free(e);
+            entry_destroy(e);
 
-    return 0;
+            uid_list_unlock();
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 int
@@ -172,7 +213,7 @@ uid_alloc(u_id_t _e)
 
     if (e && e->allocated < e->max_ids) {
         if (uid_lock(e)) {
-            bit_ffs(e->bitmap, (e->max_ids), (&uid));
+            bit_ffs(e->bitmap, e->max_ids, &uid);
             bit_clear(e->bitmap, uid);
             e->allocated++;
             uid_unlock(e);
