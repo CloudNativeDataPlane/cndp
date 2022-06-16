@@ -57,6 +57,9 @@ mbuf_update(pktmbuf_t *m, uint16_t lpid)
     m->l3_len     = hdr_lens.l3_len;
     m->l4_len     = hdr_lens.l4_len;
     m->lport      = lpid;
+
+    /* Skip past the L2 header */
+    pktmbuf_adj_offset(m, m->l2_len);
 }
 
 static uint16_t

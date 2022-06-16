@@ -198,17 +198,9 @@ tcp_output_node_process(struct cne_graph *graph, struct cne_node *node, void **o
     return nb_objs;
 }
 
-static int
-tcp_output_node_init(const struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused)
-{
-    return 0;
-}
-
 static struct cne_node_register tcp_output_node_base = {
     .process = tcp_output_node_process,
     .name    = TCP_OUTPUT_NODE_NAME,
-
-    .init = tcp_output_node_init,
 
     .nb_edges = TCP_OUTPUT_NEXT_MAX,
     .next_nodes =

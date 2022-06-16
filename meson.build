@@ -330,12 +330,42 @@ foreach f:avx512_flags
     endif
 endforeach
 
+# ----
+# CNET Stack configuration
+#
+cne_conf.set10('CNET_IP4_DUMP_ENABLED', get_option('enable_ip4_dump'))
+if get_option('enable_ip4_dump')
+    message('*** IPv4 dump output enabled')
+else
+    message('*** IPv4 dump output disabled')
+endif
+
 cne_conf.set10('CNET_ENABLE_TCP', get_option('enable_tcp'))
 if get_option('enable_tcp')
-    message('*** TCP support enabled')
+    message('*** TCP support enabled (experimental)')
 else
     message('*** TCP support disabled')
 endif
+
+cne_conf.set10('CNET_ENABLE_PUNTING', get_option('enable_punting'))
+if get_option('enable_punting')
+    message('*** Enable support for punting to Linux kernel stack')
+else
+    message('*** Punting to Linux kernel stack is disabled')
+endif
+
+cne_conf.set10('CNET_TCP_DUMP_ENABLED', get_option('enable_tcp_dump'))
+if get_option('enable_tcp_dump')
+    message('*** TCP dump output enabled')
+else
+    message('*** TCP dump output disabled')
+endif
+
+cne_conf.set('CNET_NUM_TCBS', get_option('cnet_num_tcbs'))
+cne_conf.set('CNET_NUM_CHANNELS', get_option('cnet_num_channels'))
+cne_conf.set('CNET_NUM_ROUTES', get_option('cnet_num_routes'))
+
+# ----
 
 # write the build config into the cndp include directory
 configure_file(output: build_cfg_file,

@@ -212,16 +212,12 @@ cmd_chnl(int argc __cne_unused, char **argv __cne_unused)
 }
 
 static int
-cmd_pcb(int argc, char **argv __cne_unused)
+cmd_pcb(int argc __cne_unused, char **argv __cne_unused)
 {
     stk_t *stk;
 
-    vec_foreach_ptr (stk, this_cnet->stks) {
-        if (argc > 1 && !strcmp("-l", argv[1]))
-            cnet_pcb_dump_details(stk);
-        else
-            cnet_pcb_dump(stk);
-    }
+    vec_foreach_ptr (stk, this_cnet->stks)
+        cnet_pcb_dump(stk);
 
     return 0;
 }
@@ -546,7 +542,7 @@ cmd_graph(int argc, char **argv)
 }
 
 static int
-cmd_netlink(int argc __cne_unused, char **argv __cne_unused)
+cmd_netlink(int argc, char **argv)
 {
     if (argc > 1)
         netlink_debug = atoi(argv[1]);
@@ -653,7 +649,7 @@ static struct cli_tree cnet_tree[] = {
     c_bin("/cnet"),
     c_cmd("info",       cmd_info,       "CNET information [show|size|mbuf]"),
     c_cmd("chnl",       cmd_chnl,       "Channel information"),
-    c_cmd("pcb",        cmd_pcb,        "pcb [-l] dump"),
+    c_cmd("pcb",        cmd_pcb,        "pcb dump"),
     c_cmd("proto",      cmd_proto,      "Protosw dump"),
     c_cmd("ip",         cmd_ip,         "Show IP interface information [link|route|neigh|stats]"),
     c_cmd("hmap",       cmd_hmap,       "dump out the hashmap data"),

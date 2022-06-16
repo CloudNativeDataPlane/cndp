@@ -138,7 +138,7 @@ pcb_create(void *_stk)
     stk_t *stk             = _stk;
     struct mempool_cfg cfg = {0};
 
-    cfg.objcnt       = PCB_ENTRIES;
+    cfg.objcnt       = CNET_NUM_CHANNELS;
     cfg.objsz        = sizeof(struct pcb_entry);
     cfg.obj_init     = pcb_obj_cb;
     cfg.obj_init_arg = NULL;
@@ -156,31 +156,8 @@ CNE_INIT_PRIO(cnet_pcb_constructor, STACK)
 }
 
 static void
-pcb_show_details(mempool_t *mp, void *obj_cb_arg __cne_unused, void *obj, unsigned n __cne_unused)
+pcb_show(struct pcb_entry *pcb)
 {
-    struct pcb_entry *pcb     = (struct pcb_entry *)obj;
-    char ip1[IP4_ADDR_STRLEN] = {0};
-    char ip2[IP4_ADDR_STRLEN] = {0};
-    char *ret                 = NULL;
-
-    if (pcb->closed)
-        return;
-
-    cne_printf("PCB %p, Netif %p, Chnl %p, TCB %p\n", pcb, pcb->netif, pcb->ch, pcb->tcb);
-    cne_printf("    mempool %p", mp);
-    cne_printf(" ttl %d, closed %d, tos %d, flags %04x proto %s\n", pcb->ttl, pcb->closed, pcb->tos,
-               pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
-    ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
-    cne_printf("    Key: faddr %s:%d ", ret ?: "Invalid IP", ntohs(CIN_PORT(&pcb->key.faddr)));
-    ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
-    cne_printf("laddr %s:%d\n", ret ?: "Invalid IP", ntohs(CIN_PORT(&pcb->key.laddr)));
-}
-
-static void
-pcb_show(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
-         unsigned n __cne_unused)
-{
-    struct pcb_entry *pcb = (struct pcb_entry *)obj;
     char fbuf[128], lbuf[128], *ret = NULL;
     char ip1[IP4_ADDR_STRLEN] = {0};
     char ip2[IP4_ADDR_STRLEN] = {0};
@@ -188,7 +165,7 @@ pcb_show(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
     if (pcb->closed)
         return;
 
-    cne_printf("[green]%-6s [orange] %04x [red]%6s[]", pcb->closed ? "Closed" : "Open",
+    cne_printf("       [green]%-6s [orange] %04x [red]%6s[]", pcb->closed ? "Closed" : "Open",
                pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
 
     ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
@@ -203,29 +180,41 @@ pcb_show(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
                  ntohs(CIN_PORT(&pcb->key.laddr))) < 0)
         CNE_RET("Truncated buffer data\n");
 
-    cne_printf(" [cyan]%20s[]\n", lbuf);
+    cne_printf(" [cyan]%20s[] %4d\n", lbuf, pcb->ttl);
 }
 
 static void
-_pcb_dump(stk_t *stk, int type)
+pcb_iterate(mempool_t *mp __cne_unused, void *obj_cb_arg __cne_unused, void *obj,
+            unsigned n __cne_unused)
+{
+    pcb_show((struct pcb_entry *)obj);
+}
+
+static void
+pcb_dump(stk_t *stk)
 {
     if (!stk)
         stk = this_stk;
 
     cne_printf("[yellow]PCB[]: [skyblue]%s\n", stk->name);
-    cne_printf("[magenta]%-6s %5s %6s %20s %20s\n", "State", "Flags", "Proto", "Foreign", "Local");
+    cne_printf("       [magenta]%-6s %5s %6s %20s %20s %4s[]\n", "State", "Flags", "Proto",
+               "Foreign", "Local", "TTL");
 
-    mempool_obj_iter(stk->pcb_objs, (type) ? pcb_show_details : pcb_show, NULL);
+    mempool_obj_iter(stk->pcb_objs, pcb_iterate, NULL);
 }
 
 void
 cnet_pcb_dump(stk_t *stk)
 {
-    _pcb_dump(stk, 0);
+    pcb_dump(stk);
 }
 
 void
-cnet_pcb_dump_details(stk_t *stk)
+cnet_pcb_show(struct pcb_entry *pcb)
 {
-    _pcb_dump(stk, 1);
+    if (!pcb)
+        return;
+    cne_printf("       [magenta]%-6s %5s %6s %20s %20s %4s[]\n", "State", "Flags", "Proto",
+               "Foreign", "Local", "TTL");
+    pcb_show(pcb);
 }

@@ -117,7 +117,7 @@ struct pktmbuf_s {
             union {
                 uint8_t inner_esp_next_proto;
                 /**< ESP next protocol type, valid if
-                 * CNEE_PTYPE_TUNNEL_ESP tunnel type is set
+                 * CNE_PTYPE_TUNNEL_ESP tunnel type is set
                  * on both Tx and Rx.
                  */
                 CNE_STD_C11

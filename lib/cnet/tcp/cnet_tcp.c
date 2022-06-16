@@ -3752,7 +3752,7 @@ err_exit:
 static int
 tcp_create(void *stk __cne_unused)
 {
-    return tcp_init(CNET_NB_TCB_ENTRIES, 1, 1);
+    return tcp_init(CNET_NUM_TCBS, 1, 1);
 }
 
 static int

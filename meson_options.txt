@@ -12,8 +12,30 @@ option('enable_asserts', type: 'boolean', value: false,
 option('enable_docs', type: 'boolean', value: false,
     description: 'build documentation')
 
+# ----
+# CNET Configuration
+#
+option('enable_ip4_dump', type: 'boolean', value: 'false',
+    description: 'enable IPv4 dump header')
+
 option('enable_tcp', type: 'boolean', value: 'false',
-    description: 'enable TCP in CNET')  # Not working yet
+    description: 'enable TCP in CNET (experimental)')
+
+option('enable_punting', type: 'boolean', value: 'true',
+    description: 'enable punting to Linux kernel stack')
+
+option('enable_tcp_dump', type: 'boolean', value: 'false',
+    description: 'enable TCP dump header')
+
+option('cnet_num_tcbs', type: 'integer', value: '512',
+    description: 'Max number of TCBs')
+
+option('cnet_num_channels', type: 'integer', value: '512',
+    description: 'Max number of TCBs,Channels,Routes')
+
+option('cnet_num_routes', type: 'integer', value: '512',
+    description: 'Max number of Routes')
+# ------
 
 option('json_test_dir', type: 'string',
 	value:'', # '/work/projects/json/tests',

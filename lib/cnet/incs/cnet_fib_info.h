@@ -276,7 +276,7 @@ fib_info_foreach(fib_info_t *fi, fib_func_t func, void *arg)
  * @param objs
  *   An array to return the objects for the given index values.
  * @param n
- *   The number of indexs in the idxs array and must match the size for the objs array.
+ *   The number of indexes in the idxs array and must match the size for the objs array.
  * @return
  *   -1 on error or the number of objects found and returned in objs array
  */

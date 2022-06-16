@@ -27,13 +27,14 @@
 #include <cnet_udp.h>
 #include <cnet_ipv4.h>
 #include <cnet_meta.h>
+#include <cnet_chnl.h>
 
 #include <cnet_node_names.h>
 #include "ip4_node_api.h"                 // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
 #include "ip4_output_priv.h"              // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
 #include "cne_branch_prediction.h"        // for likely, unlikely
 #include "cne_common.h"                   // for CNE_BUILD_BUG_ON, CNE_PRIORITY_LAST
-#include "cne_log.h"                      // for CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_INFO
+#include "cne_log.h"                      // for CNE_LOG_DEBUG, CNE_LOG_ERR
 #include "cnet_fib_info.h"
 
 static struct ip4_output_node_main *ip4_output_nm;
@@ -44,8 +45,9 @@ struct ip4_output_node_ctx {
 #define IP4_OUTPUT_NODE_LAST_NEXT(ctx) (((struct ip4_output_node_ctx *)ctx)->next_index)
 
 static inline uint16_t
-ip4_header(pktmbuf_t *m, uint16_t nxt)
+ip4_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt)
 {
+    struct cnet *cnet = this_cnet;
     struct pcb_entry *pcb;
     struct cne_ipv4_hdr *ip;
     struct cne_ether_hdr *eth;
@@ -63,24 +65,27 @@ ip4_header(pktmbuf_t *m, uint16_t nxt)
     m->l3_len = sizeof(struct cne_ipv4_hdr);
 
     l4 = pktmbuf_mtod(m, void *);
-    ip = (struct cne_ipv4_hdr *)pktmbuf_adj_offset(m, -m->l3_len);
+    ip = (struct cne_ipv4_hdr *)pktmbuf_prepend(m, m->l3_len);
     if (!ip)
-        return CNE_EDGE_ID_INVALID;
+        return nxt;
+
+    ip->version_ihl     = (IPv4_VERSION << 4) | (sizeof(struct cne_ipv4_hdr) / 4);
+    ip->type_of_service = pcb->tos;
+    ip->total_length    = htobe16(pktmbuf_data_len(m));
+    ip->fragment_offset = 0;
+    ip->time_to_live    = pcb->ttl;
+    ip->next_proto_id   = pcb->ip_proto;
+    ip->hdr_checksum    = 0;
     ip->dst_addr        = md->faddr.cin_addr.s_addr;
     ip->src_addr        = md->laddr.cin_addr.s_addr;
-    ip->time_to_live    = pcb->ttl;
-    ip->type_of_service = pcb->tos;
-    ip->next_proto_id   = pcb->ip_proto;
-    ip->version_ihl     = (IPv4_VERSION << 4) | (sizeof(struct cne_ipv4_hdr) / 4);
-    ip->total_length    = htobe16(pktmbuf_data_len(m));
 
     ipaddr = be32toh(ip->src_addr);
 
-    m->l2_len = sizeof(struct cne_ether_hdr);
-    eth       = (struct cne_ether_hdr *)pktmbuf_adj_offset(m, -m->l2_len);
-    if (!eth)
-        return CNE_EDGE_ID_INVALID;
-    if (likely(fib_info_lookup(this_cnet->rt4_finfo, &ipaddr, (void **)&rt4, 1) > 0)) {
+    if (likely(fib_info_lookup(cnet->rt4_finfo, &ipaddr, (void **)&rt4, 1) > 0)) {
+        m->l2_len = sizeof(struct cne_ether_hdr);
+        eth       = (struct cne_ether_hdr *)pktmbuf_prepend(m, sizeof(struct cne_ether_hdr));
+        if (!eth)
+            return nxt;
 
         nif = cnet_netif_from_index(rt4->netif_idx);
 
@@ -89,7 +94,6 @@ ip4_header(pktmbuf_t *m, uint16_t nxt)
         ip->packet_id   = htobe16(nif->ip_ident);
         nif->ip_ident += ip->total_length;
 
-        ip->hdr_checksum = 0;
         ip->hdr_checksum = cne_ipv4_cksum(ip);
 
         /* Do the UDP/TCP checksum if enabled */
@@ -108,7 +112,7 @@ ip4_header(pktmbuf_t *m, uint16_t nxt)
 
         nxt    = IP4_OUTPUT_NEXT_ARP_REQUEST;
         ipaddr = be32toh(ip->dst_addr);
-        if (likely(fib_info_lookup(this_cnet->arp_finfo, &ipaddr, (void **)&arp, 1) > 0)) {
+        if (likely(fib_info_lookup(cnet->arp_finfo, &ipaddr, (void **)&arp, 1) > 0)) {
             ether_addr_copy(&arp->ha, &eth->d_addr);
 
             nxt = rt4->netif_idx + IP4_OUTPUT_NEXT_MAX;
@@ -170,10 +174,10 @@ ip4_output_node_process(struct cne_graph *graph, struct cne_node *node, void **o
         pkts += 4;
         n_left_from -= 4;
 
-        next0 = ip4_header(mbuf0, IP4_OUTPUT_NEXT_PKT_DROP);
-        next1 = ip4_header(mbuf1, IP4_OUTPUT_NEXT_PKT_DROP);
-        next2 = ip4_header(mbuf2, IP4_OUTPUT_NEXT_PKT_DROP);
-        next3 = ip4_header(mbuf3, IP4_OUTPUT_NEXT_PKT_DROP);
+        next0 = ip4_output_header(node, mbuf0, IP4_OUTPUT_NEXT_PKT_DROP);
+        next1 = ip4_output_header(node, mbuf1, IP4_OUTPUT_NEXT_PKT_DROP);
+        next2 = ip4_output_header(node, mbuf2, IP4_OUTPUT_NEXT_PKT_DROP);
+        next3 = ip4_output_header(node, mbuf3, IP4_OUTPUT_NEXT_PKT_DROP);
 
         /* Enqueue four to next node */
         cne_edge_t fix_spec = (next_index ^ next0) | (next_index ^ next1) | (next_index ^ next2) |
@@ -231,7 +235,7 @@ ip4_output_node_process(struct cne_graph *graph, struct cne_node *node, void **o
         pkts += 1;
         n_left_from -= 1;
 
-        next0 = ip4_header(mbuf0, IP4_OUTPUT_NEXT_PKT_DROP);
+        next0 = ip4_output_header(node, mbuf0, IP4_OUTPUT_NEXT_PKT_DROP);
 
         if (unlikely(next_index ^ next0)) {
             /* Copy things successfully speculated till now */
