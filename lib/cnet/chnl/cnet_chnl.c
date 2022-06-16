@@ -1022,26 +1022,3 @@ chnl_ERROR(struct chnl *ch __cne_unused)
 {
     return __errno_set(EOPNOTSUPP);
 }
-
-static int
-_chnl_create(void *_stk)
-{
-    stk_t *stk = _stk;
-
-    CNE_DEBUG("Created chnl instance for %s\n", stk->name);
-    return 0;
-}
-
-static int
-_chnl_destroy(void *_stk)
-{
-    stk_t *stk = _stk;
-
-    CNE_DEBUG("Destroy chnl instance for %s\n", stk->name);
-    return 0;
-}
-
-CNE_INIT_PRIO(cnet_chnl_constructor, STACK)
-{
-    cnet_add_instance("chnl", CNET_CHNL_PRIO, _chnl_create, _chnl_destroy);
-}

@@ -72,8 +72,6 @@ typedef struct stk_s {
 CNE_DECLARE_PER_THREAD(stk_t *, stk);
 #define this_stk CNE_PER_THREAD(stk)
 
-#define PROTOSW_FREE_SLOT 0xFFFF
-
 /* Flags values for stk_entry.gflags */
 enum {
     TCP_TIMEOUT_ENABLED    = 0x00000001, /**< Enable TCP Timeouts */
@@ -134,6 +132,32 @@ static inline int
 cnet_stk_is_running(void)
 {
     return (this_stk) ? this_stk->running : 0;
+}
+
+static inline int
+stk_lock(void)
+{
+    stk_t *stk = this_stk;
+
+    if (!stk)
+        CNE_ERR_RET_VAL(0, "Stack pointer is NULL\n");
+
+    if (pthread_mutex_lock(&stk->mutex) == 0)
+        return 1;
+
+    CNE_ERR_RET_VAL(0, "Unable to lock stk(%s) mutex\n", stk->name);
+}
+
+static inline void
+stk_unlock(void)
+{
+    stk_t *stk = this_stk;
+
+    if (!stk)
+        CNE_RET("Stack pointer is NULL\n");
+
+    if (pthread_mutex_unlock(&stk->mutex))
+        CNE_ERR("Unable to unlock (%s) mutex\n", stk->name);
 }
 
 /**

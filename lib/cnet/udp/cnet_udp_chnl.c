@@ -193,13 +193,7 @@ udp_chnl_create(void *_stk __cne_unused)
     return 0;
 }
 
-static int
-udp_chnl_destroy(void *_stk __cne_unused)
-{
-    return 0;
-}
-
 CNE_INIT_PRIO(cnet_udp_chnl_constructor, STACK)
 {
-    cnet_add_instance("UDP chnl", CNET_UDP_CHNL_PRIO, udp_chnl_create, udp_chnl_destroy);
+    cnet_add_instance("UDP chnl", CNET_UDP_CHNL_PRIO, udp_chnl_create, NULL);
 }

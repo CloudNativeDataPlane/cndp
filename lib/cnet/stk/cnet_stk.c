@@ -26,8 +26,6 @@
 
 #include <cne_spinlock.h>
 
-static int stk_destroy(void *_stk);
-
 static int
 _stk_create(struct cnet *cnet)
 {
@@ -108,12 +106,6 @@ cnet_stk_stop(void)
 }
 
 static int
-stk_create(void *_stk __cne_unused)
-{
-    return 0;
-}
-
-static int
 stk_destroy(void *_stk)
 {
     stk_t *stk = _stk;
@@ -132,5 +124,5 @@ stk_destroy(void *_stk)
 
 CNE_INIT_PRIO(cnet_stk_constructor, STACK)
 {
-    cnet_add_instance("stk", CNET_STK_PRIO, stk_create, stk_destroy);
+    cnet_add_instance("stk", CNET_STK_PRIO, NULL, stk_destroy);
 }

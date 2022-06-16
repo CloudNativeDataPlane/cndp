@@ -60,11 +60,8 @@ extern "C" {
 #endif
 
 enum {
-    CNET_MAX_INITS      = 64,
-    CNET_NB_TCB_ENTRIES = 128,
-    CNET_NUM_CHANNELS   = 128,
-    CNET_NUM_ROUTES     = 128,
-    PROTOSW_MAX_SIZE    = 64,
+    CNET_MAX_INITS   = 64,
+    PROTOSW_MAX_SIZE = 64,
 };
 
 enum {

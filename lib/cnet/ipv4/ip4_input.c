@@ -106,21 +106,35 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         dip[0] = dip[1] = dip[2] = dip[3] = 0;
 
         /* Extract DIP from mbufs plus validate the IP header checksum. */
-        ip4[0] = pktmbuf_adjust(mbuf0, struct cne_ipv4_hdr *, mbuf0->l2_len);
-        ip4[1] = pktmbuf_adjust(mbuf1, struct cne_ipv4_hdr *, mbuf1->l2_len);
-        ip4[2] = pktmbuf_adjust(mbuf2, struct cne_ipv4_hdr *, mbuf2->l2_len);
-        ip4[3] = pktmbuf_adjust(mbuf3, struct cne_ipv4_hdr *, mbuf3->l2_len);
+        ip4[0] = pktmbuf_mtod(mbuf0, struct cne_ipv4_hdr *);
+        ip4[1] = pktmbuf_mtod(mbuf1, struct cne_ipv4_hdr *);
+        ip4[2] = pktmbuf_mtod(mbuf2, struct cne_ipv4_hdr *);
+        ip4[3] = pktmbuf_mtod(mbuf3, struct cne_ipv4_hdr *);
 
-        if (likely(cne_ipv4_cksum(ip4[0]) == 0))
+        /* Adjust the data length for an IPv4 packet to the size given in the header. */
+        pktmbuf_data_len(mbuf0) = be16toh(ip4[0]->total_length);
+        pktmbuf_data_len(mbuf1) = be16toh(ip4[1]->total_length);
+        pktmbuf_data_len(mbuf2) = be16toh(ip4[2]->total_length);
+        pktmbuf_data_len(mbuf3) = be16toh(ip4[3]->total_length);
+
+        /*
+         * When the total length exceeds mbuf size, the size check/checksum below will
+         * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
+         */
+        if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)) &&
+            likely(cne_ipv4_cksum(ip4[0]) == 0))
             dip[0] = be32toh(ip4[0]->dst_addr);
 
-        if (likely(cne_ipv4_cksum(ip4[1]) == 0))
+        if (likely(pktmbuf_data_len(mbuf1) < pktmbuf_buf_len(mbuf1)) &&
+            likely(cne_ipv4_cksum(ip4[1]) == 0))
             dip[1] = be32toh(ip4[1]->dst_addr);
 
-        if (likely(cne_ipv4_cksum(ip4[2]) == 0))
+        if (likely(pktmbuf_data_len(mbuf2) < pktmbuf_buf_len(mbuf2)) &&
+            likely(cne_ipv4_cksum(ip4[2]) == 0))
             dip[2] = be32toh(ip4[2]->dst_addr);
 
-        if (likely(cne_ipv4_cksum(ip4[3]) == 0))
+        if (likely(pktmbuf_data_len(mbuf3) < pktmbuf_buf_len(mbuf3)) &&
+            likely(cne_ipv4_cksum(ip4[3]) == 0))
             dip[3] = be32toh(ip4[3]->dst_addr);
 
         ipv4_save_metadata(mbuf0, ip4[0]);
@@ -193,17 +207,26 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 1;
         n_left_from -= 1;
 
-        /* Extract DIP from mbuf */
-        ip4[0] = pktmbuf_adjust(mbuf0, struct cne_ipv4_hdr *, mbuf0->l2_len);
-        dip[0] = be32toh(ip4[0]->dst_addr);
+        /* Set defaults and the pointer to the IPv4 header. */
+        next0  = CNE_NODE_IP4_INPUT_NEXT_PKT_DROP;
+        dip[0] = 0;
+        ip4[0] = pktmbuf_mtod(mbuf0, struct cne_ipv4_hdr *);
+
+        /* Adjust the data length for an IPv4 packet to the size given in the header */
+        pktmbuf_data_len(mbuf0) = be16toh(ip4[0]->total_length);
+
+        /*
+         * When the total length exceeds mbuf size, the size check/checksum below will
+         * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
+         */
+        if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)) &&
+            likely(cne_ipv4_cksum(ip4[0]) == 0))
+            dip[0] = be32toh(ip4[0]->dst_addr);
 
         ipv4_save_metadata(mbuf0, ip4[0]);
 
-        next0 = CNE_NODE_IP4_INPUT_NEXT_PKT_DROP;
-        if (likely(fib_info_lookup_index(fi, dip, dst, 1) > 0)) {
-            /* Extract next node id and NH */
-            next0 = (dst[0] >> RT4_NEXT_INDEX_SHIFT);
-        }
+        if (likely(fib_info_lookup_index(fi, dip, dst, 1) > 0))
+            next0 = (dst[0] >> RT4_NEXT_INDEX_SHIFT); /* Extract next node id and NH */
 
         if (unlikely(next_index ^ next0)) {
             /* Copy things successfully speculated till now */

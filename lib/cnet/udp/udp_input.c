@@ -13,6 +13,7 @@
 #include <netinet/in.h>           // for ntohs
 #include <stddef.h>               // for NULL
 
+#include <cnet_chnl.h>
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
 #include <cne_common.h>              // for __cne_unused

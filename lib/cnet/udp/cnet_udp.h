@@ -12,7 +12,6 @@
 
 #include <stdint.h>        // for uint32_t
 
-#include "cnet_chnl.h"         // for _IPPORT_RESERVED
 #include "cnet_const.h"        // for bool_t
 #include "cnet_pcb.h"          // for pcb_hd
 

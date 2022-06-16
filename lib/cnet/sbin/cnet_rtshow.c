@@ -70,20 +70,3 @@ cnet_rtshow(stk_t *stk, int argc, char **argv)
 
     return 0;
 }
-
-static int
-cnet_rtshow_create(void *_stk __cne_unused)
-{
-    return 0;
-}
-
-static int
-cnet_rtshow_destroy(void *_stk __cne_unused)
-{
-    return 0;
-}
-
-CNE_INIT_PRIO(cnet_nstat_constructor, STACK)
-{
-    cnet_add_instance("rtshow", CNET_UTILS_PRIO, cnet_rtshow_create, cnet_rtshow_destroy);
-}

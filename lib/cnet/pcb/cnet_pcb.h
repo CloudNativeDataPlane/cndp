@@ -25,14 +25,9 @@
 extern "C" {
 #endif
 
-enum {
-    PCB_ENTRIES      = 255,
-    PCB_MBUF_ENTRIES = 256,
-};
-
 struct pcb_key {
-    struct in_caddr faddr;
-    struct in_caddr laddr;
+    struct in_caddr faddr; /**< foreign IP address */
+    struct in_caddr laddr; /**< local IP address */
 } __cne_aligned(sizeof(void *));
 
 struct netif;
@@ -52,8 +47,8 @@ struct pcb_entry {
 } __cne_cache_aligned;
 
 struct pcb_hd {
-    struct pcb_entry **vec;
-    uint16_t lport;
+    struct pcb_entry **vec; /**< PCB entries */
+    uint16_t lport;         /**< Local port number i.e. IP local port ID */
 };
 
 static inline void
@@ -144,14 +139,12 @@ CNDP_API struct pcb_entry *cnet_pcb_lookup(struct pcb_hd *hd, struct pcb_key *ke
 CNDP_API void cnet_pcb_dump(stk_t *stk);
 
 /**
- * Dump out the details information for the stack PCB list.
+ * Print out the given PCB entry.
  *
- * @param stk
- *   The stack instance pointer to use for dumping all PCBs in instance.
- * @return
- *   N/A
+ * @param pcb
+ *   The PCB entry to dump out
  */
-CNDP_API void cnet_pcb_dump_details(stk_t *stk);
+CNDP_API void cnet_pcb_show(struct pcb_entry *pcb);
 
 /**
  * @brief Return the PCB entry matching the given information.

@@ -30,14 +30,13 @@ struct cne_mempool;
 struct fib_info;
 
 struct cnet {
-    void *netlink_info;                  /**< Netlink information structure */
-    uint16_t nb_lcores;                  /**< Number of lcores in the system */
+    CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
     uint16_t nb_ports;                   /**< Number of ports in the system */
     uint32_t num_chnls;                  /**< Number of channels in system */
     uint32_t num_routes;                 /**< Number of routes */
     uint32_t num_arps;                   /**< Number of ARP entries */
-    uint16_t flags;                      /**< Flags */
-    CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
+    uint16_t flags;                      /**< Flags enable Punting, TCP, ... */
+    void *netlink_info;                  /**< Netlink information structure */
     struct stk_s **stks;                 /**< Vector list of stk_entry pointers */
     struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */
     struct netif **netifs;               /**< List of active netif structures */
@@ -50,7 +49,7 @@ struct cnet {
 } __cne_cache_aligned;
 
 enum {
-    CNET_PUNT_ENABLED = 0x0001, /**< Enable Punting packets to linux network */
+    CNET_PUNT_ENABLED = 0x0001, /**< Enable Punting packets to Linux stack */
     CNET_TCP_ENABLED  = 0x0002, /**< Enable TCP packet processing */
 };
 
