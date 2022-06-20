@@ -208,6 +208,22 @@ impl Config {
         self.get_port_by_index(port_index as u16)
     }
 
+    pub(crate) fn get_port_details(&self, port_index: u16) -> Result<PortDetails, CneError> {
+        self.validate_port_index(port_index)?;
+
+        let (name, lport) = self.lports.get_index(port_index as usize).ok_or_else(|| {
+            CneError::ConfigError(format!("Port {} is not configured", port_index))
+        })?;
+
+        let port_info = PortDetails {
+            name: Some(name.to_owned()),
+            netdev: lport.netdev.to_owned(),
+            qid: lport.qid,
+            description: lport.description.to_owned(),
+        };
+        Ok(port_info)
+    }
+
     pub(crate) fn get_port_pktmbuf_pool(
         &self,
         port_index: u16,
