@@ -144,6 +144,18 @@ impl CneInstance {
         }
     }
 
+    pub(crate) fn get_port_details(&self, port_index: u16) -> Result<PortDetails, CneError> {
+        let cne = self.read()?;
+
+        if let Some(cfg) = &cne.cfg {
+            cfg.get_port_details(port_index)
+        } else {
+            Err(CneError::ConfigError(
+                "Cannot find port. CNE is not configured".to_string(),
+            ))
+        }
+    }
+
     pub(crate) fn get_port_pktmbuf_pool(
         &self,
         port_index: u16,

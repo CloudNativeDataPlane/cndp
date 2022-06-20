@@ -116,6 +116,34 @@ mod tests {
     }
 
     #[test]
+    fn test_get_port_details() {
+        init();
+
+        // Get jsonc file path.
+        let jsonc_file = get_jsonc_file();
+
+        // Get CNE instance.
+        let cne = CneInstance::get_instance();
+
+        // Configure CNE.
+        let ret = cne.configure(&jsonc_file);
+        assert!(ret.is_ok());
+
+        // Get valid port. Should return success.
+        let port = cne.get_port(0);
+        assert!(port.is_ok());
+
+        // Get port details
+        let port = port.unwrap();
+        let port_details = port.get_port_details();
+        assert!(port_details.is_ok());
+
+        // Cleanup CNE.
+        let ret = cne.cleanup();
+        assert!(ret.is_ok());
+    }
+
+    #[test]
     fn test_rx_burst() {
         init();
 

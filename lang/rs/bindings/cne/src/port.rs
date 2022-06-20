@@ -44,6 +44,14 @@ pub struct PortStats {
     tx_invalid: u64,
 }
 
+#[derive(Debug)]
+pub struct PortDetails {
+    pub name: Option<String>,
+    pub netdev: Option<String>,
+    pub qid: u16,
+    pub description: Option<String>,
+}
+
 impl Port {
     pub(crate) fn new(port_index: u16, pkt_api: PktApi) -> Port {
         let inner = PortInner {
@@ -160,6 +168,13 @@ impl Port {
         port_stats.tx_invalid = c_port_stats.tx_invalid;
 
         Ok(port_stats)
+    }
+
+    pub fn get_port_details(&self) -> Result<PortDetails, CneError> {
+        let port = self.lock()?;
+
+        let cne = CneInstance::get_instance();
+        cne.get_port_details(port.port_index)
     }
 
     fn lock(&self) -> Result<MutexGuard<PortInner>, CneError> {
