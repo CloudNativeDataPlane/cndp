@@ -9,6 +9,7 @@ use std::fmt::Result;
 pub enum CneError {
     BufferAllocError(String),
     ConfigError(String),
+    PacketError(String),
     PortError(String),
     PortStatsError(String),
     RegisterError(String),
@@ -21,6 +22,7 @@ impl Display for CneError {
         let s = match self {
             CneError::BufferAllocError(s) => format!("CneError::BufferAllocError({})", s),
             CneError::ConfigError(s) => format!("CneError::ConfigError({})", s),
+            CneError::PacketError(s) => format!("CneError::PacketError({})", s),
             CneError::PortError(s) => format!("CneError::PortError({})", s),
             CneError::PortStatsError(s) => format!("CneError::PortStatsError({})", s),
             CneError::RegisterError(s) => format!("CneError::RegisterError({})", s),
