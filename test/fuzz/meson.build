@@ -13,6 +13,7 @@ fuzzerz = [
     'uds_create',
     'cne_log',
     'mempool_create',
+    'mmap_alloc',
 ]
 
 deps = [
@@ -23,6 +24,7 @@ deps = [
     include,
     log,
     mempool,
+    mmap,
     osal,
     uds,
 ]
