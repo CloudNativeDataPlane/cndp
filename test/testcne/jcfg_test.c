@@ -146,8 +146,10 @@ test_json_files(const char *path, int flags)
         if (!jinfo)
             continue;
 
-        if (jcfg_process(jinfo, flags, process_callback, NULL))
+        if (jcfg_process(jinfo, flags, process_callback, NULL)) {
+            closedir(pdir);
             CNE_ERR_RET("*** Invalid configuration ***\n");
+        }
 
         if (!strcmp(pent->d_name, "test-strings.jsonc"))
             TST_ASSERT_GOTO(jcfg_del_decoder(USER1_DATA_TAG) == 0, "jcfg_del_decoder(%s) failed\n",

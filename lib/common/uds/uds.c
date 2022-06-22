@@ -590,6 +590,7 @@ socket_listener(void *_info)
         if (!c) {
             snprintf(uds_log_error, sizeof(uds_log_error),
                      "Unable to allocate uds_client structure\n");
+            close(s);
             break;
         }
         c->s             = s;
