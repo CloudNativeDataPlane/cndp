@@ -622,6 +622,7 @@ fbk_hash_perf_test(void)
     keys = calloc(ENTRIES, sizeof(*keys));
     if (keys == NULL) {
         cne_printf("fbk hash: memory allocation for key store failed\n");
+        cne_fbk_hash_free(handle);
         return -1;
     }
 
