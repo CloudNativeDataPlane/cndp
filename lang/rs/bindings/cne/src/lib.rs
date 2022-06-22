@@ -177,10 +177,11 @@ mod tests {
                 let pkt = &rx_pkts[0];
 
                 let data_len = pkt.get_data_len();
-                assert!(data_len.is_some());
+                assert!(data_len.is_ok());
                 log::debug!("packet data length = {}", data_len.unwrap());
 
-                Packet::free_packet_buffer(&mut rx_pkts[..pkts_read as usize]);
+                let ret = Packet::free_packet_buffer(&mut rx_pkts[..pkts_read as usize]);
+                assert!(ret.is_ok());
                 break;
             } else {
                 // If there are no packets read then thread can (optionally) sleep for sometime.
@@ -231,7 +232,8 @@ mod tests {
         for i in 0..alloc_pkts {
             let pkt = &mut tx_pkts[i as usize];
 
-            pkt.set_data(&p);
+            let ret = pkt.set_data(&p);
+            assert!(ret.is_ok());
         }
 
         let pkts_sent = port.tx_burst(&mut tx_pkts[..]);
@@ -285,10 +287,10 @@ mod tests {
 
         if pkts_read > 0 {
             for i in 0..pkts_read {
-                let pkt = &rx_pkts[i];
+                let pkt = &mut rx_pkts[i];
 
                 let p = pkt.get_data_mut();
-                assert!(p.is_some());
+                assert!(p.is_ok());
 
                 let p = p.unwrap();
 
@@ -307,7 +309,8 @@ mod tests {
             log::debug!("Number of packets sent = {}", pkts_sent);
             // Free packets which are not sent.
             if pkts_sent < pkts_read {
-                Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read]);
+                let ret = Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read]);
+                assert!(ret.is_ok());
             }
         }
 

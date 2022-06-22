@@ -266,7 +266,7 @@ fn cne_macswap_and_send(port: &Port, burst_size: usize) -> Result<(), CneError> 
 
     if pkts_read > 0 {
         for i in 0..pkts_read {
-            let pkt = &rx_pkts[i as usize];
+            let pkt = &mut rx_pkts[i as usize];
             let data = pkt.get_data_mut();
             if let Some(data) = data {
                 // Swap mac address.
