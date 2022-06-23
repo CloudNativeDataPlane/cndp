@@ -15,7 +15,6 @@
 #include <tst_info.h>           // for tst_summary
 #include <unistd.h>             // for sleep
 #include <stddef.h>             // for size_t, NULL
-#include <locale.h>
 
 #include "testcne.h"
 #include "cne_stdio.h"        // for cne_printf, cne_printf_pos
@@ -71,8 +70,6 @@ main(int argc, char **argv)
 {
     myargs_t a = {0};
     int ret, tidx;
-
-    setlocale(LC_ALL, "");
 
     signal(SIGSEGV, sig_handler);
     signal(SIGTERM, sig_handler);
