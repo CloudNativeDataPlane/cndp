@@ -205,7 +205,7 @@ ring_profile(int argc, char **argv)
                 goto err;
             }
             if (0 > err_num) {
-                tst_ok("enqueue failed i=%d esize=%d\n", i, esize);
+                tst_ok("enqueue failed i=%zu esize=%d\n", i, esize);
                 goto err;
             }
         }
@@ -254,7 +254,7 @@ ring_profile(int argc, char **argv)
             case 20: {
                 err_num = cne_ring_dequeue_elem(r, (void *)(&val.e20), actual_esize);
                 if (val.e20.m[1] != (uint64_t)(i + 1)) {
-                    tst_error("Ring Dequeue failed e=%d val={%" PRId64 ", %" PRId64 "} err=%d\n",
+                    tst_error("Ring Dequeue failed e=%d val={%" PRIu32 ", %" PRIu32 "} err=%d\n",
                               actual_esize, val.e20.m[1], err_num);
                     goto err;
                 }

@@ -650,9 +650,9 @@ unlock:
 static void
 print_acl_info(uds_client_t *c)
 {
-    uds_append(c, "\"num rules\":%d,", acl_rules.len);
+    uds_append(c, "\"num rules\":%zu,", acl_rules.len);
     uds_append(c, "\"max rules\":%d,", acl_param.max_rule_num);
-    uds_append(c, "\"rule pages\":%d,", ACL_NUM_PAGES(acl_rules.len));
+    uds_append(c, "\"rule pages\":%zu,", ACL_NUM_PAGES(acl_rules.len));
     uds_append(c, "\"rules per page\":%d", ACL_RULES_PER_PAGE);
 }
 
