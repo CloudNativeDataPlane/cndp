@@ -2,7 +2,6 @@
  * Copyright (c) 2019-2022 Intel Corporation.
  */
 
-#include <locale.h>         // for NULL, setlocale, LC_ALL
 #include <pthread.h>        // for pthread_barrier_wait, pthread_self, pthread_...
 #include <sched.h>          // for cpu_set_t
 #include <signal.h>         // for SIGUSR1, SIGINT
@@ -474,8 +473,6 @@ main(int argc, char **argv)
     int signals[]       = {SIGINT, SIGUSR1, SIGTERM};
 
     memset(&fwd_info, 0, sizeof(struct fwd_info));
-
-    setlocale(LC_ALL, "");
 
     if (cne_init() || parse_args(argc, argv, fwd))
         goto err;

@@ -14,7 +14,6 @@
 #include <netinet/in.h>          // for INET6_ADDRSTRLEN, in_addr, htonl
 #include <sched.h>               // for cpu_set_t
 #include <stddef.h>              // for offsetof
-#include <locale.h>
 
 #include <openssl/pem.h>
 #include "picotls.h"
@@ -271,8 +270,6 @@ main(int argc, char **argv)
     int cnt, signals[] = {SIGINT, SIGTERM, SIGUSR1};
 
     memset(&cnet_info, 0, sizeof(struct cnet_info));
-
-    setlocale(LC_ALL, "");
 
     cne_timer_subsystem_init();
 

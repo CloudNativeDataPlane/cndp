@@ -14,7 +14,6 @@
 #include <netinet/in.h>          // for INET6_ADDRSTRLEN, in_addr, htonl
 #include <sched.h>               // for cpu_set_t
 #include <stddef.h>              // for offsetof
-#include <locale.h>
 
 #include <cne_branch_prediction.h>        // for likely
 #include <cne_common.h>                   // for __cne_unused, CNE_MAX_ETHPORTS
@@ -386,8 +385,6 @@ main(int argc, char **argv)
     int signals[] = {SIGINT, SIGTERM, SIGUSR1};
 
     memset(&cnet_info, 0, sizeof(struct cnet_info));
-
-    setlocale(LC_ALL, "");
 
     cne_timer_subsystem_init();
 

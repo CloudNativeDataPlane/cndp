@@ -8,6 +8,7 @@
 #include <cne_version.h>        // for cne_version
 #include <cne_tty.h>            // for tty_is_inited
 #include <sys/queue.h>          // for STAILQ_INIT, STAILQ_INSERT_TAIL, STAILQ_REMOVE
+#include <locale.h>
 
 #include "cne_private.h"        // for cne_private_t, cne_entry, cne_entry::(anony...
 #include "cne.h"                // for cne_id, ...
@@ -282,6 +283,8 @@ CNE_INIT_PRIO(cne_initialize, STATE)
             free(__cne.entries);
             exit(-1);
         }
+
+        setlocale(LC_ALL, "");
 
         __cne.magic_id = CNE_MAGIC_ID;
     }

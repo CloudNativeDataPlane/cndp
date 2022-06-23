@@ -26,7 +26,6 @@
 #include <netinet/in.h>                   // for INET6_ADDRSTRLEN, in_addr, htonl
 #include <sched.h>                        // for cpu_set_t
 #include <stddef.h>                       // for offsetof
-#include <locale.h>
 
 #include "fwd.h"
 #include "cne.h"               // for cne_id, cne_init, cne_on_exit
@@ -352,8 +351,6 @@ main(int argc, char **argv)
     int signals[] = {SIGINT, SIGTERM, SIGUSR1};
 
     memset(&fwd_info, 0, sizeof(struct fwd_info));
-
-    setlocale(LC_ALL, "");
 
     if (cne_init() < 0)
         CNE_ERR_GOTO(err, "cne_init() failed\n");
