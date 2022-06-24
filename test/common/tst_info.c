@@ -96,7 +96,7 @@ tst_skip(const char *fmt, ...)
 
     va_start(va_list, fmt);
     cne_printf("[yellow]  ** [green]SKIP[] - [green]TEST[]: [cyan]");
-    vprintf(fmt, va_list);
+    cne_vprintf(fmt, va_list);
     cne_printf("[]\n");
     va_end(va_list);
 
@@ -110,7 +110,7 @@ tst_ok(const char *fmt, ...)
 
     va_start(va_list, fmt);
     cne_printf("[yellow]  ** [green]PASS[] - [green]TEST[]: [cyan]");
-    vprintf(fmt, va_list);
+    cne_vprintf(fmt, va_list);
     cne_printf("[]\n");
     va_end(va_list);
 
@@ -124,7 +124,7 @@ tst_error(const char *fmt, ...)
 
     va_start(va_list, fmt);
     cne_printf("[yellow]  >> [red]FAIL[] - [green]TEST[]: [cyan]");
-    vprintf(fmt, va_list);
+    cne_vprintf(fmt, va_list);
     cne_printf("[]\n");
     va_end(va_list);
 
@@ -138,7 +138,7 @@ tst_info(const char *fmt, ...)
 
     va_start(va_list, fmt);
     cne_printf("\n[yellow]  == [blue]INFO[] - [green]TEST[]: [cyan]");
-    vprintf(fmt, va_list);
+    cne_vprintf(fmt, va_list);
     cne_printf("[]\n");
     va_end(va_list);
 
