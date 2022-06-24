@@ -95,8 +95,6 @@ function ninja_build_docs() {
 
 function build_rust_apps() {
     echo ">>> Build rust applications"
-    # List of rust apps
-    rust_apps=( pktfwd )
     # Check if Cargo is installed.
     command -v cargo &> /dev/null
     if [[ $? -ne 0 ]]; then
@@ -104,17 +102,13 @@ function build_rust_apps() {
         return 1
     fi
     # Build rust applications
-    for i in "${rust_apps[@]}"
-    do
-        if [[ -d ${currdir}/lang/rs/$i ]]; then
-        cd ${currdir}/lang/rs/$i
-            cargo_build_rust_app $i
-        fi
-    done
+    if [[ -d ${currdir}/lang/rs ]]; then
+        cd ${currdir}/lang/rs
+        cargo_build_rust_app
+    fi
 }
 
 function cargo_build_rust_app() {
-    echo ">>> Cargo build $1"
     if [ "$buildtype" == "release" ]; then
         cargo build --release
     else
@@ -129,8 +123,6 @@ function cargo_build_rust_app() {
 
 function clean_rust_apps() {
     echo ">>> Clean rust applications"
-    # List of rust apps
-    rust_apps=( pktfwd )
     # Check if Cargo is installed.
     command -v cargo &> /dev/null
     if [[ $? -ne 0 ]]; then
@@ -138,17 +130,13 @@ function clean_rust_apps() {
         return 1
     fi
     # Clean rust applications.
-    for i in "${rust_apps[@]}"
-    do
-        if [[ -d ${currdir}/lang/rs/$i ]]; then
-        cd ${currdir}/lang/rs/$i
-            cargo_clean_rust_app $i
-        fi
-    done
+    if [[ -d ${currdir}/lang/rs ]]; then
+        cd ${currdir}/lang/rs
+        cargo_clean_rust_app
+    fi
 }
 
 function cargo_clean_rust_app() {
-    echo ">>> Cargo clean $1"
     cargo clean -v
     if [[ $? -ne 0 ]]; then
         return 1;
