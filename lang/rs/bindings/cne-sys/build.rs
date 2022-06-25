@@ -16,7 +16,7 @@ fn main() {
     let (cndp_lib_dir, cndp_include_dir) = match cndp_install_path {
         Some(install_path) => (
             install_path.to_string() + &default_lib_dir,
-            install_path.to_string() + &default_include_dir,
+            install_path + &default_include_dir,
         ),
         None => {
             // PKG_CONFIG_PATH environment variable should be set to directory containing libcndp.pc file.
@@ -34,7 +34,7 @@ fn main() {
     println!("cargo:rustc-link-lib=cndp");
 
     // Tell cargo to invalidate the built crate whenever the .h or .c or meson.build files in bindings directory changes.
-    let bindings_parse_files = fs::read_dir("./src/bindings")
+    let bindings_parse_files = fs::read_dir("./src/c_src")
         .expect("Error reading directory")
         .filter_map(Result::ok)
         .filter_map(|f| {
@@ -53,7 +53,7 @@ fn main() {
     // Build rust_bindings library.
     let rust_bindings_build_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let rust_bindings_build_path = rust_bindings_build_path.to_str().unwrap();
-    meson::build("./src/bindings", rust_bindings_build_path);
+    meson::build("./src/c_src", rust_bindings_build_path);
 
     // Set rust_bindings library path.
     println!(
@@ -75,7 +75,7 @@ fn main() {
     // the resulting bindings.
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate bindings for.
-        .header("src/bindings/wrapper.h")
+        .header("src/c_src/wrapper.h")
         .clang_arg(cndp_include_clang_arg)
         // Tell cargo to invalidate the built crate whenever any of the included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
