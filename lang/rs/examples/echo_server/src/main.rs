@@ -267,11 +267,9 @@ fn cne_macswap_and_send(port: &Port, burst_size: usize) -> Result<(), CneError> 
     if pkts_read > 0 {
         for i in 0..pkts_read {
             let pkt = &mut rx_pkts[i as usize];
-            let data = pkt.get_data_mut();
-            if let Some(data) = data {
-                // Swap mac address.
-                swap_mac_address(data);
-            }
+            let data = pkt.get_data_mut()?;
+            // Swap mac address.
+            swap_mac_address(data);
         }
 
         let mut pkts_sent = 0;
@@ -285,7 +283,7 @@ fn cne_macswap_and_send(port: &Port, burst_size: usize) -> Result<(), CneError> 
         log::debug!("Number of packets sent = {}", pkts_sent);
         // Free packets which are not sent.
         if pkts_sent < pkts_read {
-            cne::packet::Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read]);
+            cne::packet::Packet::free_packet_buffer(&mut rx_pkts[pkts_sent..pkts_read])?;
         }
     }
 

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2022 Intel Corporation.
+
+[workspace]
+
+members = [
+    "bindings/cne-sys",
+    "apis/cne",
+    "apis/cne/examples/loopback",
+    "examples/echo_server"
+]
