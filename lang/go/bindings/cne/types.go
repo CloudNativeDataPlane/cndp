@@ -8,14 +8,20 @@ import (
 	"fmt"
 )
 
+// MACAddress represents a MAC address octets
 type MACAddress [EtherAddrLen]uint8
+
+// EthernetHeader represents a Ethernet header
 type EthernetHeader struct {
 	DAddr     MACAddress // Destination address
 	SAddr     MACAddress // Source address
 	EtherType uint16     // Frame type
 }
 
+// IPv4Address represents a IPv4 address octets
 type IPv4Address uint32
+
+// IPv4Hdr represents a IPv4 header
 type IPv4Hdr struct {
 	VersionIhl     uint8       // version and header length
 	TypeOfService  uint8       // type of service
@@ -28,7 +34,11 @@ type IPv4Hdr struct {
 	SrcAddr        IPv4Address // source address
 	DstAddr        IPv4Address // destination address
 }
+
+// IPv6Address represents a IPv6 address octets
 type IPv6Address [IPv6AddrLen]uint8
+
+// IPv6Hdr represents a IPv6 header
 type IPv6Hdr struct {
 	VtcFlow    uint32      // IP version, traffic class & flow label
 	PayloadLen uint16      // IP packet length - includes sizeof(ip_header)
@@ -38,6 +48,7 @@ type IPv6Hdr struct {
 	DstAddr    IPv6Address // IP address of destination host(s)
 }
 
+// UDPHdr represents the UDP header
 type UDPHdr struct {
 	SrcPort    uint16 // UDP source port
 	DstPort    uint16 // UDP destination port
@@ -45,7 +56,10 @@ type UDPHdr struct {
 	DgramCksum uint16 // UDP datagram checksum
 }
 
+// TCPFlags represents the TCP flags
 type TCPFlags uint8
+
+// TCPHdr represents the TCP header
 type TCPHdr struct {
 	SrcPort  uint16   // TCP source port
 	DstPort  uint16   // TCP destination port
@@ -61,21 +75,21 @@ type TCPHdr struct {
 var (
 	//not thread safe
 	etherTypeNameMap = map[uint16]string{
-		ETHER_TYPE_IPV4:            " IPv4 Protocol",
-		ETHER_TYPE_IPV6:            " IPv6 Protocol",
-		ETHER_TYPE_ARP:             " Arp Protocol",
-		ETHER_TYPE_RARP:            " Reverse Arp Protocol",
-		ETHER_TYPE_VLAN:            " IEEE 802.1Q VLAN tagging",
-		ETHER_TYPE_QINQ:            " IEEE 802.1ad QinQ tagging",
-		ETHER_TYPE_PPPOE_DISCOVERY: " PPPoE Discovery Stage",
-		ETHER_TYPE_PPPOE_SESSION:   " PPPoE Session Stage",
-		ETHER_TYPE_ETAG:            " IEEE 802.1BR E-Tag",
-		ETHER_TYPE_1588:            "Ether Type 1588",
-		ETHER_TYPE_SLOW:            " Slow protocols (LACP and Marker)",
-		ETHER_TYPE_TEB:             " Transparent Ethernet Bridging",
-		ETHER_TYPE_LLDP:            " LLDP Protocol",
-		ETHER_TYPE_MPLS:            " MPLS ethertype",
-		ETHER_TYPE_MPLSM:           " MPLS multicast ethertype",
+		EtherTypeIPV4:           " IPv4 Protocol",
+		EtherTypeIPV6:           " IPv6 Protocol",
+		EtherTypeARP:            " Arp Protocol",
+		EtherTypeRARP:           " Reverse Arp Protocol",
+		EtherTypeVLAN:           " IEEE 802.1Q VLAN tagging",
+		EtherTypeQINQ:           " IEEE 802.1ad QinQ tagging",
+		EtherTypePPPOEDiscovery: " PPPoE Discovery Stage",
+		EtherTypePPPOESession:   " PPPoE Session Stage",
+		EtherTypeETAG:           " IEEE 802.1BR E-Tag",
+		EtherType1588:           " Ether Type 1588",
+		EtherTypeSLOW:           " Slow protocols (LACP and Marker)",
+		EtherTypeTEB:            " Transparent Ethernet Bridging",
+		EtherTypeLLDP:           " LLDP Protocol",
+		EtherTypeMPLS:           " MPLS ethertype",
+		EtherTypeMPLSM:          " MPLS multicast ethertype",
 	}
 )
 
@@ -129,7 +143,7 @@ func (hdr *IPv6Hdr) String() string {
 
 func (hdr *UDPHdr) String() string {
 	r0 := "        L4 protocol: UDP\n"
-	r1 := fmt.Sprintf("        L4 Source: %d\n", SwapBytesUint16(hdr.SrcPort))
-	r2 := fmt.Sprintf("        L4 Destination: %d\n", SwapBytesUint16(hdr.DstPort))
+	r1 := fmt.Sprintf("        L4 Source: %d\n", SwapUint16(hdr.SrcPort))
+	r2 := fmt.Sprintf("        L4 Destination: %d\n", SwapUint16(hdr.DstPort))
 	return r0 + r1 + r2
 }

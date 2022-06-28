@@ -1,32 +1,25 @@
 #!/bin/bash
 
-while getopts c:t:p: option
-do 
-    case "${option}"
-        in
-        c)config=${OPTARG};;
-        t)test=${OPTARG};;
-        p)lports=${OPTARG};;
-        \? ) echo "Usage: run_fwd -c <path to config file> -t <test type> -p <comma-separated lport string>";;
-    esac
-done
-
-cdir=`pwd`
+cdir=$(pwd)
 PROJECT_PATH="${cdir}/../../../../.."
 
-IFS=','
-lportsstr=""
-for lport in $lports; 
-do   
-    lportsstr+="-p `echo $lport | xargs` "; 
-done
+cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu \
+    LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so ./fwd $*"
+
+go mod tidy
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "Go tidy failed"
+    exit $rc
+fi
 
 go build
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "Go build failed"
+    exit $rc
+fi
 
-cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu \
-LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so \
-./fwd -c $config -t $test $lportsstr"
-
-eval $cmdstring
+$cmdstring
 
 stty sane

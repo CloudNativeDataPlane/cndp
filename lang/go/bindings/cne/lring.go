@@ -2,7 +2,6 @@
  * Copyright(c) 2019-2022 Intel Corporation
  */
 
-// Routines and methods to create a lockless ring.
 package cne
 
 /*
@@ -22,13 +21,13 @@ import (
 )
 
 var (
-	RingFlagSingleProducer = "SP_ENQ"
-	RingFlagSingleConsumer = "SC_DEQ"
-	RingFlagExactSize      = "EXACT_SIZE"
+	RingFlagSingleProducer = "SP_ENQ"     // Single producer string
+	RingFlagSingleConsumer = "SC_DEQ"     // Single consumer string
+	RingFlagExactSize      = "EXACT_SIZE" // Exact size string
 
-	RingFlagSingleProducerValue uint = C.RING_F_SP_ENQ
-	RingFlagSingleConsumerValue uint = C.RING_F_SC_DEQ
-	RingFlagExactSizeValue      uint = C.RING_F_EXACT_SZ
+	RingFlagSingleProducerValue uint = C.RING_F_SP_ENQ   // Single producer value
+	RingFlagSingleConsumerValue uint = C.RING_F_SC_DEQ   // Single consumer value
+	RingFlagExactSizeValue      uint = C.RING_F_EXACT_SZ // Exact Size value
 )
 
 type ringFlagsMap map[string]uint
@@ -37,7 +36,7 @@ type stringFlagsMap map[uint]string
 var ringFlags ringFlagsMap
 var stringFlags stringFlagsMap
 
-// LocklessRing structure contains internal information for a ring.
+// LocklessRing structure contains internal information for a lockless ring.
 type LocklessRing struct {
 	flags      uint           // Ring flags
 	name       string         // Name of the ring
@@ -92,7 +91,7 @@ func ringOptionsToStrings(flags uint) []string {
 	return str
 }
 
-// CreateElem creates the lockless ring given the specified arguments and element size.
+// LRingCreateElem creates the lockless ring given the specified arguments and element size.
 //
 // The name is used to give the ring a name.
 // The elementSz is the element size of each element in the ring.
@@ -105,6 +104,7 @@ func LRingCreateElem(name string, elementSz, count uint, strFlags []string) (*Lo
 	if count == 0 {
 		return nil, fmt.Errorf("Count is zero")
 	}
+
 	if elementSz == 0 {
 		elementSz = C.RING_DEFAULT_ELEM_SZ
 	}
@@ -125,7 +125,7 @@ func LRingCreateElem(name string, elementSz, count uint, strFlags []string) (*Lo
 	return lr, nil
 }
 
-// Create a lockless ring using default element size of 8 bytes.
+// NewLRing create a lockless ring using default element size of 8 bytes.
 //
 // The name is used to give the ring a name.
 // The count is used to set the max number of elements in the ring.
@@ -201,7 +201,7 @@ func (lr *LocklessRing) Flags() []string {
 	return strFlags
 }
 
-// Flags returns the flags of the lockless ring.
+// RawFlags returns the flags of the lockless ring.
 func (lr *LocklessRing) RawFlags() uint {
 	if lr == nil {
 		return 0
