@@ -645,14 +645,14 @@ cmd_ip_cksum(int argc __cne_unused, char **argv __cne_unused)
     return 0;
 }
 
-#define _(_s)                                                   \
-    do {                                                        \
-        stk_t *stk;                                             \
-        cne_printf("[magenta]%-16s[]: ", #_s);                  \
-        vec_foreach_ptr (stk, cnet->stks) {                     \
-            cne_printf("[cyan]%8ld[] ", stk->tcp_stats->_##_s); \
-        }                                                       \
-        cne_printf("\n");                                       \
+#define _(_s)                                                    \
+    do {                                                         \
+        stk_t *stk;                                              \
+        cne_printf("[magenta]%-16s[]: ", #_s);                   \
+        vec_foreach_ptr (stk, cnet->stks) {                      \
+            cne_printf("[cyan]%8ld[] ", stk->tcp_stats->S_##_s); \
+        }                                                        \
+        cne_printf("\n");                                        \
     } while (/* CONSTCOND */ 0)
 
 // clang-format off

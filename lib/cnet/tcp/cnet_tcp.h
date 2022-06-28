@@ -503,36 +503,36 @@ struct tcp_entry {
  * TCP counters.
  */
 typedef struct tcp_stats {
-    uint64_t _TCPS_CLOSED; /**< TCP State counters */
-    uint64_t _TCPS_LISTEN;
-    uint64_t _TCPS_SYN_SENT;
-    uint64_t _TCPS_SYN_RCVD;
-    uint64_t _TCPS_ESTABLISHED;
-    uint64_t _TCPS_CLOSE_WAIT;
-    uint64_t _TCPS_FIN_WAIT_1;
-    uint64_t _TCPS_CLOSING;
-    uint64_t _TCPS_LAST_ACK;
-    uint64_t _TCPS_FIN_WAIT_2;
-    uint64_t _TCPS_TIME_WAIT;
+    uint64_t S_TCPS_CLOSED; /**< TCP State counters */
+    uint64_t S_TCPS_LISTEN;
+    uint64_t S_TCPS_SYN_SENT;
+    uint64_t S_TCPS_SYN_RCVD;
+    uint64_t S_TCPS_ESTABLISHED;
+    uint64_t S_TCPS_CLOSE_WAIT;
+    uint64_t S_TCPS_FIN_WAIT_1;
+    uint64_t S_TCPS_CLOSING;
+    uint64_t S_TCPS_LAST_ACK;
+    uint64_t S_TCPS_FIN_WAIT_2;
+    uint64_t S_TCPS_TIME_WAIT;
 
-    uint64_t _no_syn_rcvd;    /**< TCP No SYN Rcvd Count */
-    uint64_t _invalid_ack;    /**< TCP invalid Acknowledgement Count */
-    uint64_t _passive_open;   /**< TCP Passive Open Count */
-    uint64_t _tcp_rst;        /**< TCP connection reset Count */
-    uint64_t _ack_predicted;  /**< TCP ACK prediction Count */
-    uint64_t _data_predicted; /**< TCP Data prediction Count */
-    uint64_t _rx_total;       /**< TCP received count */
-    uint64_t _rx_short;       /**< TCP received short count */
-    uint64_t _rx_badoff;      /**< TCP received bad offset count */
-    uint64_t _delayed_ack;    /**< TCP delayed ACK count */
-    uint64_t _tcp_rexmit;     /**< TCP retransmission count */
-    uint64_t _resets_sent;    /**< TCP resets count */
-    uint64_t _tcp_connect;    /**< TCP connections count */
+    uint64_t S_no_syn_rcvd;    /**< TCP No SYN Rcvd Count */
+    uint64_t S_invalid_ack;    /**< TCP invalid Acknowledgement Count */
+    uint64_t S_passive_open;   /**< TCP Passive Open Count */
+    uint64_t S_tcp_rst;        /**< TCP connection reset Count */
+    uint64_t S_ack_predicted;  /**< TCP ACK prediction Count */
+    uint64_t S_data_predicted; /**< TCP Data prediction Count */
+    uint64_t S_rx_total;       /**< TCP received count */
+    uint64_t S_rx_short;       /**< TCP received short count */
+    uint64_t S_rx_badoff;      /**< TCP received bad offset count */
+    uint64_t S_delayed_ack;    /**< TCP delayed ACK count */
+    uint64_t S_tcp_rexmit;     /**< TCP retransmission count */
+    uint64_t S_resets_sent;    /**< TCP resets count */
+    uint64_t S_tcp_connect;    /**< TCP connections count */
 } tcp_stats_t;
 
-#define INC_TCP_STAT(x)              \
-    do {                             \
-        this_stk->tcp_stats->_##x++; \
+#define INC_TCP_STAT(x)               \
+    do {                              \
+        this_stk->tcp_stats->S_##x++; \
     } while (/*CONSTCOND*/ 0)
 
 static inline void
@@ -655,7 +655,7 @@ CNDP_API int cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf);
 CNDP_API void cnet_tcp_output(struct tcb_entry *tcb);
 
 /**
- * The TCP connect function give the PCB to use for the connection
+ * The TCP connect function gives the PCB to use for the connection
  *
  * @param pcb
  *   The PCB pointer in which to do the connection request.
