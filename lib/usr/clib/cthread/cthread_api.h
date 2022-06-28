@@ -1021,7 +1021,7 @@ CNDP_API int cthread_sema_init(const char *name, struct cthread_sema **s,
  * cthread_sema_init() and releases its resources.
  *
  * @param sema
- *   Pointer to pointer to the semaphore to be destroyed
+ *   Pointer to the semaphore to be destroyed
  * @return
  *   0 Success
  *   EBUSY sema is still in use
@@ -1033,7 +1033,7 @@ CNDP_API int cthread_sema_destroy(struct cthread_sema *sema);
  * Reset a semaphore to initialized state.
  *
  * @param sema
- *   Pointer to pointer to the semaphore to be reset
+ *   Pointer to the semaphore to be reset
  * @return
  *   0 Success
  *   EINVAL sema is not an initialised semaphore
@@ -1048,7 +1048,7 @@ CNDP_API int cthread_sema_reset(struct cthread_sema *sema);
  * calls cthread_sema_signal specifying the same semaphore.
  *
  * @param s
- *   Pointer to pointer to the semaphore on which to wait
+ *   Pointer to the semaphore on which to wait
  * @param m
  *   Mutex to release or NULL if no mutex.
  * @return
@@ -1065,7 +1065,7 @@ CNDP_API int cthread_sema_wait(struct cthread_sema *s, struct cthread_mutex *m);
  * calls cthread_sema_signal specifying the same semaphore, or abstime elapses.
  *
  * @param s
- *   Pointer to pointer to the semaphore to be waited on
+ *   Pointer to the semaphore to be waited on
  * @param m
  *   Mutex to release or NULL if no mutex.
  * @param abstime
@@ -1084,7 +1084,7 @@ CNDP_API int cthread_sema_timedwait(struct cthread_sema *s, struct cthread_mutex
  * The function unblocks one thread waiting for the semaphore.
  *
  * @param s
- *   Pointer to pointer to the semaphore to be signalled
+ *   Pointer to the semaphore to be signalled
  * @return
  *   0 Success
  *   EINVAL s is not an initialised semaphore
@@ -1097,7 +1097,7 @@ CNDP_API int cthread_sema_signal(struct cthread_sema *s);
  * The function unblocks all threads waiting for the semaphore.
  *
  * @param s
- *   Pointer to pointer to the semaphore to be flushed
+ *   Pointer to the semaphore to be flushed
  * @return
  *   0 Success
  *   EINVAL s is not an initialised semaphore
@@ -1110,7 +1110,7 @@ CNDP_API int cthread_sema_flush(struct cthread_sema *s);
  * The function unblocks all threads waiting for the semaphore.
  *
  * @param s
- *   Pointer to pointer to the semaphore to be flushed
+ *   Pointer to the semaphore to be flushed
  * @return
  *   0 Success
  *   EINVAL s is not an initialised semaphore
