@@ -1,0 +1,209 @@
+From 1189a9a293c42c794d46229e7706fdd313a07720 Mon Sep 17 00:00:00 2001
+From: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+Date: Fri, 25 Mar 2022 05:48:32 +0000
+Subject: [PATCH 6/7] Add simple CNDP UDP writer without buffering.
+
+- This CNDP UDP writer sends 1 UDP packet to network as soon as it receives it.
+  Wireguard Rust doesn't handle packet processing in burst even though CNDP can
+  read/write packets in burst.
+
+- Remove workaround required for CVL NIC for TX path as it seems to work without it.
+
+Signed-off-by: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+---
+ src/platform/linux/cndp/udp.rs | 103 +++++++++++++++++++++------------
+ src/platform/linux/mod.rs      |   4 +-
+ 2 files changed, 68 insertions(+), 39 deletions(-)
+
+diff --git a/src/platform/linux/cndp/udp.rs b/src/platform/linux/cndp/udp.rs
+index 2ea5743..42fc3a2 100644
+--- a/src/platform/linux/cndp/udp.rs
++++ b/src/platform/linux/cndp/udp.rs
+@@ -116,6 +116,9 @@ pub struct CndpUdpWriterReceiverChannel<'a> {
+ 
+ struct CndpUdpCommon {}
+ 
++#[derive(Clone)]
++pub struct CndpUdpSimple {}
++
+ #[derive(Clone)]
+ pub struct CndpUdpSyncChannel {}
+ 
+@@ -125,6 +128,13 @@ pub struct CndpUdpBuffered {}
+ #[derive(Clone)]
+ pub struct CndpUdpBufferQueue {}
+ 
++impl UDP for CndpUdpSimple {
++    type Error = CndpError;
++    type Endpoint = CndpEndpoint;
++    type Reader = CndpUdpReader<'static>;
++    type Writer = CndpUdpWriter<'static>;
++}
++
+ impl UDP for CndpUdpSyncChannel {
+     type Error = CndpError;
+     type Endpoint = CndpEndpoint;
+@@ -335,11 +345,6 @@ impl<'a> CndpUdpWriter<'a> {
+                     n_pkts -= n;
+                 }
+             }
+-            /*NOTE: the RX burst is needed to prevent lockups on CVL*/
+-            let n_pkts = unsafe { pktdev_rx_burst_fn(fport.lport as u16, tx_pktmbufs_pptr, 1) };
+-            if n_pkts > 0 {
+-                unsafe { pktmbuf_free_bulk_fn(tx_pktmbufs_pptr, n_pkts as u32) };
+-            }
+         }
+         return 0;
+     }
+@@ -515,19 +520,6 @@ impl CndpUdpCommon {
+         return 0;
+     }
+ 
+-    pub fn free_tx_buffers(lport_index: u16, tx_pktmbufs_pptr: *mut *mut pktmbuf_s, n_pkts: u16) {
+-        unsafe {
+-            if tx_pktmbufs_pptr.is_null() {
+-                return;
+-            }
+-            /*NOTE: the RX burst is needed to prevent lockups on CVL*/
+-            let n_pkts = pktdev_rx_burst_fn(lport_index, tx_pktmbufs_pptr, n_pkts);
+-            if n_pkts > 0 {
+-                pktmbuf_free_bulk_fn(tx_pktmbufs_pptr, n_pkts as u32);
+-            }
+-        }
+-    }
+-
+     fn send_pkts(pkts: &mut Vec<PacketSendData>, lport: &jcfg_lport) -> i32 {
+         if let Some(fport) = get_fwd_port(lport) {
+             // Get TX pktmbuf buffers -> pktmbuf** pointer
+@@ -571,12 +563,6 @@ impl CndpUdpCommon {
+                     );
+                     if ret < 0 {
+                         log::error!("update_pktmbuf failed");
+-                        // Free buffers and return
+-                        CndpUdpCommon::free_tx_buffers(
+-                            fport.lport as u16,
+-                            tx_pktmbufs_pptr,
+-                            n_pkts,
+-                        );
+                         return -1;
+                     }
+                 }
+@@ -602,7 +588,6 @@ impl CndpUdpCommon {
+                     n_pkts_to_send -= n;
+                 }
+             }
+-            CndpUdpCommon::free_tx_buffers(fport.lport as u16, tx_pktmbufs_pptr, n_pkts as u16);
+         }
+         return 0;
+     }
+@@ -631,15 +616,66 @@ impl CndpUdpCommon {
+         unsafe {
+             let msg = "Dump pktmbuf\n";
+             // Passing null ptr will dump to stdout.
+-            pktmbuf_dump(
+-                get_cstring_from_str(msg).as_ptr(),
+-                pkt_mbuf,
+-                1500,
+-            );
++            pktmbuf_dump(get_cstring_from_str(msg).as_ptr(), pkt_mbuf, 1500);
+         }
+     }
+ }
+ 
++impl PlatformUDP for CndpUdpSimple {
++    type Owner = CndpOwner<'static>;
++    fn bind(port: u16) -> Result<(Vec<Self::Reader>, Self::Writer, Self::Owner), Self::Error> {
++        log::info!("Wireguard called bind at port {}", port);
++        let register = CneRegister::new("CndpUdpSimple", None);
++        // Get Cndp UDP Json Data.
++        let json_data = CndpUdpCommon::get_json_data(port);
++        // Create Arc RwLock.
++        let fwd_port_thd_reader_arc_mutex = Arc::new(RwLock::new(json_data.fwd_port_thd_reader));
++        // Create Cndp UDP Reader.
++        let reader = CndpUdpReader {
++            iface_name: json_data.iface_name.clone(),
++            endpoint: json_data.endpoint,
++            fwd_port_thd: Arc::clone(&fwd_port_thd_reader_arc_mutex),
++            lport: json_data.lport_reader,
++            core_id: json_data.reader_core_id,
++            cne_uids: RwLock::new(HashSet::new()),
++            cur_pkt_index: -1,
++            last_num_pkts_read: 0,
++        };
++        let readers: Vec<Self::Reader> = vec![reader];
++
++        // Create Cndp UDP Writer.
++        // Create Arc RwLock.
++        let fwd_port_thd_writer_arc_mutex = Arc::new(RwLock::new(json_data.fwd_port_thd_writer));
++        let writer = CndpUdpWriter {
++            iface_name: json_data.iface_name.clone(),
++            endpoint: json_data.endpoint,
++            dst_mac_map: RwLock::new(HashMap::new()),
++            fwd_port_thd: Arc::clone(&fwd_port_thd_writer_arc_mutex),
++            lport: json_data.lport_writer,
++            core_id: json_data.writer_core_id,
++            cne_uids: RwLock::new(HashSet::new()),
++        };
++
++        let owner = CndpOwner {
++            cne_uid: register.cne_uid,
++            fwd_port_thd_reader: Arc::clone(&fwd_port_thd_reader_arc_mutex),
++            fwd_port_thd_writer: Arc::clone(&fwd_port_thd_writer_arc_mutex),
++        };
++
++        // Show metrics if enabled. Run in a separate thread.
++        let metrics_thread_coreid = match CndpInstance::read_config("metrics_thread_coreid") {
++            Some(v) => v.as_integer().expect("core id should be integer"),
++            None => -1,
++        };
++        if metrics_thread_coreid > 0 {
++            thread::spawn(move || {
++                CndpInstance::show_metrics(Some(metrics_thread_coreid as usize));
++            });
++        }
++        return Ok((readers, writer, owner));
++    }
++}
++
+ impl PlatformUDP for CndpUdpSyncChannel {
+     type Owner = CndpOwner<'static>;
+     fn bind(port: u16) -> Result<(Vec<Self::Reader>, Self::Writer, Self::Owner), Self::Error> {
+@@ -1287,12 +1323,6 @@ impl CndpUdpBufferQueueWriter<'static> {
+                     );
+                     if ret < 0 {
+                         log::error!("update_pktmbuf failed");
+-                        // Free buffers and return
+-                        CndpUdpCommon::free_tx_buffers(
+-                            fport.lport as u16,
+-                            tx_pktmbufs_pptr,
+-                            n_pkts,
+-                        );
+                         return -1;
+                     }
+                 }
+@@ -1317,7 +1347,6 @@ impl CndpUdpBufferQueueWriter<'static> {
+                     n_pkts_to_send -= n;
+                 }
+             }
+-            CndpUdpCommon::free_tx_buffers(fport.lport as u16, tx_pktmbufs_pptr, n_pkts as u16);
+         }
+         return 0;
+     }
+diff --git a/src/platform/linux/mod.rs b/src/platform/linux/mod.rs
+index df10790..3cc6db4 100644
+--- a/src/platform/linux/mod.rs
++++ b/src/platform/linux/mod.rs
+@@ -10,8 +10,8 @@ pub use udp::LinuxUDP as UDP;
+ #[cfg(all(target_os = "linux", feature = "cndp"))]
+ pub mod cndp;
+ #[cfg(all(target_os = "linux", feature = "cndp"))]
+-pub use cndp::udp::CndpUdpSyncChannel as UDP;
++pub use cndp::udp::CndpUdpSimple as UDP;
++//pub use cndp::udp::CndpUdpSyncChannel as UDP;
+ // Keep below commented for future reference.
+ //pub use cndp::udp::CndpUdpBufferQueue as UDP;
+ //pub use cndp::udp::CndpUdpBuffered as UDP;
+-
+-- 
+2.30.2
+
