@@ -1,7 +1,7 @@
-From 02988c43f0c0e3b0f6c7297f03b893c10dc21400 Mon Sep 17 00:00:00 2001
+From fd970dcd28ca965fcf6838d9aeeefd06216b2bab Mon Sep 17 00:00:00 2001
 From: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
 Date: Tue, 27 Jul 2021 04:35:26 -0700
-Subject: [PATCH 1/3] Integrate CNDP (Cloud Native Data Plane) with Wireguard
+Subject: [PATCH 1/7] Integarte CNDP (Cloud Native Data Plane) with Wireguard
 
      - Enable CNDP/AF-XDP support in wireguard to send and receive UDP packets.
      - CNDP C library is ported to Rust.
@@ -3109,7 +3109,7 @@ index 0000000..92267f9
 +            setlocale(LC_ALL as i32, locale_cstring.as_ptr());
 +            loop {
 +                sleep(1);
-+                /* Test for quitting after sleep to avoid calling print_port_stats() */
++                /* Test for quiting after sleep to avoid calling print_port_stats() */
 +                if CndpInstance::has_cndp_quit() {
 +                    log::info!("CNDP thread has quit");
 +                    break;
@@ -8301,7 +8301,7 @@ index 15eb8fb..2ce1adb 100644
 -                    Ok(_) => (),
 -                    Err(_) => return false,
 +                cfg_if::cfg_if! {
-+                    // Use openssl library based decryption which has better performance.
++                    // Use openssl library based decryption which has better peformance.
 +                    if #[cfg(all(target_os = "linux", feature = "openssl"))] {
 +                        let cipher = Cipher::chacha20_poly1305();
 +                        const AAD: [u8; 0] = [];
@@ -8397,7 +8397,7 @@ index 7e14209..6cedf3e 100644
 -            // append tag
 -            packet[tag_offset..].copy_from_slice(tag.as_ref());
 +            cfg_if::cfg_if! {
-+                // Use openssl library based encryption which has better performance.
++                // Use openssl library based encryption which has better peformance.
 +                if #[cfg(all(target_os = "linux", feature = "openssl"))] {
 +                    let cipher = Cipher::chacha20_poly1305();
 +                    const AAD: [u8; 0] = [];
@@ -8652,5 +8652,5 @@ index 27acf2f..8d81dfb 100644
                          });
                          peer.opaque().sent_handshake_initiation();
 -- 
-2.25.1
+2.30.2
 

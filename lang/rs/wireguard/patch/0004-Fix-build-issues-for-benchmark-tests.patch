@@ -1,0 +1,183 @@
+From 4a8197a91cd727205cbc669e3a51ec5691036524 Mon Sep 17 00:00:00 2001
+From: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+Date: Wed, 23 Feb 2022 16:06:52 +0000
+Subject: [PATCH 4/7] Fix build issues for benchmark tests.
+
+- Fix build issues
+- Use number of worker thread as 1 for running benchmark test.
+
+Signed-off-by: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+---
+ Cargo.toml                          |  7 ++++++-
+ src/platform/dummy/udp.rs           |  6 +++---
+ src/platform/linux/cndp/packet.rs   |  2 +-
+ src/wireguard/router/device.rs      | 15 +++++++++------
+ src/wireguard/router/tests/bench.rs | 10 ++++++----
+ src/wireguard/router/tests/tests.rs |  6 +++---
+ 6 files changed, 28 insertions(+), 18 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index d634bbc..cfca014 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -63,13 +63,18 @@ version = "^2.4"
+ 
+ [features]
+ default = ["cndp", "openssl_enc_dec"]
++
++#Uncomment below two lines for running benchmark tests.
++#default = ["unstable", "profiler"]
++#unstable = []
++
+ profiler = ["cpuprofiler"]
+ start_up = []
+ openssl_enc_dec = ["openssl"]
+ cndp = ["pnet", "core_affinity", "bindgen", "meson", "pkg-config", "toml", "clap", "once_cell", "crossbeam-queue"]
+ 
+ [dev-dependencies]
+-pnet = "^0.27"
++pnet = "^0.28"
+ proptest = "^0.10"
+ rand_chacha = "^0.2"
+ 
+diff --git a/src/platform/dummy/udp.rs b/src/platform/dummy/udp.rs
+index 20700a9..316e384 100644
+--- a/src/platform/dummy/udp.rs
++++ b/src/platform/dummy/udp.rs
+@@ -54,7 +54,7 @@ impl Reader<UnitEndpoint> for VoidBind {
+ impl Writer<UnitEndpoint> for VoidBind {
+     type Error = BindError;
+ 
+-    fn write(&self, _buf: &[u8], _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
++    fn write(&self, _buf:Vec<u8>, _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
+         Ok(())
+     }
+ }
+@@ -105,12 +105,12 @@ impl Reader<UnitEndpoint> for PairReader<UnitEndpoint> {
+ 
+ impl Writer<UnitEndpoint> for PairWriter<UnitEndpoint> {
+     type Error = BindError;
+-    fn write(&self, buf: &[u8], _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
++    fn write(&self, buf: Vec<u8>, _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
+         debug!(
+             "dummy({}): write ({}, {})",
+             self.id,
+             buf.len(),
+-            hex::encode(buf)
++            hex::encode(&buf)
+         );
+         let owned = buf.to_owned();
+         match self.send.lock().unwrap().send(owned) {
+diff --git a/src/platform/linux/cndp/packet.rs b/src/platform/linux/cndp/packet.rs
+index 6f3778f..9fc206e 100644
+--- a/src/platform/linux/cndp/packet.rs
++++ b/src/platform/linux/cndp/packet.rs
+@@ -627,7 +627,7 @@ mod tests {
+             &udp_payload[..],
+         );
+         // Parse the ethernet packet and verify the data.
+-        let ret = cndp_eth_packet.parse_eth_udp_packet();
++        let ret = cndp_eth_packet.parse_eth_udp_tcp_packet();
+         // Check if parsing succeeds.
+         assert_eq!(ret, 0);
+         // Check src, dst mac.
+diff --git a/src/wireguard/router/device.rs b/src/wireguard/router/device.rs
+index f3f0396..f74d25f 100644
+--- a/src/wireguard/router/device.rs
++++ b/src/wireguard/router/device.rs
+@@ -124,11 +124,15 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<
+         let mut core_id: usize = 0;
+         while let Some(rx) = consumers.pop() {
+             threads.push(thread::spawn(move || {
+-                // Set core affinity for worker threads starting with worker_thread_base_coreid.
+-                if let Some(worker_thread_base_coreid) = worker_thread_base_coreid {
+-                    core_affinity::set_for_current(core_affinity::CoreId {
+-                        id: core_id + worker_thread_base_coreid,
+-                    });
++                cfg_if::cfg_if! {
++                    if #[cfg(all(target_os = "linux", feature = "cndp"))] {
++                        // Set core affinity for worker threads starting with worker_thread_base_coreid.
++                        if let Some(worker_thread_base_coreid) = worker_thread_base_coreid {
++                            core_affinity::set_for_current(core_affinity::CoreId {
++                                id: core_id + worker_thread_base_coreid,
++                            });
++                        }
++                    }
+                 }
+                 worker(rx);
+             }));
+@@ -201,7 +205,6 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<
+ 
+         // ignore header prefix (for in-place transport message construction)
+         let packet = &msg[SIZE_MESSAGE_PREFIX..];
+-
+         let peer = self
+             .state
+             .table
+diff --git a/src/wireguard/router/tests/bench.rs b/src/wireguard/router/tests/bench.rs
+index c2334b3..579aa19 100644
+--- a/src/wireguard/router/tests/bench.rs
++++ b/src/wireguard/router/tests/bench.rs
+@@ -101,8 +101,10 @@ fn bench_router_outbound(b: &mut Bencher) {
+ 
+     // create device
+     let (_fake, _reader, tun_writer, _mtu) = dummy::TunTest::create(false);
++    // Use one worker thread for benchmark.
+     let router: Device<_, BencherCallbacks, dummy::TunWriter, dummy::VoidBind> =
+-        Device::new(num_cpus::get_physical(), tun_writer);
++        Device::new(1, tun_writer, None);
++    //Device::new(num_cpus::get_physical(), tun_writer, None);
+ 
+     // add peer to router
+     let opaque = Arc::new(TransmissionCounter::new());
+@@ -201,10 +203,10 @@ fn bench_router_bidirectional(b: &mut Bencher) {
+     let (_fake, _, tun_writer1, _) = dummy::TunTest::create(false);
+     let (_fake, _, tun_writer2, _) = dummy::TunTest::create(false);
+ 
+-    let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1);
++    let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1, None);
+     router1.set_outbound_writer(bind_writer1);
+ 
+-    let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2);
++    let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2), None;
+     router2.set_outbound_writer(bind_writer2);
+ 
+     // prepare opaque values for tracing callbacks
+@@ -398,7 +400,7 @@ fn bench_router_inbound(b: &mut Bencher) {
+     // create device
+     let (_fake, _reader, tun_writer, _mtu) = dummy::TunTest::create(false);
+     let router: Device<_, BencherCallbacks, dummy::TunWriter, dummy::VoidBind> =
+-        Device::new(num_cpus::get_physical(), tun_writer);
++        Device::new(num_cpus::get_physical(), tun_writer, None);
+ 
+     // add new peer
+     let opaque = Arc::new(AtomicUsize::new(0));
+diff --git a/src/wireguard/router/tests/tests.rs b/src/wireguard/router/tests/tests.rs
+index 960e592..3fe067c 100644
+--- a/src/wireguard/router/tests/tests.rs
++++ b/src/wireguard/router/tests/tests.rs
+@@ -124,7 +124,7 @@ fn test_outbound() {
+ 
+     // create device
+     let (_fake, _reader, tun_writer, _mtu) = dummy::TunTest::create(false);
+-    let router: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer);
++    let router: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer, None);
+     router.set_outbound_writer(dummy::VoidBind::new());
+ 
+     let tests = vec![
+@@ -305,10 +305,10 @@ fn test_bidirectional() {
+             let (_fake, _, tun_writer1, _) = dummy::TunTest::create(false);
+             let (_fake, _, tun_writer2, _) = dummy::TunTest::create(false);
+ 
+-            let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1);
++            let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1, None);
+             router1.set_outbound_writer(bind_writer1);
+ 
+-            let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2);
++            let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2, None);
+             router2.set_outbound_writer(bind_writer2);
+ 
+             // prepare opaque values for tracing callbacks
+-- 
+2.30.2
+

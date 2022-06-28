@@ -1,0 +1,172 @@
+From 9317296c000cf31e096846141c0aebe5c68d0728 Mon Sep 17 00:00:00 2001
+From: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+Date: Thu, 24 Feb 2022 11:20:41 +0000
+Subject: [PATCH 5/7] Avoid dynamic allocation of vector for adding AEAD tag.
+
+ - In TX path, the message vector size was extended dynamically (realloc)
+   for encryption tag which resulted in extra calls to malloc for every packet.
+   Reserve the size for encryption tag when allocating vector initially.
+
+ - Fix build issue when profile is enabled.
+
+Signed-off-by: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
+---
+ Cargo.toml                     |  3 +++
+ src/main_cndp_packet.rs        |  2 +-
+ src/main_cndp_ping.rs          |  2 +-
+ src/wireguard/router/device.rs | 10 ++++++----
+ src/wireguard/router/peer.rs   |  6 +++++-
+ src/wireguard/router/send.rs   |  1 -
+ src/wireguard/workers.rs       | 16 +++++++++++-----
+ 7 files changed, 27 insertions(+), 13 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index cfca014..a5492a6 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -64,6 +64,9 @@ version = "^2.4"
+ [features]
+ default = ["cndp", "openssl_enc_dec"]
+ 
++#Uncomment below to profile wireguard application
++#default = ["cndp", "openssl_enc_dec", "profiler"]
++
+ #Uncomment below two lines for running benchmark tests.
+ #default = ["unstable", "profiler"]
+ #unstable = []
+diff --git a/src/main_cndp_packet.rs b/src/main_cndp_packet.rs
+index 1b51e9e..ed32340 100644
+--- a/src/main_cndp_packet.rs
++++ b/src/main_cndp_packet.rs
+@@ -171,7 +171,7 @@ fn main() {
+ 
+     // start profiler (if enabled)
+     #[cfg(feature = "profiler")]
+-    profiler_start(name.as_str());
++    profiler_start(name);
+ 
+     // create WireGuard device
+     let wg: WireGuard<tun_channel::TunChannel, plt::UDP> = WireGuard::new(writer);
+diff --git a/src/main_cndp_ping.rs b/src/main_cndp_ping.rs
+index 2af3f98..bfe87c7 100644
+--- a/src/main_cndp_ping.rs
++++ b/src/main_cndp_ping.rs
+@@ -190,7 +190,7 @@ fn main() {
+ 
+     // start profiler (if enabled)
+     #[cfg(feature = "profiler")]
+-    profiler_start(name.as_str());
++    profiler_start(name);
+ 
+     // create WireGuard device
+     let wg: WireGuard<tun_channel::TunChannel, plt::UDP> = WireGuard::new(writer);
+diff --git a/src/wireguard/router/device.rs b/src/wireguard/router/device.rs
+index f74d25f..7aba22a 100644
+--- a/src/wireguard/router/device.rs
++++ b/src/wireguard/router/device.rs
+@@ -14,6 +14,7 @@ use super::messages::{TransportHeader, TYPE_TRANSPORT};
+ use super::peer::{new_peer, Peer, PeerHandle};
+ use super::types::{Callbacks, RouterError};
+ use super::SIZE_MESSAGE_PREFIX;
++use super::CAPACITY_MESSAGE_POSTFIX;
+ 
+ use super::receive::ReceiveJob;
+ use super::route::RoutingTable;
+@@ -197,14 +198,15 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<
+     ///
+     /// - msg: IP packet to crypt-key route
+     pub fn send(&self, msg: Vec<u8>) -> Result<(), RouterError> {
+-        debug_assert!(msg.len() > SIZE_MESSAGE_PREFIX);
++        debug_assert!(msg.len() > (SIZE_MESSAGE_PREFIX + CAPACITY_MESSAGE_POSTFIX));
+         log::trace!(
+             "send, packet = {}",
+-            hex::encode(&msg[SIZE_MESSAGE_PREFIX..])
++            hex::encode(&msg[SIZE_MESSAGE_PREFIX..(msg.len()-CAPACITY_MESSAGE_POSTFIX)])
+         );
+ 
+-        // ignore header prefix (for in-place transport message construction)
+-        let packet = &msg[SIZE_MESSAGE_PREFIX..];
++        // ignore header prefix and postfix (for in-place transport message construction)
++        let packet = &msg[SIZE_MESSAGE_PREFIX..(msg.len()-CAPACITY_MESSAGE_POSTFIX)];
++
+         let peer = self
+             .state
+             .table
+diff --git a/src/wireguard/router/peer.rs b/src/wireguard/router/peer.rs
+index cff06a9..5306f31 100644
+--- a/src/wireguard/router/peer.rs
++++ b/src/wireguard/router/peer.rs
+@@ -8,6 +8,7 @@ use super::device::EncryptionState;
+ 
+ use super::constants::*;
+ use super::types::{Callbacks, RouterError};
++use super::CAPACITY_MESSAGE_POSTFIX;
+ use super::SIZE_MESSAGE_PREFIX;
+ 
+ use super::queue::Queue;
+@@ -499,7 +500,10 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> PeerHandle<E,
+ 
+     pub fn send_keepalive(&self) {
+         log::trace!("peer.send_keepalive");
+-        self.peer.send(vec![0u8; SIZE_MESSAGE_PREFIX], false)
++        self.peer.send(
++            vec![0u8; SIZE_MESSAGE_PREFIX + CAPACITY_MESSAGE_POSTFIX],
++            false,
++        )
+     }
+ 
+     /// Map a subnet to the peer
+diff --git a/src/wireguard/router/send.rs b/src/wireguard/router/send.rs
+index 6cedf3e..88440a9 100644
+--- a/src/wireguard/router/send.rs
++++ b/src/wireguard/router/send.rs
+@@ -73,7 +73,6 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> ParallelJob
+             let job = &*self.0;
+             // Move the vector out of job buffer (take ownership) to encrypt it.
+             let mut msg = job.buffer.lock().take().unwrap();
+-            msg.extend([0u8; SIZE_TAG].iter());
+ 
+             // cast to header (should never fail)
+             let (mut header, packet): (LayoutVerified<&mut [u8], TransportHeader>, &mut [u8]) =
+diff --git a/src/wireguard/workers.rs b/src/wireguard/workers.rs
+index 8d81dfb..7619721 100644
+--- a/src/wireguard/workers.rs
++++ b/src/wireguard/workers.rs
+@@ -58,11 +58,15 @@ pub fn tun_worker<T: Tun, B: UDP>(wg: &WireGuard<T, B>, reader: T::Reader) {
+     loop {
+         // create vector big enough for any transport message (based on MTU)
+         let mtu = wg.mtu.load(Ordering::Relaxed);
+-        let size = mtu + SIZE_MESSAGE_PREFIX + 1;
+-        let mut msg: Vec<u8> = vec![0; size + CAPACITY_MESSAGE_POSTFIX];
++        let size = mtu + SIZE_MESSAGE_PREFIX + 1 + CAPACITY_MESSAGE_POSTFIX;
++        let mut msg: Vec<u8> = vec![0; size];
++        let msg_len = msg.len();
+ 
+         // read a new IP packet
+-        let payload = match reader.read(&mut msg[..], SIZE_MESSAGE_PREFIX) {
++        let payload = match reader.read(
++            &mut msg[..(msg_len - CAPACITY_MESSAGE_POSTFIX)],
++            SIZE_MESSAGE_PREFIX,
++        ) {
+             Ok(payload) => payload,
+             Err(e) => {
+                 debug!("TUN worker, failed to read from tun device: {}", e);
+@@ -83,11 +87,13 @@ pub fn tun_worker<T: Tun, B: UDP>(wg: &WireGuard<T, B>, reader: T::Reader) {
+             payload,
+             padded
+         );
+-        msg.truncate(SIZE_MESSAGE_PREFIX + padded);
++        msg.truncate(SIZE_MESSAGE_PREFIX + padded + CAPACITY_MESSAGE_POSTFIX);
++
+         debug_assert!(padded <= mtu);
+         debug_assert_eq!(
+             if padded < mtu {
+-                (msg.len() - SIZE_MESSAGE_PREFIX) % MESSAGE_PADDING_MULTIPLE
++                (msg.len() - SIZE_MESSAGE_PREFIX - CAPACITY_MESSAGE_POSTFIX)
++                    % MESSAGE_PADDING_MULTIPLE
+             } else {
+                 0
+             },
+-- 
+2.30.2
+

@@ -68,9 +68,7 @@ Apply the Wireguard CNDP patches in lang/rs/wireguard/patch. Ignore the whitespa
 
 .. code-block:: console
 
-  git am 0001-Integrate-CNDP-Cloud-Native-Data-Plane-with-Wireguar.patch
-  git am 0002-Rename-variable-private-to-priv_-to-fix-build-error.patch
-  git am 0003-Remove-extra-argument-from-pktmbuf_dump.patch
+  git am *.patch
 
 Build Wireguard with CNDP
 
