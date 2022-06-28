@@ -56,6 +56,7 @@ const (
 	DarkOrangeColor        = "darkorange"
 	LightGreenColor        = "lightgreen"
 	DarkMagentaColor       = "darkmagenta"
+	CyanColor              = "aqua"
 )
 
 // SetDefault - create a colorize instance
@@ -282,6 +283,12 @@ func LightCoral(a interface{}, w ...interface{}) string {
 func LightCyan(a interface{}, w ...interface{}) string {
 
 	return ColorWithName(LightCyanColor, a, w...)
+}
+
+// Cyan - return string based on the color given
+func Cyan(a interface{}, w ...interface{}) string {
+
+	return ColorWithName(CyanColor, a, w...)
 }
 
 // Lavender - return string based on the color given

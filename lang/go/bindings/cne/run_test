@@ -1,21 +1,31 @@
 #!/bin/bash
 
-project_path="${PROJECT_PATH:-/root/git/networking.dataplane.cndp.cndp}"
+cdir=$(pwd)
+PROJECT_PATH="${cdir}/../../../.."
 
-go build
+precmd="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so"
+cmdstring="$precmd ./cne.test -test.v -config ../examples/fwd/fwd.jsonc"
 
-#go test
-sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -port "enp25s0f0:0" -config "/root/git/networking.dataplane.cndp.cndp/lang/go/cndp.org/examples/fwd/fwd.json" -v
+function go_tidy() {
+    go mod tidy
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Go tidy failed"
+        exit $rc
+    fi
+}
 
-#go test cover
-#sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -v -cover
+function go_test() {
+    go test -c
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "Go test failed"
+        exit $rc
+    fi
+}
 
-#go bench
-sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -port "enp25s0f0:0" -config "/root/git/networking.dataplane.cndp.cndp/lang/go/cndp.org/examples/fwd/fwd.json"  -bench=.
+rm -f cne.test
+(go_tidy && go_test && $cmdstring)
 
-#go bench profiles
-#sudo -E LD_LIBRARY_PATH=$project_path/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$project_path/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so go test -cpuprofile cpu.prof -memprofile mem.prof -bench=.
-#go tool pprof -pdf cpu.prof > cpu.pdf
-#go tool pprof -pdf mem.prof > mem.pdf
-
+rm -f cne.test
 stty sane
