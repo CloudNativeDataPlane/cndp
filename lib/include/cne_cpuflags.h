@@ -12,6 +12,10 @@
 
 #include <stdbool.h>        // for bool
 
+#include <errno.h>
+
+#include "cne_common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -149,10 +153,6 @@ enum cne_cpu_flag_t {         /**< Enumeration of CPU Flags */
     CNE_CPUFLAG_NUMFLAGS, /**< This should always be the last! */
 };
 // clang-format on
-
-#include <errno.h>
-
-#include "cne_common.h"
 
 /**
  * Enumeration of all CPU features supported

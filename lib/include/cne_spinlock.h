@@ -20,10 +20,6 @@
 
 #include <unistd.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <cne_cpuflags.h>
 #include <cne_cycles.h>
 #include <cne_branch_prediction.h>
@@ -32,6 +28,10 @@ extern "C" {
 #include <cne_system.h>
 #include <cne_pause.h>
 #include <cne_rtm.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define CNE_RTM_MAX_RETRIES  (20)
 #define CNE_RTM_MAX_RETRIES  (20)

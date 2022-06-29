@@ -16,11 +16,11 @@
 #include <stdbool.h>
 #include <pktmbuf.h>
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 #define LPORT_NAME_LEN             32
 #define LPORT_FRAME_SIZE           2048

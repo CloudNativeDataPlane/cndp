@@ -5,6 +5,10 @@
 #ifndef _CNE_NET_H_
 #define _CNE_NET_H_
 
+#include <net/cne_ip.h>
+#include <net/cne_udp.h>
+#include <net/cne_tcp.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,10 +19,6 @@ extern "C" {
  * Network checksum functions to prepare pseudo header checksum for TSO and non-TSO
  * TCP/UDP data.
  */
-
-#include <net/cne_ip.h>
-#include <net/cne_udp.h>
-#include <net/cne_tcp.h>
 
 /**
  * Prepare pseudo header checksum
