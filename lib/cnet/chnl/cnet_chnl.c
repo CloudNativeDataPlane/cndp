@@ -698,7 +698,7 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 
     if (sa) {
         for (int i = 0; i < nb_mbufs; i++) {
-            struct cnet_metadata *md = cnet_mbuf_metadata(mbufs[i]);
+            struct cnet_metadata *md = pktmbuf_metadata(mbufs[i]);
             struct sockaddr_in *addr = (struct sockaddr_in *)&sa[i];
 
             if (addr->sin_family == AF_INET) {

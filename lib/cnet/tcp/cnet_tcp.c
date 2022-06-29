@@ -44,7 +44,7 @@
 #include <cnet_tcp.h>              // for tcb_entry, seg_entry, tcp_entry, DROP_PA...
 #include <cnet_pkt.h>              // for tcp_ipv4
 #include <cnet_ip_common.h>        // for ip_info
-#include <cnet_meta.h>             // for cnet_metadata, cnet_mbuf_metadata, PKT_B...
+#include <cnet_meta.h>             // for cnet_metadata
 #include <cnet_tcp_chnl.h>         // for cnet_drop_acked_data, cnet_tcp_chnl_scal...
 #include <endian.h>                // for be16toh, htobe32, htobe16, be32toh
 #include <errno.h>                 // for errno, ECONNREFUSED, ECONNRESET, ETIMEDOUT
@@ -426,7 +426,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     /* Update the L4 header length with option length */
     mbuf->l4_len = sizeof(struct cne_tcp_hdr) + seg->optlen;
 
-    md = cnet_mbuf_metadata(mbuf);
+    md = pktmbuf_metadata(mbuf);
 
     if ((tcp->tcp_flags & TCP_URG) == 0 && tcp->tcp_urp)
         CNE_WARN("[orange]URG pointer set without URG flag\n");
@@ -982,7 +982,7 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
 
     memset(tcp, 0, sizeof(struct cne_tcp_hdr) + optlen);
 
-    md = cnet_mbuf_metadata(mbuf);
+    md = pktmbuf_metadata(mbuf);
 
     CIN_CADDR(&md->faddr) = CIN_CADDR(&pcb->key.faddr);
     CIN_CADDR(&md->laddr) = CIN_CADDR(&pcb->key.laddr);
@@ -1565,7 +1565,7 @@ do_passive_open(struct seg_entry *seg)
 
     tcb = ppcb->tcb; /* use tcb pointer for the next test */
 
-    md = cnet_mbuf_metadata(seg->mbuf);
+    md = pktmbuf_metadata(seg->mbuf);
 
     /*
      * Check the queue limit and see if we can continue, if not drop the SYN
