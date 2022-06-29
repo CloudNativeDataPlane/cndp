@@ -17,14 +17,14 @@
  *
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <cne_branch_prediction.h>
 #include <cne_spinlock.h>
 #include <cne_common.h>
 #include <cne_pause.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * The cne_rwlock_t type.

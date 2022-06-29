@@ -6,11 +6,11 @@
 #ifndef _CNE_TEST_H_
 #define _CNE_TEST_H_
 
+#include <cne_log.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_log.h>
 
 /* Before including cne_test.h file you can define
  * CNE_TEST_TRACE_FAILURE(_file, _line, _func) macro to better trace/debug test

@@ -5,11 +5,11 @@
 #ifndef _CNE_PAUSE_H_
 #define _CNE_PAUSE_H_
 
+#include <emmintrin.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <emmintrin.h>
 
 /**
  * Pause the core for a few cycles.

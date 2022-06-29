@@ -11,11 +11,11 @@
  * Set of cacheline control APIs
  */
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 /**
  * Prefetch a single cacheline at the given address into all caches levels
