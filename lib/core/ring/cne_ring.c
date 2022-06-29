@@ -30,13 +30,16 @@
 #define POWEROF2(x)       ((((x)-1) & (x)) == 0)
 #define RING_DFLT_ELEM_SZ sizeof(void *) /** The default ring element size*/
 
-size_t
+ssize_t
 cne_ring_get_memsize_elem(unsigned int esize, unsigned int count)
 {
     ssize_t sz;
 
+    if (esize == 0)
+        esize = RING_DFLT_ELEM_SZ;
+
     /* Check if element size is a multiple of 4B */
-    if (esize % 4 != 0)
+    else if (esize % 4 != 0)
         CNE_ERR_RET_VAL(-EINVAL, "element size is not a multiple of 4\n");
 
     /* count must be a power of 2 */
@@ -52,10 +55,10 @@ cne_ring_get_memsize_elem(unsigned int esize, unsigned int count)
 }
 
 /* return the size of memory occupied by a ring */
-size_t
+ssize_t
 cne_ring_get_memsize(unsigned int count)
 {
-    return cne_ring_get_memsize_elem(sizeof(void *), count);
+    return cne_ring_get_memsize_elem(0, count);
 }
 
 void
@@ -102,7 +105,7 @@ cne_ring_reset(cne_ring_t *r)
  *   0 on success, or a negative value on error.
  */
 static int
-cne_ring_init(cne_ring_t *r, const char *name, unsigned count, unsigned flags)
+cne_ring_setup(cne_ring_t *r, const char *name, unsigned count, unsigned flags)
 {
     struct cne_ring *_ring = r;
     int ret;
@@ -144,9 +147,10 @@ cne_ring_init(cne_ring_t *r, const char *name, unsigned count, unsigned flags)
     return 0;
 }
 
-/* Create the ring */
+/* Create the ring using supplied memory and size */
 cne_ring_t *
-cne_ring_create(const char *name, unsigned int esize, unsigned int count, unsigned int flags)
+cne_ring_init(void *addr, ssize_t size, const char *name, unsigned int esize, unsigned int count,
+              unsigned int flags)
 {
     void *ring_mem;
     struct cne_ring *r;
@@ -172,36 +176,59 @@ cne_ring_create(const char *name, unsigned int esize, unsigned int count, unsign
     if (flags & RING_F_EXACT_SZ)
         count = cne_align32pow2(count + 1);
 
-    ring_size = cne_ring_get_memsize_elem(((esize == 0) ? RING_DFLT_ELEM_SZ : esize), count);
+    ring_size = cne_ring_get_memsize_elem(esize, count);
     if (ring_size < 0) {
-        errno = EINVAL;
+        errno = -ring_size;
         return NULL;
     }
 
-    /* Reserve a memory region for this ring
-       Calloc can return pointer which is not cache aligned.
-       In that case cne_ring_init calling memset will segfault on clang compiled
-       with -O3. Tested with clang-10.0.0-4ubuntu1 and gcc-9.3.0-10ubuntu2
-    */
-    ring_mem = calloc(1, ring_size + CNE_CACHE_LINE_SIZE - 1);
+    if (addr) {
+        /* Address must be aligned to a cacheline boundary */
+        if (!cne_is_aligned(addr, CNE_CACHE_LINE_SIZE)) {
+            errno = EINVAL;
+            CNE_NULL_RET("ring is not cache aligned r=%p aligned=%p\n", addr,
+                         CNE_PTR_ALIGN(addr, CNE_CACHE_LINE_SIZE));
+        }
+
+        /* Use the supplied buffer as the ring buffer and structure memory */
+        if (ring_size > size) {
+            errno = ENOMEM;
+            return NULL;
+        }
+        ring_mem = addr;
+        memset(ring_mem, 0, ring_size);
+    } else {
+        /* Reserve a memory region for this ring
+         * Calloc can return pointer which is not cache aligned.
+         * In that case cne_ring_setup calling memset will segfault on clang compiled
+         * with -O3. Tested with clang-10.0.0-4ubuntu1 and gcc-9.3.0-10ubuntu2
+         */
+        ring_mem = calloc(1, ring_size + CNE_CACHE_LINE_SIZE - 1);
+        flags |= RING_F_ALLOCATED;
+    }
+
     if (ring_mem != NULL) {
         r = ring_mem;
         if (!cne_is_aligned(ring_mem, CNE_CACHE_LINE_SIZE)) {
-            CNE_LOG(DEBUG, "ring is not cache aligned r=%p aligned=%p\n", ring_mem,
-                    CNE_PTR_ALIGN(ring_mem, CNE_CACHE_LINE_SIZE));
+            CNE_DEBUG("ring is not cache aligned r=%p aligned=%p\n", ring_mem,
+                      CNE_PTR_ALIGN(ring_mem, CNE_CACHE_LINE_SIZE));
             r = CNE_PTR_ALIGN(ring_mem, CNE_CACHE_LINE_SIZE);
         }
-        /* no need to check return value here, we already checked the
-         * arguments above */
-        cne_ring_init(r, name, requested_count, flags);
+        /* no need to check return value here, we already checked the arguments above */
+        cne_ring_setup(r, name, requested_count, flags);
         r->ring_mem = ring_mem;
     } else {
-        r     = NULL;
         errno = ENOMEM;
-        CNE_ERR("Ring: cannot reserve memory\n");
+        CNE_NULL_RET("Ring: cannot reserve memory\n");
     }
 
     return r;
+}
+
+cne_ring_t *
+cne_ring_create(const char *name, unsigned int esize, unsigned int count, unsigned int flags)
+{
+    return cne_ring_init(NULL, 0, name, esize, count, flags);
 }
 
 /* free the ring */
@@ -213,7 +240,8 @@ cne_ring_free(cne_ring_t *r)
     if (!_ring || !_ring->ring_mem)
         return;
 
-    free(_ring->ring_mem);
+    if (_ring->flags & RING_F_ALLOCATED)
+        free(_ring->ring_mem);
 }
 
 /* dump the status of the ring on the console */

@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+#define RING_F_ALLOCATED 0x8000 /**< The ring structure and data was allocated */
+
 /****************************************************************************
  *                    Ring Generic Functions                                *
  ****************************************************************************/
