@@ -3,10 +3,11 @@
  */
 
 #include <bsd/sys/time.h>
-#include <netinet/in.h>        // for IPPROTO_IP, IP_PKTINFO, IP_RECVTOS, IP_REC...
+#include <netinet/in.h>        // for IPPROTO_IP, IP_PKTINFO, IP_REC...
 #include <cnet_stk.h>          // for stk_entry, per_thread_stk, this_stk
 #include <cnet_pcb.h>          // for pcb_entry
-#include <cnet_chnl.h>         // for chnl, chnl_buf, chnl_snd_rcv_more
+#include "chnl_priv.h"
+#include <cnet_chnl.h>        // for chnl, chnl_buf
 #include <cnet_chnl_opt.h>
 #include <errno.h>         // for EINVAL, ENOPROTOOPT
 #include <stdlib.h>        // for NULL, calloc, size_t
@@ -49,7 +50,7 @@ cnet_chnl_opt_add(struct chnl_optsw *p)
  * This routine iterates through the sockopt structure table, calling the
  * 'setfunc' routine for any entry that matches <level>.  If the callback
  * function returns 0 or an errno value other than ENOPROTOOPT, it has
- * processed the option, and cnet_sockoptswIterateSet() returns.  Otherwise,
+ * processed the option, and protoswIterateSet() returns.  Otherwise,
  * it proceeds to the next handler (if any).
  *
  * RETURNS: 0 or -1.
@@ -80,7 +81,7 @@ cnet_chnl_opt_iterate_set(struct chnl *ch, int level, int optname, const void *o
  * This routine iterates through the sockopt structure table, calling the
  * 'getfunc' routine for any entry that matches <level>.  If the callback
  * function returns 0 or an errno value other than ENOPROTOOPT, it has
- * processed the option, and cnet_sockoptswIterateGet() returns.  Otherwise,
+ * processed the option, and protoswIterateGet() returns.  Otherwise,
  * it proceeds to the next handler (if any).
  *
  * RETURNS: 0 or -1.
@@ -255,45 +256,6 @@ chnl_optval_get(const void *optval, uint32_t optlen)
  * protocol data structures are reclaimed, and processes sleeping on the
  * connection are awakened with an ETIMEDOUT error.
  *
- * SO_LINGER - linger on close (struct 'linger')
- * This option specifies whether chnls should perform a "graceful" close.
- *
- * For a "graceful" close in response to the shutdown of a connection, TCP
- * tries to make sure that all the unacknowledged data in the transmission
- * channel are acknowledged, and the peer is shut down properly.
- *
- * The value at optval indicates the amount of time to linger if
- * there is unacknowledged data, using 'struct linger', defined in the
- * header sys/chnl.h.  The 'linger' structure has two members:
- * 'l_onoff' and 'l_linger'.  'l_onoff' can be set to 1 to turn on the
- * SO_LINGER option, or set to 0 to turn off the SO_LINGER option.
- * 'l_linger' specifies a time-out value in seconds.
- *
- * The default behavior (SO_LINGER disabled, l_onoff = 0) is for a close()
- * operation on a chnl to return immediately without waiting for
- * outstanding data to be acknowledged by the peer.  However, although close()
- * returns immediately, TCP does perform a graceful close on the endpoint,
- * retransmitting unacknowledged data and the final FIN as necessary until
- * they have been acknowledged, or until the connection times out.  Since the
- * packet has been closed, the application cannot know in this case whether
- * all data were eventually successfully delivered to the peer.
- *
- * When SO_LINGER is enabled (l_onoff = 1), the behavior upon a close() depends
- * upon the value of 'l_linger'. If 'l_linger' is zero, then instead of
- * performing a graceful close, TCP aborts the connection, sending a RST
- * segment to the peer.  On the other hand, if 'l_linger' is non-zero,
- * TCP performs a graceful close, and the close() call blocks until either
- * the peer acknowledges any outstanding data and the final FIN segment from
- * the local side, or until the connection times out, or until the timeout
- * specified in 'l_linger' expires, whichever occurs first.  Negative or
- * excessively large values of l_linger are treated as infinite time-outs.
- *
- * If SO_LINGER is enabled and the time-out specified by 'l_linger' expires
- * before the local side's FIN is acknowledged, the close() call will return
- * ERROR with errno set to ETIMEDOUT; the chnl has nevertheless been
- * closed.  In this case, the local side will abort the connection by
- * sending a TCP RST to the peer.
- *
  * The following SO_CHANNEL option only applies to datagram chnls.
  *
  * SO_BROADCAST - permit sending of broadcast msgs ('int'/boolean)
@@ -320,7 +282,7 @@ chnl_optval_get(const void *optval, uint32_t optlen)
  *
  * IP_HDRINCL - IP header included with outgoing packets ('int'/boolean)
  * This option indicates that the application will include a completed IP
- * heder in all send operations.  This option only applies to raw chnls.
+ * header in all send operations.  This option only applies to raw chnls.
  *
  * IP_UDP_XCHKSUM - enable checksum for outgoing UDP packets ('int'/boolean)
  * This option enables or disables checksum calculations in outgoing UDP
@@ -353,27 +315,22 @@ chnl_optval_get(const void *optval, uint32_t optlen)
  *   OK or ERROR.
  */
 int
-chnl_set_opt(struct chnl *ch, int level, int optname, const void *optval, int optlen)
+chnl_set_opt(int cd, int level, int optname, const void *optval, int optlen)
 {
-    uint32_t val = 0;
-    int rs       = 0;
+    struct chnl *ch = ch_get(cd);
+    uint32_t val    = 0;
+    int rs          = 0;
 
-    if (optval == NULL || (int32_t)optlen <= 0)
+    if (!ch || optval == NULL || (int32_t)optlen <= 0)
         return __errno_set(EINVAL);
 
-    chnl_lock(ch);
+    if (stk_lock()) {
+        if (chnl_state_tst(ch, _CHNL_FREE)) {
+            __errno_set(EINVAL);
+            goto leave;
+        }
 
-    if (is_set(ch->ch_state, _CHNL_FREE)) {
-        chnl_unlock(ch);
-        return __errno_set(EINVAL);
-    }
-
-    if (chnl_snd_rcv_more(ch, _CANTSENDMORE | _CANTRECVMORE)) {
-        chnl_unlock(ch);
-        return __errno_set(EINVAL);
-    }
-
-    val = chnl_optval_get(optval, (uint32_t)optlen);
+        val = chnl_optval_get(optval, (uint32_t)optlen);
 
 #define setsockoptBit(reg, bit, val) \
     if (val != 0)                    \
@@ -381,122 +338,81 @@ chnl_set_opt(struct chnl *ch, int level, int optname, const void *optval, int op
     else                             \
         (reg) &= ~(bit);
 
-    switch (level) {
-    case SO_CHANNEL:
-        switch (optname) {
-        /* flag options */
-        case SO_KEEPALIVE:
-        case SO_BROADCAST:
-            setsockoptBit(ch->ch_options, optname, val);
-            break;
-
-        case SO_REUSEADDR:
-        case SO_REUSEPORT:
-            setsockoptBit(ch->ch_options, optname, val);
-            break;
-
-        /* value options */
-        case SO_RCVLOWAT:
-        case SO_SNDLOWAT:
-            chnl_sblimit(((optname == SO_SNDLOWAT) ? &ch->ch_snd : &ch->ch_rcv), val);
-            break;
-
-        case SO_SNDBUF:
-        case SO_RCVBUF:
-            /*
-             * Do not allow the receive buffer size to decrease if
-             * already connected.
-             */
-            if ((val == 0) || ((optname == SO_RCVBUF) && is_set(ch->ch_state, _ISCONNECTED) &&
-                               (val < ch->ch_rcv.cb_hiwat))) {
-                CNE_ERR("val = %d\n", val);
-                rs = __errno_set(EINVAL);
+        switch (level) {
+        case SO_CHANNEL:
+            switch (optname) {
+            /* flag options */
+            case SO_KEEPALIVE:
+            case SO_BROADCAST:
+                setsockoptBit(ch->ch_options, optname, val);
                 break;
+
+            case SO_REUSEADDR:
+            case SO_REUSEPORT:
+                setsockoptBit(ch->ch_options, optname, val);
+                break;
+
+            case SO_SNDBUF:
+            case SO_RCVBUF:
+                /*
+                 * Do not allow the receive buffer size to decrease if
+                 * already connected.
+                 */
+                if ((val == 0) || ((optname == SO_RCVBUF) && chnl_state_tst(ch, _ISCONNECTED) &&
+                                   (val < ch->ch_rcv.cb_hiwat))) {
+                    CNE_ERR("val = %d\n", val);
+                    rs = __errno_set(EINVAL);
+                    break;
+                }
+
+                chnl_sbreserve(((optname == SO_SNDBUF) ? &ch->ch_snd : &ch->ch_rcv), val);
+                break;
+
+            default:
+                CNE_ERR("Unknown option %d\n", optname);
+                goto Unknown;
             }
 
-            chnl_sbreserve(((optname == SO_SNDBUF) ? &ch->ch_snd : &ch->ch_rcv), val);
             break;
 
-        case SO_SNDTIMEO:
-        case SO_RCVTIMEO:
-            if (optname == SO_SNDTIMEO)
-                ch->ch_snd.cb_timeo = *(const uint64_t *)optval;
-            else
-                ch->ch_rcv.cb_timeo = *(const uint64_t *)optval;
-            break;
+        case IPPROTO_IP:
+            switch (optname) {
+            /* flag options */
+            case IP_HDRINCL:
+                setsockoptBit(ch->ch_pcb->opt_flag, IP_HDRINCL_FLAG, val);
+                break;
 
-        case SO_BINDTODEVICE:
-            CNE_ERR("SO_BINDTODEVICE Not supported\n");
-            break;
+            case IPV6_DONTFRAG:
+                setsockoptBit(ch->ch_pcb->opt_flag, IP_DONTFRAG_FLAG, val);
+                break;
 
-        case SO_OOBINLINE:
-            CNE_ERR("SO_OOBINLINE Not supported\n");
-            break;
+            case SO_UDP_CHKSUM:
+                setsockoptBit(ch->ch_pcb->opt_flag, UDP_CHKSUM_FLAG, val);
+                break;
 
-        case IP_MULTICAST_IF:
-            CNE_ERR("IP_MULTICAST_IF Not supported\n");
-            break;
+            /* value options */
+            case IP_RECVTOS:
+                ch->ch_pcb->tos = (uint8_t)val;
+                break;
 
-        case SO_DEBUG:
-            CNE_ERR("SO_DEBUG Not supported\n");
-            break;
+            case IP_RECVTTL:
+                ch->ch_pcb->ttl = (uint8_t)val;
+                break;
 
-        default:
-            CNE_ERR("Unknown option %d\n", optname);
-            goto Unknown;
-        }
+            default:
+                CNE_ERR("Unknown optname %d\n", optname);
+                goto Unknown;
+            }
 
-        break;
-
-    case IPPROTO_IP:
-        switch (optname) {
-        /* flag options */
-        case IP_HDRINCL:
-            setsockoptBit(ch->ch_pcb->opt_flag, IP_HDRINCL_FLAG, val);
-            break;
-
-        case IPV6_DONTFRAG:
-            setsockoptBit(ch->ch_pcb->opt_flag, IP_DONTFRAG_FLAG, val);
-            break;
-
-        case SO_UDP_CHKSUM:
-            setsockoptBit(ch->ch_pcb->opt_flag, UDP_CHKSUM_FLAG, val);
-            break;
-
-        /* value options */
-        case IP_RECVTOS:
-            ch->ch_pcb->tos = (uint8_t)val;
-            break;
-
-        case IP_RECVTTL:
-            ch->ch_pcb->ttl = (uint8_t)val;
-            break;
-
-        case IP_RETOPTS:
-            CNE_ERR("IP_RETOPTS val %d\n", val);
-            break;
-
-        case IP_RECVERR:
-            CNE_ERR("IP_RECVERR val %d\n", val);
-            break;
-
-        case IP_PKTINFO:
-            CNE_ERR("IP_PKTINFO\n");
             break;
 
         default:
-            CNE_ERR("Unknown optname %d\n", optname);
+            CNE_ERR("Unknown level %d\n", level);
             goto Unknown;
         }
 
-        break;
-
-    default:
-        CNE_ERR("Unknown level %d\n", level);
-        goto Unknown;
+        stk_unlock();
     }
-
-    chnl_unlock(ch);
     return rs;
 
 Unknown:
@@ -504,15 +420,16 @@ Unknown:
     rs = cnet_chnl_opt_iterate_set(ch, level, optname, optval, (uint32_t)optlen);
     if (rs == -1 && __errno_get() == ENOPROTOOPT)
         CNE_ERR("setsockopt: level %d optname %d not supported\n", level, optname);
-    chnl_unlock(ch);
+leave:
+    stk_unlock();
     return rs;
 }
 
 /**
  * This routine returns an option value associated with a chnl.
  *
- * @param ch
- *   Channel descriptor.
+ * @param cd
+ *   Channel descriptor value
  * @param level
  *   Protocol level of option.
  *   To manipulate options at the "chnl" level, level should be SO_CHANNEL.
@@ -578,9 +495,6 @@ Unknown:
  * SO_KEEPALIVE - keep connections alive ('int'/boolean)
  * This option reports whether keep-alives are enabled.
  *
- * SO_LINGER - linger on close (struct 'linger')
- * This option report whether chnls should perform a "graceful" close.
- *
  * SO_ACCEPTCONN - return true, if the chnl is listening.
  * This option only applies to a TCP connection.
  *
@@ -616,125 +530,117 @@ Unknown:
  *   OK or ERROR.
  */
 int
-chnl_get_opt(struct chnl *ch, int level, int optname, void *optval, socklen_t *optlen)
+chnl_get_opt(int cd, int level, int optname, void *optval, socklen_t *optlen)
 {
+    struct chnl *ch = ch_get(cd);
     uint32_t len;
     uint64_t resI = 0;
     void *resP    = &resI;
-    int rs;
+    int rs        = -1;
 
-    if (optval == NULL || optlen == NULL || *(int32_t *)optlen <= 0)
+    if (!ch || optval == NULL || optlen == NULL || *(int32_t *)optlen <= 0)
         return __errno_set(EINVAL);
 
-    chnl_lock(ch);
+    if (stk_lock()) {
+        if (chnl_state_tst(ch, _CHNL_FREE)) {
+            __errno_set(EINVAL);
+            goto leave;
+        }
 
-    if (is_set(ch->ch_state, _CHNL_FREE)) {
-        chnl_unlock(ch);
-        return __errno_set(EINVAL);
-    }
+        len = CNE_MIN(*(uint32_t *)optlen, sizeof(int)); /* most options are int */
 
-    if (chnl_snd_rcv_more(ch, _CANTSENDMORE | _CANTRECVMORE)) {
-        chnl_unlock(ch);
-        return __errno_set(EINVAL);
-    }
+        switch (level) {
+        case SO_CHANNEL:
+            switch (optname) {
+            /* bit-flag options */
+            case SO_REUSEADDR:
+            case SO_KEEPALIVE:
+            case SO_BROADCAST:
+            case SO_REUSEPORT:
+                resI = (int)((ch->ch_options & optname) != 0);
+                break;
 
-    len = CNE_MIN(*(uint32_t *)optlen, sizeof(int)); /* most options are int */
+            /* value options */
+            case SO_RCVLOWAT:
+                resI = (int)ch->ch_rcv.cb_lowat;
+                break;
 
-    switch (level) {
-    case SO_CHANNEL:
-        switch (optname) {
-        /* bit-flag options */
-        case SO_REUSEADDR:
-        case SO_KEEPALIVE:
-        case SO_BROADCAST:
-        case SO_REUSEPORT:
-            resI = (int)((ch->ch_options & optname) != 0);
+            case SO_SNDLOWAT:
+                resI = (int)ch->ch_snd.cb_lowat;
+                break;
+
+            case SO_SNDBUF:
+                resI = (int)ch->ch_snd.cb_hiwat;
+                break;
+
+            case SO_RCVBUF:
+                resI = (int)ch->ch_rcv.cb_hiwat;
+                break;
+
+            case SO_RCVTIMEO:
+            case SO_SNDTIMEO:
+                break;
+
+            case SO_ERROR:
+                resI         = (int)ch->ch_error;
+                ch->ch_error = 0;
+                break;
+
+            case SO_TYPE:
+                resI = (int)ch->ch_proto->type;
+                break;
+
+            default:
+                goto Unknown;
+            }
+
             break;
 
-        /* value options */
-        case SO_RCVLOWAT:
-            resI = (int)ch->ch_rcv.cb_lowat;
-            break;
+        case IPPROTO_IP:
+            switch (optname) {
+            /* flag options */
+            case IP_HDRINCL:
+                resI = (int)((ch->ch_pcb->opt_flag & IP_HDRINCL_FLAG) != 0);
+                break;
 
-        case SO_SNDLOWAT:
-            resI = (int)ch->ch_snd.cb_lowat;
-            break;
+            case IP_DONTFRAG:
+                resI = (int)((ch->ch_pcb->opt_flag & IP_DONTFRAG_FLAG) != 0);
+                break;
 
-        case SO_SNDBUF:
-            resI = (int)ch->ch_snd.cb_hiwat;
-            break;
+            case UDP_CHKSUM_FLAG:
+                resI = (int)((ch->ch_pcb->opt_flag & UDP_CHKSUM_FLAG) != 0);
+                break;
 
-        case SO_RCVBUF:
-            resI = (int)ch->ch_rcv.cb_hiwat;
-            break;
+            case IP_RECVTOS:
+                resI = (int)ch->ch_pcb->tos;
+                break;
 
-        case SO_RCVTIMEO:
-        case SO_SNDTIMEO:
-            /* timeo is stored as ticks - convert to millisec, then timeval */
-            *(uint64_t *)resP =
-                ((optname == SO_SNDTIMEO) ? ch->ch_snd.cb_timeo : ch->ch_rcv.cb_timeo);
-            *optlen = CNE_MIN(*(uint32_t *)optlen, sizeof(uint64_t));
-            break;
+            case IP_RECVTTL:
+                resI = (int)ch->ch_pcb->ttl;
+                break;
 
-        case SO_ERROR:
-            resI         = (int)ch->ch_error;
-            ch->ch_error = 0;
-            break;
+            case IP_PKTINFO:
+                CNE_ERR("IP_PKTINFO\n");
+                break;
 
-        case SO_TYPE:
-            resI = (int)ch->ch_proto->type;
-            break;
+            default:
+                goto Unknown;
+            }
 
+            break;
         default:
             goto Unknown;
         }
 
-        break;
+        if (len == 4) {
+            int32_t *p32 = (int32_t *)optval;
+            *p32         = resI;
+        } else
+            memcpy(optval, resP, len);
+        *optlen = (size_t)len;
 
-    case IPPROTO_IP:
-        switch (optname) {
-        /* flag options */
-        case IP_HDRINCL:
-            resI = (int)((ch->ch_pcb->opt_flag & IP_HDRINCL_FLAG) != 0);
-            break;
-
-        case IP_DONTFRAG:
-            resI = (int)((ch->ch_pcb->opt_flag & IP_DONTFRAG_FLAG) != 0);
-            break;
-
-        case UDP_CHKSUM_FLAG:
-            resI = (int)((ch->ch_pcb->opt_flag & UDP_CHKSUM_FLAG) != 0);
-            break;
-
-        case IP_RECVTOS:
-            resI = (int)ch->ch_pcb->tos;
-            break;
-
-        case IP_RECVTTL:
-            resI = (int)ch->ch_pcb->ttl;
-            break;
-
-        case IP_PKTINFO:
-            CNE_ERR("IP_PKTINFO\n");
-            break;
-
-        default:
-            goto Unknown;
-        }
-
-        break;
-    default:
-        goto Unknown;
+        stk_unlock();
     }
-
-    if (len == 4) {
-        int32_t *p32 = (int32_t *)optval;
-        *p32         = resI;
-    } else
-        memcpy(optval, resP, len);
-    *optlen = (size_t)len;
-
-    chnl_unlock(ch);
 
     return 0;
 
@@ -745,8 +651,8 @@ Unknown:
 
     if (rs == -1 && __errno_get() == ENOPROTOOPT)
         CNE_DEBUG("chnl_get_opt: level %d optname %d not supported\n", level, optname);
-
-    chnl_unlock(ch);
+leave:
+    stk_unlock();
 
     return rs;
 }

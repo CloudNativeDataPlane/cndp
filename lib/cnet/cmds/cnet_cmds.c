@@ -38,7 +38,8 @@
 #include "cnet_netlink.h"
 #include "pktdev_api.h"        // for pktdev_port_count, pktdev_start, pktdev_...
 #include "pktmbuf.h"           // for DEFAULT_MBUF_SIZE, pktmbuf_t
-#include "cnet_chnl.h"         // for chnl_list
+#include "../chnl/chnl_priv.h"
+#include "cnet_chnl.h"        // for chnl_list
 #include <cnet_node_names.h>
 
 #define _prt(_s)                                                           \
@@ -651,6 +652,99 @@ cmd_ip_cksum(int argc __cne_unused, char **argv __cne_unused)
     return 0;
 }
 
+#define _(_s)                                                    \
+    do {                                                         \
+        stk_t *stk;                                              \
+        cne_printf("[magenta]%-16s[]: ", #_s);                   \
+        vec_foreach_ptr (stk, cnet->stks) {                      \
+            cne_printf("[cyan]%8ld[] ", stk->tcp_stats->S_##_s); \
+        }                                                        \
+        cne_printf("\n");                                        \
+    } while (/* CONSTCOND */ 0)
+
+// clang-format off
+static struct cli_map tcp_map[] = {
+    {10, "tcp"},
+    {11, "tcp stats"},
+    {-1, NULL}
+    };
+// clang-format on
+
+static int
+cmd_tcp(int argc, char **argv)
+{
+    struct cnet *cnet = this_cnet;
+    struct cli_map *m;
+
+    m = cli_mapping(tcp_map, argc, argv);
+    if (!m)
+        return cli_cmd_error("Info command is invalid", "tcp", argc, argv);
+
+    switch (m->index) {
+    case 10:
+    case 11:
+        _(TCPS_CLOSED);
+        _(TCPS_LISTEN);
+        _(TCPS_SYN_SENT);
+        _(TCPS_SYN_RCVD);
+        _(TCPS_ESTABLISHED);
+        _(TCPS_CLOSE_WAIT);
+        _(TCPS_FIN_WAIT_1);
+        _(TCPS_CLOSING);
+        _(TCPS_LAST_ACK);
+        _(TCPS_FIN_WAIT_2);
+        _(TCPS_TIME_WAIT);
+
+        _(no_syn_rcvd);
+        _(invalid_ack);
+        _(tcp_rst);
+        _(ack_predicted);
+        _(data_predicted);
+        _(rx_total);
+        _(rx_short);
+        _(rx_badoff);
+        _(delayed_ack);
+        _(tcp_rexmit);
+        _(resets_sent);
+        _(tcp_connect);
+        break;
+    default:
+        return cli_cmd_error("Command invalid", "tcp", argc, argv);
+    }
+
+    return 0;
+}
+#undef _
+
+// clang-format off
+static struct cli_map tcb_map[] = {
+    {10, "tcb"},
+    {11, "tcb show"},
+    {-1, NULL}
+    };
+// clang-format on
+
+static int
+cmd_tcb(int argc, char **argv)
+{
+    struct cli_map *m;
+
+    m = cli_mapping(tcb_map, argc, argv);
+    if (!m)
+        return cli_cmd_error("Info command is invalid", "tcb", argc, argv);
+
+    switch (m->index) {
+    case 10:
+    case 11:
+        cnet_tcb_dump();
+        break;
+    default:
+        return cli_cmd_error("Command invalid", "tcb", argc, argv);
+    }
+
+    return 0;
+}
+
 // clang-format off
 static struct cli_tree cnet_tree[] = {
     c_bin("/cnet"),
@@ -664,12 +758,15 @@ static struct cli_tree cnet_tree[] = {
     c_cmd("graph",      cmd_graph,      "CNET Graph information [list|node|dump|dot|stats]"),
     c_cmd("netlink",    cmd_netlink,    "Enable/Disable Netlink messages"),
     c_cmd("ipcksum",    cmd_ip_cksum,   "Test IP checksum"),
+    c_cmd("tcp",        cmd_tcp,        "TCP information"),
+    c_cmd("tcb",        cmd_tcb,        "TCB information"),
     c_alias("gstats",   "graph stats",  "Show Graph statistics"),
     c_alias("ifs",      "ip link",      "display the link interface details"),
     c_alias("ifc",      "ip link",      "display the link interface details"),
     c_alias("arp",      "ip neigh",     "display the neighbour interface details"),
     c_alias("route",    "ip route",     "display the route interface details"),
     c_alias("gdot",     "graph dot",    "dump out the graph information in dot format"),
+    c_alias("tstats",   "tcp stats",    "dump out the TCP statistics"),
     c_end()
 };
 // clang-format on

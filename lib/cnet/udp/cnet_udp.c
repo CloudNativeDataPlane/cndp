@@ -8,8 +8,9 @@
 #include <cnet_pcb.h>              // for pcb_entry, pcb_key, pcb_hd, cnet_...
 #include <cnet_ip_common.h>        // for ip_info
 #include <cnet_netif.h>            // for net_addr, cnet_ipv4_compare, netif
-#include <cnet_chnl.h>             // for AF_INET, SOCK_DGRAM, CH_IP_DONTFRAG
-#include <cnet_route.h>            // for rt_funcs, rt_lookup_t
+#include "../chnl/chnl_priv.h"
+#include <cnet_chnl.h>         // for AF_INET, SOCK_DGRAM, CH_IP_DONTFRAG
+#include <cnet_route.h>        // for rt_funcs, rt_lookup_t
 #include <cnet_udp.h>
 #include <endian.h>             // for be16toh, htobe16
 #include <netinet/in.h>         // for IPPROTO_UDP
@@ -45,10 +46,10 @@ udp_create(void *_stk)
 
     cnet_ipproto_set(IPPROTO_UDP, psw);
 
-    stk->udp->cksum_on     = 1;
-    stk->udp->rcv_size     = MAX_UDP_RCV_SIZE;
-    stk->udp->snd_size     = MAX_UDP_SND_SIZE;
-    stk->udp->udp_hd.lport = _IPPORT_RESERVED;
+    stk->udp->cksum_on          = 1;
+    stk->udp->rcv_size          = MAX_UDP_RCV_SIZE;
+    stk->udp->snd_size          = MAX_UDP_SND_SIZE;
+    stk->udp->udp_hd.local_port = _IPPORT_RESERVED;
 
     return 0;
 }

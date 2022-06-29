@@ -52,6 +52,8 @@
 #include <pthread.h>               // for pthread_cond_signal, pthread_cond_wait
 #include <stdlib.h>                // for free, calloc, rand
 #include <string.h>                // for strcat, memcpy, memset
+#include "../chnl/chnl_priv.h"
+#include <cnet_chnl.h>
 
 #include "cne_common.h"           // for CNE_MIN, CNE_MAX, CNE_SET_USED, __cne_un...
 #include "cne_cycles.h"           // for cne_rdtsc
@@ -66,21 +68,22 @@
 #include "cnet_udp.h"            // for chnl, chnl_buf, cb_space, chnl_cant_snd_...
 #include <pktmbuf_ptype.h>
 #include <cnet_fib_info.h>
+#include <cnet_node_names.h>
 #include <tcp_input_priv.h>
-#include <tcp_send_priv.h>
+#include <tcp_output_priv.h>
+#include <cne_mutex_helper.h>
 
 /* static TCP backoff shift values */
 static int32_t tcp_syn_backoff[TCP_MAXRXTSHIFT + 1] = {1, 1, 1, 1, 1, 2, 4, 8, 16, 32, 64, 64, 64};
 static int32_t tcp_backoff[TCP_MAXRXTSHIFT + 1] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
 static uint8_t tcp_output_flags[]               = TCP_OUTPUT_FLAGS;
 
-/* globals */
-
 /* forward declares */
 static int tcp_destroy(void *_stk);
 static int tcb_cleanup(struct tcb_entry *tcb);
 static void tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb);
 static int32_t tcp_send_options(struct tcb_entry *tcb, uint8_t *sp, uint8_t flags_n);
+static int tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp);
 
 const char *tcb_in_states[] = TCP_INPUT_STATES;
 
@@ -88,21 +91,42 @@ const char *tcb_in_states[] = TCP_INPUT_STATES;
 #define TCB_FLAGS_MAX_SIZE 256
 static char tcp_flags[TCP_FLAGS_MAX_SIZE + 1], tcb_flags[TCB_FLAGS_MAX_SIZE + 1];
 
-#define TCP_SEGMENT_COUNT 1024
+#define CNET_TCP_FAST_REXMIT 1
+
+static inline struct seg_entry *
+alloc_seg(void)
+{
+    struct seg_entry *seg = NULL;
+
+    if (mempool_get(this_stk->seg_objs, (void **)&seg) != 0)
+        CNE_NULL_RET("mempool of segments is empty\n");
+
+    return seg;
+}
+
+static inline void
+free_seg(struct seg_entry *seg)
+{
+    if (seg) {
+        memset(seg, 0, sizeof(struct seg_entry));
+        mempool_put(this_stk->seg_objs, (void *)seg);
+    }
+}
 
 void *
-tcp_vec_qpop(struct tcp_vec *tvec, uint16_t wait_flag)
+tcp_q_pop(struct tcp_q *tq)
 {
     struct pcb_entry *pcb = NULL;
 
-    for (;;) {
-        pcb = (struct pcb_entry *)vec_pop(tvec->vec);
-
-        if (!wait_flag)
-            break;
-
-        if (pthread_cond_wait(&tvec->cond, &tvec->mutex))
-            break;
+    if (stk_lock()) {
+        if (atomic_load(&tq->cnt)) {
+            pcb = TAILQ_FIRST(&tq->head);
+            if (pcb) {
+                TAILQ_REMOVE(&tq->head, pcb, next);
+                atomic_fetch_sub(&tq->cnt, 1);
+            }
+        }
+        stk_unlock();
     }
 
     return pcb;
@@ -110,16 +134,36 @@ tcp_vec_qpop(struct tcp_vec *tvec, uint16_t wait_flag)
 
 /* Return 1 on full or 0 if pushed */
 static int
-tcp_vec_qadd(struct tcp_vec *tvec, void *val)
+tcp_q_add(struct tcp_q *tq, void *val)
 {
-    vec_add(tvec->vec, val);
+    struct pcb_entry *pcb = val;
 
-    pthread_cond_signal(&tvec->cond);
+    if (stk_lock()) {
+        TAILQ_INSERT_TAIL(&tq->head, pcb, next);
+        atomic_fetch_add(&tq->cnt, 1);
+        stk_unlock();
+    }
 
     return 0;
 }
 
-/**
+static int
+tcp_q_remove(struct tcp_q *tq, void *val)
+{
+    struct pcb_entry *pcb = val;
+
+    if (stk_lock()) {
+        if (atomic_load(&tq->cnt)) {
+            TAILQ_REMOVE(&tq->head, pcb, next);
+            atomic_fetch_sub(&tq->cnt, 1);
+        }
+        stk_unlock();
+    }
+
+    return 0;
+}
+
+/*
  * This routine returns a string representing the TCP header flag bits.
  *
  * NOTE: The returned string pointer should be considered read-only.
@@ -137,14 +181,14 @@ tcp_print_flags(uint8_t flags)
     if (is_set(flags, TCP_RST))
         strcat(tcp_flags, "RST ");
 
-    if (is_set(flags, TCP_ACK))
-        strcat(tcp_flags, "ACK ");
-
     if (is_set(flags, TCP_FIN))
         strcat(tcp_flags, "FIN ");
 
     if (is_set(flags, TCP_PSH))
         strcat(tcp_flags, "PSH ");
+
+    if (is_set(flags, TCP_ACK))
+        strcat(tcp_flags, "ACK ");
 
     if (is_set(flags, TCP_URG))
         strcat(tcp_flags, "URG ");
@@ -159,8 +203,8 @@ tcb_print_flags(uint32_t flags)
     int i;
 
     tcb_flags[0] = '\0';
-    for (i = 0; i < (int)(sizeof(flags) * 8); i++) {
-        if (flags & (1 << (32 - i))) {
+    for (i = 0; i < (int)cne_countof(list); i++) {
+        if (flags & (1 << (31 - i))) {
             strlcat(tcb_flags, list[i], TCB_FLAGS_MAX_SIZE);
             strlcat(tcb_flags, " ", TCB_FLAGS_MAX_SIZE);
         }
@@ -168,7 +212,22 @@ tcb_print_flags(uint32_t flags)
     return tcb_flags;
 }
 
-/**
+void
+cnet_tcp_dump(const char *msg, struct cne_tcp_hdr *tcp)
+{
+    cne_printf("%s [cyan]TCP Header[] @ %p\n", (msg) ? msg : "", tcp);
+    cne_printf("   [cyan]TCP_Flags ( [orange]%s[cyan])[] ",
+               tcp_print_flags(tcp->tcp_flags & TCP_MASK));
+    cne_printf("[cyan]Src Port : [orange]%5d  [cyan]Dst Port: [orange]%5d[]\n",
+               be16toh(tcp->src_port), be16toh(tcp->dst_port));
+    cne_printf("   [cyan]Seq [orange]%10u[cyan], Ack [orange]%10u[] ", be32toh(tcp->sent_seq),
+               be32toh(tcp->recv_ack));
+    cne_printf("[cyan]HLEN [orange]%3d [cyan]bytes ", (tcp->data_off >> 2));
+    cne_printf("RX Win [orange]%5u[cyan], cksum [orange]%04x[cyan], URP [orange]%3u[]\n",
+               be16toh(tcp->rx_win), be16toh(tcp->cksum), be16toh(tcp->tcp_urp));
+}
+
+/*
  * Set the congestion window for slow-start given the valid <tcb>, by looking at
  * the tcb->pcb->faddr and determine the connection is for a local subnet. When
  * the connection is on the local subnet, the code will select a larger
@@ -177,7 +236,7 @@ tcb_print_flags(uint32_t flags)
 static inline void
 tcp_set_CWND(struct tcb_entry *tcb)
 {
-    /**
+    /*
      * Setup for slow-start congestion window size.
      *
      * For a local address we have a large cwnd value else one segment.
@@ -197,7 +256,7 @@ tcp_set_CWND(struct tcb_entry *tcb)
     }
 }
 
-/**
+/*
  * Set the correct Sender MSS value for the connection into the struct tcb.max_mss
  * variable.
  *
@@ -221,7 +280,7 @@ tcp_set_MSS(struct tcb_entry *tcb, uint16_t mss_offer)
     tcb->max_mss = CNE_MIN(mss_offer, TCP_MAX_MSS);
 }
 
-/**
+/*
  * Allocate a new struct tcb_entry structure if the pcb->tcb does not already contain
  * a struct tcb_entry pointer. If the pcb->tcb contains a valid pointer then return the
  * tcb pointer.
@@ -235,49 +294,20 @@ cnet_tcb_new(struct pcb_entry *pcb)
 {
     stk_t *stk = this_stk;
     struct tcb_entry *tcb;
-    pthread_mutexattr_t attr;
 
     /* If the TCB is already allocated then return the tcb pointer. */
     if ((tcb = pcb->tcb) != NULL)
         return tcb;
 
-    if ((tcb = tcb_alloc()) == NULL) {
-        CNE_WARN("TCB allocate failed\n");
-        return NULL;
-    }
+    if ((tcb = tcb_alloc()) == NULL)
+        CNE_ERR_GOTO(err, "TCB allocate failed\n");
 
     tcb->reassemble = vec_alloc(tcb->reassemble, CNET_TCP_REASSEMBLE_COUNT);
-    if (!tcb->reassemble) {
-        tcb_free(tcb);
-        CNE_WARN("tcb->backlog allocate failed\n");
-        return NULL;
-    }
-    CNE_DEBUG("Reassemable %p, %d\n", tcb->reassemble, vec_len(tcb->reassemble));
+    if (!tcb->reassemble)
+        CNE_ERR_GOTO(err, "tcb->backlog allocate failed\n");
 
-    tcb->backlog_q.vec = vec_alloc(tcb->backlog_q.vec, CNET_TCP_BACKLOG_COUNT);
-    if (!tcb->backlog_q.vec) {
-        tcb_free(tcb);
-        CNE_WARN("tcb->backlog allocate failed\n");
-        return NULL;
-    }
-    pthread_mutexattr_init(&attr);
-    pthread_mutex_init(&tcb->backlog_q.mutex, &attr);
-    if (pthread_cond_init(&tcb->backlog_q.cond, NULL)) {
-        vec_free(tcb->backlog_q.vec);
-        tcb_free(tcb);
-        pthread_mutexattr_destroy(&attr);
-        CNE_WARN("pthread_cond_init() failed\n");
-        return NULL;
-    }
-    pthread_mutexattr_destroy(&attr);
-
-    tcb->half_open_q = vec_alloc(tcb->half_open_q, CNET_TCP_HALF_OPEN_COUNT);
-    if (!tcb->half_open_q) {
-        vec_free(tcb->backlog_q.vec);
-        tcb_free(tcb);
-        CNE_WARN("tcb->half_open_q allocate failed\n");
-        return NULL;
-    }
+    TAILQ_INIT(&tcb->backlog_q.head);
+    TAILQ_INIT(&tcb->half_open_q.head);
 
     /* Enable RFC1323 (TCP Extensions for High Performance), if requested. */
     tcb->tflags = (stk->gflags & RFC1323_SCALE_ENABLED) != 0 ? TCBF_REQ_SCALE : 0;
@@ -307,10 +337,15 @@ cnet_tcb_new(struct pcb_entry *pcb)
     tcp_send_seq_set(tcb, 7);
 
     tcb->rcv_bsize = tcb->rcv_wnd = pcb->ch->ch_rcv.cb_hiwat;
+
+    tcb->state = TCPS_CLOSED;
     return tcb;
+err:
+    tcb_free(tcb);
+    return NULL;
 }
 
-/**
+/*
  * Form the TCP header and send the given segment of data.
  *
  */
@@ -320,17 +355,14 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     struct pcb_entry *pcb = tcb->pcb;
     struct chnl *ch       = pcb->ch;
     pktmbuf_t *mbuf       = seg->mbuf;
+    stk_t *stk            = this_stk;
+    struct cnet_metadata *md;
     struct cne_tcp_hdr *tcp;
-    uint64_t nexthop = 0;
 
     seg->mbuf = NULL;
 
     /* Add the TCP options to the data packet */
-    if (seg->optlen > 0) {
-        /* point to seg->optlen bytes before data to put options */
-        pktmbuf_prepend(mbuf, seg->optlen);
-        memcpy(pktmbuf_mtod(mbuf, int8_t *), &seg->opts[0], seg->optlen);
-    }
+    memcpy(pktmbuf_prepend(mbuf, seg->optlen), &seg->opts[0], seg->optlen);
 
     /* Set the read pointer to the IP header */
     tcp = (struct cne_tcp_hdr *)pktmbuf_prepend(mbuf, sizeof(struct cne_tcp_hdr));
@@ -347,47 +379,32 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     tcp->src_port = CIN_PORT(&pcb->key.laddr);
 
     /* When source address is zero then lookup an interface to use */
-    if (pcb->key.faddr.cin_addr.s_addr == 0) {
-        fib_info_t *fi;
+    if (pcb->key.laddr.cin_addr.s_addr == 0) {
         struct netif *nif;
         int32_t k;
-
-        fi = this_cnet->tcb_finfo;
 
         nif = cnet_netif_match_subnet(&pcb->key.faddr.cin_addr);
         if (!nif) {
             char ip[INET6_ADDRSTRLEN + 4] = {0};
 
-            CNE_ERR("No netif match %s\n",
-                    inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL) ?: "Invalid IP");
             pktmbuf_free(mbuf);
-            return -1;
+            CNE_ERR_RET("No netif match %s\n",
+                        inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
         }
-        if (fib_info_lookup_index(fi, &pcb->key.faddr.cin_addr.s_addr, &nexthop, 1) <= 0) {
-            char ip[INET6_ADDRSTRLEN + 4] = {0};
-
-            CNE_WARN("Route lookup failed %s\n",
-                     inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL) ?: "Invalid IP");
-            pktmbuf_free(mbuf);
-            return -1;
-        }
-
         /* Find the correct subnet IP address for the given request */
         if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
             char ip[INET6_ADDRSTRLEN + 4] = {0};
 
-            CNE_WARN(
-                "cnet_ipv4_compare(%s) failed\n",
-                inet_ntop4(ip, sizeof(ip), (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL)
-                    ?: "Invalid IP");
             pktmbuf_free(mbuf);
-            return -1;
+            CNE_ERR_RET("cnet_ipv4_compare(%s) failed\n",
+                        inet_ntop4(ip, sizeof(ip),
+                                   (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL));
         }
 
         tcb->netif = nif;
 
         /* Use the interface attached to the route for the source address */
-        pcb->key.laddr.cin_addr.s_addr = nif->ip4_addrs[k].ip.s_addr;
+        pcb->key.laddr.cin_addr.s_addr = htobe32(nif->ip4_addrs[k].ip.s_addr);
     }
 
     /* Clear the send Ack Now bit, if an ACK is present. */
@@ -395,9 +412,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
         tcb->tflags &= ~(TCBF_ACK_NOW | TCBF_DELAYED_ACK);
 
     /* Always clear the force tx and need output flags. */
-    tcb->tflags &= ~(TCBF_NEED_OUTPUT | TCBF_FORCE_TX);
-
-    CNE_INFO("Packet send seq %u, ack %u\n", seg->ack, seg->ack);
+    tcb->tflags &= ~TCBF_FORCE_TX;
 
     /* Fill in the rest of the TCP header */
     tcp->recv_ack      = htobe32(seg->ack);
@@ -411,17 +426,26 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     /* Update the L4 header length with option length */
     mbuf->l4_len = sizeof(struct cne_tcp_hdr) + seg->optlen;
 
-    ch->ch_node = cne_graph_get_node_by_name(this_stk->graph, "tcp_send");
-    if (!ch->ch_node) {
-        pktmbuf_free(mbuf);
-        return -1;
+    md = cnet_mbuf_metadata(mbuf);
+
+    if ((tcp->tcp_flags & TCP_URG) == 0 && tcp->tcp_urp)
+        CNE_WARN("[orange]URG pointer set without URG flag\n");
+
+    md->faddr.cin_addr.s_addr = ch->ch_pcb->key.faddr.cin_addr.s_addr;
+    md->laddr.cin_addr.s_addr = ch->ch_pcb->key.laddr.cin_addr.s_addr;
+
+    if (unlikely(stk->tcp_tx_node == NULL)) {
+        stk->tcp_tx_node = cne_graph_get_node_by_name(stk->graph, TCP_OUTPUT_NODE_NAME);
+        if (!stk->tcp_tx_node)
+            CNE_ERR_RET("Unable to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
     }
-    cne_node_enqueue_x1(this_stk->graph, ch->ch_node, TCP_SEND_NEXT_IP4_OUTPUT, mbuf);
+
+    cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
 
     return 0;
 }
 
-/**
+/*
  * Set up the persistence timer and maintain the shift value.
  */
 static inline void
@@ -445,7 +469,7 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
     uint32_t total = 0, cnt;
     int i          = 0;
 
-    if (pthread_mutex_lock(&cb->mutex))
+    if (!stk_lock())
         CNE_ERR_RET("Unable to acquire mutex\n");
 
     m = vec_at_index(cb->cb_vec, i++);
@@ -473,40 +497,37 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
         m   = vec_at_index(cb->cb_vec, i++);
     }
 
-    if (pthread_mutex_unlock(&cb->mutex))
-        CNE_ERR_RET("Unable to release lock\n");
+    stk_unlock();
     return total;
 }
 
-/**
+/*
  * Determine if a segment of data or just a TCP header needs to be sent via
  * the tcb_send_segment routine.
  */
 static int
 tcp_output(struct tcb_entry *tcb)
 {
-    struct seg_entry tx_seg;
-    struct seg_entry *seg = &tx_seg;
     struct chnl *ch;
-    bool idle;
+    bool idle, sendalot;
 
-    if (!tcb) {
-        CNE_WARN("TCB pointer is NULL\n");
-        return -1;
-    }
+    if (!tcb)
+        CNE_ERR_RET("TCB pointer is NULL\n");
+    if (!tcb->pcb)
+        CNE_ERR_RET("PCB pointer is NULL\n");
+    if (!tcb->pcb->ch)
+        CNE_ERR_RET("Chnl pointer is NULL\n");
 
-    if (!tcb->pcb || !tcb->pcb->ch) {
-        CNE_WARN("PCB or CH pointer is NULL\n");
-        return -1;
-    }
     ch = tcb->pcb->ch;
 
     idle = (tcb->snd_max == tcb->snd_una);
 
+    CNE_DEBUG("\n");
+    CNE_DEBUG("[magenta]Do TCP output[]\n");
+
     /* when snd_max and snd_una are equal then we are idle */
     if (idle) {
         tcb->tflags |= TCBF_NAGLE_CREDIT;
-
 #ifdef CNET_TCP_FAST_REXMIT
         /* RFC2581: pg 7-8
          * [Jac88] recommends that a TCP use slow start to restart transmission
@@ -530,9 +551,10 @@ tcp_output(struct tcb_entry *tcb)
     }
 
     do {
+        struct seg_entry tx_seg;
+        struct seg_entry *seg = &tx_seg;
         uint32_t off;
         int32_t len;
-        bool sendalot;
         uint32_t win;
         seq_t prev_rcv_adv;
 
@@ -544,13 +566,14 @@ tcp_output(struct tcb_entry *tcb)
 
             /* The offset from snd_nxt to snd_una currently */
             off = tcb->snd_nxt - tcb->snd_una;
+            CNE_DEBUG("snd_nxt [orange]%d[] snd_una [orange]%d[] off [orange]%d[]\n", tcb->snd_nxt,
+                      tcb->snd_una, off);
 
             /* Set the window size to send window or congestion window size */
             win = CNE_MIN(tcb->snd_wnd, tcb->snd_cwnd);
 
             /* Set the TCP output flags based on the current state of the TCB */
             seg->flags = tcp_output_flags[tcb->state];
-            tcp_flags_dump("Send flags", seg->flags);
 
             if (is_set(tcb->tflags, TCBF_FORCE_TX)) {
                 /* When win is zero then must be a zero window probe */
@@ -558,9 +581,8 @@ tcp_output(struct tcb_entry *tcb)
                     /*
                      * Force a zero window update.
                      *
-                     * When the off set is less then sb_cc then we have
-                     * data to
-                     * send but the window is zero.
+                     * When the offset is less then cb_cc then we have
+                     * data to send but the window is zero.
                      */
                     if (off < ch->ch_snd.cb_cc)
                         seg->flags &= ~TCP_FIN;
@@ -580,6 +602,9 @@ tcp_output(struct tcb_entry *tcb)
              * Send the window size or the amount of data in the send queue.
              */
             len = CNE_MIN(ch->ch_snd.cb_cc, win) - off;
+            CNE_DEBUG("cb_cc [cyan]%d[], win [cyan]%d[], off [cyan]%d[], len [orange]%d[] vec "
+                      "[orange]%d[]\n",
+                      ch->ch_snd.cb_cc, win, off, len, vec_len(ch->ch_snd.cb_vec));
 
             if (is_set(seg->flags, TCP_SYN)) {
 
@@ -589,6 +614,8 @@ tcp_output(struct tcb_entry *tcb)
             }
 
             if (len < 0) {
+                CNE_DEBUG("Data length is [orange]%d < 0[]\n", len);
+
                 /*
                  * If FIN has been sent but not acked.
                  * but we haven't been called to retransmit.
@@ -609,6 +636,8 @@ tcp_output(struct tcb_entry *tcb)
             }
 
             if (len > tcb->max_mss) {
+                CNE_DEBUG("len [cyan]%d[] > [cyan]%d[] max_mss, vec_len([orange]%d[])\n", len,
+                          tcb->max_mss, vec_len(ch->ch_snd.cb_vec));
                 /* Force the length to be max_mss if it was too large. */
                 len      = tcb->max_mss;
                 sendalot = true; /* Need to send a lot of data */
@@ -623,17 +652,21 @@ tcp_output(struct tcb_entry *tcb)
 
             /* silly window avoidance */
             if (len) {
-                /* The length equals max_mss then we are not in SWS do send. */
-                if (len == tcb->max_mss)
+                /* The length equals max_mss then we are not in Silly Window Syndrome do send. */
+                if (len == tcb->max_mss) {
+                    CNE_DEBUG("Not in SWS, len [cyan]%d[] == [cyan]%d[] max_mss\n", len,
+                              tcb->max_mss);
                     break;
+                }
 
                 /*
-                 * When we have credit we can send something reset flag and
+                 * When we have credit we can send something clear NAGLE flag and
                  * go to send.
                  */
                 if (idle || (tcb->tflags & TCBF_NAGLE_CREDIT) ||
                     (tcb->pcb->opt_flag & TCP_NODELAY_FLAG)) {
                     tcb->tflags &= ~TCBF_NAGLE_CREDIT;
+                    CNE_DEBUG("Nagle Credit or NoDelay flag or idle %d\n", idle);
                     break;
                 }
 
@@ -642,14 +675,19 @@ tcp_output(struct tcb_entry *tcb)
                  * or snd_nxt is less then snd_max do a send.
                  */
                 if (is_set(tcb->tflags, TCBF_FORCE_TX)) {
+                    CNE_DEBUG("Force Tx\n");
                     break;
                 }
 
-                if (len >= (int64_t)(tcb->max_sndwnd / 2))
+                if (len >= (int64_t)(tcb->max_sndwnd / 2)) {
+                    CNE_DEBUG("len %d >= %d sndwnd\n", len, (tcb->max_sndwnd / 2));
                     break;
+                }
 
-                if (seqLT(tcb->snd_nxt, tcb->snd_max))
+                if (seqLT(tcb->snd_nxt, tcb->snd_max)) {
+                    CNE_DEBUG("snd_nxt %u < %u snd_max\n", tcb->snd_nxt, tcb->snd_max);
                     break;
+                }
             }
 
             /* Determine if we need to send a window update. */
@@ -715,13 +753,12 @@ tcp_output(struct tcb_entry *tcb)
             if (ch->ch_snd.cb_cc && (tcb->timers[TCPT_REXMT] == 0) &&
                 (tcb->timers[TCPT_PERSIST] == 0)) {
                 tcb->rxtshift = 0;
+                CNE_DEBUG("Set [orange]Persist[]\n");
                 tcp_set_persist(tcb);
             }
-
+            CNE_DEBUG("[orange]No Data to send[]\n");
             goto leave;
         } while (/*CONSTCOND*/ 0);
-
-        /* SEND Packet ********/
 
         /* Create the options and obtain the options length */
         seg->optlen = tcp_send_options(tcb, seg->opts, seg->flags);
@@ -735,22 +772,32 @@ tcp_output(struct tcb_entry *tcb)
         }
 
         if (pktdev_buf_alloc(seg->lport, &seg->mbuf, 1) <= 0) {
-            CNE_WARN("pktmbuf_alloc() return NULL\n");
+            CNE_WARN("pktmbuf allocation from lport %d failed id %d\n", seg->lport, cne_id());
             return -1;
         }
+
         seg->mbuf->userptr = tcb->pcb;
-        pktmbuf_adj_offset(seg->mbuf, sizeof(struct tcp_ipv4));
+
+        /* move the starting offset to account for headers */
+        pktmbuf_data_off(seg->mbuf) += sizeof(struct cne_tcp_hdr) + seg->optlen +
+                                       sizeof(struct cne_ipv4_hdr) + sizeof(struct ether_addr);
+
+        /* Make sure the headers are zero */
+        memset(pktmbuf_mtod(seg->mbuf, char *), 0,
+               sizeof(struct cne_tcp_hdr) + seg->optlen + sizeof(struct cne_ipv4_hdr) +
+                   sizeof(struct ether_addr));
 
         if (len) {
             len = tcp_mbuf_copydata(&ch->ch_snd, off, len, pktmbuf_mtod(seg->mbuf, char *));
 
             pktmbuf_append(seg->mbuf, len); /* Update length */
+            CNE_DEBUG("Add [orange]%4d[] bytes to the packet buffer\n", len);
         }
 
         /* Make sure if sending a FIN does not advertise a new sequence number */
         if (is_set(seg->flags, TCP_FIN) && is_set(tcb->tflags, TCBF_SENT_FIN) &&
             (tcb->snd_nxt == tcb->snd_max)) {
-            CNE_DEBUG("Do not advertise a new sequence number\n");
+            CNE_DEBUG("[cyan]Do not advertise a new sequence number[]\n");
             tcb->snd_nxt--;
         }
 
@@ -762,14 +809,14 @@ tcp_output(struct tcb_entry *tcb)
             seg->seq = tcb->snd_nxt;
         else
             seg->seq = tcb->snd_max;
+
         seg->ack = tcb->rcv_nxt;
-        CNE_INFO("ACK value %u\n", seg->ack);
 
         if (tcb->rcv_scale == 0)
             tcb->rcv_scale = tcb->req_recv_scale;
 
         /*
-         * Calculate receive window and don't skrink the window to small
+         * Calculate receive window and don't shrink the window to small
          * to avoid the silly window syndrome.
          */
         if ((win < (uint32_t)(ch->ch_rcv.cb_hiwat / 4)) && (win < (uint32_t)tcb->max_mss))
@@ -782,10 +829,12 @@ tcp_output(struct tcb_entry *tcb)
 
         if (win < (uint32_t)(tcb->rcv_adv - tcb->rcv_nxt)) {
             win = (uint32_t)(tcb->rcv_adv - tcb->rcv_nxt);
-            CNE_DEBUG("Set win to %u (adv - nxt)\n", (uint32_t)(tcb->rcv_adv - tcb->rcv_nxt));
+            CNE_DEBUG("Set win to %u (adv %u - %u nxt)\n", (uint32_t)(tcb->rcv_adv - tcb->rcv_nxt),
+                      tcb->rcv_adv, tcb->rcv_nxt);
         }
 
         seg->wnd = win >> tcb->rcv_scale;
+        CNE_DEBUG("Window size [cyan]%u, scaled win %u, %u[]\n", win, seg->wnd, tcb->rcv_scale);
 
         if (is_clr(tcb->tflags, TCBF_FORCE_TX) || (tcb->timers[TCPT_PERSIST] == 0)) {
             uint32_t startseq = tcb->snd_nxt;
@@ -838,30 +887,29 @@ tcp_output(struct tcb_entry *tcb)
          */
         if (tcp_send_segment(tcb, seg) == -1) {
             tcb->rcv_adv = prev_rcv_adv;
-            CNE_ERR("Send segment returned -1\n");
-            return -1;
+            CNE_ERR_RET("TCP send segment returned error\n");
         }
 
-        if (!sendalot)
-            break;
-    } while (1);
+        CNE_DEBUG("Send a lot is [orange]%s[]\n", sendalot ? "true" : "false");
+    } while (sendalot);
 
 leave:
+    CNE_DEBUG("[orange]Leaving[]\n");
     return 0;
 }
 
-/**
+/*
  * Call the tcp output routine and examine the return status and place the
  * error code in struct chnl.ch_error variable, if present.
  */
-static inline void
-tcp_do_output(struct tcb_entry *tcb)
+void
+cnet_tcp_output(struct tcb_entry *tcb)
 {
     /*
      * When an error is detected try and set the ch_error value to be
-     * retrieved by the SO_ERROR socket option later.
+     * retrieved by the SO_ERROR channel option later.
      */
-    if (tcp_output(tcb) == -1) {
+    if (tcp_output(tcb) < 0) {
         struct pcb_entry *pcb = tcb->pcb;
         struct chnl *ch;
 
@@ -876,7 +924,7 @@ tcp_do_output(struct tcb_entry *tcb)
     }
 }
 
-/**
+/*
  * The routine sends a TCP response segment for a given input segment. The
  * values passed are <seg>, <seq>, <ack> and <flags>. Construct a TCP response
  * segment in the packet structure pointed to by <p_pkt> pointer. The <seq> and
@@ -895,75 +943,86 @@ tcp_do_output(struct tcb_entry *tcb)
  *   The TCP flags value to place in the TCP header.
  */
 static void
-tcp_do_response(struct netif *netif, struct pcb_entry *pcb, pktmbuf_t *mbuf, uint32_t seq,
-                uint32_t ack, uint8_t flags)
+tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf_t *mbuf,
+                uint32_t seq, uint32_t ack, uint8_t flags)
 {
-    uint32_t win = 0;
+    stk_t *stk = this_stk;
     struct cne_tcp_hdr *tcp;
-    struct cne_ipv4_hdr *ip;
-    struct in_addr faddr, laddr;
-    uint16_t fport, lport;
-    pktmbuf_t **vec;
+    struct cnet_metadata *md;
+    char opts[64];
+    int optlen;
 
-    tcp = pktmbuf_mtod(mbuf, struct cne_tcp_hdr *);
-    ip  = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, -sizeof(struct cne_ipv4_hdr));
+    if (!pcb)
+        CNE_RET("*** PCB is not set\n");
+    if (!netif)
+        CNE_RET("*** Netif is not set\n");
 
-    if (pcb) {
-        faddr.s_addr = CIN_CADDR(&pcb->key.faddr);
-        laddr.s_addr = CIN_CADDR(&pcb->key.laddr);
-        fport        = CIN_PORT(&pcb->key.faddr);
-        lport        = CIN_PORT(&pcb->key.laddr);
-    } else {
-        faddr.s_addr = ip->src_addr;
-        laddr.s_addr = ip->dst_addr;
-        fport        = tcp->src_port;
-        lport        = tcp->dst_port;
-    }
+    /* Wait for a packet buffer, if one is not available */
+    if (mbuf == NULL) {
+        if (pktdev_buf_alloc(netif->lpid, &mbuf, 1) == 0)
+            CNE_RET("Unable to allocate packet buffer\n");
+    } else
+        pktmbuf_reset(mbuf);
 
-    memset(ip, 0, sizeof(struct cne_tcp_hdr) + sizeof(struct cne_ipv4_hdr));
+    /* Create the options and obtain the options length */
+    optlen = tcp_send_options(pcb->tcb, opts, flags);
 
-    ip->src_addr  = laddr.s_addr;
-    ip->dst_addr  = faddr.s_addr;
-    tcp->src_port = lport;
-    tcp->dst_port = fport;
+    /* move the starting offset to account for headers */
+    pktmbuf_data_off(mbuf) += sizeof(struct cne_tcp_hdr) + optlen + sizeof(struct cne_ipv4_hdr) +
+                              sizeof(struct ether_addr);
+    mbuf->userptr = pcb;
 
-    /* All fields are zeroed from the above Mem32Zero. */
-    ip->total_length  = htobe16(sizeof(struct cne_tcp_hdr) + sizeof(struct cne_ipv4_hdr));
-    ip->next_proto_id = IPPROTO_TCP;
-    tcp->sent_seq     = htobe32(seq);
-    tcp->recv_ack     = htobe32(ack);
+    /* Add the TCP options to the data packet */
+    memcpy(pktmbuf_prepend(mbuf, optlen), opts, optlen);
 
-    tcp->data_off  = (sizeof(struct cne_tcp_hdr) >> 2) << 4; /* 5 long words */
+    tcp = (struct cne_tcp_hdr *)pktmbuf_prepend(mbuf, sizeof(struct cne_tcp_hdr));
+    if (!tcp)
+        CNE_RET("failed to get TCP structure pointer\n");
+    mbuf->l4_len = sizeof(struct cne_tcp_hdr) + optlen;
+
+    memset(tcp, 0, sizeof(struct cne_tcp_hdr) + optlen);
+
+    md = cnet_mbuf_metadata(mbuf);
+
+    CIN_CADDR(&md->faddr) = CIN_CADDR(&pcb->key.faddr);
+    CIN_CADDR(&md->laddr) = CIN_CADDR(&pcb->key.laddr);
+    CIN_PORT(&md->faddr)  = CIN_PORT(&pcb->key.faddr);
+    CIN_PORT(&md->laddr)  = CIN_PORT(&pcb->key.laddr);
+
+    tcp->src_port = CIN_PORT(&md->laddr);
+    tcp->dst_port = CIN_PORT(&md->faddr);
+
+    tcp->sent_seq = htobe32(seq);
+    tcp->recv_ack = htobe32(ack);
+
+    tcp->data_off  = ((sizeof(struct cne_tcp_hdr) + optlen) >> 2) << 4;
     tcp->tcp_flags = flags;
 
+    memcpy(&tcp[1], opts, optlen);
+
     /*
-     * When socket and TCB are valid and not a RST, then get the current
+     * When channel and TCB are valid and not a RST, then get the current
      * receive space as the window value.
      */
-    if ((pcb != NULL) && (pcb->ch != NULL) && (pcb->tcb != NULL) && is_clr(flags, TCP_RST)) {
-        win = cb_space(&pcb->ch->ch_rcv);
+    if (pcb && pcb->ch && pcb->tcb && is_clr(flags, TCP_RST)) {
+        uint32_t win = cb_space(&pcb->ch->ch_rcv);
 
         if (win > (uint32_t)(TCP_MAXWIN << pcb->tcb->rcv_scale))
             win = (uint32_t)(TCP_MAXWIN << pcb->tcb->rcv_scale);
 
-        win = (win >> pcb->tcb->rcv_scale);
+        tcp->rx_win = htobe16((uint16_t)(win >> pcb->tcb->rcv_scale));
     }
 
-    tcp->rx_win = htobe16(win);
+    if (unlikely(stk->tcp_tx_node == NULL)) {
+        stk->tcp_tx_node = cne_graph_get_node_by_name(stk->graph, TCP_OUTPUT_NODE_NAME);
+        if (!stk->tcp_tx_node)
+            CNE_RET("Unable to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
+    }
 
-    ip->time_to_live    = TTL_DEFAULT;
-    ip->type_of_service = TOS_DEFAULT;
-
-    /* tcp->cksum is zeroed from above */
-    if (!pcb)
-        tcp->cksum = cne_ipv4_udptcp_cksum(ip, tcp);
-
-    (void)vec;
-    (void)netif;
-    pktmbuf_free(mbuf);
+    cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
 }
 
-/**
+/*
  * The tcp_drop_with_reset will drop the packet if the TCP reset bit is set, the packet
  * is a multicast/broadcast packet or belongs to the Class D group.
  *
@@ -979,6 +1038,7 @@ tcp_drop_with_reset(struct netif *netif, struct seg_entry *seg, struct pcb_entry
     pktmbuf_t *mbuf;
     struct cne_ipv4_hdr *ip = (struct cne_ipv4_hdr *)seg->ip;
 
+    CNE_DEBUG("Drop with [orange]Reset[]\n");
     /* Steal the input mbuf */
     mbuf      = seg->mbuf;
     seg->mbuf = NULL;
@@ -989,21 +1049,23 @@ tcp_drop_with_reset(struct netif *netif, struct seg_entry *seg, struct pcb_entry
         pktmbuf_free(mbuf);
     } else {
         /* Only send the RST if the ACK bit is set on the incoming segment */
-        if (is_set(seg->flags, TCP_ACK))
+        if (is_set(seg->flags, TCP_ACK)) {
             /* Send segment with <SEQ=SEG.ACK><CTL=RST> */
+            CNE_DEBUG("SEND segment with [orange]<SEQ=SEG.ACK><CTL=RST>[]\n");
             tcp_do_response(netif, pcb, mbuf, seg->ack, 0, TCP_RST);
-        else { /* When ACK is not set, then send a RST/ACK pair */
+        } else { /* When ACK is not set, then send a RST/ACK pair */
             if (is_set(seg->flags, TCP_SYN))
                 seg->len++; /* SEG.LEN++ */
 
             /* Send segment with <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK> */
+            CNE_DEBUG("SEND segment with [orange]<SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>[]\n");
             seg->seq = 0;
             tcp_do_response(netif, pcb, mbuf, seg->seq, seg->seq + seg->len, RST_ACK);
         }
     }
 }
 
-/**
+/*
  * Send an ACK and allow the segment to be dropped.
  */
 static inline int
@@ -1012,13 +1074,15 @@ tcp_drop_after_ack(struct seg_entry *seg)
     /* Do not response if we have a incoming RST */
     if (is_clr(seg->flags, TCP_RST)) {
         seg->pcb->tcb->tflags |= TCBF_ACK_NOW;
-        tcp_do_output(seg->pcb->tcb);
-    }
+        CNE_DEBUG("ACK data\n");
+        cnet_tcp_output(seg->pcb->tcb);
+    } else
+        CNE_DEBUG("RST found drop packet\n");
 
     return TCP_INPUT_NEXT_PKT_DROP;
 }
 
-/**
+/*
  * One of the state routines to handle TCP option processing.
  *
  * The ERROR can be returned if the length opts[1] == 0 or the segment offset
@@ -1080,17 +1144,15 @@ tcp_do_options(struct seg_entry *seg, uint8_t *opts)
                 return -1;
 
             if (opts[1] == TCP_OPT_SACK_LEN)
-                seg->pcb->tcb->tflags |= TCBF_SACK_PERMIT;
+                seg->sflags |= SEG_SACK_PERMIT;
             break;
 
         case TCP_OPT_TSTAMP:
-            if ((opts[1] + opts) > opt_end) {
-                CNE_WARN("Option Length Invalid opts %u\n", *opts);
-                return -1;
-            }
+            if ((opts[1] + opts) > opt_end)
+                CNE_ERR_RET("Option Length Invalid opts %u\n", *opts);
 
             if (opts[1] != TCP_OPT_TSTAMP_LEN) {
-                CNE_WARN("opts[1] %d != %u\n", opts[1], TCP_OPT_TSTAMP_LEN);
+                CNE_DEBUG("opts[1] %d != %u\n", opts[1], TCP_OPT_TSTAMP_LEN);
                 break;
             }
 
@@ -1120,7 +1182,7 @@ tcp_do_options(struct seg_entry *seg, uint8_t *opts)
             break;
 
         default:
-            CNE_WARN("Unknown Options %d\n", opts[0]);
+            CNE_ERR("Unknown Options %d\n", opts[0]);
             break;
         }
 
@@ -1133,7 +1195,7 @@ tcp_do_options(struct seg_entry *seg, uint8_t *opts)
     return 0;
 }
 
-/**
+/*
  * Move the TCP connection to the next state and do any processing required
  * for the new state.
  */
@@ -1141,72 +1203,97 @@ static void
 tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
 {
     struct tcb_entry *tcb = pcb->tcb;
+    const char *curr_state;
 
-    cnet_assert(tcb != NULL);
+    if (!tcb)
+        return;
+
+    curr_state = tcb_in_states[tcb->state];
+    CNE_SET_USED(curr_state);
 
     switch (new_state) {
     case TCPS_CLOSED:
+        INC_TCP_STAT(TCPS_CLOSED);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_CLOSED]);
 
         /*
-         * When tcb_cleanup() is called and returns OK and the socket pointer
-         * is valid then cleanup the rest of the connection. When the socket
-         * pointer is NULL then a close was done on the socket before we got
+         * When tcb_cleanup() is called and returns OK and the channel pointer
+         * is valid then cleanup the rest of the connection. When the channel
+         * pointer is NULL then a close was done on the channel before we got
          * to the closed state.
          */
-        if ((tcb_cleanup(tcb) == 0) && (pcb->ch != NULL)) {
-            pcb->ch->ch_state &= ~(_ISCONNECTED | _ISCONNECTING | _ISDISCONNECTING);
-            pcb->ch->ch_state |= _ISDISCONNECTED;
+        if ((tcb_cleanup(tcb) == 0) && pcb->ch) {
+            chnl_state_set(pcb->ch, _ISDISCONNECTED);
             chnl_cant_snd_rcv_more(pcb->ch, _CANTSENDMORE | _CANTRECVMORE);
-
-            if (is_set(pcb->ch->ch_state, _NOFDREF))
-                chnl_cleanup(pcb->ch);
         }
-
-        /* Can not allow the code at the end of the switch to be executed */
+        /* TCB pointer is now invalid so return */
         return;
 
     case TCPS_CLOSE_WAIT:
-        INC_TCP_STAT(close_count);
+        INC_TCP_STAT(TCPS_CLOSE_WAIT);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_CLOSE_WAIT]);
 
         /*
          * Do not clear the _ISCONNECTED flags as we still need to read all
-         * of the data off the socket first.
+         * of the data off the channel first.
          */
-        pcb->ch->ch_state |= _ISDISCONNECTING;
+        chnl_state_set(pcb->ch, _ISDISCONNECTING);
         chnl_cant_snd_rcv_more(pcb->ch, _CANTRECVMORE);
         break;
 
     case TCPS_LISTEN:
-        INC_TCP_STAT(failed_connects);
+        INC_TCP_STAT(TCPS_LISTEN);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_LISTEN]);
         break;
 
     case TCPS_FIN_WAIT_2:
+        INC_TCP_STAT(TCPS_FIN_WAIT_2);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_FIN_WAIT_2]);
         break;
 
     case TCPS_CLOSING:
+        INC_TCP_STAT(TCPS_CLOSING);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_CLOSED]);
         break;
 
     case TCPS_LAST_ACK:
-        INC_TCP_STAT(last_acks);
+        INC_TCP_STAT(TCPS_LAST_ACK);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_LAST_ACK]);
         break;
 
     case TCPS_SYN_RCVD:
-        INC_TCP_STAT(passive_connects);
+        INC_TCP_STAT(TCPS_SYN_RCVD);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_SYN_RCVD]);
 
         /* Start up the TIMER for SYN_RCVD state */
         tcb->timers[TCPT_KEEP] = TCP_KEEP_INIT_TV;
         break;
 
     case TCPS_ESTABLISHED:
-        /* Clear the connecting bit and set the connected bit */
-        pcb->ch->ch_state &= ~_ISCONNECTING;
-        pcb->ch->ch_state |= _ISCONNECTED;
+        INC_TCP_STAT(TCPS_ESTABLISHED);
 
-        ch_wwakeup(pcb->ch);
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_ESTABLISHED]);
+
+        /* Clear connecting state and set to connected */
+        chnl_state_set(pcb->ch, _ISCONNECTED);
 
         /* Add the new pcb to the listen TCB or parent */
         if (tcb->ppcb) {
-            struct chnl *ch        = tcb->ppcb->ch; /* Listen socket */
             struct tcb_entry *ptcb = tcb->ppcb->tcb;
 
             /*
@@ -1214,16 +1301,13 @@ tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
              * backlog. Ignored if not found, because we do not
              * care if the entry was not on the half open queue.
              */
-            int idx = vec_find_index(ptcb->half_open_q, pcb);
-            if (idx != -1)
-                vec_at_index(ptcb->half_open_q, idx) = NULL;
-
-            /* Abort the connection, if the backlog queue is full */
-            if (tcp_vec_qadd(&ptcb->backlog_q, pcb)) {
-                tcp_abort(pcb);
-                return;
+            if (tcp_q_remove(&ptcb->half_open_q, pcb) == 0) {
+                if (tcp_q_add(&ptcb->backlog_q, pcb)) {
+                    cnet_tcp_abort(pcb);
+                    CNE_ERR("Failed to enqueue PCB to backlog queue\n");
+                }
+                pcb->ch->ch_callback(CHNL_TCP_ACCEPT_TYPE, tcb->ppcb->ch->ch_cd);
             }
-            ch_rwakeup(ch);
         }
 
         tcb->idle              = 0;
@@ -1234,14 +1318,29 @@ tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
             tcb->snd_scale = tcb->req_send_scale;
             tcb->rcv_scale = tcb->req_recv_scale;
         }
-
         break;
 
     case TCPS_FIN_WAIT_1:
-        pcb->ch->ch_state |= _ISDISCONNECTING;
+        INC_TCP_STAT(TCPS_FIN_WAIT_1);
 
-    /* FALLTHRU */
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_FIN_WAIT_1]);
+
+        chnl_state_set(pcb->ch, _ISDISCONNECTING);
+        /*
+         * Do errno callback, remove timers, clear keepalive and set
+         * the TIME_WAIT timeout.
+         */
+        tcb_kill_timers(tcb);
+        tcb->timers[TCPT_2MSL] = 2 * TCP_MSL_TV;
+        break;
+
     case TCPS_TIME_WAIT:
+        INC_TCP_STAT(TCPS_TIME_WAIT);
+
+        CNE_DEBUG("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state,
+                  tcb_in_states[TCPS_TIME_WAIT]);
+
         /*
          * Do errno callback, remove timers, clear keepalive and set
          * the TIME_WAIT timeout.
@@ -1251,27 +1350,31 @@ tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
         break;
 
     default:
+        CNE_ERR("Changing from [orange]%s[] --> [orange]%s[]\n", curr_state, "Unknown");
         break;
     }
 
     tcb->state = new_state;
 }
 
-/**
+/*
  * Process the given segment <seg> by validating the segment is acceptability.
  */
 static bool
 tcp_do_segment(struct seg_entry *seg)
 {
     struct tcb_entry *tcb = seg->pcb->tcb;
-    int32_t test_case     = 0;
-    uint32_t lwin, lseq;
+    int32_t test_case     = 0, seglen;
+    seq_t lwin, lseq;
     uint8_t tflags;
     bool acceptable = false;
 
     /* Adjust the length base on SYN and/or FIN bits */
     tflags = seg->flags;
-    seg->seq += seg->len; /* seq must include SYN/FIN byte count */
+    seglen = seg->len;
+    seglen += ((tflags & SYN_FIN) == SYN_FIN) ? 2 : (tflags & SYN_FIN) ? 1 : 0;
+
+    CNE_DEBUG("seglen %d, RCV.WND %u\n", seglen, tcb->rcv_wnd);
 
     /* RFC793 p69 - SEGMENT ARRIVES - Otherwise
      *
@@ -1296,7 +1399,11 @@ tcp_do_segment(struct seg_entry *seg)
      * If the RCV.WND is zero, no segments will be acceptable, but
      * special allowance should be made to accept valid ACKs, URGs and
      * RSTs.
-     *
+     */
+    if (tcb->rcv_wnd == 0)
+        goto skip_test;
+
+    /*
      * If an incoming segment is not acceptable, an acknowledgment
      * should be sent in reply (unless the RST bit is set, if so drop
      * the segment and return):
@@ -1311,50 +1418,76 @@ tcp_do_segment(struct seg_entry *seg)
      * The test_case variable is used to determine which of the four
      * acceptability test to conduct. The state value uses two bits one for
      * Segment Length and the other is for Receive Window. Based in the
-     * seglen >0 we set bit 1 and if rcv_win >0 we set bit 0 to create a
+     * seglen >0 we set bit 1 and if RCV.WND >0 we set bit 0 to create a
      * value between 0-3 and then switch on the value to determine which test
      * to conduct.
      */
-    test_case = ((seg->len != 0) ? 2 : 0) | ((tcb->rcv_wnd > 0) ? 1 : 0);
+    test_case = ((seglen > 0) ? 2 : 0) | ((tcb->rcv_wnd > 0) ? 1 : 0);
+    CNE_DEBUG("Acceptability test case [orange]%d[]\n", test_case);
 
     /* Local values for (RCV.NXT + RCV.WND) and (SEG.SEQ + SEG.LEN - 1) */
     lwin = (tcb->rcv_nxt + tcb->rcv_wnd);
-    lseq = (seg->seq + seg->len - 1);
+    lseq = (seg->seq + seglen - 1);
 
     switch (test_case) {
-    /* seglen == 0, rcv_wnd == 0 */
+    /* seglen == 0, RCV.WND == 0 */
     case 0:
         acceptable = (seg->seq == tcb->rcv_nxt);
         break;
 
-    /* seglen == 0, rcv_wnd   >0 */
+    /* seglen == 0, RCV.WND   >0 */
     case 1:
         acceptable = (seqLEQ(tcb->rcv_nxt, seg->seq) && seqLT(seg->seq, lwin));
+        if (!acceptable) {
+            CNE_DEBUG("seqLEQ(tcb->rcv_nxt, seg->seq) [orange]%d[] && [orange]%d[] "
+                      "seqLT(seg->seq, lwin)\n",
+                      seqLEQ(tcb->rcv_nxt, seg->seq), seqLT(seg->seq, lwin));
+            CNE_DEBUG("  rcv_nxt: %u\n", tcb->rcv_nxt);
+            CNE_DEBUG("  seq    : %u\n", seg->seq);
+            CNE_DEBUG("  lwin   : %u\n", lwin);
+        }
         break;
 
-    /* seglen   >0, rcv_wnd == 0 */
+    /* seglen   >0, RCV.WND == 0 */
     case 2:
         acceptable = false;
         break;
 
-    /* seglen   >0, rcv_wnd   >0 */
+    /* seglen   >0, RCV.WND   >0 */
     case 3:
         acceptable = ((seqLEQ(tcb->rcv_nxt, seg->seq) && seqLT(seg->seq, lwin)) ||
                       (seqLEQ(tcb->rcv_nxt, lseq) && seqLT(lseq, lwin)));
+        if (!acceptable) {
+            CNE_DEBUG("  seqLEQ(tcb->rcv_nxt, seg->seq) [orange]%d[] && [orange]%d[] "
+                      "seqLT(seg->seq, lwin) ||\n",
+                      seqLEQ(tcb->rcv_nxt, seg->seq), seqLT(seg->seq, lwin));
+            CNE_DEBUG(
+                "      seqLEQ(tcb->rcv_nxt, lseq) [orange]%d[] && [orange]%d[] seqLT(lseq, lwin)\n",
+                seqLEQ(tcb->rcv_nxt, lseq), seqLT(lseq, lwin));
+            CNE_DEBUG("  rcv_nxt: %u\n", tcb->rcv_nxt);
+            CNE_DEBUG("  seq    : %u\n", seg->seq);
+            CNE_DEBUG("  lwin   : %u\n", lwin);
+            CNE_DEBUG("  lseq   : %u\n", lseq);
+        }
         break;
     }
+
+skip_test:
+    CNE_DEBUG("Segment is [orange]<%s acceptable>[]\n", acceptable ? "" : "Not");
 
     /*
      * If the RCV.WND is zero, no segments will be acceptable, but special
      * allowance should be make to accept valid ACKs, URGs and RSTs.
      */
-    if ((tcb->rcv_wnd == 0) && is_set(tflags, (TCP_ACK | TCP_URG | TCP_RST)))
+    if ((tcb->rcv_wnd == 0) && is_set(tflags, (TCP_ACK | TCP_URG | TCP_RST))) {
+        CNE_DEBUG("Allow ACK, URG or RST segments, force acceptable\n");
         acceptable = true;
+    }
 
     return acceptable;
 }
 
-/**
+/*
  * Process the option values and set the scaling factor for receives.
  */
 static inline void
@@ -1376,15 +1509,15 @@ tcp_do_process_options(struct tcb_entry *tcb, struct seg_entry *seg, struct chnl
 
         if (is_set(seg->sflags, SEG_MSS_PRESENT))
             tcp_set_MSS(tcb, seg->mss);
+
+        /* Need to look into supporting SACK_PERMIT support */
     }
 
     /* Compute proper scaling value from buffer space */
     cnet_tcp_chnl_scale_set(tcb, ch);
 }
 
-/********************** TCP State Machine Functions ***************************/
-
-/**
+/*
  * Process the TCP state machine for a passive open RFC793 pg 65-66.
  */
 static struct pcb_entry *
@@ -1399,12 +1532,13 @@ do_passive_open(struct seg_entry *seg)
 
     /* RFC793 p65-66, SYN set then check security, Not Done */
 
+    CNE_DEBUG("Passive Open checks\n");
     /*
      * If SYN is not set then exit, but if a text-bearing segment it will be
      * processed on return.
      */
     if (is_clr(seg->flags, TCP_SYN))
-        return NULL;
+        CNE_NULL_RET("SYN flag not set\n");
 
     /*
      * fourth other text or control  p66
@@ -1422,15 +1556,16 @@ do_passive_open(struct seg_entry *seg)
      * the format of the RST is <SEQ=SEG.ACK><CTL=RST>
      */
     if (is_set(seg->flags, TCP_ACK)) {
-        CNE_WARN("Segment has ACK bit set\n");
         tcp_drop_with_reset(seg->pcb->netif, seg, NULL);
-        return NULL;
+        CNE_NULL_RET("Segment has ACK bit set\n");
     }
 
     /* Clear the SYN bit to make sure it is not processed again in SYN_SENT */
     seg->flags &= ~TCP_SYN;
 
     tcb = ppcb->tcb; /* use tcb pointer for the next test */
+
+    md = cnet_mbuf_metadata(seg->mbuf);
 
     /*
      * Check the queue limit and see if we can continue, if not drop the SYN
@@ -1440,37 +1575,42 @@ do_passive_open(struct seg_entry *seg)
      * where  0 <= q_limit <= CNET_TCP_BACKLOG_COUNT as the
      * standard limit formula. For a backlog of 0 at least 1 is allowed.
      */
-    int qcnt = vec_len(tcb->half_open_q) + vec_len(tcb->backlog_q.vec);
+    int qcnt = tcb->half_open_q.cnt + tcb->backlog_q.cnt;
     if (qcnt > ((3 * tcb->qLimit) / 2))
-        return NULL;
+        CNE_NULL_RET("Half or backlog queue full\n");
 
-    /* Allocate a new PCB/TCB/Chnl for an unbound socket */
+    /* Allocate a new PCB/TCB/Chnl for an unbound channel */
     nch = __chnl_create(ppcb->ch->ch_proto->domain, ppcb->ch->ch_proto->type,
                         ppcb->ch->ch_proto->proto, ppcb);
     if (!nch) {
-        CNE_WARN("__chnl_create() failed, netif %p\n", tcb->netif);
         tcp_drop_with_reset(tcb->netif, seg, NULL);
-        return NULL;
+        CNE_NULL_RET("chnl create failed, netif %p\n", tcb->netif);
     }
 
+    nch->ch_pcb->netif = cnet_netif_from_index(seg->mbuf->lport);
+    if (!nch->ch_pcb->netif)
+        CNE_WARN("Unable to locate netif structure\n");
+    CNE_DEBUG("Netif @ [orange]%p[]\n", nch->ch_pcb->netif);
+
+    /* Add the pkt information to the new pcb */
+    in_caddr_copy(&nch->ch_pcb->key.faddr, &md->faddr);
+    in_caddr_copy(&nch->ch_pcb->key.laddr, &md->laddr);
+
     /* Retain part of the options */
-    nch->ch_options =
-        ppcb->ch->ch_options & (SO_DONTROUTE | SO_KEEPALIVE | SO_OOBINLINE | SO_LINGER);
-    nch->ch_linger = ppcb->ch->ch_linger;
+    nch->ch_options  = ppcb->ch->ch_options & ((1 << SO_DONTROUTE) | (1 << SO_KEEPALIVE));
+    nch->ch_callback = ppcb->ch->ch_callback;
 
     /*
      * Allocate a new PCB and TCB structure to hold the new connection
      * leaving the old PCB/TCB alone to be used for other listen connections.
      */
-    nch->ch_pcb->ch    = nch;
-    nch->ch_pcb->netif = ppcb->netif;
+    nch->ch_pcb->ch = nch;
 
     tcb = cnet_tcb_new(nch->ch_pcb);
     if (!tcb) {
-        CNE_WARN("TCB allocation failed\n");
         chnl_cleanup(nch);
         tcp_drop_with_reset(ppcb->tcb->netif, seg, NULL);
-        return NULL;
+        CNE_NULL_RET("TCB allocation failed\n");
     }
 
     tcp_do_process_options(tcb, seg, nch);
@@ -1478,17 +1618,12 @@ do_passive_open(struct seg_entry *seg)
     /* Setup this TCB as having a parent PCB */
     tcb->ppcb = ppcb;
 
-    vec_add(ppcb->tcb->half_open_q, tcb->pcb);
-
-    md = pktmbuf_metadata(seg->mbuf);
-
-    /* Add the pkt information to the new pcb */
-    in_caddr_copy(&nch->ch_pcb->key.faddr, &md->faddr);
-    in_caddr_copy(&nch->ch_pcb->key.laddr, &md->laddr);
+    if (tcp_q_add(&ppcb->tcb->half_open_q, tcb->pcb))
+        CNE_WARN("Unable to enqueue to half_open queue\n");
 
     /* Update and set the segment values */
-    tcb->rcv_nxt = seg->seq + 1;
     tcb->rcv_irs = seg->seq;
+    tcb->rcv_nxt = tcb->rcv_adv = tcb->rcv_irs + 1;
 
     /* The window value has not been scaled yet, because the SYN is set */
     tcb->snd_wnd = seg->wnd << tcb->snd_scale;
@@ -1498,13 +1633,14 @@ do_passive_open(struct seg_entry *seg)
 
     /* Tell the new TCB to send a SYN_ACK */
     tcb->tflags |= TCBF_ACK_NOW;
+    CNE_DEBUG("TCP [cyan]Passive Open[]\n");
 
-    INC_TCP_STAT(passive_connects);
+    INC_TCP_STAT(passive_open);
 
     return nch->ch_pcb;
 }
 
-/**
+/*
  * Drop the current TCP connection and use the <err_code> as the reason for
  * closing the connection.
  */
@@ -1512,7 +1648,7 @@ static inline void
 tcp_do_drop_connection(struct pcb_entry *pcb, int32_t err_code)
 {
     if (!TCPS_HAVE_RCVD_SYN(pcb->tcb->state))
-        INC_TCP_STAT(failed_connects);
+        INC_TCP_STAT(no_syn_rcvd);
 
     if (pcb->ch != NULL)
         pcb->ch->ch_error = err_code;
@@ -1520,7 +1656,7 @@ tcp_do_drop_connection(struct pcb_entry *pcb, int32_t err_code)
     tcp_do_state_change(pcb, TCPS_CLOSED);
 }
 
-/**
+/*
  * Cleanup a TCB and free all values in the TCB that need freeing. The pcb
  * is removed from the parent half open or backlog queues. If this is a parent
  * to other pcbs then close them too.
@@ -1528,72 +1664,64 @@ tcp_do_drop_connection(struct pcb_entry *pcb, int32_t err_code)
 static int
 tcb_cleanup(struct tcb_entry *tcb)
 {
-    struct pcb_entry *p;
+    struct pcb_entry *p, *tp;
 
-    if (tcb->state == TCPS_FREE)
-        return TCP_INPUT_NEXT_PKT_DROP;
-
-    /* Mark the pcb as closed, to make sure a connection is not created */
-    if ((p = tcb->pcb) != NULL) {
-        tcb->pcb  = NULL;
-        p->tcb    = NULL;
-        p->closed = 1;
-    }
-
-    if (tcb->state == TCPS_CLOSED)
+    if (!tcb || tcb->state == TCPS_FREE || tcb->state == TCPS_CLOSED)
         return TCP_INPUT_NEXT_PKT_DROP;
 
     tcb->state = TCPS_CLOSED;
 
     tcb_kill_timers(tcb); /* Stop all of the timers */
 
-    /* Check the listening PCB or parent */
-    if (tcb->ppcb && tcb->ppcb->tcb) {
-        struct tcb_entry *t = tcb->ppcb->tcb;
-        int idx;
+    /* Mark the pcb as closed, to make sure a connection is not created */
+    if ((p = tcb->pcb) != NULL) {
+        tcb->pcb  = NULL;
+        p->tcb    = NULL;
+        p->closed = 1;
+        chnl_cleanup(p->ch);
 
-        /* TCB may be on the parents backlog or half open queue */
-        idx = vec_find_index(t->backlog_q.vec, p);
-        if (idx != -1) {
-            vec_at_index(t->backlog_q.vec, idx) = NULL;
-            cnet_pcb_free(p);
-        }
+        /* Check the listening PCB or parent */
+        if (tcb->ppcb && tcb->ppcb->tcb) {
+            struct tcb_entry *t = tcb->ppcb->tcb;
 
-        idx = vec_find_index(t->half_open_q, p);
-        if (idx != -1) {
-            vec_at_index(t->half_open_q, idx) = NULL;
-            cnet_pcb_free(p);
+            /* TCB may be on the parents backlog or half open queue */
+            if (t && tcp_q_remove(&t->backlog_q, p) == 0)
+                cnet_pcb_free(p);
+            else if (t && tcp_q_remove(&t->half_open_q, p) == 0)
+                cnet_pcb_free(p);
         }
     }
 
     /* Remove connections from the backlog queue */
-    vec_foreach_ptr (p, tcb->backlog_q.vec) {
-        tcp_do_state_change(p, TCPS_CLOSED);
-        cnet_pcb_free(p);
+    TAILQ_FOREACH_SAFE (p, &tcb->backlog_q.head, next, tp) {
+        if (tcp_q_remove(&tcb->backlog_q, p) == 0) {
+            tcp_do_state_change(p, TCPS_CLOSED);
+            cnet_pcb_free(p);
+        }
     }
-    vec_set_len(tcb->backlog_q.vec, 0);
 
     /* Drop any half open connections */
-    vec_foreach_ptr (p, tcb->half_open_q) {
-        tcp_do_state_change(p, TCPS_CLOSED);
-        cnet_pcb_free(p);
+    TAILQ_FOREACH_SAFE (p, &tcb->half_open_q.head, next, tp) {
+        if (tcp_q_remove(&tcb->half_open_q, p) == 0) {
+            tcp_do_state_change(p, TCPS_CLOSED);
+            cnet_pcb_free(p);
+        }
     }
-    vec_set_len(tcb->half_open_q, 0);
 
-    CNE_DEBUG("Half Open queue is clean\n");
+    CNE_DEBUG("Half Open queue is clean, reassemble %p, %d\n", tcb->reassemble,
+              vec_len(tcb->reassemble));
 
     pktmbuf_free_bulk(tcb->reassemble, vec_len(tcb->reassemble));
 
     /* TCB should be disconnected and ready to be freed */
     vec_free(tcb->reassemble);
-    vec_free(tcb->backlog_q.vec);
-    vec_free(tcb->half_open_q);
+
     tcb_free(tcb);
 
     return 0;
 }
 
-/**
+/*
  * Handle the listen and if a passive open from a listen state, then call the
  * passive open routine.
  */
@@ -1637,16 +1765,14 @@ do_segment_listen(struct seg_entry *seg)
     if (is_set(seg->flags, TCP_ACK)) {
         struct tcb_entry *tcb = seg->pcb->tcb;
 
-        if (tcb && tcb->netif)
+        if (tcb && tcb->netif) {
+            CNE_DEBUG("Second check for an ACK\n");
             tcp_drop_with_reset(tcb->netif, seg, NULL);
+        }
         return TCP_INPUT_NEXT_PKT_DROP;
     }
 
-    if (is_clr(seg->flags, TCP_SYN)) {
-        CNE_WARN("SYN is NOT set, drop\n");
-        return TCP_INPUT_NEXT_PKT_DROP;
-    }
-
+    CNE_DEBUG("\n");
     /*
      * third check for a SYN p65-p66 (Not handled)
      *
@@ -1676,7 +1802,7 @@ do_segment_listen(struct seg_entry *seg)
      *   incoming control or data (combined with SYN) will be processed
      *   in the SYN-RECEIVED state, but processing of SYN and ACK should
      *   not be repeated.  If the listen was not fully specified (i.e.,
-     *   the foreign socket was not fully specified), then the
+     *   the foreign channel was not fully specified), then the
      *   unspecified fields should be filled in now.
      */
 
@@ -1684,6 +1810,7 @@ do_segment_listen(struct seg_entry *seg)
     if (is_set(seg->pcb->tcb->tflags, TCBF_PASSIVE_OPEN)) {
         struct pcb_entry *pcb;
 
+        CNE_DEBUG("Do [orange]Passive Open[]\n");
         if ((pcb = do_passive_open(seg)) == NULL) {
             CNE_WARN("Passive Open failed, Stop Processing\n");
             return TCP_INPUT_NEXT_PKT_DROP;
@@ -1692,10 +1819,11 @@ do_segment_listen(struct seg_entry *seg)
         /* New PCB for segment as the previous was in the listen state */
         seg->pcb = pcb;
     }
-    return TCP_INPUT_NEXT_CHECK_OUTPUT;
+    CNE_DEBUG("Exit with check output and drop\n");
+    return TCP_CHECK_OUTPUT_AND_DROP;
 }
 
-/**
+/*
  * Handle the TCP reassemble queue for the given packet <seg->p_pkt>.
  */
 static uint8_t
@@ -1717,9 +1845,6 @@ tcp_reassemble(struct seg_entry *seg)
 
     tip->tcp.sent_seq = seg->seq; /* Already in host order */
     tip->ip.len       = seg->len; /* Already in host order */
-
-    /* Move the read pointer to the start of TCP data */
-    pktmbuf_adj_offset(mbuf, seg->offset);
 
     /* Find the segment after this one. */
     p = NULL;
@@ -1813,9 +1938,11 @@ handoff:
 #endif
 }
 
-static inline void
+static inline int
 _process_data(struct seg_entry *seg, struct tcb_entry *tcb __cne_unused)
 {
+    int rc = TCP_INPUT_NEXT_PKT_DROP;
+
     /* RFC2581: pg 8
      * 4.2 Generating Acknowledgments
      *
@@ -1838,49 +1965,56 @@ _process_data(struct seg_entry *seg, struct tcb_entry *tcb __cne_unused)
      * frequently than every second full-sized segment.
      */
     if (seg->mbuf) {
-        /* Move the read pointer to the start of TCP data */
-        pktmbuf_adj_offset(seg->mbuf, seg->offset);
+        int len = pktmbuf_data_len(seg->mbuf);
 
-        CNE_INFO("Update rcv_nxt %u + %d\n", tcb->rcv_nxt, pktmbuf_data_len(seg->mbuf));
-        /* Update the rcv_nxt with the number of bytes consumed */
-        tcb->rcv_nxt += pktmbuf_data_len(seg->mbuf);
+        if (len) {
+            /* Update the rcv_nxt with the number of bytes consumed */
+            tcb->rcv_nxt += len;
 
-        seg->mbuf = NULL; /* Consumed the packet */
+            /* chnl_recv will enqueue the mbufs to the receive queue */
+
+            seg->mbuf = NULL; /* Consumed the packet */
+            rc        = TCP_INPUT_NEXT_CHNL_RECV;
+        }
     }
+    return rc;
 }
 
-/**
+/*
  * Process the segment data from the received packet and attach to the TCB.
  */
-static void
+static int
 do_process_data(struct seg_entry *seg)
 {
     struct tcb_entry *tcb = seg->pcb->tcb;
+    int rc                = TCP_INPUT_NEXT_PKT_DROP;
 
     if (!seg->len)
-        return;
+        return rc;
 
     /* Does the segment contain data if so then ack the data, if required */
     if ((seg->seq == tcb->rcv_nxt) && vec_len(tcb->reassemble) == 0 &&
         (tcb->state == TCPS_ESTABLISHED)) {
 
-        _process_data(seg, tcb);
+        rc = _process_data(seg, tcb);
 
         if (is_clr(tcb->tflags, TCBF_DELAYED_ACK))
             tcb->tflags |= TCBF_DELAYED_ACK;
         else {
             tcb->tflags |= TCBF_ACK_NOW;
-            tcp_output(tcb);
+            cnet_tcp_output(tcb);
         }
     } else {
+        /* TODO: set return value for the reassembled segment */
         seg->flags = tcp_reassemble(seg);
 
         tcb->tflags |= TCBF_ACK_NOW;
-        tcp_output(tcb);
+        cnet_tcp_output(tcb);
     }
+    return rc;
 }
 
-/**
+/*
  * Handle the Active open or Syn Sent state in TCP to attempt a complete
  * connection.
  */
@@ -1899,7 +2033,9 @@ do_segment_syn_sent(struct seg_entry *seg)
          * The snd_max equals snd_nxt unless we are doing a retransmit.
          */
         if (seqLEQ(seg->ack, tcb->snd_iss) || seqGT(seg->ack, tcb->snd_max)) {
-            INC_TCP_STAT(failed_connects);
+            INC_TCP_STAT(invalid_ack);
+
+            CNE_DEBUG("Invalid ACK, SEG.ACK =< SEG.ISS or SEG.ACK > SND.NXT send a reset\n");
 
             /* <SEQ=SEG.ACK><CTL=RST>*/
             tcp_drop_with_reset(tcb->netif, seg, NULL);
@@ -1917,7 +2053,7 @@ do_segment_syn_sent(struct seg_entry *seg)
 
     /* Second check the RST bit */
     if (is_set(seg->flags, TCP_RST)) {
-        INC_TCP_STAT(connect_resets);
+        INC_TCP_STAT(tcp_rst);
 
         /*
          * If the ACK was acceptable then signal the user "connection reset"
@@ -1981,8 +2117,6 @@ do_segment_syn_sent(struct seg_entry *seg)
 
         /* If SND.UNA > ISS change state to Established */
         if (seqGT(tcb->snd_una, tcb->snd_iss)) {
-            INC_TCP_STAT(connect_established);
-
             tcp_do_state_change(seg->pcb, TCPS_ESTABLISHED);
 
             tcb->snd_wnd = seg->wnd << tcb->snd_scale;
@@ -1995,14 +2129,13 @@ do_segment_syn_sent(struct seg_entry *seg)
         /* Force an ACK to be sent */
         seg->pcb->tcb->tflags |= TCBF_ACK_NOW;
 
-        do_process_data(seg);
-        return TCP_INPUT_NEXT_CHNL_RECV;
+        return do_process_data(seg);
     }
 
     return TCP_INPUT_NEXT_PKT_DROP;
 }
 
-/**
+/*
  * TCP retransmit timer update and calculation code with comments from RFC6299.
  */
 static int
@@ -2101,7 +2234,7 @@ tcp_calculate_RTT(struct tcb_entry *tcb, int16_t rtt)
     return 0;
 }
 
-/**
+/*
  * Update the congestion window value in the TCB structure. When cwnd < then
  * ssthresh then we are in slow start. If greater then or equal to ssthresh
  * then we are in congestion avoidance.
@@ -2135,7 +2268,7 @@ tcp_update_cwnd(struct tcb_entry *tcb)
     tcb->snd_cwnd = CNE_MIN((int)(cwnd + incr), TCP_MAXWIN << tcb->snd_scale);
 }
 
-/**
+/*
  * Update the segment information values in the TCB structure.
  */
 static void
@@ -2159,10 +2292,10 @@ tcb_segment_update(struct seg_entry *seg, struct tcb_entry *tcb)
         tcb->max_sndwnd = tcb->snd_wnd;
 
     /* Force output to update window */
-    tcb->tflags |= TCBF_NEED_OUTPUT;
+    tcb->tflags |= TCBF_FORCE_TX;
 }
 
-/**
+/*
  * Handle the Syn Received state of the given segment or TCB.
  */
 static int
@@ -2170,7 +2303,7 @@ do_segment_others(struct seg_entry *seg)
 {
     struct tcb_entry *tcb = seg->pcb->tcb;
     struct chnl *ch       = seg->pcb->ch;
-    int32_t trim;
+    int32_t trim, rc = TCP_INPUT_NEXT_PKT_DROP;
     bool acceptable;
 
     /* RFC793 - p70
@@ -2196,10 +2329,8 @@ do_segment_others(struct seg_entry *seg)
      * After sending the acknowledgment, drop the unacceptable segment and
      * return.
      */
-    if (acceptable == false) {
-        CNE_WARN("Segment not acceptable\n");
+    if (acceptable == false)
         return tcp_drop_after_ack(seg);
-    }
 
     /*
      * In the following it is assumed that the segment is the idealized
@@ -2219,10 +2350,8 @@ do_segment_others(struct seg_entry *seg)
      * In the tcp_do_segment() routine we accept packets with ACK, URG or RST
      * when the window is closed.
      */
-    if (trim > 0) {
-        CNE_WARN("Seq before window\n");
-        goto drop;
-    }
+    if (trim > 0)
+        CNE_ERR_GOTO(drop, "Seq before window\n");
 
     trim += seg->len;
 
@@ -2292,10 +2421,11 @@ do_segment_others(struct seg_entry *seg)
      *   If the RST bit is set then, enter the CLOSED state, delete the
      *   TCB, and return.
      */
+    CNE_DEBUG("Check [orange]RST[] flag\n");
     if (is_set(seg->flags, TCP_RST)) {
-        CNE_WARN("RST is set ( %s)\n", tcp_print_flags(seg->flags));
+        CNE_DEBUG("RST is set ( %s)\n", tcp_print_flags(seg->flags));
 
-        INC_TCP_STAT(connect_resets);
+        INC_TCP_STAT(tcp_rst);
 
         /* Handle moving a connection back to the Listen state, if passive */
         if (is_set(tcb->tflags, TCBF_PASSIVE_OPEN)) {
@@ -2303,10 +2433,9 @@ do_segment_others(struct seg_entry *seg)
              * SYN_RCVD state remove from half open queue of the parent, if
              * started from a passive open.
              */
-            if (tcb->ppcb && tcb->ppcb->tcb && tcb->ppcb->tcb->half_open_q) {
-                uint32_t idx = vec_find_index(tcb->ppcb->tcb->half_open_q, seg->pcb);
-
-                vec_at_index(tcb->ppcb->tcb->half_open_q, idx) = NULL;
+            if (tcb->ppcb && tcb->ppcb->tcb) {
+                if (tcp_q_remove(&tcb->ppcb->tcb->half_open_q, seg->pcb))
+                    CNE_WARN("PCB not found on half open queue\n");
             }
 
             tcp_do_state_change(seg->pcb, TCPS_LISTEN);
@@ -2332,6 +2461,7 @@ do_segment_others(struct seg_entry *seg)
      * - the received timestamp in the segment ts_val is less then the
      *   previously received timestamp from this peer.
      */
+    CNE_DEBUG("Check [orange]RFC 1323 PAWS[]\n");
     if ((seg->ts_val > 0) && (tcb->ts_recent > 0) && tstampLT(seg->ts_val, tcb->ts_recent)) {
         /* Check if the ts_recent is 24 days old */
         if ((stk_get_timer_ticks() - tcb->ts_recent_age) > TCP_PAWS_IDLE)
@@ -2341,7 +2471,7 @@ do_segment_others(struct seg_entry *seg)
              */
             seg->ts_val = 0;
         else {
-            CNE_WARN("TimeStamp failed\n");
+            CNE_ERR("TimeStamp failed\n");
             return tcp_drop_after_ack(seg);
         }
     }
@@ -2360,6 +2490,7 @@ do_segment_others(struct seg_entry *seg)
      * and an ack would have been sent in the first step (sequence
      * number check).
      */
+    CNE_DEBUG("Check RFC 793 [orange]SYN[] bit\n");
     if (is_set(seg->flags, TCP_SYN)) {
         /* RFC1122 - p94
          *
@@ -2368,25 +2499,26 @@ do_segment_others(struct seg_entry *seg)
          *     return this connection to the LISTEN state and return.
          *     Otherwise...".
          */
-        if ((tcb->state == TCPS_SYN_RCVD) && is_set(tcb->tflags, TCBF_PASSIVE_OPEN)) {
+        if ((tcb->state == TCPS_SYN_RCVD) && is_set(tcb->tflags, TCBF_PASSIVE_OPEN))
             tcp_do_state_change(seg->pcb, TCPS_LISTEN);
-            CNE_WARN("Moved to LISTEN\n");
-        } else {
+        else {
+            CNE_DEBUG(
+                "Changing state to [orange]Closed[], [orange]not SYN_RCVD and PASSIVE_OPEN[]\n");
             tcp_drop_with_reset(tcb->netif, seg, seg->pcb);
             tcp_do_state_change(seg->pcb, TCPS_CLOSED);
-            CNE_WARN("Moved to CLOSED\n");
         }
 
         return TCP_INPUT_NEXT_PKT_DROP;
     }
 
-    /* RFC73 - p72
+    /* RFC793 - p72
      *
      * Fifth, check the ACK bit
      *
      * if the ACK bit is off drop the segment and return
      *   If the ACK bit is set ...
      */
+    CNE_DEBUG("Check RFC 793 [orange]ACK[] bit\n");
     if (is_clr(seg->flags, TCP_ACK)) {
         CNE_WARN("ACK is NOT set Stop Processing\n");
         return TCP_INPUT_NEXT_PKT_DROP;
@@ -2412,8 +2544,9 @@ do_segment_others(struct seg_entry *seg)
              *     <SEQ=SEG.ACK><CTL=RST>
              * and send it.
              */
+            CNE_DEBUG("If the segment acknowledgment is not acceptable,form a reset segment with "
+                      "<SEQ=SEG.ACK><CTL=RST>\n");
             tcp_drop_with_reset(tcb->netif, seg, seg->pcb);
-            CNE_WARN("SYN_RCVD\n");
             return TCP_INPUT_NEXT_PKT_DROP;
         } else
             tcp_do_state_change(seg->pcb, TCPS_ESTABLISHED);
@@ -2501,32 +2634,28 @@ do_segment_others(struct seg_entry *seg)
 
                     if (win < 2)
                         win = 2;
-                    /* Equation (3): ssthresh = max (FlightSize / 2,
-                      2*SMSS) */
+                    /* Equation (3): ssthresh = max (FlightSize / 2, 2*SMSS) */
                     tcb->snd_ssthresh       = win * tcb->max_mss;
                     tcb->timers[TCPT_REXMT] = 0;
                     tcb->rtt                = 0;
                     tcb->snd_nxt            = seg->ack;
                     tcb->snd_cwnd           = tcb->max_mss;
 
-                    tcp_output(tcb);
+                    cnet_tcp_output(tcb);
                     /*
-                     * 2. Retransmit the lost segment and set cwnd to
-                     *ssthresh
+                     * 2. Retransmit the lost segment and set cwnd to ssthresh
                      *    plus 3*SMSS. This artificially "inflates" the
-                     *    congestion window by the number of segments
-                     *(three)
+                     *    congestion window by the number of segments (three)
                      *    that have left the network and which the receiver
                      *    has buffered.
                      */
-                    CNE_WARN("Hit dupacks threshold, Set need output and Fast rexmt\n");
+                    CNE_WARN("Hit dupacks threshold %d\n", tcb->dupacks);
                     tcb->snd_cwnd = tcb->snd_ssthresh + (TCP_RETRANSMIT_THRESHOLD * tcb->max_mss);
                     if (seqGT(onxt, tcb->snd_nxt))
                         tcb->snd_nxt = onxt;
                 }
                 /* RFC2581: pg 7
-                 * 3. For each additional duplicate ACK received, increment
-                 *cwnd
+                 * 3. For each additional duplicate ACK received, increment cwnd
                  *    by SMSS. This artificially inflates the congestion window
                  *    in order to reflect the additional segment that has left
                  *    the network.
@@ -2534,7 +2663,7 @@ do_segment_others(struct seg_entry *seg)
                 else if (tcb->dupacks > TCP_RETRANSMIT_THRESHOLD) {
                     CNE_WARN("Retransmit Threshold hit %d\n", tcb->dupacks);
                     tcb->snd_cwnd += tcb->max_mss;
-                    tcp_output(tcb);
+                    cnet_tcp_output(tcb);
                     return TCP_INPUT_NEXT_PKT_DROP;
                 }
             } else {
@@ -2571,7 +2700,7 @@ do_segment_others(struct seg_entry *seg)
          *    third duplicate ACK, if none of these were lost.
          */
         if (tcb->dupacks > 0) {
-            CNE_WARN("Dup ACKs %d\n", tcb->dupacks);
+            CNE_DEBUG("Dup ACKs %d\n", tcb->dupacks);
 
             if (tcb->dupacks >= TCP_RETRANSMIT_THRESHOLD)
                 tcb->snd_cwnd = tcb->snd_ssthresh;
@@ -2598,8 +2727,10 @@ do_segment_others(struct seg_entry *seg)
          */
     case TCPS_LAST_ACK:
         if (is_set(tcb->tflags, TCBF_OUR_FIN_ACKED)) {
+            if (tcb->pcb && tcb->pcb->ch)
+                tcb->pcb->ch->ch_callback(CHNL_TCP_CLOSE_TYPE, tcb->pcb->ch->ch_cd);
+
             tcp_do_state_change(seg->pcb, TCPS_CLOSED);
-            CNE_WARN("After FIN acked\n");
             return TCP_INPUT_NEXT_PKT_DROP;
         }
 
@@ -2614,13 +2745,13 @@ do_segment_others(struct seg_entry *seg)
 
         /* When FIN is not set then we drop the segment */
         if (is_clr(seg->flags, TCP_FIN)) {
-            CNE_NOTICE("FIN set in TIME_WAIT\n");
+            CNE_DEBUG("FIN set in TIME_WAIT\n");
             return TCP_INPUT_NEXT_PKT_DROP;
         }
 
         /* Retransmission of FIN bit then ACK it. */
         tcp_do_state_change(seg->pcb, TCPS_TIME_WAIT);
-        CNE_WARN("After move to TIME_WAIT\n");
+        CNE_DEBUG("After move to TIME_WAIT\n");
         return tcp_drop_after_ack(seg);
     }
 
@@ -2663,8 +2794,9 @@ do_segment_others(struct seg_entry *seg)
     tcp_update_cwnd(tcb);
 
     /* Sixth, check the URG bit */
+    CNE_DEBUG("Check RFC 793 [orange]URG[] bit\n");
     if (is_set(seg->flags, TCP_URG)) {
-        CNE_WARN("URG is set\n");
+        CNE_DEBUG("URG is set\n");
 
         switch (tcb->state) {
             /*
@@ -2714,13 +2846,14 @@ do_segment_others(struct seg_entry *seg)
      * user it must also acknowledge the receipt of the data.
      *
      */
+    CNE_DEBUG("Check TCB State ([orange]%s[])\n", tcb_in_states[tcb->state]);
     if (TCPS_HAVE_RCVD_FIN(tcb->state) == 0)
-        do_process_data(seg);
+        rc = do_process_data(seg);
 
     /*
      * Once the TCP takes responsibility for the data it advances
      * RCV.NXT over the data accepted, and adjusts RCV.WND as
-     * apporopriate to the current buffer availability. The total of
+     * appropriate to the current buffer availability. The total of
      * RCV.NXT and RCV.WND should not be reduced.
      *
      * Please note the window management suggestions in section 3.7.
@@ -2733,13 +2866,14 @@ do_segment_others(struct seg_entry *seg)
 
     /* Eight, check the FIN bit */
     if (is_set(seg->flags, TCP_FIN)) {
+        CNE_DEBUG("Found [orange]FIN[] bit\n");
         /*
          * Do not process the FIN if the state is CLOSED, LISTEN or SYN-SENT
          * since the SEG.SEQ cannot be validated; drop the segment and
          * return.
          */
         if (tcb->state < TCPS_SYN_RCVD) {
-            CNE_WARN("state < SYN_RCVD, Stop\n");
+            CNE_WARN("state [orange]%s[] < SYN_RCVD, Stop\n", tcb_in_states[tcb->state]);
             return TCP_INPUT_NEXT_PKT_DROP;
         }
 
@@ -2750,11 +2884,12 @@ do_segment_others(struct seg_entry *seg)
          * FIN implies PUSH for any segment text not yet delivered to the
          * user.
          */
-        if (TCPS_HAVE_RCVD_FIN(tcb->state)) {
-            tcb->rcv_nxt++;
+        tcb->rcv_nxt++;
 
+        if (TCPS_HAVE_RCVD_FIN(tcb->state)) {
             /* Send ACK for the FIN */
             tcb->tflags |= TCBF_ACK_NOW;
+            CNE_DEBUG("Send [orange]ACK[] for [orange]FIN[]\n");
         }
 
         switch (tcb->state) {
@@ -2763,7 +2898,10 @@ do_segment_others(struct seg_entry *seg)
          */
         /* case TCPS_SYN_RCVD: Not required, but listed in RFC 793*/
         case TCPS_ESTABLISHED:
+            CNE_DEBUG("[orange]FIN[] bit set in [orange]Established[] state\n");
             tcp_do_state_change(tcb->pcb, TCPS_CLOSE_WAIT);
+            tcp_do_response(tcb->netif, tcb->pcb, NULL, tcb->snd_nxt, tcb->rcv_nxt, TCP_ACK);
+            tcp_do_state_change(tcb->pcb, TCPS_LAST_ACK);
             break;
 
         /*
@@ -2772,6 +2910,7 @@ do_segment_others(struct seg_entry *seg)
          * timers; otherwise enter the CLOSING state.
          */
         case TCPS_FIN_WAIT_1:
+            CNE_DEBUG("FIN bit set in [orange]FIN Wait 1[]\n");
             /* Handle the simultaneous closing condition */
             tcp_do_state_change(tcb->pcb, (tcb->snd_nxt == seg->ack)
                                               ?
@@ -2785,76 +2924,68 @@ do_segment_others(struct seg_entry *seg)
          * off the other timers.
          */
         case TCPS_FIN_WAIT_2:
+            CNE_DEBUG("FIN bit set in [orange]FIN Wait 2[]\n");
             tcp_do_state_change(tcb->pcb, TCPS_TIME_WAIT);
             tcb->timers[TCPT_2MSL] = 2 * TCP_MSL_TV;
             break;
-
-        /* FALLTHRU */
 
         /*
          * Remain in the TIME-WAIT state. Restart the 2 MSL time-wait
          * timeout.
          */
         case TCPS_TIME_WAIT:
+            CNE_DEBUG("FIN bit set in [orange]Time Wait[]\n");
             tcb->timers[TCPT_2MSL] = 2 * TCP_MSL_TV;
             break;
 
         /*
          * Remain in the current state for the following.
-         *
-         * TCPS_CLOSE_WAIT:
-         * TCPS_CLOSING:
-         * TCPS_LAST_ACK:
-         * TCPS_CLOSED:
-         * TCPS_SYN_SENT:
-         * TCPS_LISTEN:
          */
+        case TCPS_CLOSE_WAIT:
+        case TCPS_CLOSING:
+        case TCPS_LAST_ACK:
+        case TCPS_CLOSED:
+        case TCPS_SYN_SENT:
+        case TCPS_LISTEN:
+            break;
         default:
+            CNE_WARN("Default case TCP State [orange]%s[]\n", tcb_in_states[tcb->state]);
             break;
         }
+        CNE_DEBUG("Done checking [orange]FIN[] bit\n");
     }
 
-    return 0;
+    return rc;
 }
 
-/**
- * Do the delivery of a segmemt and call the correct handler for the given state.
+/*
+ * Do the delivery of a segment and call the correct handler for the given state.
  */
 static inline int
 do_segment_arrives(struct seg_entry *seg)
 {
     struct tcb_entry *tcb = seg->pcb->tcb;
     int32_t win;
-    int rc;
 
     /*
      * Calculate amount of space in receive window, and then do TCP input
      * processing. Receive window is amount of space in rcv queue,
      * but not less than advertised window.
      */
-    win          = cb_space(&seg->pcb->ch->ch_rcv);
+    win = cb_space(&seg->pcb->ch->ch_rcv);
+    CNE_DEBUG("window size [cyan]%d[]\n", win);
     tcb->rcv_wnd = CNE_MAX(win, (int32_t)(tcb->rcv_adv - tcb->rcv_nxt));
 
-    switch (seg->pcb->tcb->state) {
-    /* Handle passive open data.        p65-p66 */
-    case TCPS_LISTEN:
-        rc = do_segment_listen(seg);
-        break;
+    if (tcb->state == TCPS_LISTEN) /* Handle passive open data. p65-p66 */
+        return do_segment_listen(seg);
+    else if (tcb->state == TCPS_SYN_SENT) /* Handle active open data. p66-p68 */
+        return do_segment_syn_sent(seg);
 
-    /* Handle active open data/         p66-p68 */
-    case TCPS_SYN_SENT:
-        rc = do_segment_syn_sent(seg);
-        break;
-
-    /* Otherwise.                       p69-p76 */
-    default:
-        rc = do_segment_others(seg);
-        break;
-    }
-    return rc;
+    /* Otherwise. p69-p76 */
+    return do_segment_others(seg);
 }
 
-/**
+/*
  * Update the acked data and remove all of the acked data from the
  * retransmit queue.
  */
@@ -2876,7 +3007,7 @@ tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb)
     ch = seg->pcb->ch;
 
     if (!ch) { /* possible passive open, no channel assigned */
-        CNE_NOTICE("Possible passive open segment\n");
+        CNE_DEBUG("Possible passive open segment\n");
         return;
     }
 
@@ -2897,8 +3028,7 @@ tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb)
 
     /* wakeup the writers if we have space >= low water mark */
     if (cb_space(&ch->ch_snd) >= ch->ch_snd.cb_lowat) {
-        /* Allow the users to put more data in send buffer */
-        ch_wwakeup(ch);
+        /* TODO: Allow the users to put more data in send buffer */
     }
 
     /* Update the send unacked variable to the current acked value */
@@ -2906,7 +3036,7 @@ tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb)
 
     /* When snd_nxt becomes less than snd_una, update snd_nxt. */
     if (seqLT(tcb->snd_nxt, tcb->snd_una)) {
-        CNE_WARN("Update snd_nxt to snd_una\n");
+        CNE_DEBUG("Update snd_nxt to snd_una\n");
         tcb->snd_nxt = tcb->snd_una;
     }
 
@@ -2925,7 +3055,7 @@ tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb)
              * specification, but if we don't get a FIN
              * we'll hang forever.
              */
-            ch->ch_state |= _ISDISCONNECTED;
+            chnl_state_set(ch, _ISDISCONNECTED);
             tcp_do_state_change(seg->pcb, TCPS_FIN_WAIT_2);
         }
 
@@ -2941,6 +3071,9 @@ tcp_update_acked_data(struct seg_entry *seg, struct tcb_entry *tcb)
         if (is_set(tcb->tflags, TCBF_OUR_FIN_ACKED))
             tcp_do_state_change(seg->pcb, TCPS_TIME_WAIT);
 
+        break;
+
+    default:
         break;
     }
 }
@@ -2990,12 +3123,13 @@ tcp_header_prediction(struct seg_entry *seg, struct tcb_entry *tcb)
                 tcb->timers[TCPT_REXMT] = tcb->rxtcur;
 
             /* Allow the users to put more data in send buffer */
-            if (cb_space(&ch->ch_snd) >= ch->ch_snd.cb_lowat)
-                ch_wwakeup(ch);
+            if (cb_space(&ch->ch_snd) >= ch->ch_snd.cb_lowat) {
+                /* TODO: implement support for enabling write to add more data */
+            }
 
             /* When we have more data to send then call output routine */
             if (ch->ch_snd.cb_cc > 0)
-                tcp_do_output(tcb);
+                cnet_tcp_output(tcb);
 
             return TCP_INPUT_NEXT_PKT_DROP;
         }
@@ -3007,19 +3141,20 @@ tcp_header_prediction(struct seg_entry *seg, struct tcb_entry *tcb)
      */
     else if ((seg->ack == tcb->snd_una) && vec_len(tcb->reassemble) == 0 &&
              (seg->len <= cb_space(&ch->ch_rcv))) {
+        int rc = TCP_INPUT_NEXT_PKT_DROP;
 
         INC_TCP_STAT(data_predicted);
 
-        _process_data(seg, tcb);
+        rc = _process_data(seg, tcb);
 
         if (is_clr(tcb->tflags, TCBF_DELAYED_ACK))
             tcb->tflags |= TCBF_DELAYED_ACK;
         else {
             tcb->tflags |= TCBF_ACK_NOW;
-            tcp_output(tcb);
+            cnet_tcp_output(tcb);
         }
 
-        return TCP_INPUT_NEXT_PKT_DROP;
+        return rc;
     }
     return TCP_INPUT_NEXT_PKT_DROP;
 }
@@ -3042,7 +3177,7 @@ tcp_strip_ip_options(pktmbuf_t *mbuf)
     memcpy(&ip[1], (char *)&ip[1] - opt_len, pktmbuf_data_len(mbuf) - mbuf->l3_len);
 }
 
-/**
+/*
  * Process the incoming packet bytes using page 65 of RFC793. The routine is
  * called from the lower layers to process all TCP type packets.
  */
@@ -3051,51 +3186,61 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
 {
     struct cne_ipv4_hdr *ip;
     struct cne_tcp_hdr *tcp;
-    uint8_t *opts = NULL;
-    int rc        = TCP_INPUT_NEXT_PKT_DROP;
-    struct seg_entry *seg;
+    uint8_t *opts         = NULL;
+    int rc                = TCP_INPUT_NEXT_PKT_DROP;
+    struct seg_entry *seg = NULL;
     uint16_t tlen;
-    struct tcb_entry *tcb;
-    struct cnet_metadata *md;
+    struct tcb_entry *tcb      = NULL;
     uint8_t tcp_syn_fin_cnt[4] = {0, 1, 1, 2};
 
     if (!(this_cnet->flags & CNET_TCP_ENABLED))
-        return rc;
+        CNE_ERR_GOTO(free_seg, "TCP is not enabled\n");
 
-    INC_TCP_STAT(rcvtotal);
+    INC_TCP_STAT(rx_total);
 
-    if (mempool_get(this_stk->seg_objs, (void **)&seg) != 0)
-        return rc;
+    CNE_DEBUG("[yellow]>>> [magenta]Process TCP input[]\n");
+
+    if (!pcb)
+        goto free_seg;
+
+    /* Grab a new seg structure */
+    if ((seg = alloc_seg()) == NULL)
+        goto free_seg;
 
     seg->mbuf = mbuf;
+    seg->pcb  = pcb;
 
-    /* packet offset has been adjusted to tcp header in tcp input node */
-    tcp = pktmbuf_mtod(mbuf, struct cne_tcp_hdr *);
+    /* Grab the IP and TCP header pointers */
+    ip = pktmbuf_mtod(mbuf, struct cne_ipv4_hdr *);
 
-    /* Grab the IP header pointer */
-    ip = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, -mbuf->l3_len);
+    /* packet offset has been adjusted to tcp header in tcp input graph node */
+    tcp = pktmbuf_adjust(mbuf, struct cne_tcp_hdr *, mbuf->l3_len);
+    if (!tcp)
+        CNE_ERR_GOTO(free_seg, "tcp pointer is invalid\n");
+
+    TCP_DUMP(tcp);
 
     /* remove IP options if found */
     tcp_strip_ip_options(mbuf);
 
     /* Verify the packet has enough space in the packet. */
     if (pktmbuf_data_len(mbuf) < sizeof(struct cne_tcp_hdr)) {
-        INC_TCP_STAT(rcvshort);
-        CNE_WARN("Packet too short %d\n", pktmbuf_data_len(mbuf));
-        goto free_seg;
+        INC_TCP_STAT(rx_short);
+        CNE_ERR_GOTO(free_seg, "Packet too short %d\n", pktmbuf_data_len(mbuf));
     }
 
     /* Total length of IP payload plus IP header and options */
     tlen = be16toh(ip->total_length);
 
-    /* Calculate the TCP offset value in bytes. */
+    /* Calculate the TCP header + options value in bytes. */
     seg->offset = (tcp->data_off & 0xF0) >> 2;
+
+    pktmbuf_adj_offset(mbuf, seg->offset); /* Skip L4 Header */
 
     /* Verify the TCP data and header offset is valid */
     if ((seg->offset < sizeof(struct cne_tcp_hdr)) || (seg->offset > tlen)) {
-        INC_TCP_STAT(rcvbadoff);
-        CNE_WARN("packet too short for TCP offset %d, tlen %d\n", seg->offset, tlen);
-        goto free_seg;
+        INC_TCP_STAT(rx_badoff);
+        CNE_ERR_GOTO(free_seg, "packet invalid for TCP offset %d, tlen %d\n", seg->offset, tlen);
     }
 
     /* Build the Current Segment information structure. */
@@ -3107,10 +3252,6 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     seg->flags = tcp->tcp_flags & TCP_MASK;
     seg->iplen = tlen;
     seg->ip    = (void *)ip;
-
-    tcp_flags_dump("Received flags", seg->flags);
-
-    CNE_INFO("Packet received seq %u, ack %u\n", seg->ack, seg->ack);
 
     tlen -= (seg->offset + mbuf->l3_len); /* Real TCP length */
     seg->len = tlen + tcp_syn_fin_cnt[seg->flags & SYN_FIN];
@@ -3125,11 +3266,8 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
      * Segment Arrives - Starting p65-p76 - RFC793
      */
 
-    /* Locate the PCB/TCB for this segment, if not found drop with RST */
-    seg->pcb = mbuf->userptr;
-
     /* If TCB is closed send RST.      p65     */
-    if (!seg->pcb || !(tcb = seg->pcb->tcb)) {
+    if ((tcb = seg->pcb->tcb) == NULL) {
         /*
          * If the state is CLOSED (i.e., TCB does not exist) then
          *
@@ -3148,16 +3286,15 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
          *
          * Return.
          */
-        CNE_WARN("PCB is not found or TCB is Closed\n");
-
+        CNE_WARN("[orange]PCB or TCB is NULL[]\n");
         tcp_drop_with_reset(pcb->netif, seg, seg->pcb);
 
         /* Drop the PCB pointer from the segment, maybe NULL already */
         seg->pcb = NULL;
-        goto free_seg;
+        CNE_ERR_GOTO(free_seg, "[orange]PCB is not found[]\n");
     }
     if (tcb->state == TCPS_CLOSED)
-        goto free_seg;
+        CNE_ERR_GOTO(free_seg, "[orange]TCB is Closed[]\n");
 
     /* Process the packet for the given TCP state */
     tcb->idle              = 0;
@@ -3169,20 +3306,9 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
 
     /* Do the option handling now, before we do anything like passive open */
     if (opts) {
-        if (tcp_do_options(seg, opts)) {
-            CNE_WARN("tcp_do_options() failed\n");
-            goto free_seg;
-        }
-    }
-
-    if (!seg->pcb->ch->ch_ch && (tcb->state == TCPS_ESTABLISHED)) {
-        struct pcb_entry *p;
-
-        /* find a local sister channel if available */
-        p = cnet_pcb_locate(&this_stk->tcp->tcp_hd, &md->laddr, &md->faddr);
-        /* Cross link the channels */
-        if (p)
-            seg->pcb->ch->ch_ch = p->ch;
+        if (tcp_do_options(seg, opts))
+            CNE_ERR_GOTO(free_seg, "tcp_do_options() failed\n");
+        CNE_DEBUG("Flags: [orange]%s[]\n", tcb_print_flags(seg->pcb->tcb->tflags));
     }
 
 #ifdef ENABLE_HEADER_PREDICTION
@@ -3191,8 +3317,8 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
      *
      * This code follows the code in TCP/IP Illustrated Volume II by Stevens.
      *
-     * Make sure we are in the established state and we only have any ACK
-     * present in the tcp flags. Also the next seq what we expect along
+     * Make sure we are in the established state and we only have an ACK
+     * present in the tcp flags. Also with the next seq what we expect along
      * with window we expect.
      */
     if ((tcb->state == TCPS_ESTABLISHED) && ((seg->flags & HDR_PREDIC) == TCP_ACK) &&
@@ -3200,38 +3326,45 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
         (seg->seq == tcb->rcv_nxt) && (seg->wnd && (seg->wnd == tcb->snd_wnd)) &&
         (tcb->snd_nxt == tcb->snd_max)) {
         if (tcp_header_prediction(seg, tcb)) {
+            CNE_DEBUG("Header prediction [orange]Good[]\n");
             rc = TCP_INPUT_NEXT_CHNL_RECV;
             goto free_seg;
         }
     }
 #endif
 
-    pktmbuf_adj_offset(mbuf, mbuf->l4_len);
-
     /* Process the segment information and handle the TCP protocol */
     rc = do_segment_arrives(seg);
+    CNE_DEBUG("segment has arrived returned [cyan]%d[]\n    ( [orange]%s[])\n", rc,
+              tcb_print_flags(tcb->tflags));
 
     /*
      * After segment processing, do we need to send a packet?
      * Must update the tcb as the pcb pointer may have changed
      */
-    if (rc == TCP_INPUT_NEXT_CHECK_OUTPUT) {
+    if (rc == TCP_CHECK_OUTPUT_AND_DROP) {
         /* Get new TCB if passive open */
         tcb = seg->pcb->tcb;
+        CNE_DEBUG("Check output and drop\n     TCB flags ( [orange]%s[])\n",
+                  tcb_print_flags(tcb->tflags));
 
         /* old Listen PCB maybe replaced with new pcb */
-        if (is_set(tcb->tflags, (TCBF_NEED_OUTPUT | TCBF_ACK_NOW)) || seg->pcb->ch->ch_snd.cb_cc)
-            tcp_do_output(tcb);
-        rc = TCP_INPUT_NEXT_CHNL_RECV;
+        if (is_set(tcb->tflags, TCBF_ACK_NOW) || seg->pcb->ch->ch_snd.cb_cc)
+            cnet_tcp_output(tcb);
+
+        rc = TCP_INPUT_NEXT_PKT_DROP;
     }
 
+    if (seg->pcb && seg->pcb->tcb && seg->pcb->tcb->state != TCPS_SYN_RCVD)
+        cnet_tcp_output(seg->pcb->tcb);
+
 free_seg:
-    if (seg)
-        mempool_put(this_stk->seg_objs, seg);
+    free_seg(seg);
+    CNE_DEBUG("Leave\n\n");
     return rc;
 }
 
-/**
+/*
  * Process the fast timeout for TCP, which processes a fast retransmit.
  */
 static inline void
@@ -3249,12 +3382,12 @@ tcp_fast_retransmit_timo(stk_t *stk)
         if (t && is_set(t->tflags, TCBF_NEED_FAST_REXMT)) {
             t->total_retrans++;
             t->tflags &= ~TCBF_NEED_FAST_REXMT;
-            tcp_do_output(t);
+            cnet_tcp_output(t);
         }
     }
 }
 
-/**
+/*
  * Process the fast timeout for TCP, which is used for delayed ACKs.
  */
 static inline void
@@ -3264,10 +3397,8 @@ tcp_fast_timo(void *arg)
     struct pcb_hd *hd = &stk->tcp->tcp_hd;
     struct pcb_entry *p;
 
-    if (!hd) {
-        CNE_WARN("tcp_hd is NULL\n");
-        return;
-    }
+    if (!hd)
+        CNE_RET("tcp_hd is NULL\n");
 
     /* TCP fast timer to process Delayed ACKs. */
     vec_foreach_ptr (p, hd->vec) {
@@ -3277,15 +3408,15 @@ tcp_fast_timo(void *arg)
             t->tflags &= ~TCBF_DELAYED_ACK;
             t->tflags |= TCBF_ACK_NOW;
 
-            INC_TCP_STAT(delayed_ACK);
+            INC_TCP_STAT(delayed_ack);
 
             /* ACK flag is cleared in tcp output */
-            tcp_do_output(t);
+            cnet_tcp_output(t);
         }
     }
 }
 
-/**
+/*
  * Process the TCP timers for the slow timeouts or the state machine for
  * the timers and TCP.
  */
@@ -3316,7 +3447,7 @@ tcp_process_timer(struct pcb_entry *p, int32_t tmr)
         else {
             /* Cleared in tcp send segment */
             p->tcb->tflags |= TCBF_FORCE_TX;
-            tcp_do_output(t);
+            cnet_tcp_output(t);
 
             tcp_set_persist(t);
         }
@@ -3324,27 +3455,19 @@ tcp_process_timer(struct pcb_entry *p, int32_t tmr)
         break;
 
     case TCPT_KEEP:
-        if (t->state < TCPS_ESTABLISHED)
+        if (t->state < TCPS_ESTABLISHED) {
+            CNE_DEBUG("TCB state %s < TCPS_ESTABLISHED\n", tcb_in_states[t->state]);
             goto dropit;
+        }
 
         if (is_set(p->opt_flag, SO_KEEPALIVE) && (t->state <= TCPS_CLOSE_WAIT)) {
-            pktmbuf_t *mbuf;
-
-            if (t->idle >= (stk->tcp->keep_idle + stk->tcp->max_idle))
+            if (t->idle >= (stk->tcp->keep_idle + stk->tcp->max_idle)) {
+                CNE_DEBUG("Idle %d < %d\n", t->idle, stk->tcp->keep_idle + stk->tcp->max_idle);
                 goto dropit;
+            }
 
-            /* Used for Keepalive probe */
-            mbuf = pktmbuf_alloc(NULL);
-
-            if (!mbuf)
-                break;
-
-            mbuf->userptr = p;
-
-            /* Point to tcp struct */
-            pktmbuf_adj_offset(mbuf, sizeof(struct cne_ipv4_hdr));
-
-            tcp_do_response(t->netif, p, mbuf, t->snd_nxt - 1, t->rcv_nxt - 1, TCP_ACK);
+            CNE_DEBUG("[orange]Keepalive!![]\n");
+            tcp_do_response(t->netif, p, NULL, t->snd_nxt - 1, t->rcv_nxt - 1, TCP_ACK);
 
             t->timers[tmr] = stk->tcp->keep_intvl;
         } else
@@ -3365,7 +3488,7 @@ tcp_process_timer(struct pcb_entry *p, int32_t tmr)
             break;
         }
 
-        INC_TCP_STAT(segments_rexmit);
+        INC_TCP_STAT(tcp_rexmit);
 
         rexmt = tcpRexmtVal(t) * ((t->state == TCPS_SYN_SENT) ? tcp_syn_backoff[t->rxtshift]
                                                               : tcp_backoff[t->rxtshift]);
@@ -3388,9 +3511,9 @@ tcp_process_timer(struct pcb_entry *p, int32_t tmr)
         t->snd_ssthresh = win * t->max_mss;
         t->dupacks      = 0;
 
-        /* Set the ACK now bit to force a retranmit. */
+        /* Set the ACK now bit to force a retransmit. */
         t->tflags |= TCBF_ACK_NOW;
-        tcp_do_output(p->tcb);
+        cnet_tcp_output(p->tcb);
         break;
 
     default:
@@ -3400,7 +3523,7 @@ tcp_process_timer(struct pcb_entry *p, int32_t tmr)
     return state;
 }
 
-/**
+/*
  * Process the slow timeouts for the TCP state machine.
  */
 static inline void
@@ -3419,7 +3542,7 @@ tcp_slow_timo(stk_t *stk)
         if (!t)
             continue;
 
-        if (t->state == TCPS_CLOSED)
+        if (t->state == TCPS_CLOSED || t->state == TCPS_LISTEN)
             continue;
 
         for (j = 0; j < TCP_NTIMERS; j++) {
@@ -3439,13 +3562,13 @@ tcp_slow_timo(stk_t *stk)
     stk->tcp_now++;
 }
 
-/**
+/*
  * Timeout every XXms to be able to have a fast and slow timer of 200ms/500ms.
  */
-void
-__tcp_process_timers(void)
+static void
+_process_timers(struct cne_timer *tim __cne_unused, void *arg)
 {
-    stk_t *stk = this_stk;
+    stk_t *stk = arg;
 
     if (!(stk->ticks % (TCP_REXMT_TIMEOUT_MS / MS_PER_TICK)))
         tcp_fast_retransmit_timo(stk);
@@ -3457,7 +3580,7 @@ __tcp_process_timers(void)
         tcp_slow_timo(stk);
 }
 
-/**
+/*
  * Add the MSS option and other options for the send packet.
  */
 static int32_t
@@ -3473,6 +3596,9 @@ tcp_send_options(struct tcb_entry *tcb, uint8_t *opts, uint8_t flags_n)
          */
         tcb->snd_nxt = tcb->snd_iss;
 
+        CNE_DEBUG("[cyan]SYN[] is set\n    TCB flags ( [orange]%s[])\n",
+                  tcb_print_flags(tcb->tflags));
+
         /* Add the MSS to the options */
         *p++   = TCP_OPT_MSS;
         *p++   = TCP_OPT_MSS_LEN;
@@ -3483,7 +3609,7 @@ tcp_send_options(struct tcb_entry *tcb, uint8_t *opts, uint8_t flags_n)
         /*
          * Add the Window scaling option if:
          *     requesting a scaling and got a window scaling option from peer or
-         *     reguesting a scaling and this is the first SYN.
+         *     requesting a scaling and this is the first SYN.
          * The SYN bit must be set and we need to
          * test the ACK bit to be off for the initial SYN.
          */
@@ -3497,6 +3623,9 @@ tcp_send_options(struct tcb_entry *tcb, uint8_t *opts, uint8_t flags_n)
         }
     }
 
+    CNE_DEBUG("tcb state [orange]%s[]\n", tcb_print_flags(tcb->tflags));
+    CNE_DEBUG("TCP flags [orange]%s[]\n", tcp_print_flags(flags_n));
+
     if (is_set(tcb->tflags, TCBF_REQ_TSTAMP) && is_clr(flags_n, TCP_RST) &&
         (((flags_n & SYN_ACK) == TCP_SYN) || is_set(tcb->tflags, TCBF_RCVD_TSTAMP))) {
         uint32_t tcp_now = stk_get_timer_ticks();
@@ -3507,12 +3636,13 @@ tcp_send_options(struct tcb_entry *tcb, uint8_t *opts, uint8_t flags_n)
         *lp++ = htobe32(tcp_now);
         *lp++ = htobe32(tcb->ts_recent);
         optlen += 12;
-    }
+    } else
+        CNE_DEBUG("TCP options not added\n");
 
     return optlen; /* Length of options */
 }
 
-/**
+/*
  * Abort a TCP connection by sending a RST bit in a TCP header, with the given
  * PCB information. If the <pcb> and pcb->tcb are null return without any error.
  *
@@ -3523,7 +3653,7 @@ tcp_send_options(struct tcb_entry *tcb, uint8_t *opts, uint8_t flags_n)
  * allocation routine, which should never happen.
  */
 void
-tcp_abort(struct pcb_entry *pcb)
+cnet_tcp_abort(struct pcb_entry *pcb)
 {
     struct tcb_entry *tcb;
 
@@ -3557,22 +3687,17 @@ tcp_abort(struct pcb_entry *pcb)
      */
     if (((tcb->state >= TCPS_SYN_RCVD) && (tcb->state <= TCPS_FIN_WAIT_1)) ||
         (tcb->state == TCPS_FIN_WAIT_2)) {
-        pktmbuf_t *mbuf;
 
-        /* Wait for a packet buffer, if one is not available */
-        if (pktdev_buf_alloc(pcb->netif->lpid, &mbuf, 1) != 1) {
-            pktmbuf_adj_offset(mbuf, sizeof(struct cne_ipv4_hdr));
+        CNE_DEBUG("[orange]Abort[]\n");
+        tcp_do_response(tcb->netif, pcb, NULL, tcb->snd_nxt, tcb->rcv_nxt, TCP_RST);
 
-            tcp_do_response(tcb->netif, pcb, mbuf, tcb->snd_nxt, tcb->rcv_nxt, TCP_RST);
-
-            INC_TCP_STAT(resets_sent);
-        }
+        INC_TCP_STAT(resets_sent);
     }
 
     tcp_do_state_change(pcb, TCPS_CLOSED);
 }
 
-/**
+/*
  * Do a TCP connect startup/open or start the three way handshake in TCP.
  */
 int
@@ -3586,7 +3711,7 @@ cnet_tcp_connect(struct pcb_entry *pcb)
     if (tcb->state >= TCPS_SYN_SENT)
         return -1;
 
-    pcb->ch->ch_state |= _ISCONNECTING;
+    chnl_state_set(pcb->ch, _ISCONNECTING);
 
     tcb->state             = TCPS_SYN_SENT;
     tcb->timers[TCPT_KEEP] = TCP_KEEP_INIT_TV;
@@ -3594,14 +3719,22 @@ cnet_tcp_connect(struct pcb_entry *pcb)
     /* Set the new send ISS value. */
     tcp_send_seq_set(tcb, 7);
 
-    INC_TCP_STAT(active_connects);
+    INC_TCP_STAT(tcp_connect);
 
     tcb->tflags |= TCBF_ACK_NOW;
 
-    return tcp_output(tcb);
+    cnet_tcp_output(tcb);
+
+    if (pcb->ch->ch_error) {
+        int err = pcb->ch->ch_error;
+
+        pcb->ch->ch_error = 0;
+        return err;
+    }
+    return 0;
 }
 
-/**
+/*
  * Close the TCP connect pointed to by the given <pcb> pointer. The pcb pointer
  * must be valid when calling the routine. The routine will return false when
  * the connect has already been closed, the TCB was in the listen state or
@@ -3612,13 +3745,13 @@ cnet_tcp_connect(struct pcb_entry *pcb)
  * RETURNS: true if the connection is closing or false if already closed.
  */
 int
-tcp_close(struct pcb_entry *pcb)
+cnet_tcp_close(struct pcb_entry *pcb)
 {
     /* The pcb->tcb must be valid or return false */
-    if (pcb->tcb == NULL)
+    if (!pcb || !pcb->tcb)
         return false;
 
-    if (pcb->tcb->state == TCPS_CLOSED)
+    if (pcb->tcb->state == TCPS_CLOSED || pcb->tcb->state == TCPS_FREE)
         return false;
 
     switch (pcb->tcb->state) {
@@ -3631,9 +3764,9 @@ tcp_close(struct pcb_entry *pcb)
         tcp_do_state_change(pcb, TCPS_LAST_ACK);
         break;
 
-    default:            /* FALLTHRU */
     case TCPS_SYN_SENT: /* FALLTHRU */
-    case TCPS_LISTEN:
+    case TCPS_LISTEN:   /* FALLTHRU */
+    default:
         tcp_do_state_change(pcb, TCPS_CLOSED);
         return false;
     }
@@ -3644,19 +3777,6 @@ tcp_close(struct pcb_entry *pcb)
 }
 
 void
-cnet_tcp_dump(const char *msg, struct cne_tcp_hdr *tcp)
-{
-    cne_printf(">>>> TCP Header (%s) <<<<\n", (msg) ? msg : "");
-    cne_printf("  TCP_Flags ( %s)\n", tcp_print_flags(tcp->tcp_flags & TCP_MASK));
-    cne_printf("  Src Port : %d  Dst Port: %d ", be16toh(tcp->src_port), be16toh(tcp->dst_port));
-    cne_printf("Seq %u, Ack %u\n", be32toh(tcp->sent_seq), be32toh(tcp->recv_ack));
-    cne_printf("  HLEN %d (%d bytes) ", (tcp->data_off >> 4), (tcp->data_off >> 2));
-    cne_printf("RX Win %u, cksum %04x, URP %u\n", be16toh(tcp->rx_win), be16toh(tcp->cksum),
-               be16toh(tcp->tcp_urp));
-    cne_printf("<<<<<\n");
-}
-
-void
 cnet_tcb_list(stk_t *stk, struct tcb_entry *tcb)
 {
     struct tcb_entry *t;
@@ -3664,12 +3784,17 @@ cnet_tcb_list(stk_t *stk, struct tcb_entry *tcb)
     if (!stk)
         stk = this_stk;
 
-    cne_printf("[yellow]TCB Information [skyblue]%s[]\n", stk->name);
-    TAILQ_FOREACH (t, &stk->tcbs, entry) {
-        if (tcb && (tcb != t))
+    cne_printf("[yellow]%s: [skyblue]TCB Information[]\n", stk->name);
+    for (int i = 0; i < CNET_NUM_TCBS; i++) {
+        if (bit_test(stk->tcbs, i) == 0)
             continue;
-        cne_printf("TCB %p\n", t);
-        cne_printf("   State: <%s>\n", tcb_in_states[t->state]);
+
+        t = mempool_obj_at_index(stk->tcb_objs, i);
+        if (!t || (tcb && (tcb != t)))
+            continue;
+
+        cne_printf("[orange]TCB[] @ %p\n", t);
+        cne_printf("   State: <[orange]%s[]>\n", tcb_in_states[t->state]);
         cne_printf(
             "   Snd: UNA %u nxt %u urp %u iss %u wl1 %u wl2 %u up %u\n   max %u wnd %u sst %u "
             "cwnd %u sndwnd %u\n",
@@ -3677,22 +3802,40 @@ cnet_tcb_list(stk_t *stk, struct tcb_entry *tcb)
             t->snd_max, t->snd_wnd, t->snd_ssthresh, t->snd_cwnd, t->max_sndwnd);
         cne_printf("   Rcv: wnd %u nxt %u urp %u irs %u adv %u bsize %u sst %u\n", t->rcv_wnd,
                    t->rcv_nxt, t->rcv_urp, t->rcv_irs, t->rcv_adv, t->rcv_bsize, t->rcv_ssthresh);
-        cne_printf("   Flags: %s\n", tcb_print_flags(t->tflags));
+        cne_printf("   Flags: [orange]%s[]\n", tcb_print_flags(t->tflags));
     }
 }
 
-/**
+void
+cnet_tcb_dump(void)
+{
+    stk_t *stk;
+    struct cnet *cnet = this_cnet;
+
+    vec_foreach_ptr (stk, cnet->stks)
+        cnet_tcb_list(stk, NULL);
+}
+
+/*
  * Main entry point to initialize the TCP protocol.
  */
-int
+static int
 tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
 {
-    stk_t *stk             = this_stk;
-    struct mempool_cfg cfg = {0};
-    struct protosw_entry *psw;
+    stk_t *stk                = this_stk;
+    struct mempool_cfg cfg    = {0};
+    struct protosw_entry *psw = NULL;
+
+    stk->tcp_stats = calloc(1, sizeof(tcp_stats_t));
+    if (!stk->tcp_stats)
+        goto err_exit;
 
     stk->tcp = calloc(1, sizeof(struct tcp_entry));
     if (stk->tcp == NULL)
+        goto err_exit;
+
+    stk->tcbs = bit_alloc(CNET_NUM_TCBS);
+    if (!stk->tcbs)
         goto err_exit;
 
     cfg.objcnt    = n_tcb_entries;
@@ -3718,9 +3861,9 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
 
     stk->tcp->tcp_hd.vec = vec_alloc(stk->tcp->tcp_hd.vec, TCP_VEC_PCB_COUNT);
     CNE_ASSERT(stk->tcp->tcp_hd.vec != NULL);
-    stk->tcp->tcp_hd.lport = _IPPORT_RESERVED;
+    stk->tcp->tcp_hd.local_port = _IPPORT_RESERVED;
 
-    cfg.objcnt    = TCP_SEGMENT_COUNT;
+    cfg.objcnt    = CNET_NUM_TCBS;
     cfg.objsz     = sizeof(struct seg_entry);
     cfg.cache_sz  = 64;
     stk->seg_objs = mempool_create(&cfg);
@@ -3728,23 +3871,35 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
         goto err_exit;
 
     psw = cnet_protosw_add("TCP", AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    CNE_ASSERT(psw != NULL);
+    if (!psw)
+        goto err_exit;
 
     cnet_ipproto_set(IPPROTO_TCP, psw);
+
+    cne_timer_init(&stk->tcp_timer);
+
+    if (cne_timer_reset(&stk->tcp_timer, (cne_get_timer_hz() / 1000) * 10, PERIODICAL, cne_id(),
+                        _process_timers, (void *)stk) < 0)
+        CNE_ERR_GOTO(cleanup, "Unable to start TCP timer for instance %s\n", stk->name);
 
     return 0;
 
 err_exit:
-    if (stk->tcp == NULL)
+    if (!stk->tcp_stats)
+        CNE_ERR("Allocation failed for TCP stats structure\n");
+    else if (!stk->tcp)
         CNE_ERR("Allocation failed for TCP structure\n");
-    else if (stk->tcb_objs == NULL)
+    else if (!stk->tcbs)
+        CNE_ERR("Allocation failed for TCB structures\n");
+    else if (!stk->tcb_objs)
         CNE_ERR("TCB allocation failed for %d tcb_entries of %'ld bytes\n", n_tcb_entries,
                 sizeof(struct tcb_entry));
-    else if (stk->seg_objs == NULL)
-        CNE_ERR("Segment allocation failed for %d tcb_entries of %'ld bytes\n", TCP_SEGMENT_COUNT,
+    else if (!stk->seg_objs)
+        CNE_ERR("Segment allocation failed for %d tcb_entries of %'ld bytes\n", CNET_NUM_TCBS,
                 sizeof(struct seg_entry));
-    else
-        CNE_ERR("TCP proto input set failed or Timer registation\n");
+    else if (!psw)
+        CNE_ERR("TCP proto input set failed or Timer registration\n");
+cleanup:
     (void)tcp_destroy(stk);
     return -1;
 }
@@ -3760,9 +3915,15 @@ tcp_destroy(void *_stk __cne_unused)
 {
     stk_t *stk = _stk;
 
+    free(stk->tcp_stats);
+    free(stk->tcp);
+    free(stk->tcbs);
+
     mempool_destroy(stk->tcb_objs);
     mempool_destroy(stk->seg_objs);
-    free(stk->tcp);
+
+    if (cne_timer_stop(&stk->tcp_timer) < 0)
+        CNE_ERR("Unable to stop TCP timer for instance %s\n", stk->name);
 
     return 0;
 }

@@ -161,6 +161,10 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
         if (!strcasecmp("main", obj.thd->thread_type)) { /* Main thread */
             pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t),
                                    &obj.thd->group->lcore_bitmap);
+        } else if (!strcasecmp("timer", obj.thd->thread_type)) {
+            if (thread_create(obj.thd->name, thread_timer_func, obj.thd) < 0)
+                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                            obj.thd->thread_type);
         } else if (!strcasecmp("graph", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, thread_func, obj.thd) < 0)
                 CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
@@ -180,6 +184,10 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
     return 0;
 }
 
+/* Long options start at 256 to distinguish from short options */
+#define OPT_NO_COLOR     "no-color"
+#define OPT_NO_COLOR_NUM 256
+
 static void
 print_usage(char *prog_name)
 {
@@ -189,13 +197,15 @@ print_usage(char *prog_name)
                "  -s <cmd-file>  File containing cli commands for setup\n"
                "  -C             Wait on unix domain socket for JSON or JSON-C file\n"
                "  -d             More debug stats are displayed\n"
+               "  -b <burst>     Burst size. If not present default burst size %d max %d.\n"
                "  -D             JCFG debug decoding\n"
                "  -V             JCFG information verbose\n"
                "  -P             JCFG debug parsing\n"
                "  -U             Disable UDP checksum (default enabled)\n"
                "  -L [level]     Enable a logging level\n"
-               "  -h             Display the help information\n",
-               prog_name);
+               "  -h             Display the help information\n"
+               "  --%-12s Disable color output\n",
+               prog_name, BURST_SIZE, MAX_BURST_SIZE, OPT_NO_COLOR);
 }
 
 int
@@ -203,6 +213,7 @@ parse_args(int argc, char **argv)
 {
     // clang-format off
     struct option lgopts[] = {
+        {OPT_NO_COLOR, no_argument, NULL, OPT_NO_COLOR_NUM},
         {NULL, 0, 0, 0}
     };
     // clang-format on
@@ -212,9 +223,11 @@ parse_args(int argc, char **argv)
 
     cinfo->flags = FWD_ENABLE_UDP_CKSUM;
 
+    cinfo->burst = BURST_SIZE;
+
     /* Parse the input arguments. */
     for (;;) {
-        opt = getopt_long(argc, argv, "hc:s:dCDPVUuL:", lgopts, &option_index);
+        opt = getopt_long(argc, argv, "hb:c:s:dCDPVUL:", lgopts, &option_index);
         if (opt == EOF)
             break;
 
@@ -222,6 +235,12 @@ parse_args(int argc, char **argv)
         case 'h':
             print_usage(argv[0]);
             return -1;
+
+        case 'b':
+            cinfo->burst = atoi(optarg);
+            if (cinfo->burst <= 0 || cinfo->burst > MAX_BURST_SIZE)
+                cinfo->burst = BURST_SIZE;
+            break;
 
         case 'c':
             strlcpy(json_file, optarg, sizeof(json_file));
@@ -265,12 +284,19 @@ parse_args(int argc, char **argv)
             }
             break;
 
+        case OPT_NO_COLOR_NUM:
+            tty_disable_color();
+            break;
+
         default:
             CNE_ERR("Invalid command option\n");
             print_usage(argv[0]);
             return -1;
         }
     }
+
+    if (optind < argc)
+        cinfo->test = get_app_mode(argv[optind]);
 
     cinfo->jinfo = jcfg_parser(flags, (const char *)json_file);
     if (cinfo->jinfo == NULL)
@@ -288,6 +314,11 @@ parse_args(int argc, char **argv)
 
     if (!cinfo->opts.no_metrics && enable_metrics())
         CNE_ERR_RET("Failed to start metrics support\n");
+
+    if (cinfo->test == UNKNOWN_TEST) {
+        cinfo->test = DROP_TEST;
+        CNE_INFO("*** Mode type was not set in json file or command line, use drop mode ***\n");
+    }
 
     return 0;
 }

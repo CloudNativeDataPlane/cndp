@@ -35,26 +35,21 @@ struct stk_s;
  *
  * The following functions are called as indicated below.
  */
-typedef int (*channel_func_t)(struct chnl *ch, int domain, int type, int proto);
-typedef int (*channel2_func_t)(struct chnl *ch1, struct chnl *ch2);
 typedef int (*close_func_t)(struct chnl *ch);
 typedef int (*send_func_t)(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs);
 typedef int (*recv_func_t)(struct chnl *ch, pktmbuf_t **mbufs, int nb_mbufs);
 typedef int (*bind_func_t)(struct chnl *ch, struct in_caddr *pAddr, int len);
 typedef int (*connect_func_t)(struct chnl *ch, struct in_caddr *to, int slen);
-typedef int (*connect2_func_t)(struct chnl *ch1, struct chnl *ch2);
 typedef int (*shutdown_func_t)(struct chnl *ch, int how);
-typedef struct chnl *(*accept_func_t)(struct chnl *ch, struct in_caddr *addr, int *addrlen);
+typedef int (*accept_func_t)(struct chnl *ch, struct in_caddr *addr, int *addrlen);
 typedef int (*listen_func_t)(struct chnl *ch, int backlog);
 
 struct proto_funcs {
-    channel_func_t channel_func;   /**< Channel init routine */
-    channel2_func_t channel2_func; /**< Channel2 init routine */
     close_func_t close_func;       /**< close routine */
+    recv_func_t recv_func;         /**< receive routine */
     send_func_t send_func;         /**< send routine */
     bind_func_t bind_func;         /**< bind routine */
     connect_func_t connect_func;   /**< connect routine */
-    connect2_func_t connect2_func; /**< connect2 func */
     shutdown_func_t shutdown_func; /**< shutdown routine*/
     accept_func_t accept_func;     /**< accept routine */
     listen_func_t listen_func;     /**< listen routine */
