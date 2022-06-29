@@ -15,6 +15,7 @@ import "C"
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 )
 
@@ -24,12 +25,15 @@ type MsgChannel struct {
 }
 
 var msgChannel map[string]*MsgChannel
+var msgChanMu sync.Mutex
 
 func init() {
 	msgChannel = make(map[string]*MsgChannel)
 }
 
 func NewMsgChannel(name string, sz uint) (*MsgChannel, error) {
+	msgChanMu.Lock()
+	defer msgChanMu.Unlock()
 
 	mc := &MsgChannel{name: name}
 
@@ -46,6 +50,8 @@ func NewMsgChannel(name string, sz uint) (*MsgChannel, error) {
 }
 
 func (mc *MsgChannel) Close() error {
+	msgChanMu.Lock()
+	defer msgChanMu.Unlock()
 
 	if mc == nil {
 		return fmt.Errorf("MsgChannel is nil")
@@ -82,6 +88,8 @@ func (mc *MsgChannel) Recv(objs []uintptr, timo uint64) int {
 }
 
 func (mc *MsgChannel) Lookup(name string) *MsgChannel {
+	msgChanMu.Lock()
+	defer msgChanMu.Unlock()
 
 	if m, ok := msgChannel[name]; ok {
 		return m
