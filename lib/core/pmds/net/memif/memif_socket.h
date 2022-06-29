@@ -13,7 +13,6 @@
 struct cne_memif_socket_dev_list_elt {
     TAILQ_ENTRY(cne_memif_socket_dev_list_elt) next;
     struct cne_pktdev *dev; /**< pointer to device internals */
-    char dev_name[PKTDEV_NAME_MAX_LEN];
 };
 
 #define CNE_MEMIF_SOCKET_HASH_NAME "memif-sh"
