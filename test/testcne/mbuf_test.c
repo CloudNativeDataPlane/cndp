@@ -28,10 +28,11 @@ typedef struct {
 static char err_msg[512];
 
 static int
-rx_cb(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, void *ud)
+iterate_cb(pktmbuf_info_t *pi, pktmbuf_t *m, uint32_t sz, uint32_t idx, void *ud)
 {
     CNE_SET_USED(sz);
     CNE_SET_USED(ud);
+    CNE_SET_USED(idx);
 
     if (!m || !pi) {
         snprintf(err_msg, sizeof(err_msg), "mbuf pointer or pktmbuf_info_t is NULL\n");
@@ -102,7 +103,7 @@ mbuf_main(int argc, char **argv)
         }
     }
 
-    tst = tst_start("MBUF");
+    tst = tst_start("PKTMBUF pool create");
 
     if (verbose)
         tst_ok("MBUF Size %ld\n", sizeof(pktmbuf_t));
@@ -117,21 +118,20 @@ mbuf_main(int argc, char **argv)
         mm = mmap_alloc(ci->objcnt, ci->objsz, MMAP_HUGEPAGE_DEFAULT);
         TST_ASSERT_GOTO(mm != NULL, "unable to allocate memory", err);
 
-        t->pi = NULL;
         t->pi = pktmbuf_pool_create(mmap_addr(mm), ci->objcnt, ci->objsz, ci->cache_sz, NULL);
         if (t->expected) {
             if (t->pi) {
                 TST_ASSERT_GOTO(t->pi != NULL, "unable to create pktmbufs", err);
 
                 err_msg[0] = '\0';
-                pktmbuf_iterate(t->pi, rx_cb, t);
+                pktmbuf_iterate(t->pi, iterate_cb, t);
 
                 for (j = 0; j < 16; j++) {
                     nb = random() % t->alloc_size;
                     if (nb == 0)
                         nb = 1;
                     ret = pktmbuf_alloc_bulk(t->pi, mbs, nb);
-                    TST_ASSERT_GOTO(ret > 0, "bulk allocate of %ld entrys: Pool Empty", err, nb);
+                    TST_ASSERT_GOTO(ret > 0, "bulk allocate of %ld entries: Pool Empty", err, nb);
 
                     pktmbuf_free_bulk(mbs, nb);
                 }
@@ -143,6 +143,51 @@ mbuf_main(int argc, char **argv)
             TST_ASSERT_GOTO(t->pi == NULL, "pktmbuf pool not expected, but not NULL", err);
         mmap_free(mm);
     }
+    cne_printf("\n");
+    tst_end(tst, TST_PASSED);
+
+    tst = tst_start("PKTMBUF pool cfg create");
+
+    for (i = 0; i < cne_countof(tsts); i++) {
+        pktmbuf_pool_cfg_t cfg = {0};
+
+        t  = &tsts[i];
+        ci = &t->cinfo;
+
+        tst_ok("%2d: count %6d, size %6d, cache_size %4d", t->id, ci->objcnt, ci->objsz,
+               ci->cache_sz);
+
+        mm = mmap_alloc(ci->objcnt, ci->objsz, MMAP_HUGEPAGE_DEFAULT);
+        TST_ASSERT_GOTO(mm != NULL, "unable to allocate memory", err);
+
+        pktmbuf_pool_cfg(&cfg, mmap_addr(mm), ci->objcnt, ci->objsz, ci->cache_sz, NULL, 0, NULL);
+
+        t->pi = pktmbuf_pool_cfg_create(&cfg);
+        if (t->expected) {
+            if (t->pi) {
+                TST_ASSERT_GOTO(t->pi != NULL, "unable to create pktmbufs", err);
+
+                err_msg[0] = '\0';
+                pktmbuf_iterate(t->pi, iterate_cb, t);
+
+                for (j = 0; j < 16; j++) {
+                    nb = random() % t->alloc_size;
+                    if (nb == 0)
+                        nb = 1;
+                    ret = pktmbuf_alloc_bulk(t->pi, mbs, nb);
+                    TST_ASSERT_GOTO(ret > 0, "bulk allocate of %ld entries: Pool Empty", err, nb);
+
+                    pktmbuf_free_bulk(mbs, nb);
+                }
+
+                pktmbuf_destroy(t->pi);
+            } else
+                TST_ASSERT_GOTO(t->pi != NULL, "pktmbuf pool expected, but NULL", err);
+        } else
+            TST_ASSERT_GOTO(t->pi == NULL, "pktmbuf pool not expected, but not NULL", err);
+        mmap_free(mm);
+    }
+    cne_printf("\n");
     tst_end(tst, TST_PASSED);
     return 0;
 

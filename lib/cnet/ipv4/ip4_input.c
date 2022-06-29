@@ -34,7 +34,7 @@ ipv4_save_metadata(pktmbuf_t *mbuf, struct cne_ipv4_hdr *hdr)
 {
     struct cnet_metadata *md;
 
-    md                        = cnet_mbuf_metadata(mbuf);
+    md                        = pktmbuf_metadata(mbuf);
     md->faddr.cin_family      = AF_INET;
     md->faddr.cin_len         = sizeof(struct in_addr);
     md->faddr.cin_addr.s_addr = hdr->src_addr;
