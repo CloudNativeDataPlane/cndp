@@ -24,26 +24,31 @@ type System struct {
 	cfg *Config
 }
 
-func Open(configStr string) (*System, error) {
-	handle := &System{}
+func New(cfg *Config) (*System, error) {
+	handle := &System{cfg: cfg}
 	handle.tid = handle.RegisterThread("main")
 
+	err := cfg.validate()
+	if err != nil {
+		return nil, fmt.Errorf("error validating config: %w", err)
+	}
+	err = cfg.process()
+	if err != nil {
+		return nil, fmt.Errorf("error processing config: %w", err)
+	}
+	return handle, nil
+}
+
+func Open(configStr string) (*System, error) {
 	cfg, err := loadConfig(configStr)
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file at %s: %w", configStr, err)
 	}
 
-	err = cfg.validate()
+	handle, err := New(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error validating config file at %s: %w", configStr, err)
+		return nil, fmt.Errorf("error with config file at %s: %w", configStr, err)
 	}
-
-	err = cfg.process()
-	if err != nil {
-		return nil, fmt.Errorf("error processing config file at %s: %w", configStr, err)
-	}
-
-	handle.cfg = cfg
 
 	return handle, nil
 }

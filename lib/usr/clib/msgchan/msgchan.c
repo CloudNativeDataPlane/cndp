@@ -322,7 +322,7 @@ mc_lookup(const char *name)
         strlcpy(pname + n, name, sizeof(pname) - n);
 
         TAILQ_FOREACH (mc, &mc_list_head, next) {
-            if (!strncmp(pname, mc->name, strlen(pname))) {
+            if (!strcmp(pname, mc->name)) {
                 MC_LIST_UNLOCK();
                 return mc;
             }
