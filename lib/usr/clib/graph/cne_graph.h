@@ -260,16 +260,16 @@ typedef struct {
  *   The name of the graph to export.
  * @param f
  *   The file pointer to write the exported data, can be NULL and will use stdout.
- * @param export
+ * @param exp
  *   The export function structure pointer.
  * @return
  *   0 on success or negative errno number on failure.
  *
- *   EBADF  - export function return an error.
- *   EINVAL - export or name is NULL.
+ *   EBADF  - exp function return an error.
+ *   EINVAL - exp function or name is NULL.
  *   ENOENT - Did not find the graph named.
  */
-CNDP_API int cne_graph_export_cb(const char *name, FILE *f, cne_graph_export_t *export);
+CNDP_API int cne_graph_export_cb(const char *name, FILE *f, cne_graph_export_t *exp);
 
 /**
  * Get maximum number of graph available.
