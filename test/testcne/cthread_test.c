@@ -4,19 +4,20 @@
 
 // IWYU pragma: no_include <bits/getopt_core.h>
 
-#include <stdio.h>              // for NULL, snprintf, EOF
-#include <getopt.h>             // for getopt_long, option
-#include <tst_info.h>           // for tst_end, tst_error, tst_start, TST_FAILED
-#include <cne_common.h>         // for CNE_USED, __cne_cache_aligned, __cne_u...
-#include <stdatomic.h>          // for atomic_store, atomic_bool, atomic_load
-#include <cne_log.h>            // for CNE_LOG_ERR, CNE_ERR, CNE_ERR_GOTO
-#include <cne.h>                // for cne_max_threads
-#include <cthread_api.h>        // for cthread_create, cthread_detach, cthrea...
-#include <pthread.h>            // for pthread_create, pthread_join, pthread_...
-#include <stdbool.h>            // for true
-#include <stdint.h>             // for uint64_t
-#include <stdlib.h>             // for atoi, calloc
-#include <string.h>             // for memset
+#include <stdio.h>               // for NULL, snprintf, EOF
+#include <getopt.h>              // for getopt_long, option
+#include <tst_info.h>            // for tst_end, tst_error, tst_start, TST_FAILED
+#include <cne_common.h>          // for CNE_USED, __cne_cache_aligned, __cne_u...
+#include <stdatomic.h>           // for atomic_store, atomic_bool, atomic_load
+#include <cne_log.h>             // for CNE_LOG_ERR, CNE_ERR, CNE_ERR_GOTO
+#include <cne.h>                 // for cne_max_threads
+#include <cthread_api.h>         // for cthread_create, cthread_detach, cthrea...
+#include <pthread.h>             // for pthread_create, pthread_join, pthread_...
+#include <stdbool.h>             // for true
+#include <stdint.h>              // for uint64_t
+#include <stdlib.h>              // for atoi, calloc
+#include <string.h>              // for memset
+#include <cthread_sema.h>        // for cthread_sema_init, cthread_sema_reset, ..
 
 #include "cthread_test.h"
 #include "cne_cycles.h"        // for cne_rdtsc
@@ -82,9 +83,88 @@ print_data(int type)
 }
 
 static int
+cthread_sema_tests(void)
+{
+    struct cthread_sema *s, sema = {0};
+    const char *sema_name    = "testcne semaphore";
+    struct timespec waittime = {.tv_sec = 5};
+    int ret                  = 0;
+
+    s = &sema;
+
+    ret = cthread_sema_init(sema_name, &s, NULL);
+    if (ret < 0) {
+        ret = errno;
+        tst_error("Unable to initialize a semaphore, %s\n", strerror(errno));
+        /* return errno if this test fails due to permission error */
+        return (ret == EPERM) || (ret == EACCES) ? ret : -1;
+    }
+
+    tst_ok("PASS --- TEST: Initialize semaphore\n");
+
+    ret = cthread_sema_reset(s);
+    if (ret < 0) {
+        tst_error("Unable to reset semaphore, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Reset semaphore\n");
+
+    ret = cthread_sema_timedwait(s, NULL, &waittime);
+    if (ret < 0) {
+        tst_error("Error waiting on semaphore, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Timed wait on semaphore\n");
+
+    ret = cthread_sema_signal(s);
+    if (ret < 0) {
+        tst_error("Error signaling semaphore, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Signal semaphore\n");
+
+    ret = cthread_sema_flush_no_sched(s);
+    if (ret < 0) {
+        tst_error("Error flushing semaphore w/o rescheduling threads, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Flush semaphore, w/o rescheduling threads\n");
+
+    ret = cthread_sema_flush(s);
+    if (ret < 0) {
+        tst_error("Error flushing semaphore, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Flush semaphore\n");
+
+    ret = cthread_sema_destroy(s);
+    if (ret < 0) {
+        tst_error("Unable to destroy semaphore, %s\n", strerror(errno));
+        goto err;
+    }
+
+    tst_ok("PASS --- TEST: Destroy semaphore\n");
+
+    return 0;
+
+err:
+    if (s)
+        cthread_sema_destroy(s);
+
+    return -1;
+}
+
+static int
 cthread_start_threads(void)
 {
     char name[32];
+    tst_info_t *tst;
+    int err = 0;
 
     for (int i = 0; i < thread_cnt; i++) {
         thread_data_t *d = &data[i];
@@ -105,7 +185,18 @@ cthread_start_threads(void)
 
     print_data(CTHREAD_TYPE);
 
-    return 0;
+    cne_printf("\n");
+    tst = tst_start("Cthread Semaphore");
+
+    err = cthread_sema_tests();
+    if (err < 0)
+        tst_end(tst, TST_FAILED);
+    else if (err == EPERM || err == EACCES)
+        tst_end(tst, TST_SKIPPED);
+    else
+        tst_end(tst, TST_PASSED);
+
+    return err < 0 ? -1 : 0;
 }
 
 static void
