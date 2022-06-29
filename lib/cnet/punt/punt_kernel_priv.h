@@ -4,12 +4,12 @@
 #ifndef __INCLUDE_PUNT_KERNEL_PRIV_H__
 #define __INCLUDE_PUNT_KERNEL_PRIV_H__
 
+#include <cne_common.h>
+#include <tun_alloc.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <tun_alloc.h>
 
 struct punt_kernel_node_elem;
 struct punt_kernel_node_ctx;

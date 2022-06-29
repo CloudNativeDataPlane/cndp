@@ -19,10 +19,6 @@
 #include <unistd.h>            // for usleep, pid_t
 #include <bsd/sys/bitstring.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <cne_system.h>        // for cne_get_timer_hz
 #include <cne_vec.h>           // for vec_at_index, vec_len
 #include <hmap.h>              // for hmap_t
@@ -34,6 +30,10 @@ extern "C" {
 #include "cnet_const.h"            // for iofunc_t, PROTO_IO_MAX
 #include "mempool.h"               // for mempool_t
 #include "pktmbuf.h"               // for pktmbuf_alloc, pktmbuf_t
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct netlink_info;
 struct tcp_stats;
