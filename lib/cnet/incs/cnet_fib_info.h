@@ -15,13 +15,13 @@
 #include <sys/queue.h>            // for TAILQ_HEAD
 #include <bsd/sys/queue.h>        // for TAILQ_HEAD
 
+#include <cne_rwlock.h>
+#include <cne_fib.h>
+
 struct rt4_entry;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_rwlock.h>
-#include <cne_fib.h>
 
 typedef struct fib_info {
     struct cne_fib *fib;  /**< fib structure */

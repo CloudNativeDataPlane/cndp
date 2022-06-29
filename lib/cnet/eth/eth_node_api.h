@@ -13,12 +13,12 @@
  * and its queue associations.
  */
 
+#include <cne_common.h>
+#include <mempool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <mempool.h>
 
 /**
  * Port config for rx and tx node.

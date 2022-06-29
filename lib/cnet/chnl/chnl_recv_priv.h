@@ -4,11 +4,11 @@
 #ifndef __INCLUDE_CHNL_RECV_PRIV_H__
 #define __INCLUDE_CHNL_RECV_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 enum chnl_recv_next_nodes {
     CHNL_RECV_NEXT_PKT_DROP,

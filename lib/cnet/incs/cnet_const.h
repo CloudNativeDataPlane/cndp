@@ -18,6 +18,7 @@
 
 #include <cne_log.h>
 
+#include <errno.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -163,7 +164,6 @@ enum {
     PROTO_IO_MAX
 };
 
-#include <errno.h>
 static inline int
 __errno_get(void)
 {

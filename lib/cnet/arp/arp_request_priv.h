@@ -4,11 +4,11 @@
 #ifndef __INCLUDE_ARP_REQUEST_PRIV_H__
 #define __INCLUDE_ARP_REQUEST_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 struct arp_request_node_elem;
 struct arp_request_node_ctx;
