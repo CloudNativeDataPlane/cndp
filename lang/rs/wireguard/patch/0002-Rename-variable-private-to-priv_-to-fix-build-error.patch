@@ -1,7 +1,7 @@
-From 7b575f42e8adcd87939126c9413a8aaaf4b55453 Mon Sep 17 00:00:00 2001
+From 7fbd4ddbcf82806e6b0782286a817effaae9956a Mon Sep 17 00:00:00 2001
 From: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
 Date: Sun, 19 Sep 2021 22:19:57 -0700
-Subject: [PATCH 2/3] Rename variable private to priv_ to fix build error.
+Subject: [PATCH 2/7] Rename variable private to priv_ to fix build error.
 
 Signed-off-by: Manoj Gopalakrishnan <manoj.gopalakrishnan@intel.com>
 ---
@@ -77,5 +77,5 @@ index a9e1c15..134adaa 100644
      metrics_client_t *c = arg;
  
 -- 
-2.25.1
+2.30.2
 
