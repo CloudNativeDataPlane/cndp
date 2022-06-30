@@ -10,6 +10,7 @@
  * CNET ARP routines.
  */
 
+#include <cnet/cnet.h>
 #include <net/cne_arp.h>
 #include <net/cne_ip.h>
 #include <net/ethernet.h>        // for ether_addr
