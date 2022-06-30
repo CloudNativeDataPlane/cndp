@@ -7,21 +7,21 @@
 
 /**
  * @file
- *   Routines and structures to allow an application to send single mbufs or packets
- *   while enqueuing the packets to an array and flush the packets to the output port
- *   when the number of packets fills the array.
+ * Routines and structures to allow an application to send single mbufs or packets
+ * while enqueuing the packets to an array and flush the packets to the output port
+ * when the number of packets fills the array.
  *
- *   Using this method allows for buffered packet to be sent in bulk and not one at a
- *   time.
+ * Using this method allows for buffered packet to be sent in bulk and not one at a
+ * time.
  */
+
+#include <stdint.h>            // for uint16_t, uint32_t
+#include <cne_common.h>        // for CNDP_API, CNE_STD_C11
+#include <pktmbuf.h>           // for pktmbuf_t
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>        // for CNDP_API, CNE_STD_C11
-#include <pktmbuf.h>           // for pktmbuf_t
-#include <stdint.h>            // for uint16_t, uint32_t
 
 struct txbuff;
 

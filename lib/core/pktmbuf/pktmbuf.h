@@ -31,18 +31,18 @@
  * http://www.kohala.com/start/tcpipiv2.html
  */
 
+#include <errno.h>                        // for EINVAL
 #include <stdint.h>                       // for uint16_t, uint32_t, uint8_t, UINT...
+#include <stdio.h>                        // for NULL, FILE
+#include <bsd/string.h>                   // for strlcpy
 #include <cne_atomic.h>                   // for atomic_uint_least16_t
 #include <cne_common.h>                   // for CNDP_API, CNE_STD_C11, __cne_alwa...
-#include <mempool.h>                      // for mempool_t, mempool_get, mempool_g...
+#include <cne_branch_prediction.h>        // for likely, unlikely
+#include <cne_log.h>                      // for CNE_ASSERT
 #include <cne_mmap.h>                     // for mmap_type_t
 #include <cne_prefetch.h>                 // for cne_prefetch0
-#include <cne_branch_prediction.h>        // for likely, unlikely
-#include <stdio.h>                        // for NULL, FILE
-#include <errno.h>                        // for EINVAL
-#include <bsd/string.h>                   // for strlcpy
+#include <mempool.h>                      // for mempool_t, mempool_get, mempool_g...
 
-#include "cne_log.h"            // for CNE_ASSERT
 #include "pktmbuf_ops.h"        // for mbuf_ops_t
 #include "pktmbuf_offload.h"
 
