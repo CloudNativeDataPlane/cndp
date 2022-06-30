@@ -38,9 +38,7 @@ Wireguard user space (implemented in Rust) uses CNDP to send and receive packets
 
 4. Apply the Wireguard CNDP patch present in [location](./wireguard/patch). Ignore the whitespace warning errors.
 
-   `git am 0001-Integrate-CNDP-Cloud-Native-Data-Plane-with-Wireguar.patch`\
-   `git am 0002-Rename-variable-private-to-priv_-to-fix-build-error.patch`\
-   `git am 0003-Remove-extra-argument-from-pktmbuf_dump.patch`
+   `git am *.patch`
 
 5. Build Wireguard with CNDP: `cargo build --release`
 6. In Wireguard repo, refer to *src/platform/linux/cndp/README.md* file under usage section to configure and start Wireguard with CNDP.
