@@ -44,8 +44,9 @@ extern "C" {
 #include <errno.h>
 #include <cne_common.h>
 
-#define RING_F_SP_ENQ 0x0001 /**< The default enqueue is "single-producer". */
-#define RING_F_SC_DEQ 0x0002 /**< The default dequeue is "single-consumer". */
+#define RING_F_SP_ENQ    0x0001 /**< The default enqueue is "single-producer". */
+#define RING_F_SC_DEQ    0x0002 /**< The default dequeue is "single-consumer". */
+#define RING_F_ALLOCATED 0x8000 /**< The ring structure and data was allocated (internal only) */
 
 /**
  * Ring is to hold exactly requested number of entries.
@@ -76,7 +77,7 @@ extern "C" {
  *   - -EINVAL - esize is not a multiple of 4 or count provided is not a
  *       power of 2.
  */
-CNDP_API size_t cne_ring_get_memsize_elem(unsigned int esize, unsigned int count);
+CNDP_API ssize_t cne_ring_get_memsize_elem(unsigned int esize, unsigned int count);
 
 /**
  * Calculate the memory size needed for a ring
@@ -92,7 +93,7 @@ CNDP_API size_t cne_ring_get_memsize_elem(unsigned int esize, unsigned int count
  *   - The memory size needed for the ring on success.
  *   - -EINVAL if count is not a power of 2.
  */
-CNDP_API size_t cne_ring_get_memsize(unsigned count);
+CNDP_API ssize_t cne_ring_get_memsize(unsigned count);
 
 /**
  * Create a new ring in memory.
@@ -126,6 +127,45 @@ CNDP_API size_t cne_ring_get_memsize(unsigned count);
  */
 CNDP_API cne_ring_t *cne_ring_create(const char *name, unsigned int esize, unsigned count,
                                      unsigned flags);
+
+/**
+ * Create a new ring in memory using the specified address and size of memory
+ *
+ * The new ring size is set to *count*, which must be a power of
+ * two. Water marking is disabled by default. The real usable ring size
+ * is *count-1* instead of *count* to differentiate a full ring from an
+ * empty ring.
+ *
+ * @param addr
+ *   Address of memory to use for constructing the new ring. Can be NULL to have
+ *   memory allocated via calloc() call.
+ * @param size
+ *   Size of the memory buffer pointed by the addr argument. Can be zero if addr is NULL
+ *   and the size must be able to hold the cne_ring_t structure and ring.
+ * @param name
+ *   The name of the ring.
+ * @param esize
+ *   The size of ring element, in bytes. It must be a multiple of 4, or 0
+ *   to assign the default element size.
+ * @param count
+ *   The size of the ring (must be a power of 2).
+ * @param flags
+ *   An OR of the following:
+ *    - RING_F_SP_ENQ: If this flag is set, the default behavior when
+ *      using ``cne_ring_enqueue()`` or ``cne_ring_enqueue_bulk()``
+ *      is "single-producer". Otherwise, it is "multi-producers".
+ *    - RING_F_SC_DEQ: If this flag is set, the default behavior when
+ *      using ``cne_ring_dequeue()`` or ``cne_ring_dequeue_bulk()``
+ *      is "single-consumer". Otherwise, it is "multi-consumers".
+ * @return
+ *   On success, the pointer to the new allocated ring. NULL on error with
+ *    errno set appropriately. Possible errno values include:
+ *    - EINVAL - invalid name, esize, count or count provided is not a power of 2
+ *    - ENAMETOOLONG - name is too long
+ *    - ENOMEM - could not allocate ring
+ */
+CNDP_API cne_ring_t *cne_ring_init(void *addr, ssize_t size, const char *name, unsigned int esize,
+                                   unsigned int count, unsigned int flags);
 
 /**
  * De-allocate all memory used by the ring.
