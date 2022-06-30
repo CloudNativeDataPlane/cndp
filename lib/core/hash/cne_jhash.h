@@ -11,16 +11,16 @@
  * jhash functions.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
 #include <endian.h>
 
 #include <cne_log.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* jhash.h: Jenkins hash support.
  *

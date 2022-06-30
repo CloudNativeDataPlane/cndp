@@ -5,32 +5,28 @@
 #ifndef __CNE_STDIO_H_
 #define __CNE_STDIO_H_
 
+/**
+ * @file
+ * CNE cursor and color support for VT100 using ANSI color escape codes.
+ */
+
 // IWYU pragma: no_include <bits/termios-struct.h>
 
 #include <termios.h>
-#include <stdint.h>            // for int16_t
+#include <stdarg.h>        // for va_list
+#include <stdint.h>        // for int16_t
+#include <stdio.h>         // for FILE
+#include <string.h>        // for strlen
+#include <unistd.h>        // for write
+
 #include <cne_atomic.h>        // for atomic_exchange, atomic_int_least32_t, atomic...
+#include <cne_common.h>
+#include <cne_system.h>
+#include <vt100_out.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <vt100_out.h>
-
-/**
- * @file
- * CNE simple cursor and color support for VT100 using ANSI color escape codes.
- *
- */
-
-#include <string.h>        // for strlen
-#include <stdio.h>         // for FILE
-#include <stdarg.h>        // for va_list
-#include <unistd.h>        // for write
-#include <cne_system.h>
-
-#include "cne_common.h"        // for CNDP_API
 
 /**
  * A printf like routine to output to tty file descriptor.

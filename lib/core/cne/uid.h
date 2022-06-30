@@ -14,11 +14,11 @@
 #include <stdio.h>         // for FILE
 #include <stdint.h>        // for uint16_t
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 #define UID_INITIAL_NAME    "Initial-UID"
 #define DEFAULT_MAX_THREADS 512 /**< Max Number of threads to support */

@@ -5,14 +5,6 @@
 #ifndef _XSKDEV_H_
 #define _XSKDEV_H_
 
-#include <net/if.h>           // for IF_NAMESIZE
-#include <poll.h>             // for pollfd
-#include <pthread.h>          // for pthread_mutex_t, pthread_mutex_init, pthre...
-#include <bpf/xsk.h>          // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_ring...
-#include <stdint.h>           // for uint16_t, uint32_t
-#include <stdio.h>            // for FILE, NULL, size_t
-#include <cne_lport.h>        // for lport_stats_t, buf_alloc_t, buf_free_t
-
 /**
  * @file
  *
@@ -21,14 +13,21 @@
  * This file provides a low-level abstraction for applications to XSK APIs.
  */
 
+#include <poll.h>           // for pollfd
+#include <pthread.h>        // for pthread_mutex_t, pthread_mutex_init, pthre...
+#include <stdint.h>         // for uint16_t, uint32_t
+#include <stdio.h>          // for FILE, NULL, size_t
+#include <bpf/xsk.h>        // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_ring...
+#include <net/if.h>         // for IF_NAMESIZE
+
+#include <cne_common.h>        // for CNDP_API, CNE_STD_C11
+#include <cne_lport.h>         // for lport_stats_t, buf_alloc_t, buf_free_t
+#include <pktmbuf.h>           // for pktmbuf_t
+#include <uds.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <uds.h>
-
-#include "cne_common.h"        // for CNDP_API, CNE_STD_C11
-#include "pktmbuf.h"           // for pktmbuf_t
 
 #ifndef SOL_XDP
 #define SOL_XDP 283

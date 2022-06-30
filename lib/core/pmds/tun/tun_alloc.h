@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2021-2022 Intel Corporation
  */
+
 #ifndef __INC_TUN_ALLOC_H__
 #define __INC_TUN_ALLOC_H__
 
@@ -9,11 +10,11 @@
  * TUN/TAP allocate routines, defines and structures.
  */
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 #define TUN_TAP_DEV_PATH "/dev/net/tun"
 
