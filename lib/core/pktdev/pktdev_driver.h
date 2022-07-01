@@ -5,19 +5,17 @@
 #ifndef __PKTDEV_DRIVER_H_
 #define __PKTDEV_DRIVER_H_
 
-#include <cne_atomic.h>
-#include <sys/queue.h>
-#include <cne_common.h>
-
 /**
  * @file
  *
- * CNE Ethernet Device PMD API
+ * CNE pktdev PMD API
  *
- * These APIs for the use from Ethernet drivers, user applications shouldn't
- * use them.
- *
+ * These APIs are used by pktdev drivers. Applications should not use them.
  */
+
+#include <sys/queue.h>
+#include <cne_atomic.h>
+#include <cne_common.h>
 
 #ifdef __cplusplus
 extern "C" {

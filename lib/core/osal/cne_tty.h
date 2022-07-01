@@ -5,33 +5,30 @@
 #ifndef __CNE_TTY_H_
 #define __CNE_TTY_H_
 
-// IWYU pragma: no_include <bits/termios-struct.h>
-
-#include <termios.h>
-#include <stdint.h>            // for uint16_t
-#include <string.h>            // for strlen
-#include <stdio.h>             // for FILE
-#include <stdarg.h>            // for va_list
-#include <unistd.h>            // for read, write
-#include <signal.h>            // for sigaction
-#include <cne_atomic.h>        // for CNE_ATOMIC
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @file
  * CNE TTY input and output support routines.
  *
- * Setup the TTY for I/O unless it is a socket instead.
- * These routines as common and used by cli and all output routines for stdin/stdout
- * as well as socket I/O handling in later changes.
+ * Setup the TTY for I/O unless it is a socket instead. These routines are used by cli and all
+ * output routines for stdin/stdout as well as socket I/O handling.
  */
 
+// IWYU pragma: no_include <bits/termios-struct.h>
+
+#include <termios.h>
+#include <signal.h>            // for sigaction
+#include <stdarg.h>            // for va_list
+#include <stdint.h>            // for uint16_t
+#include <stdio.h>             // for FILE
+#include <string.h>            // for strlen
+#include <unistd.h>            // for read, write
+#include <cne_atomic.h>        // for CNE_ATOMIC
+#include <cne_common.h>
 #include <cne_system.h>
 
-#include "cne_common.h"        // for CNDP_API
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define TTY_BUFF_SIZE    1024
 #define TTY_MAX_CMD_SIZE 16

@@ -5,8 +5,6 @@
 #ifndef _MMAP_H_
 #define _MMAP_H_
 
-#include <stddef.h>        // for size_t
-#include <stdint.h>        // for uint64_t, uint8_t
 /**
  * @file
  * CNE allocator for huge pages
@@ -14,11 +12,14 @@
  * Allocate memory using MMAP anonyuous memory using hugepages.
  */
 
+#include <stddef.h>        // for size_t
+#include <stdint.h>        // for uint64_t, uint8_t
+
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 /**
  * Set of enums to help define HUGEPAGE sizes

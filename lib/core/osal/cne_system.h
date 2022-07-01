@@ -2,20 +2,18 @@
  * Copyright (c) 2019-2022 Intel Corporation
  */
 
-#include <sys/syscall.h>
-#include <stdint.h>        // for uint16_t, uint64_t
-
 #ifndef _CNE_SYSTEM_H_
 #define _CNE_SYSTEM_H_
 
-#include <cne_common.h>        // for CNDP_API
-
 /**
  * @file
- *
  * API for lcore and socket manipulation
- *
  */
+
+#include <sys/syscall.h>
+#include <stdint.h>        // for uint16_t, uint64_t
+
+#include <cne_common.h>        // for CNDP_API
 
 #ifdef __cplusplus
 extern "C" {

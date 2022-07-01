@@ -32,18 +32,15 @@
  *
  */
 
+#include <cne_common.h>        // for CNE_NAME_LEN
+#include <cne_ring_api.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /** The maximum length of a ring name. */
 #define CNE_RING_NAMESIZE CNE_NAME_LEN
-
-typedef void cne_ring_t;
-
-#include <cne_ring_api.h>
-
-#include "cne_common.h"        // for CNE_NAME_LEN
 
 #ifdef __cplusplus
 }
