@@ -10,32 +10,31 @@
  * JSON configuration using json-c
  */
 
+#include <pthread.h>           // for pthread_t
+#include <sched.h>             // for cpu_set_t
+#include <stdint.h>            // for uint16_t, uint32_t, uint64_t, int64_t
 #include <sys/socket.h>        // for accept, bind, listen, socket, AF_UNIX
-#include <sys/un.h>            // for sockaddr_un
 #include <sys/queue.h>         // for STAILQ_ENTRY, STAILQ_HEAD
+#include <sys/un.h>            // for sockaddr_un
 #include <bsd/sys/bitstring.h>
 #include <json-c/json_object.h>
 #include <json-c/json_tokener.h>
 #include <json-c/json_util.h>
 #include <json-c/json_visit.h>        // for json_c_visit_userfunc
 #include <json-c/linkhash.h>
-#include <pthread.h>        // for pthread_t
-#include <sched.h>          // for cpu_set_t
-#include <stdint.h>         // for uint16_t, uint32_t, uint64_t, int64_t
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cne_common.h>        // for CNDP_API, CNE_STD_C11
+#include <cne_log.h>
+#include <cne_mmap.h>        // for mmap_t
+#include <cne_thread.h>
+#include <pktmbuf.h>        // for pktmbuf_info_t
 
 #define DEFAULT_CHUNK_SIZE   1024
 #define UMEM_MAX_REGIONS     128
 #define JCFG_MAX_STRING_SIZE 32
 
-#include <cne_common.h>        // for CNDP_API, CNE_STD_C11
-#include <cne_log.h>
-#include <cne_thread.h>
-#include <cne_mmap.h>        // for mmap_t
-#include <pktmbuf.h>         // for pktmbuf_info_t
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct json_object;
 

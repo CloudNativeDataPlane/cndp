@@ -5,32 +5,29 @@
 #ifndef __CLI_VT100_H_
 #define __CLI_VT100_H_
 
+/**
+ * @file
+ * CNE cursor and color support for VT100 using ANSI color escape codes.
+ */
+
 // IWYU pragma: no_include <bits/termios-struct.h>
 
+#include <stdarg.h>        // for va_end, va_list, va_start
+#include <stdint.h>        // for uint8_t
+#include <stdio.h>         // for fileno, fprintf, stderr, stdin, stdout
+#include <string.h>        // for strlen
 #include <termios.h>
-#include <stdint.h>            // for uint8_t
+#include <unistd.h>            // for read, write
 #include <cne_atomic.h>        // for atomic_exchange, atomic_int_least32_t, atomic...
+#include <cne_common.h>        // for CNDP_API
+#include <cne_stdio.h>         // for ESC
+#include <cne_system.h>
+#include <cne_tty.h>
+#include <vt100_out.h>        // for ESC
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @file
- * CNE simple cursor and color support for VT100 using ANSI color escape codes.
- *
- ***/
-
-#include <string.h>        // for strlen
-#include <stdio.h>         // for fileno, fprintf, stderr, stdin, stdout
-#include <stdarg.h>        // for va_end, va_list, va_start
-#include <unistd.h>        // for read, write
-#include <cne_system.h>
-#include <cne_tty.h>
-
-#include "cne_common.h"        // for CNDP_API
-#include "cne_stdio.h"         // for ESC
-#include "vt100_out.h"         // for ESC
 
 #define VT100_INITIALIZE -1
 
