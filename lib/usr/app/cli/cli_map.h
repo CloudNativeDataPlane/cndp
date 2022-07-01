@@ -12,12 +12,11 @@
 #define _CLI_MAP_H_
 
 #include <netinet/in.h>
+#include <cne_common.h>        // for CNDP_API
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>        // for CNDP_API
 
 struct cli_map {
     int index;

@@ -5,29 +5,26 @@
 #ifndef __INCLUDE_CNE_METER_H__
 #define __INCLUDE_CNE_METER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @file
  * CNDP Traffic Metering
  *
  * Traffic metering algorithms:
- *    1. Single Rate Three Color Marker (srTCM): defined by IETF RFC 2697
- *    2. Two Rate Three Color Marker (trTCM): defined by IETF RFC 2698
- *    3. Two Rate Three Color Marker (trTCM): defined by IETF RFC 4115
- *
- ***/
+ * 1. Single Rate Three Color Marker (srTCM): defined by IETF RFC 2697
+ * 2. Two Rate Three Color Marker (trTCM): defined by IETF RFC 2698
+ * 3. Two Rate Three Color Marker (trTCM): defined by IETF RFC 4115
+ */
 
 #include <stdint.h>
+#include <cne_common.h>
 
-#include "cne_common.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Application Programmer's Interface (API)
- *
- ***/
+ */
 
 /**
  * Color
@@ -39,18 +36,22 @@ enum cne_color {
     CNE_COLORS           /**< Number of colors */
 };
 
-/** srTCM parameters per metered traffic flow. The CIR, CBS and EBS parameters only
-count bytes of IP packets and do not include link specific headers. At least one of
-the CBS or EBS parameters has to be greater than zero. */
+/**
+ * srTCM parameters per metered traffic flow. The CIR, CBS and EBS parameters only
+ * count bytes of IP packets and do not include link specific headers. At least one of
+ * the CBS or EBS parameters has to be greater than zero.
+ */
 struct cne_meter_srtcm_params {
     uint64_t cir; /**< Committed Information Rate (CIR). Measured in bytes per second. */
     uint64_t cbs; /**< Committed Burst Size (CBS).  Measured in bytes. */
     uint64_t ebs; /**< Excess Burst Size (EBS).  Measured in bytes. */
 };
 
-/** trTCM parameters per metered traffic flow. The CIR, PIR, CBS and PBS parameters
-only count bytes of IP packets and do not include link specific headers. PIR has to
-be greater than or equal to CIR. Both CBS or EBS have to be greater than zero. */
+/**
+ * trTCM parameters per metered traffic flow. The CIR, PIR, CBS and PBS parameters
+ * only count bytes of IP packets and do not include link specific headers. PIR has to
+ * be greater than or equal to CIR. Both CBS or EBS have to be greater than zero.
+ */
 struct cne_meter_trtcm_params {
     uint64_t cir; /**< Committed Information Rate (CIR). Measured in bytes per second. */
     uint64_t pir; /**< Peak Information Rate (PIR). Measured in bytes per second. */
@@ -58,10 +59,12 @@ struct cne_meter_trtcm_params {
     uint64_t pbs; /**< Peak Burst Size (PBS). Measured in bytes. */
 };
 
-/** trTCM parameters per metered traffic flow. The CIR, EIR, CBS and EBS
-parameters only count bytes of IP packets and do not include link specific
-headers. The CBS and EBS need to be greater than zero if CIR and EIR are
-none-zero respectively.*/
+/**
+ * trTCM parameters per metered traffic flow. The CIR, EIR, CBS and EBS
+ * parameters only count bytes of IP packets and do not include link specific
+ * headers. The CBS and EBS need to be greater than zero if CIR and EIR are
+ * none-zero respectively.
+ */
 struct cne_meter_trtcm_rfc4115_params {
     uint64_t cir; /**< Committed Information Rate (CIR). Measured in bytes per second. */
     uint64_t eir; /**< Excess Information Rate (EIR). Measured in bytes per second. */
@@ -294,8 +297,7 @@ cne_meter_trtcm_rfc4115_color_aware_check(struct cne_meter_trtcm_rfc4115 *m,
 
 /*
  * Inline implementation of run-time methods
- *
- ***/
+ */
 
 struct cne_meter_srtcm_profile {
     uint64_t cbs;

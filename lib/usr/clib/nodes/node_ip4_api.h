@@ -14,13 +14,13 @@
  *
  * This API allows to do control path functions of ip4_* nodes
  * like ip4_lookup, ip4_rewrite.
- *
  */
+
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 /**
  * IP4 lookup next nodes.
