@@ -2,6 +2,18 @@
  * Copyright (c) 2020-2022 Intel Corporation.
  */
 
+//! # Low Level Rust Bindings for CNDP.
+//!
+//! The project provides low-level Rust bindings (crate `cne-sys`) for CNDP CNE C library.
+//!
+//! This project is hosted on [GitHub](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs/bindings/cne-sys)
+//!
+//! ## Getting Started
+//!
+//! Refer [README.md](https://github.com/CloudNativeDataPlane/cndp/blob/main/lang/rs/bindings/cne-sys/README.md)
+//!
+//! Also see the high-level CNE API crate for CNDP [GitHub](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs/apis/cne)
+
 #[allow(non_upper_case_globals)]
 #[allow(non_camel_case_types)]
 #[allow(non_snake_case)]
