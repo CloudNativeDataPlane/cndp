@@ -14,13 +14,13 @@
 #ifndef _CNE_SCTP_H_
 #define _CNE_SCTP_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 
 #include <cne_byteorder.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * SCTP Header

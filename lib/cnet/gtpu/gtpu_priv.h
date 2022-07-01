@@ -5,11 +5,11 @@
 #ifndef __INCLUDE_GTPU_PRIV_H__
 #define __INCLUDE_GTPU_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 struct gtpu_node_ctx {
     uint16_t last_type;

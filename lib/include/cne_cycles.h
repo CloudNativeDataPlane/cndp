@@ -12,11 +12,11 @@
 
 #include <cne_atomic.h>
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 #define MS_PER_S 1000
 #define US_PER_S 1000000

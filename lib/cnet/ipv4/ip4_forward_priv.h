@@ -14,11 +14,11 @@
  * like ip4_input, ip4_forward, ip4_proto.
  *
  */
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 /**
  * IP4 forward next nodes.

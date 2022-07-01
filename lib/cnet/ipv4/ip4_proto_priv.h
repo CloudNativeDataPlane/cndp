@@ -12,11 +12,12 @@
  * like ip4_proto, ip4_input, ip4_forward.
  *
  */
+
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 enum cne_node_ip4_proto_next {
     CNE_NODE_IP4_INPUT_PROTO_DROP, /**< Packet drop node. */

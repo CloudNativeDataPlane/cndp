@@ -11,12 +11,12 @@
  *  Defines cne_tailq APIs for only internal use to safely iterate over a list.
  */
 
+#include <sys/queue.h>
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <sys/queue.h>
-#include <stdio.h>
 
 /** dummy structure type used by the cne_tailq APIs */
 struct cne_tailq_entry {

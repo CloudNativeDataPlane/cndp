@@ -12,12 +12,12 @@
  * This API allows to do control path functions of ip4_* nodes
  * like ip4_input, ip4_forward, ip4_proto, ...
  */
+#include <cne_common.h>
+#include <cne_fib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <cne_fib.h>
 
 /**
  * Add an address to FIB table.

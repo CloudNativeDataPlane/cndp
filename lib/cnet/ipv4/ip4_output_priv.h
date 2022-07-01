@@ -13,12 +13,12 @@
  * like ip4_output, ip4_forward, ip4_proto, ...
  *
  */
+#include <cne_common.h>
+#include <cne_fib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <cne_fib.h>
 
 /**
  * IP4 output next nodes.

@@ -4,11 +4,11 @@
 #ifndef __INCLUDE_UDP_INPUT_PRIV_H__
 #define __INCLUDE_UDP_INPUT_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 enum udp_input_next_nodes {
     UDP_INPUT_NEXT_PKT_DROP,

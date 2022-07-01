@@ -4,11 +4,11 @@
 #ifndef __INCLUDE_KERNEL_RECV_PRIV_H__
 #define __INCLUDE_KERNEL_RECV_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 struct kernel_recv_node_elem;
 struct kernel_recv_node_ctx;

@@ -24,11 +24,11 @@
 #include <bsd/string.h>        // for strlcpy
 #include <sys/socket.h>        // for AF_INET
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 enum {
     STR_MAX_ARGVS  = 64,  /**< Max number of args to support */

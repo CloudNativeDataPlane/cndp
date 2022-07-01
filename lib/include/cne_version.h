@@ -11,14 +11,14 @@
 #ifndef _CNE_VERSION_H_
 #define _CNE_VERSION_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <cne_common.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Macro to compute a version number usable for comparisons

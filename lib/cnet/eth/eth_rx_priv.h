@@ -5,11 +5,11 @@
 #ifndef __INCLUDE_ETH_RX_PRIV_H__
 #define __INCLUDE_ETH_RX_PRIV_H__
 
+#include <cne_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
 
 struct eth_rx_node_elem;
 struct eth_rx_node_ctx;
