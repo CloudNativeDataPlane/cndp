@@ -2,6 +2,23 @@
  * Copyright (c) 2020-2022 Intel Corporation.
  */
 
+//! # High level Rust API for CNDP CNE
+//!
+//! The project provides high-level Rust APIs (crate `cne`) for CNDP CNE.
+//! It depends on low-level Rust bindings (crate `cne-sys`) for CNDP CNE C library. It is expected that most
+//! Rust applications using CNDP would only need high-level CNDP CNE Rust APIs.
+//!
+//! This project is hosted on [GitHub](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs/apis/cne)
+//!
+//! ## Getting Started
+//!
+//! Refer [README.md](https://github.com/CloudNativeDataPlane/cndp/blob/main/lang/rs/apis/cne/README.md)
+//!
+//! ## Examples and Usage
+//!
+//! Checkout [examples](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs/apis/cne/examples)
+//! Also see the crate documentation.
+
 pub(crate) mod config;
 pub mod error;
 pub mod instance;

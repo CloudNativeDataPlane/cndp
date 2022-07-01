@@ -9,3 +9,7 @@ members = [
     "apis/cne/examples/loopback",
     "examples/echo_server"
 ]
+exclude = [
+    "examples/pktfwd"
+]
+
