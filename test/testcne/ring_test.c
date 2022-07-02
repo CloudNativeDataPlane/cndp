@@ -13,6 +13,7 @@
 #include <cne_common.h>        // for cne_align32pow2, cne_countof, CNE_SET_USED
 #include <stdlib.h>            // for rand
 #include <string.h>            // for strlen, strncmp, strnlen, memset
+#include <cne_mmap.h>
 
 #include "ring_test.h"
 #include "cne_ring_api.h"        // for cne_ring_count, cne_ring_dump, cne_rin...
@@ -29,6 +30,7 @@ static int opt_run_all    = 0;
 struct ring_test_info {
     tst_info_t *tst;
     struct cne_ring *r;
+    mmap_t *mm;
     bool passed;
 };
 
@@ -38,6 +40,10 @@ test_ring_cleanup(struct ring_test_info *ring_tst)
     if (ring_tst) {
         if (ring_tst->r)
             cne_ring_free(ring_tst->r);
+        if (ring_tst->mm) {
+            if (mmap_free(ring_tst->mm) < 0)
+                CNE_WARN("unable to free mmap\n");
+        }
 
         if (ring_tst->tst)
             tst_end(ring_tst->tst, ring_tst->passed);
@@ -108,6 +114,94 @@ ring_name_tests(void *args)
     return 0;
 }
 
+static int
+test_ring_init(void *args)
+{
+    unsigned int ring_size, i;
+    struct ring_test_info tst = {0};
+    ssize_t tsize;
+    uint32_t bufcnt, bufsz;
+    size_t sz;
+
+    CNE_SET_USED(args);
+
+    tst.tst   = tst_start("Ring init API");
+    ring_size = cne_align32pow2(rand() % 16384);
+    tst_ok("Using ring_size=%u\n", ring_size);
+
+    tsize = cne_ring_get_memsize_elem(0, ring_size);
+    TST_ASSERT_AND_CLEANUP(tsize > 0, "Ring memsize < 0\n", test_ring_cleanup, &tst);
+
+    tst.mm = mmap_alloc((tsize / CNE_CACHE_LINE_SIZE), CNE_CACHE_LINE_SIZE, MMAP_HUGEPAGE_4KB);
+    TST_ASSERT_AND_CLEANUP(tst.mm != NULL, "Out of memory\n", test_ring_cleanup, &tst);
+
+    sz = mmap_size(tst.mm, &bufcnt, &bufsz);
+    CNE_INFO("tsize: %zd, mmap size %zd, bufcnt %u, bufsz %u\n", tsize, sz, bufcnt, bufsz);
+
+    TST_ASSERT_AND_CLEANUP(sz >= ring_size, "mmap size too small\n", test_ring_cleanup, &tst);
+
+    tst.r = cne_ring_init(mmap_addr(tst.mm), 0, "ring init", 8, ring_size, 0);
+    TST_ASSERT_AND_CLEANUP(tst.r == NULL, "Ring invalid size should have failed\n",
+                           test_ring_cleanup, &tst);
+
+    tst.r = cne_ring_init(mmap_addr(tst.mm), sz - (4 * RING_SIZE), "ring init", 8, ring_size, 0);
+    TST_ASSERT_AND_CLEANUP(tst.r == NULL, "Ring invalid size should have failed\n",
+                           test_ring_cleanup, &tst);
+
+    /* Make address non-cacheline aligned */
+    tst.r = cne_ring_init(CNE_PTR_ADD(mmap_addr(tst.mm), 1), 0, "ring init", 8, ring_size, 0);
+    TST_ASSERT_AND_CLEANUP(tst.r == NULL, "Ring invalid address should have failed\n",
+                           test_ring_cleanup, &tst);
+
+    tst.r = cne_ring_init(mmap_addr(tst.mm), sz, "ring init", 8, ring_size, 0);
+    TST_ASSERT_AND_CLEANUP(tst.r != NULL, "Ring create failed\n", test_ring_cleanup, &tst);
+
+    if (verbose) {
+        vt_color(VT_BLUE, VT_NO_CHANGE, VT_OFF);
+        cne_ring_dump(NULL, tst.r);
+        cne_printf("\n");
+        vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
+    }
+
+    TST_ASSERT_AND_CLEANUP(1 == cne_ring_empty(tst.r), "Ring empty expected\n", test_ring_cleanup,
+                           &tst);
+    TST_ASSERT_AND_CLEANUP(0 == cne_ring_full(tst.r), "Ring full unexpected\n", test_ring_cleanup,
+                           &tst);
+    TST_ASSERT_AND_CLEANUP(ring_size == cne_ring_get_size(tst.r),
+                           "ring size=%u expected instead of %u\n", test_ring_cleanup, &tst,
+                           ring_size - 1, cne_ring_get_size(tst.r));
+
+    for (i = 0; i < ring_size / 2; i++)
+        TST_ASSERT_AND_CLEANUP(0 == cne_ring_enqueue(tst.r, (void *)((uintptr_t)i + 1)),
+                               "Enqueue i=%u", test_ring_cleanup, &tst, i + 1);
+
+    TST_ASSERT_AND_CLEANUP(i == cne_ring_count(tst.r),
+                           "Ring count=%u mismatch with enqueued=%u elements\n", test_ring_cleanup,
+                           &tst, cne_ring_count(tst.r), i);
+    TST_ASSERT_AND_CLEANUP(ring_size - i - 1 == cne_ring_free_count(tst.r),
+                           "Ring free count=%u mismatch with expected=%u elements\n",
+                           test_ring_cleanup, &tst, cne_ring_free_count(tst.r), ring_size - i - 1);
+    cne_ring_reset(tst.r);
+    TST_ASSERT_AND_CLEANUP(0 == cne_ring_count(tst.r),
+                           "Ring count=%u mismatch with expected=%u elements\n", test_ring_cleanup,
+                           &tst, cne_ring_count(tst.r), 0);
+    TST_ASSERT_AND_CLEANUP(ring_size - 1 == cne_ring_free_count(tst.r),
+                           "Ring free count=%u mismatch with expected=%u elements\n",
+                           test_ring_cleanup, &tst, cne_ring_free_count(tst.r), ring_size - 1);
+
+    if (verbose) {
+        vt_color(VT_BLUE, VT_NO_CHANGE, VT_OFF);
+        cne_ring_dump(NULL, tst.r);
+        cne_printf("\n");
+        vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
+    }
+
+    tst.passed = TST_PASSED;
+    test_ring_cleanup(&tst);
+
+    return 0;
+}
+
 /*--------- Ring reset tests -----------------*/
 static int
 test_ring_reset_tests(void *args)
@@ -136,7 +230,7 @@ test_ring_reset_tests(void *args)
     TST_ASSERT_AND_CLEANUP(0 == cne_ring_full(tst.r), "Ring full unexpected\n", test_ring_cleanup,
                            &tst);
     TST_ASSERT_AND_CLEANUP(ring_size == cne_ring_get_size(tst.r),
-                           "ring size=%d expected instead of %d\n", test_ring_cleanup, &tst,
+                           "ring size=%u expected instead of %u\n", test_ring_cleanup, &tst,
                            ring_size - 1, cne_ring_get_size(tst.r));
 
     for (i = 0; i < ring_size / 2; i++)
@@ -144,17 +238,17 @@ test_ring_reset_tests(void *args)
                                "Enqueue i=%u", test_ring_cleanup, &tst, i + 1);
 
     TST_ASSERT_AND_CLEANUP(i == cne_ring_count(tst.r),
-                           "Ring count=%d mismatch with enqueued=%d elements\n", test_ring_cleanup,
+                           "Ring count=%u mismatch with enqueued=%u elements\n", test_ring_cleanup,
                            &tst, cne_ring_count(tst.r), i);
     TST_ASSERT_AND_CLEANUP(ring_size - i - 1 == cne_ring_free_count(tst.r),
                            "Ring free count=%d mismatch with expected=%d elements\n",
                            test_ring_cleanup, &tst, cne_ring_free_count(tst.r), ring_size - i - 1);
     cne_ring_reset(tst.r);
     TST_ASSERT_AND_CLEANUP(0 == cne_ring_count(tst.r),
-                           "Ring count=%d mismatch with expected=%d elements\n", test_ring_cleanup,
+                           "Ring count=%u mismatch with expected=%u elements\n", test_ring_cleanup,
                            &tst, cne_ring_count(tst.r), 0);
     TST_ASSERT_AND_CLEANUP(ring_size - 1 == cne_ring_free_count(tst.r),
-                           "Ring free count=%d mismatch with expected=%d elements\n",
+                           "Ring free count=%u mismatch with expected=%u elements\n",
                            test_ring_cleanup, &tst, cne_ring_free_count(tst.r), ring_size - 1);
 
     if (verbose) {
@@ -192,7 +286,7 @@ test_ring_fill_tests(void *args)
                                "enqueue failed i=%u\n", test_ring_cleanup, &tst, i);
 
     TST_ASSERT_AND_CLEANUP(i == cne_ring_count(tst.r),
-                           "Ring count=%d mismatch with enqueued=%d elements\n", test_ring_cleanup,
+                           "Ring count=%u mismatch with enqueued=%u elements\n", test_ring_cleanup,
                            &tst, cne_ring_count(tst.r), i);
     TST_ASSERT_AND_CLEANUP(1 == cne_ring_full(tst.r), "Ring full expected \n", test_ring_cleanup,
                            &tst);
@@ -223,7 +317,7 @@ test_ring_enqueue_dequeue(void *arg)
     }
     for (i = 0; i < RING_SIZE / 2; i++)
         TST_ASSERT_AND_CLEANUP(0 == cne_ring_enqueue(tst.r, (void *)((uintptr_t)i + 1)),
-                               "Enqueue failed i=%d\n", test_ring_cleanup, &tst, i + 1);
+                               "Enqueue failed i=%u\n", test_ring_cleanup, &tst, i + 1);
 
     if (verbose) {
         vt_color(VT_BLUE, VT_NO_CHANGE, VT_OFF);
@@ -236,7 +330,7 @@ test_ring_enqueue_dequeue(void *arg)
     for (i = 0; i < RING_SIZE / 2; i++) {
         TST_ASSERT_AND_CLEANUP(0 == cne_ring_dequeue(tst.r, (void *)&val), "Dequeue failed i=%d\n",
                                test_ring_cleanup, &tst, i);
-        TST_ASSERT_AND_CLEANUP(val == (uint64_t)i + 1, "Ring Dequeue failed val=%lu expected=%d\n",
+        TST_ASSERT_AND_CLEANUP(val == (uint64_t)i + 1, "Ring Dequeue failed val=%lu expected=%u\n",
                                test_ring_cleanup, &tst, val, i + 1);
     }
 
@@ -369,20 +463,25 @@ ring_main(int argc, char **argv)
     char **argvopt;
     int option_index;
     int idx;
-    int result               = 0;
-    size_t tst_idx           = 0;
+    int result     = 0;
+    size_t tst_idx = 0;
+    // clang-format off
     struct test_info tests[] = {
+        {"init", test_ring_init},
         {"name", ring_name_tests},
         {"fill", test_ring_fill_tests},
         {"reset", test_ring_reset_tests},
         {"burst", test_ring_burst},
         {"basic", test_ring_enqueue_dequeue},
     };
-    static const struct option lgopts[] = {{"verbose", no_argument, &verbose, 1},
-                                           {"list", no_argument, &opt_list_tests, 1},
-                                           {"help", no_argument, &help, 1},
-                                           {"all", no_argument, &opt_run_all, 1},
-                                           {NULL, 0, 0, 0}};
+    static const struct option lgopts[] = {
+        {"verbose", no_argument, &verbose, 1},
+        {"list", no_argument, &opt_list_tests, 1},
+        {"help", no_argument, &help, 1},
+        {"all", no_argument, &opt_run_all, 1},
+        {NULL, 0, 0, 0}
+    };
+    // clang-format on
 
     verbose        = 0;
     help           = 0;
