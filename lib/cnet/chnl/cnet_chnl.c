@@ -698,9 +698,17 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
 
     if (sa) {
         for (int i = 0; i < nb_mbufs; i++) {
-            struct cnet_metadata *md = pktmbuf_metadata(mbufs[i]);
-            struct sockaddr_in *addr = (struct sockaddr_in *)&sa[i];
+            struct cnet_metadata *md;
+            struct sockaddr_in *addr;
 
+            if (!mbufs[i])
+                CNE_ERR_RET_VAL(__errno_set(EFAULT), "pktmbuf entry is NULL\n");
+
+            md = pktmbuf_metadata(mbufs[i]);
+            if (!md)
+                CNE_ERR_RET_VAL(__errno_set(EFAULT), "pktmbuf metadata is NULL\n");
+
+            addr = (struct sockaddr_in *)&sa[i];
             if (addr->sin_family == AF_INET) {
                 md->faddr.cin_family      = addr->sin_family;
                 md->faddr.cin_port        = addr->sin_port;

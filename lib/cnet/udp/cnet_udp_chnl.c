@@ -136,6 +136,8 @@ udp_chnl_send(struct chnl *ch, pktmbuf_t **mbufs, uint16_t nb_mbufs)
         struct cnet_metadata *md;
 
         md = pktmbuf_metadata(m);
+        if (!md)
+            return __errno_set(EFAULT);
 
         to = &md->faddr;
         if (CIN_LEN(to) == 0) {

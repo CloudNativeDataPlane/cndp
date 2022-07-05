@@ -361,6 +361,9 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
 
     seg->mbuf = NULL;
 
+    if (!mbuf)
+        CNE_ERR_RET("mbuf is NULL\n");
+
     /* Add the TCP options to the data packet */
     memcpy(pktmbuf_prepend(mbuf, seg->optlen), &seg->opts[0], seg->optlen);
 
@@ -983,6 +986,8 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
     memset(tcp, 0, sizeof(struct cne_tcp_hdr) + optlen);
 
     md = pktmbuf_metadata(mbuf);
+    if (!md)
+        CNE_RET("failed to get metadata structure pointer\n");
 
     CIN_CADDR(&md->faddr) = CIN_CADDR(&pcb->key.faddr);
     CIN_CADDR(&md->laddr) = CIN_CADDR(&pcb->key.laddr);
@@ -1566,6 +1571,8 @@ do_passive_open(struct seg_entry *seg)
     tcb = ppcb->tcb; /* use tcb pointer for the next test */
 
     md = pktmbuf_metadata(seg->mbuf);
+    if (!md)
+        CNE_NULL_RET("pktmbuf metadata is NULL\n");
 
     /*
      * Check the queue limit and see if we can continue, if not drop the SYN
