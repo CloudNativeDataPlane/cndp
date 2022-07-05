@@ -14,15 +14,14 @@
  *
  * This API allows to setup pktdev_rx and pktdev_tx nodes
  * and its queue associations.
- *
  */
+
+#include <cne_common.h>
+#include <mempool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>
-#include <mempool.h>
 
 /**
  * Port config for pktdev_rx and pktdev_tx node.

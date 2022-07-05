@@ -13,14 +13,13 @@
 
 #include <stdint.h>
 
-#include "cne_common.h"        // for CNDP_API
+#include <cne_common.h>        // for CNDP_API
+#include <cne_lport.h>
+#include <uds.h>        // for uds_client_t, uds_info_t
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_lport.h>
-#include "uds.h"        // for uds_client_t, uds_info_t
 
 typedef uds_info_t metrics_info_t;
 typedef uds_client_t metrics_client_t;
