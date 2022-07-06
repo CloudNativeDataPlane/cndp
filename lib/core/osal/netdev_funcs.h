@@ -5,16 +5,15 @@
 #ifndef _NETDEV_FUNCS_H_
 #define _NETDEV_FUNCS_H_
 
+/**
+ * @file
+ * API for netdev modification like setting promiscuous mode, link up/down, etc.
+ */
+
 #include <stdint.h>            // for uint32_t, uint16_t
 #include <cne_common.h>        // for CNDP_API
 
 struct ether_addr;
-/**
- * @file
- *
- * API for netdev modifications like promiscuous mode, set link up/down ...
- *
- */
 
 #ifdef __cplusplus
 extern "C" {

@@ -13,18 +13,17 @@
  * This file provides a log API to CNE applications.
  */
 
-#include <stdio.h>         // for NULL
-#include <stdarg.h>        // for va_list
-#include <stdint.h>        // for uint32_t
+#include <stdio.h>             // for NULL
+#include <stdarg.h>            // for va_list
+#include <stdint.h>            // for uint32_t
+#include <cne_common.h>        // for CNDP_API
 #include <cne_stdio.h>
+
+#include "cne_build_config.h"        // for CNE_ENABLE_ASSERT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>        // for CNDP_API
-
-#include "cne_build_config.h"        // for CNE_ENABLE_ASSERT
 
 #define foreach_cndp_log_level \
     _(1, EMERG, emerg)         \

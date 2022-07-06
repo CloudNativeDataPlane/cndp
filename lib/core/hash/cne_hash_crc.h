@@ -11,13 +11,13 @@
  * CNE CRC Hash
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <cne_branch_prediction.h>
 #include <cne_common.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // clang-format off
 /* Lookup tables for software implementation of CRC32C */

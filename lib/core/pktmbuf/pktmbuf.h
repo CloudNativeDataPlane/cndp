@@ -31,18 +31,18 @@
  * http://www.kohala.com/start/tcpipiv2.html
  */
 
+#include <errno.h>                        // for EINVAL
 #include <stdint.h>                       // for uint16_t, uint32_t, uint8_t, UINT...
+#include <stdio.h>                        // for NULL, FILE
+#include <bsd/string.h>                   // for strlcpy
 #include <cne_atomic.h>                   // for atomic_uint_least16_t
 #include <cne_common.h>                   // for CNDP_API, CNE_STD_C11, __cne_alwa...
-#include <mempool.h>                      // for mempool_t, mempool_get, mempool_g...
+#include <cne_branch_prediction.h>        // for likely, unlikely
+#include <cne_log.h>                      // for CNE_ASSERT
 #include <cne_mmap.h>                     // for mmap_type_t
 #include <cne_prefetch.h>                 // for cne_prefetch0
-#include <cne_branch_prediction.h>        // for likely, unlikely
-#include <stdio.h>                        // for NULL, FILE
-#include <errno.h>                        // for EINVAL
-#include <bsd/string.h>                   // for strlcpy
+#include <mempool.h>                      // for mempool_t, mempool_get, mempool_g...
 
-#include "cne_log.h"            // for CNE_ASSERT
 #include "pktmbuf_ops.h"        // for mbuf_ops_t
 #include "pktmbuf_offload.h"
 
@@ -61,6 +61,16 @@ enum {
 struct pktmbuf_info_s;
 struct pktmbuf_s;
 
+typedef struct pktmbuf_pool_cfg {
+    char *addr;              /**< Pointer to the address of the pktmbuf buffers */
+    uint32_t bufcnt;         /**< Number of buffers in the pool */
+    uint32_t bufsz;          /**< Size of each buffer in the pool */
+    uint32_t cache_sz;       /**< Size of the cache for each thread */
+    uint32_t metadata_bufsz; /**< The size of each metadata buffer */
+    char *metadata;          /**< Pointer to the metadata buffers */
+    mbuf_ops_t *ops;         /**< pktmbuf operation functions */
+} pktmbuf_pool_cfg_t;
+
 /**
  * Information structure for pktmbuf buffer and related information.
  */
@@ -73,7 +83,8 @@ typedef struct pktmbuf_info_s {
     uint32_t bufcnt;                  /**< Number of buffers created */
     uint32_t bufsz;                   /**< Size of each buffer */
     uint32_t cache_sz;                /**< Cache size if needed for allocation cache */
-    mmap_type_t mtype;                /**< Type of MMAP memory to allocate */
+    uint32_t metadata_bufsz;          /**< Size of of metadata buffers */
+    char *metadata;                   /**< Pointer to metadata buffers */
 } pktmbuf_info_t;
 
 /**
@@ -89,13 +100,14 @@ typedef struct pktmbuf_info_s {
  * The generic pktmbuf_s, containing a packet mbuf.
  */
 struct pktmbuf_s {
-    void *pooldata;    /**< pktmbuf information pool data pointer */
-    void *buf_addr;    /**< Virtual address of segment buffer */
-    uint32_t hash;     /**< Hash value */
-    uint16_t data_off; /**< Data offset */
-    uint16_t lport;    /**< RX lport number */
-    uint16_t buf_len;  /**< Length of segment buffer - sizeof(pktmbuf_t) */
-    uint16_t data_len; /**< Amount of data in segment buffer */
+    void *pooldata;      /**< pktmbuf information pool data pointer */
+    void *buf_addr;      /**< Virtual address of segment buffer */
+    uint32_t hash;       /**< Hash value */
+    uint32_t meta_index; /**< Index into the metadata array if present */
+    uint16_t data_off;   /**< Data offset */
+    uint16_t lport;      /**< RX lport number */
+    uint16_t buf_len;    /**< Length of segment buffer - sizeof(pktmbuf_t) */
+    uint16_t data_len;   /**< Amount of data in segment buffer */
 
     /*
      * The packet type, which is the combination of outer/inner L2, L3, L4
@@ -129,6 +141,23 @@ struct pktmbuf_s {
             uint8_t inner_l4_type : 4; /**< Inner L4 type. */
         };
     };
+
+    /**
+     * Reference counter. Its size should at least equal to the size
+     * of lport field (16 bits), to support zero-copy broadcast.
+     * It should only be accessed using the following functions:
+     * pktmbuf_refcnt_update(), pktmbuf_refcnt_read(), and
+     * pktmbuf_refcnt_set(). The functionality of these functions (atomic,
+     * or non-atomic) is controlled by the CONFIG_CNE_MBUF_REFCNT_ATOMIC
+     * config option.
+     */
+    CNE_STD_C11
+    union {
+        CNE_ATOMIC(uint_least16_t) refcnt_atomic; /**< Atomically accessed refcnt */
+        uint16_t refcnt;                          /**< Non-atomically accessed refcnt */
+    };
+
+    uint16_t rsvd16;
 
     /* fields to support TX offloads */
     CNE_STD_C11
@@ -170,23 +199,6 @@ struct pktmbuf_s {
         void *userptr;    /**< 64bit user supplied pointer (optional) */
         uint64_t udata64; /**< 64bit data value (optional) */
     };
-
-    /**
-     * Reference counter. Its size should at least equal to the size
-     * of lport field (16 bits), to support zero-copy broadcast.
-     * It should only be accessed using the following functions:
-     * pktmbuf_refcnt_update(), pktmbuf_refcnt_read(), and
-     * pktmbuf_refcnt_set(). The functionality of these functions (atomic,
-     * or non-atomic) is controlled by the CONFIG_CNE_MBUF_REFCNT_ATOMIC
-     * config option.
-     */
-    CNE_STD_C11
-    union {
-        CNE_ATOMIC(uint_least16_t) refcnt_atomic; /**< Atomically accessed refcnt */
-        uint16_t refcnt;                          /**< Non-atomically accessed refcnt */
-    };
-
-    uint16_t rsvd16[3];
 } __cne_cache_aligned;
 
 typedef struct pktmbuf_s pktmbuf_t;
@@ -214,19 +226,19 @@ typedef struct pktmbuf_pending {
 CNDP_API void pktmbuf_destroy(pktmbuf_info_t *pi);
 
 /**
- * Create the pktmbuf_info_t structure and setup some of the fields
+ * Create the pktmbuf_info_t structure with no external metadata information.
  *
  * @param addr
  *   The starting address of the buffer space
  * @param bufcnt
- *   Number of buffers to create or allocate, using the *mtype* for mmap_alloc()
+ *   Number of buffers to create or allocate
  * @param bufsz
  *   The size of each buffer to be allocated
  * @param cache_sz
- *   Cache size for mempool or other user needs
+ *   Cache size for mempool or other user needs, can be zero for no cache.
  * @param ops
  *   Pointer to mbuf_ops_t structure for mbuf operator function pointers. This
- *   structure is copied into the pktmbuf_info_t.ops structure.
+ *   structure is copied into the pktmbuf_info_t.ops structure and can be NULL.
  * @return
  *   NULL on error or a valid pktmbuf_info_t pointer.
  */
@@ -234,7 +246,25 @@ CNDP_API pktmbuf_info_t *pktmbuf_pool_create(char *addr, uint32_t bufcnt, uint32
                                              uint32_t cache_sz, mbuf_ops_t *ops);
 
 /**
- * Object or pktmbuf callback routine to initialize the all allocated buffers.
+ * Create the pktmbuf_info_t structure and setup some of the fields
+ *
+ * @param cfg
+ *   Pointer to a configuration structure.
+ *     addr - The starting address of the buffer space
+ *     bufcnt - Number of buffers to create or allocate, using the *mtype* for mmap_alloc()
+ *     bufsz - The size of each buffer to be allocated
+ *     cache_sz - Cache size for mempool or other user needs
+ *     ops - Pointer to mbuf_ops_t structure for mbuf operator function pointers. This
+ *           structure is copied into the pktmbuf_info_t.ops structure and can be NULL.
+ *     metadata_bufsz - is the size of the external metadata buffers.
+ *     metadata - is a pointer to the start of the metadata, can be NULL for no external metadata.
+ * @return
+ *   NULL on error or a valid pktmbuf_info_t pointer.
+ */
+CNDP_API pktmbuf_info_t *pktmbuf_pool_cfg_create(const pktmbuf_pool_cfg_t *cfg);
+
+/**
+ * Object or pktmbuf callback routine to initialize the allocated pktmbuf_t structure.
  *
  * @param pi
  *   The pktmbuf_info_t pointer
@@ -242,12 +272,15 @@ CNDP_API pktmbuf_info_t *pktmbuf_pool_create(char *addr, uint32_t bufcnt, uint32
  *   The buffer pointer to pktmbuf_t structure to initialize
  * @param sz
  *   The size of the buffer to use in initialing the buffer, if needed.
+ * @param idx
+ *   The index of the pktmbuf structure
  * @param ud
  *   User data pointer supplied by the caller
  * @return
  *   0 on successfully initialized buffer or -1 on error
  */
-typedef int (*pktmbuf_cb_t)(pktmbuf_info_t *pi, pktmbuf_t *buf, uint32_t sz, void *ud);
+typedef int (*pktmbuf_cb_t)(pktmbuf_info_t *pi, pktmbuf_t *buf, uint32_t sz, uint32_t idx,
+                            void *ud);
 
 /**
  * Iterate over the set of buffers while calling the supplied callback function.
@@ -381,6 +414,14 @@ CNDP_API int pktmbuf_iterate(pktmbuf_info_t *pi, pktmbuf_cb_t cb, void *ud);
  *   The type to cast the result into.
  */
 #define pktmbuf_mtod(m, t) pktmbuf_mtod_offset(m, t, 0)
+
+/**
+ * Return the metadata index value from the pktmbuf header.
+ *
+ * @param m
+ *   The pktmbuf_t pointer.
+ */
+#define pktmbuf_meta_index(m) ((m)->meta_index)
 
 /**
  * Prefetch the first part of the mbuf
@@ -1152,6 +1193,77 @@ const char *cne_get_tx_ol_flag_name(uint64_t mask);
  *   0 on success, (-1) on error.
  */
 int cne_get_tx_ol_flag_list(uint64_t mask, char *buf, size_t buflen);
+
+/**
+ * Return the metadata buffer address
+ *
+ * @param m
+ *   The pktmbuf_t structure pointer
+ * @return
+ *   NULL on error or pointer to metadata buffer
+ */
+static inline void *
+pktmbuf_metadata(const pktmbuf_t *m)
+{
+    pktmbuf_info_t *p;
+
+    if (!m)
+        return NULL;
+
+    if (((p = m->pooldata) != NULL) && p->metadata)
+        return CNE_PTR_ADD(p->metadata, (m->meta_index * p->metadata_bufsz));
+    else
+        return CNE_PTR_ADD(m, sizeof(pktmbuf_t)); /* default to metadata in pktmbuf headroom */
+}
+
+/**
+ * Return the size of the metadata buffer if external or headroom size if internal buffer.
+ *
+ * @param m
+ *   The pktmbuf_t structure pointer
+ * @return
+ *   -1 if pktmbuf pointer is NULL or size of metadata buffer or headroom size if internal.
+ */
+static inline int32_t
+pktmbuf_metadata_bufsz(const pktmbuf_t *m)
+{
+    pktmbuf_info_t *p;
+
+    if (!m)
+        return -1;
+
+    if (((p = m->pooldata) != NULL) && p->metadata)
+        return (int32_t)p->metadata_bufsz;
+    else
+        return (int32_t)pktmbuf_headroom(m);
+}
+
+/**
+ * Construct a pktmbuf_pool_cfg_t structure with the given parameters.
+ *
+ * @param c
+ *   Pointer to the pktmbuf_pool_cfg_t structure
+ * @param addr
+ *   Address of the pktmbuf buffers, must not be NULL
+ * @param bufcnt
+ *   Number of buffers in the pktmbuf pool, can be zero to use default
+ * @param bufsz
+ *   Size of each buffer in the pktmbuf pool, can be zero to use default
+ * @param cache_sz
+ *   Cache size of the mempool to use in allocate/free buffers, can be zero
+ * @param metadata
+ *   The pointer of the metadata buffer pool, can be NULL.
+ * @param metadata_bufsz
+ *   The size of each metadata buffer in the pool, if metadata is valid can not be zero
+ *   and needs to be a multiple of a cacheline.
+ * @param ops
+ *   The pktmbuf ops structure pointer, can be NULL.
+ * @return
+ *   0 on success or -1 on error.
+ */
+CNDP_API int pktmbuf_pool_cfg(pktmbuf_pool_cfg_t *c, void *addr, uint32_t bufcnt, uint32_t bufsz,
+                              uint32_t cache_sz, void *metadata, uint32_t metadata_bufsz,
+                              mbuf_ops_t *ops);
 
 /**
  * Dump out the list of pktmbuf_info_t structures

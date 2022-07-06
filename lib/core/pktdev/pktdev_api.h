@@ -11,14 +11,14 @@
  * pktdev structures and APIs.
  */
 
-#include <cne_lport.h>        // for lport_cfg_t, lport_stats_t
-#include <stdbool.h>          // for bool, false, true
-#include <stdint.h>           // for uint16_t
-#include <stdio.h>            // for NULL, FILE
+#include <stdbool.h>        // for bool, false, true
+#include <stdint.h>         // for uint16_t
+#include <stdio.h>          // for NULL, FILE
 
-#include "cne_common.h"          // for CNDP_API
-#include "pktmbuf.h"             // for pktmbuf_t
-#include "netdev_funcs.h"        // for struct offloads
+#include <cne_common.h>          // for CNDP_API
+#include <cne_lport.h>           // for lport_cfg_t, lport_stats_t
+#include <netdev_funcs.h>        // for struct offloads
+#include <pktmbuf.h>             // for pktmbuf_t
 
 struct ether_addr;
 struct cne_pktdev;

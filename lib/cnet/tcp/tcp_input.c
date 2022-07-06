@@ -45,7 +45,9 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
 
-    md = cnet_mbuf_metadata(m);
+    md = pktmbuf_metadata(m);
+    if (!md)
+        return TCP_INPUT_NEXT_PKT_DROP;
 
     tip = pktmbuf_mtod(m, struct tcpip4_s *);
 

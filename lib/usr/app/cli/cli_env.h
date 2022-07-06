@@ -2,22 +2,20 @@
  * Copyright (c) <2019-2021> Intel Corporation.
  */
 
-#include <sys/queue.h>        // for TAILQ_ENTRY, TAILQ_HEAD
-
 #ifndef _CLI_ENV_H_
 #define _CLI_ENV_H_
 
 /**
  * @file
  * CNE Command line interface
- *
  */
+
+#include <sys/queue.h>         // for TAILQ_ENTRY, TAILQ_HEAD
+#include <cne_common.h>        // for CNDP_API
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <cne_common.h>        // for CNDP_API
 
 struct cli;
 

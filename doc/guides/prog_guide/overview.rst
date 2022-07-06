@@ -1,6 +1,8 @@
 ..  SPDX-License-Identifier: BSD-3-Clause
     Copyright (c) 2010-2022 Intel Corporation.
 
+.. _CNDP_Overview:
+
 Overview
 ========
 
@@ -24,6 +26,8 @@ such as one or more compilers, assembler, make utility,
 editor and various libraries to create the CNDP components and libraries.
 
 See the *CNDP Getting Started Guide* for information on setting up the development environment.
+
+.. _CNDP_Components:
 
 Components
 ----------

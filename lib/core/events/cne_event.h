@@ -10,10 +10,6 @@
 #ifndef _CNE_EVENT_H_
 #define _CNE_EVENT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -25,7 +21,11 @@ extern "C" {
 #include <errno.h>
 #include <bsd/string.h>
 
-#include "cne_common.h"        // for CNDP_API
+#include <cne_common.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum cne_ev_handle_type { CNE_EV_HANDLE_MEM, CNE_EV_HANDLE_EXT, CNE_EV_HANDLE_MAX };
 

@@ -11,10 +11,6 @@
  * toeplitz hash functions.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * Software implementation of the Toeplitz hash function used by RSS.
  * Can be used either for packet distribution on single queue NIC
@@ -24,10 +20,13 @@ extern "C" {
 
 #include <stdint.h>
 #include <cne_byteorder.h>
-#include <cne_ip.h>
 #include <cne_common.h>
-
 #include <cne_vect.h>
+#include <net/cne_ip.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Byte swap mask used for converting IPv6 address
  * 4-byte chunks to CPU byte order

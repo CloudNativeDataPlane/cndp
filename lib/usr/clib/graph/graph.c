@@ -553,14 +553,14 @@ leave:
 }
 
 int
-cne_graph_export_cb(const char *name, FILE *f, cne_graph_export_t *export)
+cne_graph_export_cb(const char *name, FILE *f, cne_graph_export_t *exp)
 {
     struct graph *graph;
 
-    if (!export || !name)
+    if (!exp || !name)
         return -EINVAL;
 
-    if (!export->header || !export->trailer || !export->body)
+    if (!exp->header || !exp->trailer || !exp->body)
         return -EINVAL;
 
     if (!f)
@@ -568,7 +568,7 @@ cne_graph_export_cb(const char *name, FILE *f, cne_graph_export_t *export)
 
     STAILQ_FOREACH (graph, &graph_list, next) {
         if (strncmp(graph->name, name, CNE_GRAPH_NAMESIZE) == 0)
-            return graph_to_dot_cb(f, graph, export);
+            return graph_to_dot_cb(f, graph, exp);
     }
 
     return -ENOENT;

@@ -737,7 +737,7 @@ run_server(int cd, pktmbuf_t *mbuf)
     uint8_t *buf = pktmbuf_mtod(mbuf, uint8_t *);
     quicly_address_t remote;
     size_t len               = pktmbuf_data_len(mbuf);
-    struct cnet_metadata *md = cnet_mbuf_metadata(mbuf);
+    struct cnet_metadata *md = pktmbuf_metadata(mbuf);
     struct sockaddr_in *sa   = (struct sockaddr_in *)&remote.sa;
 
     sa->sin_family      = AF_INET;
