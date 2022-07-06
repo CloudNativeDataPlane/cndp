@@ -5,15 +5,25 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
 
+/// Type for different errors that can be encountered.
+/// String provides description of the error.
 #[derive(Debug)]
 pub enum CneError {
+    /// Error allocating buffer in underlying Packet.
     BufferAllocError(String),
+    /// Error configuring CNE instance.
     ConfigError(String),
+    /// Packet error.
     PacketError(String),
+    /// Port error.
     PortError(String),
+    /// Error getting port statistics.
     PortStatsError(String),
+    /// Error registering/unregistering thread with CNE.
     RegisterError(String),
+    /// Error receiving packets.
     RxBurstError(String),
+    /// Error transmitting packets.
     TxBurstError(String),
 }
 

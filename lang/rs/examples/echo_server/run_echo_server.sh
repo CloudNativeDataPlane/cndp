@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2019-2022 Intel Corporation
 
 # Usage: ./run_echo_server.sh <mode> <args>
 # if mode is pnet then
@@ -10,7 +12,6 @@
 # eg 1: ./run_echo_server.sh cne -> Run using default values
 # eg 2:./run_echo_server.sh cne ./fwd.jsonc 0 64 -> Run using user specified values.
 
-cargo build --release
 CRATE=echo_server
 
 # Mode - pnet or cne. Default is cne.
@@ -23,7 +24,7 @@ if [[ "$MODE" == "pnet" ]]; then
     sudo -E RUST_LOG=info `which cargo` run -p $CRATE --release -- $MODE -i $IFACE
 elif [ "$MODE" == "cne" ]; then
     # JSON file. Use default jsonc file in library crate.
-    CONFIG=${2:-"./examples/echo_server/fwd.jsonc"}
+    CONFIG=${2:-"./fwd.jsonc"}
 
     # Port id. Use 0 as default port id.
     PORT=${3:-0}

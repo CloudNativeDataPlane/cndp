@@ -15,6 +15,8 @@ use super::error::*;
 use super::port::*;
 use super::util::*;
 
+/// Represents an instance of CNE.
+/// There will be a single instance of CNE per process.
 pub struct CneInstance {
     // Use RwLock to allow multiple concurrent reader threads
     // and single writer to access CNE Instance.
@@ -29,6 +31,7 @@ struct CneInstanceInner {
 
 // CNE Singleton instance.
 impl CneInstance {
+    /// Returns CNE singleton instance.
     pub fn get_instance() -> &'static CneInstance {
         // Create an uninitialized static.
         static mut CNEINSTANCE: MaybeUninit<CneInstance> = MaybeUninit::uninit();
@@ -54,6 +57,14 @@ impl CneInstance {
 
 // CneInstance public functions.
 impl CneInstance {
+    /// Configures CNE instance using JSONC configuration file.
+    ///
+    /// # Arguments
+    /// * `jsonc_file` - jsonc configuration file path.
+    ///
+    /// # Errors
+    /// Returns [CneError::ConfigError] if an error is encountered.
+    ///
     pub fn configure(&self, jsonc_file: &str) -> Result<(), CneError> {
         let mut cne = self.write()?;
         if cne.cfg.is_some() {
@@ -74,6 +85,11 @@ impl CneInstance {
         Ok(())
     }
 
+    /// Clean up configured CNE instance.
+    ///
+    /// # Errors
+    /// Returns [CneError::ConfigError] if an error is encountered.
+    ///
     pub fn cleanup(&self) -> Result<(), CneError> {
         let mut cne = self.write()?;
         if let Some(cfg) = &mut cne.cfg {
@@ -90,6 +106,16 @@ impl CneInstance {
         Ok(())
     }
 
+    /// Registers a thread with CNE instance.
+    ///
+    /// Returns an id or error in case of failure.
+    ///
+    /// # Arguments
+    /// * `s` - Thread name to be regsitered with CNE.
+    ///
+    /// # Errors
+    /// Returns [CneError::RegisterError] if an error is encountered.
+    ///
     pub fn register_thread(&self, s: &str) -> Result<i32, CneError> {
         let _lock = self.lock()?;
 
@@ -107,6 +133,14 @@ impl CneInstance {
         }
     }
 
+    /// Unregisters a thread registered with CNE instance.
+    ///
+    /// # Arguments
+    /// * `tid` - Thread id returned by [register_thread](CneInstance::register_thread).
+    ///
+    /// # Errors
+    /// Returns [CneError::RegisterError] if an error is encountered.
+    ///
     pub fn unregister_thread(&self, tid: i32) -> Result<(), CneError> {
         let _lock = self.lock()?;
 
@@ -120,25 +154,45 @@ impl CneInstance {
         }
     }
 
+    /// Creates a [Port] instance corresponding to the port index.
+    ///
+    /// Returns an [Port] or error in case of failure.
+    ///
+    /// # Arguments
+    /// * `port_index` - port index in JSONC file lports section.
+    ///
+    /// # Errors
+    /// Returns [CneError::PortError] if an error is encountered.
+    ///
     pub fn get_port(&self, port_index: u16) -> Result<Port, CneError> {
         let cne = self.read()?;
 
         if let Some(cfg) = &cne.cfg {
             cfg.get_port_by_index(port_index)
         } else {
-            Err(CneError::ConfigError(
+            Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
             ))
         }
     }
 
+    /// Creates a [Port] instance corresponding to the port name.
+    ///
+    /// Returns an [Port] or error in case of failure.
+    ///
+    /// # Arguments
+    /// * `port_name` - port name in JSONC file lports section.
+    ///
+    /// # Errors
+    /// Returns [CneError::PortError] if an error is encountered.
+    ///
     pub fn get_port_by_name(&self, port_name: &str) -> Result<Port, CneError> {
         let cne = self.read()?;
 
         if let Some(cfg) = &cne.cfg {
             cfg.get_port_by_name(port_name)
         } else {
-            Err(CneError::ConfigError(
+            Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
             ))
         }
@@ -150,7 +204,7 @@ impl CneInstance {
         if let Some(cfg) = &cne.cfg {
             cfg.get_port_details(port_index)
         } else {
-            Err(CneError::ConfigError(
+            Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
             ))
         }
@@ -165,7 +219,7 @@ impl CneInstance {
         if let Some(cfg) = &cne.cfg {
             cfg.get_port_pktmbuf_pool(port_index)
         } else {
-            Err(CneError::ConfigError(
+            Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
             ))
         }

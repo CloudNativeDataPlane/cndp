@@ -62,6 +62,8 @@ ip4_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt
     pcb = m->userptr;
 
     md = pktmbuf_metadata(m);
+    if (!md)
+        return nxt;
 
     m->l3_len = sizeof(struct cne_ipv4_hdr);
 

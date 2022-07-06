@@ -7,10 +7,12 @@ use cne_sys::bindings::{_pktmbuf_free_bulk, _pktmbuf_write, pktmbuf_t};
 use std::os::raw::c_void;
 use std::slice;
 
+/// CNE abstract Packet type.
 #[derive(Clone, Copy)]
 pub struct Packet(pub(crate) *mut pktmbuf_t);
 
 impl Default for Packet {
+    /// Default function to initialize Packet.
     fn default() -> Self {
         Self(std::ptr::null_mut::<pktmbuf_t>())
     }
@@ -19,13 +21,66 @@ impl Default for Packet {
 unsafe impl Send for Packet {}
 unsafe impl Sync for Packet {}
 
+// Interface functions to be implemented for [`crate::packet::Packet`].
 pub trait PacketInterface<'a> {
+    /// A constant for max packet burst.
     const MAX_BURST: usize = 256;
+
+    /// Gets packet data length.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn get_data_len(&self) -> Result<u16, CneError>;
+
+    /// Sets packet data length.
+    ///
+    /// # Arguments
+    /// * `data_len` - data length to be set in packet.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn set_data_len(&mut self, data_len: u16) -> Result<(), CneError>;
+
+    /// Gets data in the packet.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn get_data(&self) -> Result<&'a [u8], CneError>;
+
+    /// Gets mutable data in the packet.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn get_data_mut(&mut self) -> Result<&'a mut [u8], CneError>;
+
+    /// Sets packet data.
+    ///
+    /// # Arguments
+    /// * `data` - data slice to be set in packet.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn set_data(&mut self, data: &[u8]) -> Result<(), CneError>;
+
+    /// Frees underlying buffers in the packet slice.
+    ///
+    /// # Arguments
+    /// * `pkts` - slice of packets.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PacketError] if an error is encountered.
+    ///
     fn free_packet_buffer(pkts: &mut [Packet]) -> Result<(), CneError>;
 }
 
