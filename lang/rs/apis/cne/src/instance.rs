@@ -198,6 +198,27 @@ impl CneInstance {
         }
     }
 
+    /// Sets current thread cpu set affinity corresponding to the group name
+    /// in JSONC file lcore-groups section.
+    ///
+    /// Returns an empty tuple or error in case of failure.
+    ///
+    /// # Arguments
+    /// * `group` - group name in JSONC file lcore-groups section.
+    ///
+    /// # Errors
+    /// Returns [CneError::ConfigError] if an error is encountered.
+    ///
+    pub fn set_current_thread_affinity(&self, group: &str) -> Result<(), CneError> {
+        let cne = self.read()?;
+
+        if let Some(cfg) = &cne.cfg {
+            cfg.set_current_thread_affinity(group)
+        } else {
+            Err(CneError::ConfigError("CNE is not configured".to_string()))
+        }
+    }
+
     pub(crate) fn get_port_details(&self, port_index: u16) -> Result<PortDetails, CneError> {
         let cne = self.read()?;
 

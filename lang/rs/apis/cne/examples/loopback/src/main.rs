@@ -41,9 +41,12 @@ fn main() {
                 .short("a")
                 .long("affinity")
                 .required(false) // optional parameter
+                .default_value("")
                 .takes_value(true)
-                .allow_hyphen_values(true) // allow negative values
-                .help("Core affinity for loopback thread. If provided, can help to improve performance"),
+                .help(
+                    "CPU set affinity group for loopback thread. Group name should match with JSONC
+                     file lcore-groups section. If provided, can help to improve performance",
+                ),
         )
         .get_matches();
 
@@ -68,13 +71,14 @@ fn main() {
         .parse::<u16>()
         .expect("Invalid port number");
 
-    let mut core_id = -1;
+    // Parse lcore core group.
+    let mut lcore_group = String::from("");
     if matches.is_present("affinity") {
-        core_id = matches
+        lcore_group = matches
             .value_of("affinity")
             .unwrap()
-            .parse::<i16>()
-            .expect("Invalid core id");
+            .parse::<String>()
+            .expect("Invalid lcore group");
     }
 
     // Get CNE instance.
@@ -113,15 +117,16 @@ fn main() {
     // Spawn loopback thread to recv/send packets.
     let port_clone = port.clone();
     let handle = thread::spawn(move || {
-        // Affinitize thread to core.
-        if core_id >= 0 {
-            core_affinity::set_for_current(core_affinity::CoreId {
-                id: core_id as usize,
-            });
-        }
         // Register loopback thread with CNE.
         let cne = CneInstance::get_instance();
         let tid = cne.register_thread("loopback").unwrap();
+
+        // Affinitize current thread to lcore group.
+        if !lcore_group.is_empty() {
+            if let Err(e) = cne.set_current_thread_affinity(&lcore_group) {
+                log::warn!("Thread affinity cannot be set: {}", e.to_string());
+            }
+        }
 
         while r.load(Ordering::SeqCst) {
             if let Err(e) = loopback(&port_clone) {

@@ -19,7 +19,6 @@ use pnet::datalink::Channel::Ethernet;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::packet::ethernet::MutableEthernetPacket;
 
-
 // Example echo server implementation using cne and libpnet library.
 // CNE based echo server receives and sends layer 2 packets using AF-XDP socket.
 // libpnet based echo server receives and sends layer 2 packets using AF_PACKET.
@@ -69,6 +68,18 @@ fn main() {
                         .required(false)
                         .takes_value(true)
                         .help("packet burst size. Default is 256"),
+                )
+                .arg(
+                    Arg::with_name("affinity")
+                        .short("a")
+                        .long("affinity")
+                        .required(false) // optional parameter
+                        .default_value("")
+                        .takes_value(true)
+                        .help(
+                            "Cpu set affinity group for loopback thread. Group name should match with JSONC
+                             file lcore-groups section. If provided, can help to improve performance",
+                        ),
                 ),
         )
         .get_matches();
@@ -117,7 +128,17 @@ fn main() {
                     .expect("Invalid burst size");
             }
 
-            cne_echo_server(&jsonc_file, port_id, burst_size);
+            // Parse lcore core group.
+            let mut lcore_group = String::from("");
+            if cne_matches.is_present("affinity") {
+                lcore_group = cne_matches
+                    .value_of("affinity")
+                    .unwrap()
+                    .parse::<String>()
+                    .expect("Invalid lcore group");
+            }
+
+            cne_echo_server(&jsonc_file, port_id, burst_size, &lcore_group);
         }
         _ => {
             log::error!("Invalid mode. Mode should be either pnet or cne");
@@ -154,7 +175,6 @@ fn pnet_echo_server(interface_name: &str) {
                     new_packet.clone_from_slice(packet);
                     // Swap the source and destination mac addresses.
                     swap_mac_address(new_packet);
-
                 });
             }
             Err(e) => {
@@ -169,7 +189,7 @@ fn pnet_echo_server(interface_name: &str) {
 // Echo server based on CNE library.
 // Uses AF_XDP socket to receive/send layer 2 packets. It receives/sends packets in burst.
 // Burst size is configurable.
-fn cne_echo_server(jsonc_file: &str, port_id: u16, burst_size: usize) {
+fn cne_echo_server(jsonc_file: &str, port_id: u16, burst_size: usize, lcore_group: &str) {
     // Get CNE instance.
     let cne = CneInstance::get_instance();
 
@@ -205,10 +225,18 @@ fn cne_echo_server(jsonc_file: &str, port_id: u16, burst_size: usize) {
 
     // Spawn thread to receive/send packets.
     let port_clone = port.clone();
+    let lcore_group = String::from(lcore_group);
     let handle = thread::spawn(move || {
         // Register thread with CNE.
         let cne = CneInstance::get_instance();
         let tid = cne.register_thread("echo").unwrap();
+
+        // Affinitize current thread to lcore group.
+        if !lcore_group.is_empty() {
+            if let Err(e) = cne.set_current_thread_affinity(&lcore_group) {
+                log::warn!("Thread affinity cannot be set: {}", e.to_string());
+            }
+        }
 
         while r.load(Ordering::SeqCst) {
             if let Err(e) = cne_macswap_and_send(&port_clone, burst_size) {
