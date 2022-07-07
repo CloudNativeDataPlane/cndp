@@ -32,9 +32,13 @@ elif [ "$MODE" == "cne" ]; then
     # Port id. Use 256 as default burst size.
     BURST=${4:-256}
 
+    # Core affinity group for loopback thread. Default value "" means core affinity will not be set.
+    # group name should be present in lcore-groups in jsonc file.
+    CORE=${3:-"group0"}
+
     # Need to LD_PRELOAD libpmd_af_xdp.so since Rust binary doesn't include it and is required for applications.
     # Including libpmd_af_xdp.so as whole-archive during linking of rust binary doesn't seem to work.
-    sudo -E LD_LIBRARY_PATH=$LD_LIBRARY_PATH LD_PRELOAD=$LD_LIBRARY_PATH/libpmd_af_xdp.so RUST_LOG=info `which cargo` run -p $CRATE --release -- $MODE -c $CONFIG -p $PORT -b $BURST
+    sudo -E LD_LIBRARY_PATH=$LD_LIBRARY_PATH LD_PRELOAD=$LD_LIBRARY_PATH/libpmd_af_xdp.so RUST_LOG=info `which cargo` run -p $CRATE --release -- $MODE -c $CONFIG -p $PORT -b $BURST -a $CORE
 else
     cargo run -p $CRATE --release -- help
 fi

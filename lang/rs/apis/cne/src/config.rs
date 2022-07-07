@@ -4,7 +4,8 @@
 
 use indexmap::IndexMap;
 use json_comments::StripComments;
-use nix::sched::CpuSet;
+use nix::sched::{sched_setaffinity, CpuSet};
+use nix::unistd::Pid;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -245,6 +246,18 @@ impl Config {
         };
         let pool = lport_umem.rinfo[lport.region].pool;
         Ok(pool)
+    }
+
+    pub(crate) fn set_current_thread_affinity(&self, group: &str) -> Result<(), CneError> {
+        let cpu_set = self.cpu_sets.get(group).ok_or_else(|| {
+            CneError::ConfigError(format!("{} is not present in lcore-groups", group))
+        })?;
+
+        // Set current thread's CPU affinity. Pid 0 corresponds to calling thread.
+        sched_setaffinity(Pid::from_raw(0), cpu_set)
+            .map_err(|e| CneError::ConfigError(e.to_string()))?;
+
+        Ok(())
     }
 
     fn validate_port_index(&self, port_index: u16) -> Result<(), CneError> {
