@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <bsd/string.h>        // for strlcpy
+#include <cne_tailq.h>         // for TAILQ_FOREACH_SAFE
 
 #include <cne_version.h>
 #include <cne_event.h>
@@ -374,7 +375,7 @@ cne_memif_msg_enq_init(struct cne_pktdev *dev)
 {
     struct pmd_internals *pmd         = dev->data->dev_private;
     struct cne_memif_msg_queue_elt *e = cne_memif_msg_enq(pmd->cc);
-    cne_memif_msg_init_t *i           = &e->msg.init;
+    cne_memif_msg_init_t *i;
 
     if (e == NULL)
         return -1;
@@ -497,7 +498,7 @@ void
 cne_memif_disconnect(struct cne_pktdev *dev)
 {
     struct pmd_internals *pmd = dev->data->dev_private;
-    struct cne_memif_msg_queue_elt *elt, *next;
+    struct cne_memif_msg_queue_elt *elt, *next_elt;
     struct cne_memif_queue *mq;
     struct cne_ev_handle *ih;
     int i;
@@ -510,8 +511,7 @@ cne_memif_disconnect(struct cne_pktdev *dev)
     cne_spinlock_lock(&pmd->cc_lock);
     if (pmd->cc != NULL) {
         /* Clear control message queue (except disconnect message if any). */
-        for (elt = TAILQ_FIRST(&pmd->cc->msg_queue); elt != NULL; elt = next) {
-            next = TAILQ_NEXT(elt, next);
+        TAILQ_FOREACH_SAFE (elt, &pmd->cc->msg_queue, next, next_elt) {
             if (elt->msg.type != CNE_MEMIF_MSG_TYPE_DISCONNECT) {
                 TAILQ_REMOVE(&pmd->cc->msg_queue, elt, next);
                 free(elt);
@@ -844,7 +844,7 @@ cne_memif_socket_create(char *key, uint8_t listener, bool is_abstract)
     }
 
     sock->listener = listener;
-    strlcpy(sock->filename, key, CNE_MEMIF_SOCKET_UN_SIZE);
+    strlcpy(sock->filename, key, UNIX_PATH_MAX);
     TAILQ_INIT(&sock->dev_queue);
 
     if (listener != 0) {
@@ -852,14 +852,13 @@ cne_memif_socket_create(char *key, uint8_t listener, bool is_abstract)
         if (sockfd < 0)
             goto error;
 
+        memset(&un, 0, sizeof(un));
         un.sun_family = AF_UNIX;
         if (is_abstract) {
             /* abstract address */
-            un.sun_path[0] = '\0';
-            strlcpy(un.sun_path + 1, sock->filename, CNE_MEMIF_SOCKET_UN_SIZE - 1);
-        } else {
-            strlcpy(un.sun_path, sock->filename, CNE_MEMIF_SOCKET_UN_SIZE);
-        }
+            strlcpy(un.sun_path + 1, sock->filename, UNIX_PATH_MAX - 1);
+        } else
+            strlcpy(un.sun_path, sock->filename, UNIX_PATH_MAX);
 
         ret = setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &on, sizeof(on));
         if (ret < 0)
@@ -903,11 +902,11 @@ cne_memif_socket_init(struct cne_pktdev *dev, const char *socket_filename)
     struct cne_memif_socket *socket = NULL;
     struct cne_memif_socket_dev_list_elt *elt;
     struct pmd_internals *tmp_pmd;
-    char key[CNE_MEMIF_SOCKET_UN_SIZE];
+    char key[UNIX_PATH_MAX];
 
     /*TBC  multiple socket support, only support single socket */
-    memset(key, 0, CNE_MEMIF_SOCKET_UN_SIZE);
-    strlcpy(key, socket_filename, CNE_MEMIF_SOCKET_UN_SIZE);
+    memset(key, 0, UNIX_PATH_MAX);
+    strlcpy(key, socket_filename, UNIX_PATH_MAX);
 
     socket = cne_memif_socket_create(key, (pmd->role == CNE_MEMIF_ROLE_CLIENT) ? 0 : 1,
                                      pmd->flags & CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT);
@@ -915,6 +914,7 @@ cne_memif_socket_init(struct cne_pktdev *dev, const char *socket_filename)
         return -1;
 
     pmd->socket_filename = socket->filename;
+    pmd->socket          = socket;
 
     TAILQ_FOREACH (elt, &socket->dev_queue, next) {
         tmp_pmd = elt->dev->data->dev_private;
@@ -942,17 +942,29 @@ void
 cne_memif_socket_remove_device(struct cne_pktdev *dev)
 {
     struct pmd_internals *pmd = dev->data->dev_private;
+    struct cne_memif_socket_dev_list_elt *elt, *next;
     int ret;
 
     if (pmd->socket_filename == NULL)
         return;
-    /* remove listener socket file,
-     * so we can create new one later.
-     */
-    if (pmd->role == CNE_MEMIF_ROLE_SERVER) {
-        ret = remove(pmd->socket_filename);
-        if (ret < 0)
-            MIF_LOG(ERR, "Failed to remove socket file: %s", pmd->socket_filename);
+    for (elt = TAILQ_FIRST(&pmd->socket->dev_queue); elt != NULL; elt = next) {
+        next = TAILQ_NEXT(elt, next);
+        if (elt->dev == dev) {
+            TAILQ_REMOVE(&pmd->socket->dev_queue, elt, next);
+            free(elt);
+            pmd->socket_filename = NULL;
+        }
+    }
+
+    if (TAILQ_EMPTY(&pmd->socket->dev_queue)) {
+        if (pmd->socket->listener && !(pmd->flags & CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT)) {
+            /* remove listener socket file,
+             * so we can create new one later.
+             */
+            ret = remove(pmd->socket_filename);
+            if (ret < 0)
+                MIF_LOG(ERR, "Failed to remove socket file: %s", pmd->socket_filename);
+        }
     }
 }
 
@@ -985,16 +997,15 @@ cne_memif_connect_client(struct cne_pktdev *dev)
         return -1;
     }
 
+    memset(&sun, 0, sizeof(sun));
     sun.sun_family = AF_UNIX;
     if (pmd->flags & CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT) {
         /* abstract address */
-        sun.sun_path[0] = '\0';
-        strlcpy(sun.sun_path + 1, pmd->socket_filename, CNE_MEMIF_SOCKET_UN_SIZE - 1);
-    } else {
-        strlcpy(sun.sun_path, pmd->socket_filename, CNE_MEMIF_SOCKET_UN_SIZE);
-    }
+        strlcpy(sun.sun_path + 1, pmd->socket_filename, UNIX_PATH_MAX - 1);
+    } else
+        strlcpy(sun.sun_path, pmd->socket_filename, UNIX_PATH_MAX);
 
-    ret = connect(sockfd, (struct sockaddr *)&sun, sizeof(struct sockaddr_un));
+    ret = connect(sockfd, (struct sockaddr *)&sun, sizeof(sun));
     if (ret < 0) {
 
         MIF_LOG(ERR, "Failed to connect socket: %s.", pmd->socket_filename);
