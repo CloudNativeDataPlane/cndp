@@ -16,12 +16,11 @@ struct cne_memif_socket_dev_list_elt {
 };
 
 #define CNE_MEMIF_SOCKET_HASH_NAME "memif-sh"
-#define CNE_MEMIF_SOCKET_UN_SIZE \
-    (sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path))
+#define UNIX_PATH_MAX              108
 
 struct cne_memif_socket {
-    struct cne_ev_handle ev_handle;          /**< ev handle */
-    char filename[CNE_MEMIF_SOCKET_UN_SIZE]; /**< socket filename */
+    struct cne_ev_handle ev_handle; /**< ev handle */
+    char filename[UNIX_PATH_MAX];   /**< socket filename */
 
     TAILQ_HEAD(, cne_memif_socket_dev_list_elt) dev_queue;
     /**< Queue of devices using this socket */

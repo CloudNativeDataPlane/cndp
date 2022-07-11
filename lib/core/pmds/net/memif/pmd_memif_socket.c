@@ -31,7 +31,7 @@ cne_memif_check_socket_filename(const char *filename)
     uint32_t idx;
     int ret = 0;
 
-    if (strlen(filename) >= CNE_MEMIF_SOCKET_UN_SIZE) {
+    if (strlen(filename) >= UNIX_PATH_MAX) {
         MIF_LOG(ERR, "Unix socket address too long (max 108).");
         return -1;
     }
@@ -311,6 +311,7 @@ cne_memif_free_regions(struct cne_pktdev *dev)
     struct pmd_internals *pmd                = dev->data->dev_private;
     int i;
     struct cne_memif_region *r;
+
     /* regions are allocated contiguously, so it's
      * enough to loop until 'proc_private->regions_num'
      */
@@ -778,7 +779,8 @@ pmd_dev_close(struct cne_pktdev *dev)
 {
     struct pmd_internals *pmd = dev->data->dev_private;
 
-    cne_memif_msg_enq_disconnect(pmd->cc, "Device closed", 0);
+    if (pmd->cc)
+        cne_memif_msg_enq_disconnect(pmd->cc, "Device closed", 0);
     cne_memif_disconnect(dev);
 
     cne_memif_queue_release(dev->data->rx_queue);
@@ -892,12 +894,15 @@ cne_pmd_memif_socket_probe(lport_cfg_t *c)
     else
         CNE_ERR_RET("Not Support Mode\n");
 
-    dev = pktdev_allocate(c->name, NULL);
+    dev = pktdev_allocate(c->name, c->ifname);
 
     CNE_LOG(DEBUG, "Initializing memif_socket for %s\n", c->ifname);
 
     if (!dev)
-        CNE_ERR_RET("Failed to init lport\n");
+        CNE_ERR_GOTO(exit, "Failed to init lport\n");
+
+    /* use abstract address by default */
+    flags |= CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT;
 
     if (!(flags & CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT)) {
         ret = cne_memif_check_socket_filename(socket_filename);
@@ -917,8 +922,11 @@ cne_pmd_memif_socket_probe(lport_cfg_t *c)
 
     pktdev_create_done(dev);
 
-    ret = pktdev_portid(dev);
+    return (pktdev_portid(dev));
 exit:
+    if (dev)
+        pktdev_release_port(dev);
+
     return ret;
 }
 

@@ -65,6 +65,7 @@ struct pmd_internals {
     /**< use abstract socket address */
 
     char *socket_filename;                  /**< pointer to socket filename */
+    struct cne_memif_socket *socket;        /**< pointer to created socket */
     char secret[CNE_ETH_MEMIF_SECRET_SIZE]; /**< secret (optional security parameter) */
     pktmbuf_info_t *pi;                     /** mempool info structure */
     struct cne_memif_control_channel *cc;   /**< control channel */
