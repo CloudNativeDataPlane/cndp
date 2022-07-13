@@ -10,6 +10,7 @@ readme = "README.md"
 version = "0.1.0"
 edition = "2021"
 license = "BSD-3-Clause"
+keywords = ["networking", "cloud native", "AF_XDP"]
 
 [lib]
 name = "cne_sys"
