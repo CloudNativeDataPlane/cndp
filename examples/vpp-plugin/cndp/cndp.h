@@ -21,7 +21,7 @@
 #ifdef USE_LIBXDP
 #include <xdp/xsk.h>
 #else
- #include <bpf/xsk.h>
+#include <bpf/xsk.h>
 #endif
 #include <vnet/vnet.h>
 #include <vnet/devices/devices.h>
