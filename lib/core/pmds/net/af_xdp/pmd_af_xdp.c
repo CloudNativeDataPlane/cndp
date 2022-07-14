@@ -2,16 +2,20 @@
  * Copyright (c) 2019-2022 Intel Corporation.
  */
 // IWYU pragma: no_include <asm/int-ll64.h>
-#include <errno.h>                // for ENODEV
-#include <stdlib.h>               // for NULL, calloc, free, size_t
-#include <string.h>               // for memset
-#include <poll.h>                 // for pollfd
-#include <net/if.h>               // for if_nametoindex, IF_NAMESIZE
-#include <sys/socket.h>           // for AF_XDP, PF_XDP, SOL_XDP
-#include <bsd/string.h>           // for strlcpy
-#include <stdint.h>               // for uint16_t, uint64_t
-#include <linux/bpf.h>            // for XDP_PACKET_HEADROOM
-#include <bpf/xsk.h>              // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_...
+#include <errno.h>             // for ENODEV
+#include <stdlib.h>            // for NULL, calloc, free, size_t
+#include <string.h>            // for memset
+#include <poll.h>              // for pollfd
+#include <net/if.h>            // for if_nametoindex, IF_NAMESIZE
+#include <sys/socket.h>        // for AF_XDP, PF_XDP, SOL_XDP
+#include <bsd/string.h>        // for strlcpy
+#include <stdint.h>            // for uint16_t, uint64_t
+#include <linux/bpf.h>         // for XDP_PACKET_HEADROOM
+#ifdef USE_LIBXDP
+#include <xdp/xsk.h>
+#else
+#include <bpf/xsk.h>        // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_...
+#endif
 #include <net/ethernet.h>         // for ether_addr
 #include <cne_common.h>           // for CNE_PRIORITY_LAST
 #include <cne_log.h>              // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_ERR
