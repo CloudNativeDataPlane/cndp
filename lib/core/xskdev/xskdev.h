@@ -17,7 +17,7 @@
 #include <pthread.h>        // for pthread_mutex_t, pthread_mutex_init, pthre...
 #include <stdint.h>         // for uint16_t, uint32_t
 #include <stdio.h>          // for FILE, NULL, size_t
-#ifdef HAS_LIBXDP
+#ifdef USE_LIBXDP
 #include <xdp/xsk.h>
 #else
 #include <bpf/xsk.h>
