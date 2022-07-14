@@ -18,7 +18,11 @@
 #ifndef __included_cndp_h__
 #define __included_cndp_h__
 
-#include <bpf/xsk.h>
+#ifdef HAS_LIBXDP
+#include <xdp/xsk.h>
+#else
+ #include <bpf/xsk.h>
+#endif
 #include <vnet/vnet.h>
 #include <vnet/devices/devices.h>
 #include <vnet/ethernet/ethernet.h>

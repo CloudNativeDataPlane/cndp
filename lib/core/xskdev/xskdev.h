@@ -17,8 +17,12 @@
 #include <pthread.h>        // for pthread_mutex_t, pthread_mutex_init, pthre...
 #include <stdint.h>         // for uint16_t, uint32_t
 #include <stdio.h>          // for FILE, NULL, size_t
-#include <bpf/xsk.h>        // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_ring...
-#include <net/if.h>         // for IF_NAMESIZE
+#ifdef HAS_LIBXDP
+#include <xdp/xsk.h>
+#else
+#include <bpf/xsk.h>
+#endif
+#include <net/if.h>        // for IF_NAMESIZE
 
 #include <cne_common.h>        // for CNDP_API, CNE_STD_C11
 #include <cne_lport.h>         // for lport_stats_t, buf_alloc_t, buf_free_t
