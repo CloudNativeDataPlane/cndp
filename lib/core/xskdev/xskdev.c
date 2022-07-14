@@ -956,14 +956,8 @@ xskdev_socket_create(struct lport_cfg *c)
             CNE_ERR_GOTO(err, "Update of BPF map failed. %s\n", strerror(errno));
     } else {
         /* Getting the program ID must be after the xdp_socket__create() call */
-
-#ifdef HAS_LIBXDP
-        if (bpf_xdp_query_id(xi->if_index, xi->xdp_flags, &xi->prog_id)) {
-#else
-        if (bpf_get_link_xdp_id(xi->if_index, &xi->prog_id, xi->xdp_flags)) {
-#endif
+        if (bpf_get_link_xdp_id(xi->if_index, &xi->prog_id, xi->xdp_flags))
             CNE_ERR_GOTO(err, "bpf_get_link_xdp_id failed. %s\n", strerror(errno));
-        }
     }
 
     CNE_DEBUG("Program ID %u, if_index %d, if_name '%s'\n", xi->prog_id, xi->if_index, xi->ifname);
@@ -994,21 +988,13 @@ xskdev_socket_destroy(xskdev_info_t *xi)
         CNE_DEBUG("ifindex %d, %s, prog_id %u\n", xi->if_index, xi->ifname, xi->prog_id);
         if (xi->if_index) {
             if (xi->unprivileged == 0) {
-#ifdef HAS_LIBXDP
-                if (bpf_xdp_query_id(xi->if_index, xi->xdp_flags, &xi->prog_id)) {
-#else
-                if (bpf_get_link_xdp_id(xi->if_index, &xi->prog_id, xi->xdp_flags)) {
-#endif
+                if (bpf_get_link_xdp_id(xi->if_index, &curr_prog_id, xi->xdp_flags))
                     CNE_ERR("bpf_get_link_xdp_id failed\n");
-                } else {
+                else {
                     /* Try to remove the bpf program */
-                    if (xi->prog_id == curr_prog_id) {
-#ifdef HAS_LIBXDP
-                        bpf_xdp_detach(xi->if_index, xi->xdp_flags, NULL);
-#else
+                    if (xi->prog_id == curr_prog_id)
                         bpf_set_link_xdp_fd(xi->if_index, -1, xi->xdp_flags);
-#endif
-                    } else if (curr_prog_id)
+                    else if (curr_prog_id)
                         CNE_INFO("program on interface changed %d, not removing\n", curr_prog_id);
                 }
             }
