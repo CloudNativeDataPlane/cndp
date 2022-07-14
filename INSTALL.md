@@ -82,7 +82,7 @@ The following package are required to build CNDP libraries and examples.
 
 ```bash
 sudo dnf update && sudo dnf -y install @development-tools git libbsd-devel json-c-devel libnl3-devel libnl3-cli numactl-libs libbpf-devel libbpf meson ninja-build
-gcc-c++ libpcap libpcap-devel libxdp-devel libxdp
+gcc-c++ libpcap libpcap-devel
 ```
 
 ## Hugepage Configuration

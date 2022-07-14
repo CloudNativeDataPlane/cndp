@@ -11,7 +11,7 @@
 #include <bsd/string.h>        // for strlcpy
 #include <stdint.h>            // for uint16_t, uint64_t
 #include <linux/bpf.h>         // for XDP_PACKET_HEADROOM
-#ifdef USE_LIBXDP
+#ifdef HAS_LIBXDP
 #include <xdp/xsk.h>
 #else
 #include <bpf/xsk.h>        // for XSK_RING_CONS__DEFAULT_NUM_DESCS, xsk_...
