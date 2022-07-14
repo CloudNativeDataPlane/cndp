@@ -184,6 +184,10 @@ impl Config {
         Ok(())
     }
 
+    pub fn get_num_ports(&self) -> u16 {
+        self.lports.len() as u16
+    }
+
     pub fn get_port_by_index(&self, port_index: u16) -> Result<Port, CneError> {
         self.validate_port_index(port_index)?;
 
@@ -262,7 +266,7 @@ impl Config {
 
     fn validate_port_index(&self, port_index: u16) -> Result<(), CneError> {
         if port_index >= self.lports.len() as u16 {
-            let err_msg = format!("Invalid port {}", port_index);
+            let err_msg = format!("Invalid port index {}", port_index);
             Err(CneError::PortError(err_msg))
         } else {
             Ok(())

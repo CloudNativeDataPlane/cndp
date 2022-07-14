@@ -154,6 +154,25 @@ impl CneInstance {
         }
     }
 
+    /// Get number of ports in lports section of JSONC configuration file.
+    ///
+    /// Returns number of ports or error in case of failure.
+    ///
+    /// # Errors
+    /// Returns [CneError::PortError] if an error is encountered.
+    ///
+    pub fn get_num_ports(&self) -> Result<u16, CneError> {
+        let cne = self.read()?;
+
+        if let Some(cfg) = &cne.cfg {
+            Ok(cfg.get_num_ports())
+        } else {
+            Err(CneError::PortError(
+                "Cannot find ports. CNE is not configured".to_string(),
+            ))
+        }
+    }
+
     /// Creates a [Port] instance corresponding to the port index.
     ///
     /// Returns an [Port] or error in case of failure.
