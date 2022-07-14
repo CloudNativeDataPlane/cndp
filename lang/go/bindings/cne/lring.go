@@ -263,3 +263,11 @@ func (lr *LocklessRing) Empty() bool {
 	}
 	return C.cne_ring_empty(lr.ring) > 0
 }
+
+// Pointer returns the pointer to the C ring struct.
+func (lr *LocklessRing) Pointer() unsafe.Pointer {
+	if lr == nil {
+		return nil
+	}
+	return lr.ring
+}
