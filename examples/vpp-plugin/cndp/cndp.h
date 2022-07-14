@@ -18,7 +18,7 @@
 #ifndef __included_cndp_h__
 #define __included_cndp_h__
 
-#ifdef USE_LIBXDP
+#ifdef HAS_LIBXDP
 #include <xdp/xsk.h>
 #else
  #include <bpf/xsk.h>
