@@ -19,7 +19,7 @@
 //! Checkout [examples](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs/apis/cne/examples)
 //! Also see the crate documentation.
 
-pub(crate) mod config;
+pub mod config;
 pub mod error;
 pub mod instance;
 pub mod packet;

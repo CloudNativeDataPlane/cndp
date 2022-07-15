@@ -112,11 +112,11 @@ struct Options {
     uds_path: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Thread {
-    group: Option<String>,
-    lport: Option<Vec<String>>,
-    description: Option<String>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Thread {
+    pub group: Option<String>,
+    pub lports: Option<Vec<String>>,
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -141,7 +141,7 @@ pub(crate) enum PktApi {
 }
 
 impl Config {
-    pub fn load_config(jsonc_file: &str) -> Result<Config, CneError> {
+    pub(crate) fn load_config(jsonc_file: &str) -> Result<Config, CneError> {
         // Read JSONC file.
         let contents =
             fs::read_to_string(jsonc_file).map_err(|e| CneError::ConfigError(e.to_string()))?;
@@ -164,11 +164,11 @@ impl Config {
     }
 
     #[cfg(test)]
-    pub fn get_config(cfg: &Config) -> Result<String, CneError> {
+    pub(crate) fn get_config(cfg: &Config) -> Result<String, CneError> {
         serde_json::to_string(cfg).map_err(|e| CneError::ConfigError(e.to_string()))
     }
 
-    pub fn setup(&mut self) -> Result<(), CneError> {
+    pub(crate) fn setup(&mut self) -> Result<(), CneError> {
         self.setup_mem_pool()?;
 
         self.setup_lports()?;
@@ -176,7 +176,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn cleanup(&mut self) -> Result<(), CneError> {
+    pub(crate) fn cleanup(&mut self) -> Result<(), CneError> {
         self.cleanup_lports()?;
 
         self.cleanup_mem_pool()?;
@@ -184,11 +184,11 @@ impl Config {
         Ok(())
     }
 
-    pub fn get_num_ports(&self) -> u16 {
+    pub(crate) fn get_num_ports(&self) -> u16 {
         self.lports.len() as u16
     }
 
-    pub fn get_port_by_index(&self, port_index: u16) -> Result<Port, CneError> {
+    pub(crate) fn get_port_by_index(&self, port_index: u16) -> Result<Port, CneError> {
         self.validate_port_index(port_index)?;
 
         let (_, lport) = self.lports.get_index(port_index as usize).ok_or_else(|| {
@@ -205,7 +205,7 @@ impl Config {
         port
     }
 
-    pub fn get_port_by_name(&self, port_name: &str) -> Result<Port, CneError> {
+    pub(crate) fn get_port_by_name(&self, port_name: &str) -> Result<Port, CneError> {
         let port_index = self.lports.get_index_of(port_name).ok_or_else(|| {
             CneError::ConfigError(format!("Port name {} is not present in config", port_name))
         })?;
@@ -250,6 +250,15 @@ impl Config {
         };
         let pool = lport_umem.rinfo[lport.region].pool;
         Ok(pool)
+    }
+
+    pub(crate) fn get_thread_details(&self) -> Result<HashMap<String, Thread>, CneError> {
+        let thread_details = self
+            .threads
+            .clone()
+            .ok_or_else(|| CneError::ConfigError("No threads present".to_string()))?;
+
+        Ok(thread_details)
     }
 
     pub(crate) fn set_current_thread_affinity(&self, group: &str) -> Result<(), CneError> {
