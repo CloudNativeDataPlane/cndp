@@ -165,10 +165,32 @@ if nl_cli_dep.found()
 endif
 
 cne_conf.set10('HAS_XSK_UMEM_SHARED', false)
-bpf_dep = dependency('libbpf', version: ['>=0.3.0', '<=0.6.1'], required: true, method: 'pkg-config')
-if bpf_dep.found() and cc.has_header('bpf/xsk.h') and cc.has_header('linux/if_xdp.h')
-    extra_ldflags += '-lbpf'
-    cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
+cne_conf.set10('HAS_LIBXDP', false)
+xdp_dep = dependency('libxdp', version : '>=1.2.0', required: false, method: 'pkg-config')
+bpf_dep = dependency('libbpf', required: false, method: 'pkg-config')
+if not bpf_dep.found()
+    bpf_dep = cc.find_library('bpf', required: false)
+endif
+
+if cc.has_header('linux/if_xdp.h')
+    if xdp_dep.found() and cc.has_header('xdp/xsk.h')
+        if bpf_dep.found() and cc.has_header('bpf/bpf.h')
+            cne_conf.set10('HAS_LIBXDP', true)
+            cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
+            extra_ldflags += '-lbpf'
+            extra_ldflags += '-lxdp'
+        endif
+    else
+        if bpf_dep.found() and cc.has_header('bpf/xsk.h') and cc.has_header('bpf/bpf.h')
+        # libxdp not found. Rely solely on libbpf for xsk functionality
+        # which is only available in versions <= v0.6.0.
+            bpf_ver_dep = dependency('libbpf', version: ['>=0.3.0', '<=0.6.1'], required: true, method: 'pkg-config')
+            if bpf_ver_dep.found()
+                extra_ldflags += '-lbpf'
+                cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
+            endif
+        endif
+    endif
 endif
 
 cne_conf.set('HAS_UINTR_SUPPORT', false)
