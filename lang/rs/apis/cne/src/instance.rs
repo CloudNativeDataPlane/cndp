@@ -2,6 +2,7 @@
  * Copyright (c) 2020-2022 Intel Corporation.
  */
 
+use std::collections::HashMap;
 use std::mem::MaybeUninit;
 use std::sync::Once;
 use std::sync::RwLock;
@@ -235,6 +236,25 @@ impl CneInstance {
             cfg.set_current_thread_affinity(group)
         } else {
             Err(CneError::ConfigError("CNE is not configured".to_string()))
+        }
+    }
+
+    /// Get thread details in threads section of JSONC configuration file.
+    ///
+    /// Returns thread details or error in case of failure.
+    ///
+    /// # Errors
+    /// Returns [CneError::ConfigError] if an error is encountered.
+    ///
+    pub fn get_thread_details(&self) -> Result<HashMap<String, Thread>, CneError> {
+        let cne = self.read()?;
+
+        if let Some(cfg) = &cne.cfg {
+            cfg.get_thread_details()
+        } else {
+            Err(CneError::ConfigError(
+                "Cannot find thread details. CNE is not configured".to_string(),
+            ))
         }
     }
 
