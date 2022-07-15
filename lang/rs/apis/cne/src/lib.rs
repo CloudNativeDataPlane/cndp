@@ -116,6 +116,10 @@ mod tests {
         let ret = cne.configure(&jsonc_file);
         assert!(ret.is_ok());
 
+        // Get num ports.
+        let num_ports = cne.get_num_ports();
+        assert!(num_ports.is_ok());
+
         // Get valid port. Should return success.
         let port = cne.get_port(0);
         assert!(port.is_ok());
