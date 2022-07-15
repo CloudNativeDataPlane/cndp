@@ -24,6 +24,17 @@ type MsgChannel struct {
 	mChan unsafe.Pointer
 }
 
+type MsgChannelInfo struct {
+	RecvRing     unsafe.Pointer
+	SendRing     unsafe.Pointer
+	ChildCount   int
+	SendCalls    uint64
+	SendCnt      uint64
+	RecvCalls    uint64
+	RecvCnt      uint64
+	RecvTimeouts uint64
+}
+
 var msgChannel map[string]*MsgChannel
 var msgChanMu sync.Mutex
 
@@ -123,4 +134,43 @@ func (mc *MsgChannel) SendFree() int {
 	}
 
 	return int(sndFree)
+}
+
+func (mc *MsgChannel) Info() *MsgChannelInfo {
+	var mcInfo C.msgchan_info_t
+
+	if mc == nil {
+		return nil
+	}
+	if C.mc_info(mc.mChan, &mcInfo) == -1 {
+		return nil
+	}
+
+	info := &MsgChannelInfo{
+		RecvRing:     mcInfo.recv_ring,
+		SendRing:     mcInfo.send_ring,
+		ChildCount:   int(mcInfo.child_count),
+		SendCalls:    uint64(mcInfo.send_calls),
+		SendCnt:      uint64(mcInfo.send_cnt),
+		RecvCalls:    uint64(mcInfo.recv_calls),
+		RecvCnt:      uint64(mcInfo.recv_cnt),
+		RecvTimeouts: uint64(mcInfo.recv_timeouts),
+	}
+
+	return info
+}
+
+func (mc *MsgChannel) Pointers() (recv unsafe.Pointer, send unsafe.Pointer) {
+	if mc == nil {
+		return nil, nil
+	}
+
+	info := mc.Info()
+	if info == nil {
+		return nil, nil
+	}
+
+	recv, send = info.RecvRing, info.SendRing
+
+	return
 }
