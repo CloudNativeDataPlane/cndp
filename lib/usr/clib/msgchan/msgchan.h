@@ -25,10 +25,25 @@
 extern "C" {
 #endif
 
+#define MC_NAME_SIZE (CNE_NAME_LEN + 4) /**< Max size of the msgchan name */
+#define MC_RECV_RING 0                  /**< Receive index into msgchan_t.rings */
+#define MC_SEND_RING 1                  /**< Send index into msgchan_t.rings */
+
 #define MC_NO_CHILD_CREATE \
     0x80000000 /**< If set in mc_create() flags then child will not be created */
 
 typedef void msgchan_t; /**< Opaque msgchan structure pointer */
+
+typedef struct msgchan_info {
+    cne_ring_t *recv_ring;  /**< Pointers to the recv ring */
+    cne_ring_t *send_ring;  /**< Pointers to the send ring */
+    int child_count;        /**< Number of children */
+    uint64_t send_calls;    /**< Number of send calls */
+    uint64_t send_cnt;      /**< Number of objects sent */
+    uint64_t recv_calls;    /**< Number of receive calls */
+    uint64_t recv_cnt;      /**< Number of objects received */
+    uint64_t recv_timeouts; /**< Number of receive timeouts */
+} msgchan_info_t;
 
 /**
  * @brief Create a message channel
@@ -115,14 +130,26 @@ CNDP_API const char *mc_name(msgchan_t *mc);
  *
  * @param mc
  *   The message channel structure pointer
- * @param server_free_cnt
- *   The pointer to place the server free count, can be NULL.
- * @param client_free_cnt
- *   The pointer to place the client free count, can be NULL.
+ * @param recv_free_cnt
+ *   The pointer to place the receive free count, can be NULL.
+ * @param send_free_cnt
+ *   The pointer to place the send free count, can be NULL.
  * @return
  *   -1 on error or size of the massage channel rings.
  */
-CNDP_API int mc_size(msgchan_t *mc, int *server_free_cnt, int *client_free_cnt);
+CNDP_API int mc_size(msgchan_t *mc, int *recv_free_cnt, int *send_free_cnt);
+
+/**
+ * Return the message channel information structure data
+ *
+ * @param _mc
+ *   The message channel structure pointer
+ * @param info
+ *   The pointer to the msgchan_info_t structure
+ * @return
+ *   0 on success or -1 on error
+ */
+CNDP_API int mc_info(msgchan_t *_mc, msgchan_info_t *info);
 
 /**
  * @brief Dump out the details of the given message channel structure
