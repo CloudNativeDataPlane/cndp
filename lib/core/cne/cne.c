@@ -9,6 +9,8 @@
 #include <cne_tty.h>            // for tty_is_inited
 #include <sys/queue.h>          // for STAILQ_INIT, STAILQ_INSERT_TAIL, STAILQ_REMOVE
 #include <locale.h>
+#include <cne_tailq.h>
+#include <cne_log.h>
 
 #include "cne_private.h"        // for cne_private_t, cne_entry, cne_entry::(anony...
 #include "cne.h"                // for cne_id, ...
@@ -99,6 +101,8 @@ cne_max_threads(void)
 int
 cne_init(void)
 {
+    if (cne_tailqs_init() < 0)
+        CNE_ERR_RET("unable to complete tailq initialization\n");
     return cne_initial_uid();
 }
 

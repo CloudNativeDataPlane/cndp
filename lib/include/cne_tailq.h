@@ -8,11 +8,16 @@
 /**
  * @file
  *
- *  Defines cne_tailq APIs for only internal use to safely iterate over a list.
+ * Defines cne_tailq APIs to safely iterate over a list of items or structures. The tailq APIs
+ * add non-list items to a tailq list. Add items to a tailq list by allocating a cne_tailq_entry
+ * structure and adding the structure pointer to the cne_tailq_entry.data member. The calling
+ * function must supply protection against multiple accesses to a given cne_tailq list.
  */
 
 #include <sys/queue.h>
 #include <stdio.h>
+
+#include <cne_common.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,6 +31,7 @@ struct cne_tailq_entry {
 /** dummy */
 TAILQ_HEAD(cne_tailq_entry_head, cne_tailq_entry);
 
+#define CNE_MAX_TAILQS     32
 #define CNE_TAILQ_NAMESIZE 32
 
 /**
@@ -48,11 +54,11 @@ struct cne_tailq_elem {
     const char name[CNE_TAILQ_NAMESIZE];
 };
 
-#define CNE_REGISTER_TAILQ(t)                                    \
-    CNE_INIT(tailqinitfn_##t)                                    \
-    {                                                            \
-        struct cne_tailq_elem *_t = (struct cne_tailq_elem *)&t; \
-        TAILQ_INIT(&_t->head->tailq_head);                       \
+#define CNE_REGISTER_TAILQ(t)                                   \
+    CNE_INIT(tailqinitfn_##t)                                   \
+    {                                                           \
+        if (cne_tailq_register(&t) < 0)                         \
+            cne_panic("Cannot initialize tailq: %s\n", t.name); \
     }
 
 /**
@@ -79,12 +85,28 @@ struct cne_tailq_elem {
 #define CNE_TAILQ_LOOKUP(name, struct_name) CNE_TAILQ_CAST(cne_tailq_lookup(name), struct_name)
 
 /**
- * Dump tail queues to a file.
+ * Initialize the tailq structures.
  *
- * @param f
- *   A pointer to a file for output
+ * @return
+ *   0 on success, -1 on error code
  */
-void cne_dump_tailq(FILE *f);
+CNDP_API int cne_tailqs_init(void);
+
+/**
+ * Register the given tailq entry.
+ *
+ * @param t
+ *   The tailq element to register.
+ * @return
+ *   0 on success or -1 on error
+ */
+CNDP_API int cne_tailq_register(struct cne_tailq_elem *t);
+
+/**
+ * Dump tail queues to stdout.
+ *
+ */
+CNDP_API void cne_dump_tailq(void);
 
 /**
  * Lookup for a tail queue.
@@ -99,14 +121,14 @@ void cne_dump_tailq(FILE *f);
  * @return
  *   A pointer to the tail queue head structure.
  */
-struct cne_tailq_head *cne_tailq_lookup(const char *name);
+CNDP_API struct cne_tailq_head *cne_tailq_lookup(const char *name);
 
 /**
  * Register a tail queue.
  *
  * Register a tail queue from shared memory.
  * This function is mainly used by some, which is used to
- * register tailq from the different dpdk libraries. Since this macro is a
+ * register tailq from the different cndp libraries. Since this macro is a
  * constructor.
  *
  * @param t
@@ -115,7 +137,7 @@ struct cne_tailq_head *cne_tailq_lookup(const char *name);
  * @return
  *   0 on success or -1 in case of an error.
  */
-int cne_eal_tailq_register(struct cne_tailq_elem *t);
+CNDP_API int cne_eal_tailq_register(struct cne_tailq_elem *t);
 
 /**
  * This macro permits both remove and free var within the loop safely.
