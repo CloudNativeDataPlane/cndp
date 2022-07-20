@@ -32,7 +32,7 @@ headers = files(
 
 deps += [cne, uds, xskdev, pktmbuf, mempool, mmap]
 
-libcli = both_libraries(libname, sources, install: true, dependencies: deps)
+libcli = library(libname, sources, install: true, dependencies: deps)
 cli = declare_dependency(link_with: libcli, include_directories: include_directories('.'))
 
 cndp_libs += cli

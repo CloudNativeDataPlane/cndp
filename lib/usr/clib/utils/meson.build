@@ -13,7 +13,7 @@ headers = files(
 
 deps += []
 
-libmisc = both_libraries(libname, sources, install: true, dependencies: deps)
+libmisc = library(libname, sources, install: true, dependencies: deps)
 utils = declare_dependency(link_with: libmisc, include_directories: include_directories('.'))
 
 cndp_libs += utils

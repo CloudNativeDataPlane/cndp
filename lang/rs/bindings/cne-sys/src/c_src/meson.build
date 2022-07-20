@@ -29,5 +29,5 @@ bsd_dep = dependency('libbsd', required: true)
 deps = [bsd_dep,cndp_dep]
 
 cne_rust_bindings_libname = 'cne_rust_bindings'
-lib_cndp_rust_bindings = both_libraries(cne_rust_bindings_libname, cne_rust_bindings_sources,
+lib_cndp_rust_bindings = library(cne_rust_bindings_libname, cne_rust_bindings_sources,
                                         install: false, dependencies: deps)

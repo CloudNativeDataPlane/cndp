@@ -9,5 +9,7 @@ headers = files('node_ip4_api.h', 'node_eth_api.h')
 
 deps += [cne, fib, graph, pktdev, mempool, pktmbuf, mmap]
 
-libnodes = both_libraries(libname, sources, install: true, dependencies: deps)
+libnodes = library(libname, sources, install: true, dependencies: deps)
 nodes = declare_dependency(link_with: libnodes, include_directories: include_directories('.'))
+
+cndp_libs += libnodes

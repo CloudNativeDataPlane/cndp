@@ -70,7 +70,7 @@ install_headers(headers, subdir: meson.project_name().to_lower() + '/cnet')
 libname = 'cne_stack'
 enabled_libs += libname
 
-libcne_stack = both_libraries(libname, sources, install: true, dependencies: def_deps,
+libcne_stack = library(libname, sources, install: true, dependencies: def_deps,
     include_directories: includes)
 stack = declare_dependency(link_with: libcne_stack, include_directories: includes)
 

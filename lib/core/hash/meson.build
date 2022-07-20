@@ -12,7 +12,7 @@ sources = files('cne_cuckoo_hash.c', 'cne_fbk_hash.c')
 
 deps += [ring, cne]
 
-libhash = both_libraries(libname, sources, install: true, dependencies: deps)
+libhash = library(libname, sources, install: true, dependencies: deps)
 hash = declare_dependency(link_with: libhash, include_directories: include_directories('.'))
 
 cndp_libs += hash

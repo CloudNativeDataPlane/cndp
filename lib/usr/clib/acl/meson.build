@@ -81,7 +81,7 @@ endif
 
 deps += [cne]
 
-libacl = both_libraries(libname, sources, c_args: args, objects: objs, install: true, dependencies: deps)
+libacl = library(libname, sources, c_args: args, objects: objs, install: true, dependencies: deps)
 acl = declare_dependency(link_with: libacl, include_directories: include_directories('.'))
 
 cndp_libs += acl

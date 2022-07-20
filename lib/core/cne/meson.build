@@ -12,7 +12,7 @@ headers = files(
 
 deps += [mmap]
 
-libcne = both_libraries(libname, sources, install: true, dependencies: deps)
+libcne = library(libname, sources, install: true, dependencies: deps)
 cne = declare_dependency(link_with: libcne, include_directories: include_directories('.'))
 
 cndp_libs += cne
