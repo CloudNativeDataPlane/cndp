@@ -36,6 +36,7 @@ extern "C" {
 #define PKTDEV_FALLBACK_TX_RINGSIZE 512
 #define PKTDEV_FALLBACK_RX_NBQUEUES 1
 #define PKTDEV_FALLBACK_TX_NBQUEUES 1
+#define PKTDEV_ADMIN_STATE_DOWN     0xFFFF
 
 #include <cne_lport.h>
 
@@ -176,6 +177,7 @@ struct pktdev_info {
  *   The number of packets actually retrieved, which is the number
  *   of pointers to *pktmbuf* structures effectively supplied to the
  *   *rx_pkts* array.
+ *   returns 0xFFFF on admin_state_down
  */
 static inline uint16_t
 pktdev_rx_burst(uint16_t lport_id, pktmbuf_t **rx_pkts, const uint16_t nb_pkts)
@@ -190,8 +192,8 @@ pktdev_rx_burst(uint16_t lport_id, pktmbuf_t **rx_pkts, const uint16_t nb_pkts)
 
     /* Check packet stream status */
     if (!pktdev_admin_state(lport_id)) {
-        PKTDEV_LOG(ERR, "Packet stream is disabled for '%d'\n", lport_id);
-        return 0;
+        PKTDEV_LOG(DEBUG, "Packet stream is disabled for '%d'\n", lport_id);
+        return PKTDEV_ADMIN_STATE_DOWN;
     }
 
     nb_rx = (*dev->rx_pkt_burst)(dev->data->rx_queue, rx_pkts, nb_pkts);
@@ -250,6 +252,7 @@ pktdev_rx_burst(uint16_t lport_id, pktmbuf_t **rx_pkts, const uint16_t nb_pkts)
  *   The number of output packets actually stored in transmit descriptors of
  *   the transmit ring. The return value can be less than the value of the
  *   *tx_pkts* parameter when the transmit ring is full or has been filled up.
+ *   returns 0xFFFF on admin_state_down
  */
 static inline uint16_t
 pktdev_tx_burst(uint16_t lport_id, pktmbuf_t **tx_pkts, uint16_t nb_pkts)
@@ -270,8 +273,8 @@ pktdev_tx_burst(uint16_t lport_id, pktmbuf_t **tx_pkts, uint16_t nb_pkts)
 
     /* Check packet stream status */
     if (!pktdev_admin_state(lport_id)) {
-        PKTDEV_LOG(ERR, "Packet stream is disabled for '%d'\n", lport_id);
-        return 0;
+        PKTDEV_LOG(DEBUG, "Packet stream is disabled for '%d'\n", lport_id);
+        return PKTDEV_ADMIN_STATE_DOWN;
     }
 
     return (*dev->tx_pkt_burst)(dev->data->tx_queue, tx_pkts, nb_pkts);

@@ -331,6 +331,8 @@ acl_fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         break;
     case PKTDEV_PKT_API:
         n_pkts = pktdev_rx_burst(pd->lport, pd->rx_mbufs, BURST_SIZE);
+        if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+            return 0;
         break;
     default:
         n_pkts = 0;

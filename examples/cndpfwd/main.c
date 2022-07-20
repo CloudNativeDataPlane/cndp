@@ -32,6 +32,8 @@ struct create_txbuff_thd_priv_t {
 #define foreach_thd_lport(_t, _lp) \
     for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
 
+#define TIMEOUT_VALUE 1000 /* Number of times to wait for each usleep() time */
+
 enum thread_quit_state {
     THD_RUN = 0, /**< Thread should continue running */
     THD_QUIT,    /**< Thread should stop itself */
@@ -71,6 +73,8 @@ __tx_flush(struct fwd_port *pd, pkt_api_t api, pktmbuf_t **mbufs, uint16_t n_pkt
 {
     while (n_pkts > 0) {
         uint16_t n = __tx_burst(api, pd, mbufs, n_pkts);
+        if (n == PKTDEV_ADMIN_STATE_DOWN)
+            return n;
 
         n_pkts -= n;
         mbufs += n;
@@ -89,6 +93,8 @@ _drop_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
 
     n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
+    if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+        return -1;
 
     if (n_pkts)
         pktmbuf_free_bulk(pd->rx_mbufs, n_pkts);
@@ -110,6 +116,9 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     txbuff = thd_private->txbuffs;
 
     n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
+    if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+        return -1;
+
     for (i = 0; i < n_pkts; i++) {
         uint8_t dst_lport = get_dst_lport(pktmbuf_mtod(pd->rx_mbufs[i], void *));
         jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, dst_lport);
@@ -141,20 +150,24 @@ static int
 _loopback_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 {
     struct fwd_port *pd = lport->priv_;
-    int n_pkts;
+    int n_pkts, n;
 
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
 
     n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
+    if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+        return -1;
 
     if (n_pkts) {
         for (int j = 0; j < n_pkts; j++)
             MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[j], void *));
 
-        pd->tx_overrun += __tx_flush(pd, fwd->pkt_api, pd->rx_mbufs, n_pkts);
+        n = __tx_flush(pd, fwd->pkt_api, pd->rx_mbufs, n_pkts);
+        if (n == PKTDEV_ADMIN_STATE_DOWN)
+            return -1;
+        pd->tx_overrun += n;
     }
-
     return 0;
 }
 
@@ -163,13 +176,17 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 {
     struct fwd_port *pd = lport->priv_;
     pktmbuf_t *tx_mbufs[fwd->burst];
-    int n_pkts;
+    int n_pkts, n;
 
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
 
     /* Cleanup RX side */
-    pktmbuf_free_bulk(pd->rx_mbufs, __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst));
+    n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
+    if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+        return -1;
+
+    pktmbuf_free_bulk(pd->rx_mbufs, n_pkts);
 
     if (fwd->pkt_api == PKTDEV_PKT_API)
         n_pkts = pktdev_buf_alloc(pd->lport, tx_mbufs, fwd->burst);
@@ -195,7 +212,10 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             pktmbuf_data_len(xb) = 60;
         }
 
-        pd->tx_overrun += __tx_flush(pd, fwd->pkt_api, tx_mbufs, n_pkts);
+        n = __tx_flush(pd, fwd->pkt_api, tx_mbufs, n_pkts);
+        if (n == PKTDEV_ADMIN_STATE_DOWN)
+            return -1;
+        pd->tx_overrun += n;
     }
 
     return 0;
@@ -361,18 +381,7 @@ _thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int
 }
 
 static int
-_check_thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int idx)
-{
-    jcfg_thd_t *thd = obj;
-
-    /* Make sure worker threads are done. Ignore main thread (idx=0) */
-    while (thd->quit != THD_DONE && idx > 0)
-        ;
-    return 0;
-}
-
-static int
-_thread_cleanup(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unused)
+_thread_port_close(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unused)
 {
     jcfg_thd_t *thd = obj;
     jcfg_lport_t *lport;
@@ -404,11 +413,43 @@ _thread_cleanup(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne
         }
         if (ret < 0)
             CNE_ERR("port_close() returned error\n");
+    }
+    return 0;
+}
 
+static int
+_check_thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int idx)
+{
+    jcfg_thd_t *thd = obj;
+    uint32_t timo   = TIMEOUT_VALUE;
+
+    /* Make sure worker threads are done. Ignore main thread (idx=0) */
+    while (--timo && thd->quit != THD_DONE && idx > 0)
+        usleep(10000); /* 10ms */
+
+    if (timo == 0)
+        return -1;
+
+    return 0;
+}
+
+static int
+_thread_cleanup(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused,
+                int idx __cne_unused)
+{
+    jcfg_thd_t *thd = obj;
+    jcfg_lport_t *lport;
+
+    if (thd->lport_cnt == 0) {
+        CNE_DEBUG("No lports attached to thread '%s'\n", thd->name);
+        return 0;
+    } else
+        CNE_DEBUG("Close %d lport%s for thread '%s'\n", thd->lport_cnt,
+                  (thd->lport_cnt == 1) ? "" : "s", thd->name);
+
+    foreach_thd_lport (thd, lport) {
         if (lport->umem) {
-            int i;
-
-            for (i = 0; i < lport->umem->region_cnt; i++) {
+            for (int i = 0; i < lport->umem->region_cnt; i++) {
                 pktmbuf_destroy(lport->umem->rinfo[i].pool);
                 lport->umem->rinfo[i].pool = NULL;
             }
@@ -443,6 +484,7 @@ __on_exit(int val, void *arg, int exit_type)
         if (fwd) {
             cne_printf(">>> [magenta]Closing lport(s)[]\n");
             jcfg_thread_foreach(fwd->jinfo, _thread_quit, fwd);
+            jcfg_thread_foreach(fwd->jinfo, _thread_port_close, fwd);
             jcfg_thread_foreach(fwd->jinfo, _check_thread_quit, fwd);
             jcfg_thread_foreach(fwd->jinfo, _thread_cleanup, fwd);
             cne_printf(">>> [magenta]Done[]\n");
