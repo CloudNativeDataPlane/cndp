@@ -7,7 +7,7 @@ headers = files('cne_rib.h', 'cne_rib6.h')
 
 deps += [cne, mempool, mmap]
 
-librib = both_libraries(libname, sources, install: true, dependencies: deps)
+librib = library(libname, sources, install: true, dependencies: deps)
 rib = declare_dependency(link_with: librib, include_directories: include_directories('.'))
 
 cndp_libs += rib

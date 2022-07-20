@@ -6,7 +6,7 @@ headers = files('metrics.h')
 
 deps += [include, cne, mmap, uds, pktmbuf, mempool]
 
-libmetrics = both_libraries(libname, sources, install: true, dependencies: deps)
+libmetrics = library(libname, sources, install: true, dependencies: deps)
 metrics = declare_dependency(link_with: libmetrics, include_directories: include_directories('.'))
 
 cndp_libs += metrics

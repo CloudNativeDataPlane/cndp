@@ -14,7 +14,7 @@ headers = files(
 
 deps += [cne, mempool, mmap, pktmbuf, uds, xskdev]
 
-libpktdev = both_libraries(libname, sources, install: true, dependencies: deps)
+libpktdev = library(libname, sources, install: true, dependencies: deps)
 pktdev = declare_dependency(link_with: libpktdev, include_directories: include_directories('.'))
 
 cndp_libs += pktdev

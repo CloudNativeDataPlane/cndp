@@ -6,7 +6,7 @@ headers = files('cne_log.h')
 
 deps += [osal]
 
-liblog = both_libraries(libname, sources, install: true, dependencies: deps)
+liblog = library(libname, sources, install: true, dependencies: deps)
 log = declare_dependency(link_with: liblog, include_directories: include_directories('.'))
 
 cndp_libs += log

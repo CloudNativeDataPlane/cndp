@@ -6,7 +6,7 @@ headers = files('cne_timer.h')
 
 deps += [cne, mmap]
 
-libtimer = both_libraries(libname, sources, install: true, dependencies: deps)
+libtimer = library(libname, sources, install: true, dependencies: deps)
 timer = declare_dependency(link_with: libtimer, include_directories: include_directories('.'))
 
 cndp_libs += timer

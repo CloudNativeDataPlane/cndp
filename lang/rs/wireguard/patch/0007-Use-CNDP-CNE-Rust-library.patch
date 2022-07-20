@@ -2050,7 +2050,7 @@ index 00a9d42..0000000
 -    include_directories : cndp_inc)
 -
 -jcfg_parse_libname = 'rust_' + 'jcfg_parse'
--librust_jcfg_parse = both_libraries(jcfg_parse_libname, jcfg_parse_sources, install: false, dependencies: [cndp_dep])
+-librust_jcfg_parse = library(jcfg_parse_libname, jcfg_parse_sources, install: false, dependencies: [cndp_dep])
 diff --git a/src/platform/linux/cndp/jcfg_parse/parse-jsonc.c b/src/platform/linux/cndp/jcfg_parse/parse-jsonc.c
 deleted file mode 100644
 index 389a4a8..0000000

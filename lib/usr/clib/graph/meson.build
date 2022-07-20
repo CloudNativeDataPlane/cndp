@@ -6,7 +6,7 @@ headers = files('cne_graph.h', 'cne_graph_worker.h')
 
 deps += [cne]
 
-libgraph = both_libraries(libname, sources, install: true, dependencies: deps)
+libgraph = library(libname, sources, install: true, dependencies: deps)
 graph = declare_dependency(link_with: libgraph, include_directories: include_directories('.'))
 
 cndp_libs += graph

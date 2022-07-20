@@ -23,23 +23,46 @@ endif
 all: FORCE
 	${Build} build
 
+help: FORCE
+	${Build} help
+	@echo ""
+	@echo "Makefile options:"
+	@echo " Adding 'static_build=1' to the make line enables building static files"
+	@echo "    eg: 'make static_build=1 rebuild install' for static executables"
+
 build: FORCE
 	${Build} ${verbose} build
 
 rebuild: FORCE
+ifeq (${static_build},1)
+	${Build} ${verbose} clean static build
+else
 	${Build} ${verbose} clean build
+endif
 
 rebuild-install: FORCE
+ifeq (${static_build},1)
+	${Build} ${verbose} clean static build install
+else
 	${Build} ${verbose} clean build install
+endif
 
 coverity: FORCE
 	${Build} ${verbose} clean coverity
 
 debug: FORCE
+ifeq (${static_build},1)
+	${Build} ${verbose} static debug
+else
 	${Build} ${verbose} debug
+endif
 
 debugopt: FORCE
+ifeq (${static_build},1)
+	${Build} ${verbose} static debugopt
+else
 	${Build} ${verbose} debugopt
+endif
 
 clean: FORCE
 	${Build} ${verbose} clean

@@ -6,7 +6,7 @@ headers = files('hmap.h')
 
 deps += [cne]
 
-libhmap = both_libraries(libname, sources, install: true, dependencies: deps)
+libhmap = library(libname, sources, install: true, dependencies: deps)
 hmap = declare_dependency(link_with: libhmap, include_directories: include_directories('.'))
 
 cndp_libs += hmap

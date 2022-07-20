@@ -7,7 +7,7 @@ headers = files('uds_connect.h')
 
 deps += [uds]
 
-libudsc = both_libraries(libname, sources, install: true, dependencies: deps)
+libudsc = library(libname, sources, install: true, dependencies: deps)
 udsc = declare_dependency(link_with: libudsc, include_directories: include_directories('.'))
 
 cndp_libs += udsc

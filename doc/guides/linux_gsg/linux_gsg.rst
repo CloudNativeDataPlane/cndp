@@ -249,6 +249,29 @@ or to build the docs
 
    make docs
 
+or to build a statically linked executable. Use the commandline make option 'static_build=1' to build
+libraries and executables as static binaries.
+
+When switching between static and shared builds the install directory could contain extra libraries
+in *usr/local/lib/x86_64-linux-gnu* .so libraries if building static or .a libraries if building shared.
+
+Need to do a *'make uninstall clean build'* or *'make static_build=1 uninstall clean build'*
+commands. If you have both types of libraries the quickest way is to do 'rm -fr usr/local/\*' **No leading '/'**.
+
+.. note:: **(Do NOT use rm -fr /usr/local/\*)**, note the leading **'/'** should **NOT** be present or you can remove
+  your /usr/local directory if running as root. You should not be building CNDP
+  as root as too many problems like this one can happen.
+
+.. code-block:: console
+
+   make static_build=1 uninstall clean build
+
+or use 'rebuild' instead of 'clean build' which the same thing.
+
+.. code-block:: console
+
+   make static_build=1 uninstall rebuild
+
 
 Run CNDP examples
 ^^^^^^^^^^^^^^^^^

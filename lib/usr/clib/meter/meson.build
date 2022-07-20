@@ -13,7 +13,7 @@ headers = files('cne_meter.h')
 
 deps += [cne, timer]
 
-libmeter = both_libraries(libname, sources, install: true, dependencies: deps)
+libmeter = library(libname, sources, install: true, dependencies: deps)
 meter = declare_dependency(link_with: libmeter, include_directories: include_directories('.'))
 
 cndp_libs += meter
