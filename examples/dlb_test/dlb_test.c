@@ -154,6 +154,9 @@ producer(void *arg)
                 continue;
 
             n_pkts = pktdev_rx_burst(pd->lport, pd->rx_mbufs, MAX_BURST);
+            if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+                goto leave;
+
             if (n_pkts == 0)
                 continue;
             for (i = 0; i < n_pkts; i++) {
