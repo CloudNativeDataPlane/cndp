@@ -72,8 +72,8 @@ parse_args(int argc, char **argv)
 static int
 send_map_fd(int sock, int fd)
 {
-    char cmsgbuf[CMSG_SPACE(sizeof(int))];
-    struct msghdr msg;
+    char cmsgbuf[CMSG_SPACE(sizeof(int))] = {0};
+    struct msghdr msg                     = {0};
     struct iovec iov;
     char value[UDS_MAX_CMD_LEN] = {0};
 
@@ -99,10 +99,8 @@ send_map_fd(int sock, int fd)
     *(int *)CMSG_DATA(cmsg) = fd;
     int ret                 = sendmsg(sock, &msg, 0);
 
-    if (ret < 0) {
-        CNE_ERR("Failed to send xsk_map fd with error=%s\n", strerror(errno));
-        return -errno;
-    }
+    if (ret < 0)
+        CNE_ERR_RET_VAL(-errno, "Failed to send xsk_map fd with error=%s\n", strerror(errno));
 
     return ret;
 }
@@ -110,7 +108,6 @@ send_map_fd(int sock, int fd)
 static int
 connect_host(uds_client_t *c, const char *cmd __cne_unused, const char *params __cne_unused)
 {
-
     if (send(c->s, UDS_HOST_OK_MSG, sizeof(UDS_HOST_OK_MSG), 0) <= 0)
         CNE_ERR_RET("Failed to send %s message %s\n", UDS_HOST_OK_MSG, strerror(errno));
     else
@@ -133,9 +130,9 @@ fin_ack(uds_client_t *c, const char *cmd __cne_unused, const char *params __cne_
 static int
 send_xskmap_fd(uds_client_t *c, const char *cmd __cne_unused, const char *params __cne_unused)
 {
-    send_map_fd(c->s, c->info->xsk_map_fd);
-
-    return 0;
+    if (!c->s || !c->info->xsk_map_fd)
+        return -1;
+    return send_map_fd(c->s, c->info->xsk_map_fd);
 }
 
 static void
@@ -161,7 +158,7 @@ __on_exit(int val, void *arg, int exit_type)
             cne_printf_pos(99, 1, "\n>>> [cyan]Terminating with status [green]%d[]\n", val);
 
         if (fwd) {
-            cne_printf(">>> [magenta]Closing\n");
+            cne_printf(">>> [magenta]Closing[]\n");
             uds_destroy(NULL);
             fwd->timer_quit = 1;
         }
@@ -173,7 +170,6 @@ __on_exit(int val, void *arg, int exit_type)
     default:
         break;
     }
-    vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
     fflush(stdout);
 }
 
@@ -191,22 +187,20 @@ main(int argc, char **argv)
     cne_on_exit(__on_exit, (void *)&info, signals, cne_countof(signals));
 
     fd = bpf_obj_get(info.map_path);
-    if (fd < 0) {
+    if (fd < 0)
         CNE_ERR_RET("Failed to open pinned xsk_map:%s err:%s\n", info.map_path, strerror(errno));
-    }
+
     CNE_DEBUG("xsk_map fd =%d\n", fd);
 
     info.uds_info = uds_get_default(&info);
-    if (!info.uds_info) {
+    if (!info.uds_info)
         CNE_ERR_RET("UDS failed to initialize: %s\n", strerror(errno));
-    }
 
     info.uds_info->xsk_map_fd = fd;
 
     grp = uds_get_group_by_name(info.uds_info, NULL);
-    if (grp == NULL) {
+    if (grp == NULL)
         CNE_ERR_RET("Get default group failed\n");
-    }
 
     CNE_DEBUG("info->uds_info->sock %d\n", info.uds_info->sock);
 
