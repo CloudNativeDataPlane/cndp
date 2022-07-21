@@ -7,5 +7,3 @@ replace github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/ttylog => ../../
 go 1.18
 
 require github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/asciichart v0.0.0-00010101000000-000000000000
-
-require github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/ttylog v0.0.0-00010101000000-000000000000 // indirect
