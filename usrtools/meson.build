@@ -5,6 +5,7 @@ dirs = [
     'cnectl',
     'txgen',
     'jsonc2json',
+	'xskmap_load_send',
 ]
 
 foreach d:dirs
