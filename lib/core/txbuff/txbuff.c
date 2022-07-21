@@ -127,6 +127,8 @@ txbuff_flush(txbuff_t *buffer)
         switch (buffer->txtype) {
         case TXBUFF_PKTDEV_FLAG:
             sent = pktdev_tx_burst(buffer->lport_id, buffer->pkts, npkts);
+            if (sent == PKTDEV_ADMIN_STATE_DOWN)
+                return sent;
             break;
 
         case TXBUFF_XSKDEV_FLAG:
