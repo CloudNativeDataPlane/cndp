@@ -9,4 +9,4 @@ deps += [bpf_dep, uds]
 
 sources = files('xskmap_load_send.c')
 
-jsonc2json = executable('xskmap_load_and_send', sources, dependencies: deps, install: true)
+xskmap_load_send = executable('xskmap_load_and_send', sources, dependencies: deps, install: true)
