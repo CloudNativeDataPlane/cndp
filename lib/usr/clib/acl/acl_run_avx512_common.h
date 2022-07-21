@@ -297,7 +297,7 @@ static inline void
 _F_(search_trie)(struct acl_flow_avx512 *flow)
 {
     uint32_t fm[2];
-    _T_simd di[2], idx[2], in[2], pdata[4], tr_lo[2], tr_hi[2];
+    _T_simd di[2] = {0}, idx[2] = {0}, in[2], pdata[4] = {0}, tr_lo[2] = {0}, tr_hi[2] = {0};
 
     /* first 1B load */
     _F_(start_flow)(flow, _SIMD_MASK_BIT_, _SIMD_MASK_MAX_, &pdata[0], &idx[0], &di[0]);
