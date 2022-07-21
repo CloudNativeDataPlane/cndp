@@ -117,6 +117,8 @@ eth_rx_node_do(struct cne_graph *graph, struct cne_node *node, eth_rx_node_ctx_t
     /* Get pkts from port */
     nb_pkts = (node->size >= CNE_GRAPH_BURST_SIZE) ? CNE_GRAPH_BURST_SIZE : node->size;
     count   = pktdev_rx_burst(ctx->port_id, (pktmbuf_t **)node->objs, nb_pkts);
+    if (count == PKTDEV_ADMIN_STATE_DOWN)
+        return count;
 
     if (count) {
         eth_pkt_parse(ctx, (pktmbuf_t **)node->objs, count);
