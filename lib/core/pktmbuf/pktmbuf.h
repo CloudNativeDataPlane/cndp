@@ -800,7 +800,10 @@ __pktmbuf_free_bulk(pktmbuf_pending_t *p, pktmbuf_t *m)
 static inline void
 pktmbuf_free_bulk(pktmbuf_t **mbufs, unsigned int count)
 {
-    pktmbuf_pending_t pend = {.pending_sz = PKTMBUF_PENDING_SZ};
+    pktmbuf_pending_t pend;
+
+    memset(&pend, 0, sizeof(pend));
+    pend.pending_sz = PKTMBUF_PENDING_SZ;
 
     if (count == 0)
         return;
@@ -1210,7 +1213,7 @@ pktmbuf_metadata(const pktmbuf_t *m)
     if (!m)
         return NULL;
 
-    if (((p = m->pooldata) != NULL) && p->metadata)
+    if (((p = (pktmbuf_info_t *)m->pooldata) != NULL) && p->metadata)
         return CNE_PTR_ADD(p->metadata, (m->meta_index * p->metadata_bufsz));
     else
         return CNE_PTR_ADD(m, sizeof(pktmbuf_t)); /* default to metadata in pktmbuf headroom */
@@ -1232,7 +1235,7 @@ pktmbuf_metadata_bufsz(const pktmbuf_t *m)
     if (!m)
         return -1;
 
-    if (((p = m->pooldata) != NULL) && p->metadata)
+    if (((p = (pktmbuf_info_t *)m->pooldata) != NULL) && p->metadata)
         return (int32_t)p->metadata_bufsz;
     else
         return (int32_t)pktmbuf_headroom(m);
