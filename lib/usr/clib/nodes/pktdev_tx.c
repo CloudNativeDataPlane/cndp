@@ -29,6 +29,8 @@ pktdev_tx_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 
     do {
         int cnt = pktdev_tx_burst(port, (pktmbuf_t **)objs, nb_objs);
+        if (cnt == PKTDEV_ADMIN_STATE_DOWN)
+            return cnt;
 
         objs += cnt;
         nb_objs -= cnt;
