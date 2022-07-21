@@ -164,6 +164,8 @@ txgen_send_burst(port_info_t *info)
     /* Send all of the packets before we can exit this function */
     while (cnt && txgen_tst_port_flags(info, SENDING_PACKETS)) {
         ret = pktdev_tx_burst(lport->lpid, pkts, cnt);
+        if (ret == PKTDEV_ADMIN_STATE_DOWN)
+            return;
         pkts += ret;
         cnt -= ret;
     }
@@ -501,7 +503,8 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
     /*
      * Read packet from RX queues and free the mbufs
      */
-    if ((nb_rx = pktdev_rx_burst(lport->lpid, pkts_burst, nb_pkts)) == 0)
+    nb_rx = pktdev_rx_burst(lport->lpid, pkts_burst, nb_pkts);
+    if ((nb_rx == 0) || (nb_rx == PKTDEV_ADMIN_STATE_DOWN))
         return;
 
     /* packets are not freed in the next call. */
