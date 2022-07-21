@@ -341,7 +341,7 @@ mc_name(msgchan_t *_mc)
 }
 
 int
-mc_size(msgchan_t *_mc, int *server_free_cnt, int *client_free_cnt)
+mc_size(msgchan_t *_mc, int *recv_free_cnt, int *send_free_cnt)
 {
     msg_chan_t *mc = _mc;
 
@@ -351,13 +351,33 @@ mc_size(msgchan_t *_mc, int *server_free_cnt, int *client_free_cnt)
         ring1_sz = cne_ring_free_count(mc->rings[MC_RECV_RING]);
         ring2_sz = cne_ring_free_count(mc->rings[MC_SEND_RING]);
 
-        if (server_free_cnt)
-            *server_free_cnt = ring1_sz;
-        if (client_free_cnt)
-            *client_free_cnt = ring2_sz;
+        if (recv_free_cnt)
+            *recv_free_cnt = ring1_sz;
+        if (send_free_cnt)
+            *send_free_cnt = ring2_sz;
 
         return cne_ring_get_capacity(mc->rings[MC_RECV_RING]);
     }
+    return -1;
+}
+
+int
+mc_info(msgchan_t *_mc, msgchan_info_t *info)
+{
+    msg_chan_t *mc = _mc;
+
+    if (mc && info && mc->cookie == MC_COOKIE) {
+        info->recv_ring     = mc->rings[MC_RECV_RING];
+        info->send_ring     = mc->rings[MC_SEND_RING];
+        info->child_count   = mc->child_count;
+        info->send_calls    = mc->send_calls;
+        info->send_cnt      = mc->send_cnt;
+        info->recv_calls    = mc->recv_calls;
+        info->recv_cnt      = mc->recv_cnt;
+        info->recv_timeouts = mc->recv_timeouts;
+        return 0;
+    }
+
     return -1;
 }
 

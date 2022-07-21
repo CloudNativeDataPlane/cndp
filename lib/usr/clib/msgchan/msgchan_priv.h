@@ -9,6 +9,7 @@
 #include <cne_common.h>
 #include <cne_ring.h>
 #include <cne_ring_api.h>
+#include "msgchan.h"
 
 /**
  * @file
@@ -22,9 +23,7 @@
 extern "C" {
 #endif
 
-#define MC_COOKIE    ('C' << 24 | 'h' << 16 | 'a' << 8 | 'n')
-#define MC_NAME_SIZE (CNE_NAME_LEN + 4)
-enum { MC_RECV_RING = 0, MC_SEND_RING };
+#define MC_COOKIE ('C' << 24 | 'h' << 16 | 'a' << 8 | 'n')
 
 typedef struct msg_chan {
     TAILQ_ENTRY(msg_chan) next;      /**< Next entry in the global list. */

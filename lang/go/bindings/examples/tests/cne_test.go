@@ -30,43 +30,67 @@ func TestMsgChan(t *testing.T) {
 		g.It("MsgChannel Create", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
-			g.Assert(mc.Name() == msgChanName).IsTrue(fmt.Sprintf("MsgName name %s != %s", msgChanName, mc.Name()))
+			defer mc.Close()
 
-			mc.Close()
+			g.Assert(mc.Name() == msgChanName).IsTrue(fmt.Sprintf("MsgName name %s != %s", msgChanName, mc.Name()))
 		})
 		g.It("MsgChannel Lookup", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
 
 			m := mc.Lookup(msgChanName)
 
 			g.Assert(m == mc).IsTrue(fmt.Sprintf("MsgChan Lookup %v != %v", m, mc))
-
-			mc.Close()
 		})
 		g.It("MsgChannel Size", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
 
 			s := mc.Size()
 
 			g.Assert(uint(s) == msgChanSize-1).IsTrue(fmt.Sprintf("MsgChan Size %v != %v", s, msgChanSize))
+		})
+		g.It("MsgChannel Info", func() {
+			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
+			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
 
-			mc.Close()
+			s := mc.Info()
+
+			g.Assert(s != nil).IsTrue(fmt.Sprintf("MsgChan Info failed: %+v", s))
+		})
+		g.It("MsgChannel Recv/Send Pointers", func() {
+			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
+			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
+
+			s := mc.Info()
+
+			g.Assert(s != nil).IsTrue(fmt.Sprintf("MsgChan Info failed: %+v", s))
+
+			recv, send := mc.Pointers()
+
+			g.Assert(recv != nil).IsTrue("MsgChannel Recv Pointer is Nil")
+			g.Assert(send != nil).IsTrue("MsgChannel Send Pointer is Nil")
+
+			g.Assert(recv == s.RecvRing).IsTrue(fmt.Sprintf("MsgChannel Recv Pointer %v != %v", recv, s.RecvRing))
+			g.Assert(send == s.SendRing).IsTrue(fmt.Sprintf("MsgChannel Recv Pointer %v != %v", recv, s.SendRing))
 		})
 		g.It("MsgChannel RecvFree", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
 
 			s := mc.RecvFree()
 
 			g.Assert(uint(s) == msgChanSize-1).IsTrue(fmt.Sprintf("MsgChan Size %v != %v", s, msgChanSize))
-
-			mc.Close()
 		})
 		g.It("MsgChannel SendFree", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+			defer mc.Close()
 
 			s := mc.SendFree()
 
@@ -78,7 +102,6 @@ func TestMsgChan(t *testing.T) {
 			s = mc.SendFree()
 
 			g.Assert(uint(s) == msgChanSize-5).IsTrue(fmt.Sprintf("MsgChan Size %v != %v", s, msgChanSize-5))
-			mc.Close()
 		})
 	})
 }
