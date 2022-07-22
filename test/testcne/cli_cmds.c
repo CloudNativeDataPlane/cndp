@@ -48,6 +48,7 @@
 #include "meter_test.h"        // for meter_main
 #include "vec_test.h"          // for vec_main
 #include "msgchan_test.h"
+#include "tailqs_test.h"
 
 struct struct_sizes {
     const char *name;
@@ -132,6 +133,7 @@ all_tests(int argc, char **argv)
     ring_api_main(argc, argv);
     ring_main(argc, argv);
     ring_profile(argc, argv);
+    tailqs_main(argc, argv);
     thread_main(argc, argv);
     timer_main(argc, argv);
     uid_main(argc, argv);
@@ -180,6 +182,7 @@ static struct cli_tree default_tree[] = {
     c_cmd("ring_api", ring_api_main, "Run RING api tests"),
     c_cmd("ring_profile", ring_profile, "Run RING profile test"),
     c_cmd("ring", ring_main, "Run RING test"),
+    c_cmd("tailqs", tailqs_main, "Run TailQ test"),
     c_cmd("sizeof", sizeof_cmd, "Size of structures"),
     c_cmd("thread", thread_main, "Run the Thread test"),
     c_cmd("timer", timer_main, "Run the Timer test"),

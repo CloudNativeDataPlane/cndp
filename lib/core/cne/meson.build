@@ -3,6 +3,7 @@
 
 sources = files(
     'cne.c',
+    'tailqs.c',
     'uid.c',
     )
 headers = files(
