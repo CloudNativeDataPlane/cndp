@@ -24,6 +24,7 @@ pub mod error;
 pub mod instance;
 pub mod packet;
 pub mod port;
+pub mod port_tx_buff;
 mod util;
 
 #[cfg(test)]

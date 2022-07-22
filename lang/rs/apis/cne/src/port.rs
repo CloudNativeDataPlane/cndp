@@ -33,7 +33,7 @@ struct PortInner {
 unsafe impl Send for PortInner {}
 
 /// Port statistics.
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct PortStats {
     /// Total number of successfully received packets.
     pub in_packets: u64,
@@ -260,6 +260,20 @@ impl Port {
 
         let cne = CneInstance::get_instance();
         cne.get_port_details(port.port_index)
+    }
+
+    /// Get port index of the [port](Port).
+    ///
+    /// Returns port index in lports section of JSONC file or error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [CneError::PortError] if an error is encountered.
+    ///
+    pub fn get_port_index(&self) -> Result<u16, CneError> {
+        let port = self.lock()?;
+
+        Ok(port.port_index)
     }
 
     fn lock(&self) -> Result<MutexGuard<PortInner>, CneError> {

@@ -17,6 +17,8 @@ pub enum CneError {
     PacketError(String),
     /// Port error.
     PortError(String),
+    /// Buffered Tx Port error.
+    PortTxBuffError(String),
     /// Error getting port statistics.
     PortStatsError(String),
     /// Error registering/unregistering thread with CNE.
@@ -34,6 +36,7 @@ impl Display for CneError {
             CneError::ConfigError(s) => format!("CneError::ConfigError({})", s),
             CneError::PacketError(s) => format!("CneError::PacketError({})", s),
             CneError::PortError(s) => format!("CneError::PortError({})", s),
+            CneError::PortTxBuffError(s) => format!("CneError::PortTxBuffError({})", s),
             CneError::PortStatsError(s) => format!("CneError::PortStatsError({})", s),
             CneError::RegisterError(s) => format!("CneError::RegisterError({})", s),
             CneError::RxBurstError(s) => format!("CneError::RxBurstError({})", s),
