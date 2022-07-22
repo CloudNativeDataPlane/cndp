@@ -21,7 +21,11 @@ else
 endif
 
 all: FORCE
-	${Build} build
+ifeq (${static_build},1)
+	${Build} ${verbose} static build
+else
+	${Build} ${verbose} build
+endif
 
 help: FORCE
 	${Build} help
@@ -31,7 +35,11 @@ help: FORCE
 	@echo "    eg: 'make static_build=1 rebuild install' for static executables"
 
 build: FORCE
+ifeq (${static_build},1)
+	${Build} ${verbose} static build
+else
 	${Build} ${verbose} build
+endif
 
 rebuild: FORCE
 ifeq (${static_build},1)
