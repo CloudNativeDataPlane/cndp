@@ -19,4 +19,4 @@ cndp_dep = declare_dependency(
     include_directories : cndp_inc)
 
 jcfg_parse_libname = 'rust_' + 'jcfg_parse'
-librust_jcfg_parse = both_libraries(jcfg_parse_libname, jcfg_parse_sources, install: false, dependencies: [cndp_dep])
+librust_jcfg_parse = library(jcfg_parse_libname, jcfg_parse_sources, install: false, dependencies: [cndp_dep])

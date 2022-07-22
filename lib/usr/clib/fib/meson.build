@@ -55,7 +55,7 @@ elif cc.has_multi_arguments('-mavx512f', '-mavx512dq')
     endif
 endif
 
-libfib = both_libraries(libname, sources, objects: objs, install: true, dependencies: deps)
+libfib = library(libname, sources, objects: objs, install: true, dependencies: deps)
 fib = declare_dependency(link_with: libfib, include_directories: include_directories('.'))
 
 cndp_libs += fib

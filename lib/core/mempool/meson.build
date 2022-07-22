@@ -6,7 +6,7 @@ headers = files('mempool.h')
 
 deps += [cne, osal, ring, mmap]
 
-libmempool = both_libraries(libname, sources, install: true, dependencies: deps)
+libmempool = library(libname, sources, install: true, dependencies: deps)
 mempool = declare_dependency(link_with: libmempool, include_directories: include_directories('.'))
 
 cndp_libs += mempool

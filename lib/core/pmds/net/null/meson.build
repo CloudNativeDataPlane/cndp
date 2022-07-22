@@ -6,7 +6,7 @@ headers = files('pmd_null.h')
 
 deps += [cne, mempool, mmap, pktdev, pktmbuf]
 
-libpmd_null = both_libraries('pmd_null', sources, install: true, dependencies: deps)
+libpmd_null = library('pmd_null', sources, install: true, dependencies: deps)
 pmd_null = declare_dependency(link_with: libpmd_null, include_directories: include_directories('.'))
 
 cndp_pmds += libpmd_null

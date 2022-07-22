@@ -6,7 +6,7 @@ headers = files('cne_mmap.h')
 
 deps += []
 
-libmmap = both_libraries(libname, sources, install: true, dependencies: deps)
+libmmap = library(libname, sources, install: true, dependencies: deps)
 mmap = declare_dependency(link_with: libmmap, include_directories: include_directories('.'))
 
 cndp_libs += mmap

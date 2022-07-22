@@ -20,7 +20,7 @@ headers = files('jcfg.h', 'jcfg_process.h')
 
 deps += [cne, mmap, thread, pktdev, mempool, pktmbuf, uds]
 
-libjcfg = both_libraries(libname, sources, install: true, dependencies: deps)
+libjcfg = library(libname, sources, install: true, dependencies: deps)
 jcfg = declare_dependency(link_with: libjcfg, include_directories: include_directories('.'))
 
 cndp_libs += jcfg

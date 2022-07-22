@@ -6,7 +6,7 @@ headers = files('pmd_af_packet.h')
 
 deps += [cne, mempool, mmap, pktdev, pktmbuf]
 
-libpmd_af_packet = both_libraries('pmd_af_packet', sources, install: true, dependencies: deps)
+libpmd_af_packet = library('pmd_af_packet', sources, install: true, dependencies: deps)
 pmd_af_packet = declare_dependency(link_with: libpmd_af_packet, include_directories: include_directories('.'))
 
 cndp_pmds += libpmd_af_packet

@@ -6,7 +6,7 @@ headers = files('cne_dsa.h')
 
 deps += []
 
-libdsa = both_libraries(libname, sources, install: true, dependencies: deps)
+libdsa = library(libname, sources, install: true, dependencies: deps)
 dsa = declare_dependency(link_with: libdsa, include_directories: include_directories('.'))
 
 cndp_libs += dsa

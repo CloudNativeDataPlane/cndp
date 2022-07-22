@@ -11,7 +11,7 @@ headers = files(
 
 deps += [mmap, cne]
 
-libring = both_libraries(libname, sources, install: true, dependencies: deps)
+libring = library(libname, sources, install: true, dependencies: deps)
 ring = declare_dependency(link_with: libring, include_directories: include_directories('.'))
 
 cndp_libs += ring

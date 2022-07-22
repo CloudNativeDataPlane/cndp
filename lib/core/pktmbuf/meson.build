@@ -6,7 +6,7 @@ headers = files('pktmbuf.h', 'pktmbuf_ops.h', 'pktmbuf_ptype.h', 'pktmbuf_offloa
 
 deps += [cne, mmap, mempool]
 
-libpktmbuf = both_libraries(libname, sources, install: true, dependencies: deps)
+libpktmbuf = library(libname, sources, install: true, dependencies: deps)
 pktmbuf = declare_dependency(link_with: libpktmbuf, include_directories: include_directories('.'))
 
 cndp_libs += pktmbuf

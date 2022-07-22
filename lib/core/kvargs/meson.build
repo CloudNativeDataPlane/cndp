@@ -6,7 +6,7 @@ headers = files('kvargs.h')
 
 deps += []
 
-libkvargs = both_libraries(libname, sources, install: true, dependencies: deps)
+libkvargs = library(libname, sources, install: true, dependencies: deps)
 kvargs = declare_dependency(link_with: libkvargs, include_directories: include_directories('.'))
 
 cndp_libs += kvargs

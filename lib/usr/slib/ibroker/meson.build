@@ -4,7 +4,7 @@
 sources = files('ibroker.c', 'uintr_handler.c')
 headers = files('ibroker.h')
 
-libibroker = both_libraries(libname, sources, install: true, dependencies: deps)
+libibroker = library(libname, sources, install: true, dependencies: deps)
 ibroker = declare_dependency(link_with: libibroker, include_directories: include_directories('.'))
 
 cndp_libs += ibroker

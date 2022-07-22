@@ -5,5 +5,5 @@ sources = files('tst_info.c', 'test.c')
 
 deps += [include, osal, utils, log, cne, cli, build_cfg]
 
-libtst_common = both_libraries('tst_common', sources, install: true, dependencies: deps)
+libtst_common = library('tst_common', sources, install: true, dependencies: deps)
 tst_common = declare_dependency(link_with: libtst_common, include_directories: include_directories('.'))

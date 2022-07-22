@@ -19,7 +19,7 @@ headers = files(
 
 deps += []
 
-libosal = both_libraries(libname, sources, install: true, dependencies: deps)
+libosal = library(libname, sources, install: true, dependencies: deps)
 osal = declare_dependency(link_with: libosal, include_directories: include_directories('.'))
 
 cndp_libs += osal

@@ -20,6 +20,7 @@ install_path="${CNE_DEST_DIR:-${currdir}}"
 export PKG_CONFIG_PATH="${PKG_CONFIG_PATH:-/usr/lib64/pkgconfig}"
 
 buildtype="release"
+static=""
 coverity=""
 configure=""
 
@@ -56,7 +57,7 @@ echo ""
 
 function run_meson() {
     btype="-Dbuildtype="$buildtype
-    meson $configure $coverity $btype --prefix="/$target_dir" "$build_path" "$sdk_dir"
+    meson $configure $static $coverity $btype --prefix="/$target_dir" "$build_path" "$sdk_dir"
 }
 
 function ninja_build() {
@@ -193,6 +194,7 @@ usage() {
     echo "                     without running meson unless one of the meson.build files were changed"
     echo "    -v             - Enable verbose output"
     echo "    build          - build CNDP using the 'build_dir' directory"
+    echo "    static         - build CNDP static using the 'build_dir' directory, 'make static build'"
     echo "    debug          - turn off optimization, may need to do 'clean' then 'debug' the first time"
     echo "    debugopt       - turn optimization on with -O2, may need to do 'clean' then 'debugopt'"
     echo "                     the first time"
@@ -201,7 +203,6 @@ usage() {
     echo "    uninstall      - uninstall the includes/libraries from 'target_dir' directory"
     echo "    coverity       - (internal) build using coverity tool"
     echo "    docs           - create the document files"
-    echo "    coverity       - Enable coverity builds"
     echo "    rust-app       - Build Rust application"
     echo "    rust-app-clean - Clean Rust application"
     exit
@@ -218,6 +219,11 @@ do
 
     '-v' | '--verbose')
         verbose=true
+        ;;
+
+    'static')
+        echo ">>> Static  build in '"$build_path"'"
+        static="-Ddefault_library=static"
         ;;
 
     'build')

@@ -6,7 +6,7 @@ headers = files('cne_event.h')
 
 deps += []
 
-libevents = both_libraries(libname, sources, install: true, dependencies: deps)
+libevents = library(libname, sources, install: true, dependencies: deps)
 events = declare_dependency(link_with: libevents, include_directories: include_directories('.'))
 
 cndp_libs += events
