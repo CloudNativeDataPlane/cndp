@@ -174,6 +174,10 @@ endif
 if cc.has_header('linux/if_xdp.h')
     if xdp_dep.found() and cc.has_header('xdp/xsk.h')
         if bpf_dep.found() and cc.has_header('bpf/bpf.h')
+            bpf_8_dep = dependency('libbpf', version : '>=0.8.0', required: false, method: 'pkg-config')
+            if bpf_8_dep.found()
+                cne_conf.set10('HAS_LIBBPF_8', true)
+            endif
             cne_conf.set10('HAS_LIBXDP', true)
             cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
             extra_ldflags += '-lbpf'

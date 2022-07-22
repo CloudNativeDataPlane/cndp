@@ -59,6 +59,9 @@ extern "C" {
 #define USE_LIBXDP 1
 #endif
 
+#if HAS_LIBBPF_8
+#define USE_LIBBPF_8 1
+#endif
 /**
  * Helper routine to set a default value if x == y then x = z.
  *
