@@ -47,36 +47,9 @@ Following are the steps required to build Rust bindings, high level APIs and exa
       If no command line options are passed, the script will be executed with default values used in the script.
    4. Run loopback example:  `cd apis/cne`. Execute [./run_loopback.sh](./run_loopback.sh)
    5. Run echo server example: `cd examples/echo_server`. Execute [./run_echo_server.sh](./run_echo_server.sh)
+   6. Run packet forward example: `cd examples/fwd`. Execute [./run_fwd.h](./run_fwd.h) `<drop|fwd|tx-only|lb>`
 
 9. To generate high level API crate documentation execute [./generate_cne_docs.sh](./generate_cne_docs.sh)
-
-### Rust pktfwd
-
-An example CNDP pktfwd application written in Rust. Following are the steps required to run this
-application.
-
-1. Install [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-
-2. Install clang used by rust bindgen tool: `sudo apt-get install clang`
-
-3. Install CNDP in a location which is searched by the compiler/linker. Do this by building CNDP
-normally, then install with `sudo CNE_DEST_DIR=/ make install`
-
-4. Append *PKG_CONFIG_PATH* environment variable to directory containing CNDP pkg-config file.
-
-   `export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig`
-
-5. Append LD_LIBRARY_PATH environment variable with CNDP library path.
-
-   `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu`
-
-6. Build Rust application: From CNDP root directory execute the command `make rust-app`
-
-7. `cd lang/rs/examples/pktfwd`
-
-8. Configure ethtool filter and fwd.jsonc similar to [cndpfwd application](../../INSTALL.md#cndpfwd)
-
-9. Execute the script `./runcmd.sh <option>` where option can be `drop|fwd|tx-only|lb`
 
 ### Wireguard with CNDP
 

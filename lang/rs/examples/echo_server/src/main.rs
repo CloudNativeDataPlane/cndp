@@ -35,7 +35,7 @@ fn main() {
         .subcommand(
             App::new("pnet").about("pnet based echo server").arg(
                 Arg::with_name("interface")
-                    .short("i")
+                    .short('i')
                     .long("interface")
                     .required(true)
                     .takes_value(true)
@@ -47,7 +47,7 @@ fn main() {
                 .about("cne based echo server")
                 .arg(
                     Arg::with_name("config")
-                        .short("c")
+                        .short('c')
                         .long("config")
                         .required(true)
                         .takes_value(true)
@@ -55,7 +55,7 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("port")
-                        .short("p")
+                        .short('p')
                         .long("port")
                         .required(true)
                         .takes_value(true)
@@ -63,7 +63,7 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("burst")
-                        .short("b")
+                        .short('b')
                         .long("burst")
                         .required(false)
                         .takes_value(true)
@@ -71,7 +71,7 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("affinity")
-                        .short("a")
+                        .short('a')
                         .long("affinity")
                         .required(false) // optional parameter
                         .default_value("")
@@ -93,7 +93,7 @@ fn main() {
 
     // Parse sub command parameters.
     match matches.subcommand() {
-        ("pnet", Some(pnet_matches)) => {
+        Some(("pnet", pnet_matches)) => {
             // Parse interface name.
             let interface_name = pnet_matches
                 .value_of("interface")
@@ -103,7 +103,7 @@ fn main() {
 
             pnet_echo_server(&interface_name);
         }
-        ("cne", Some(cne_matches)) => {
+        Some(("cne", cne_matches)) => {
             // Parse CNE JSONC config file.
             let jsonc_file = cne_matches
                 .value_of("config")
