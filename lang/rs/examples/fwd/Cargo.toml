@@ -2,7 +2,7 @@
 # Copyright (c) 2020-2022 Intel Corporation.
 
 [package]
-name = "echo_server"
+name = "fwd"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,9 +11,11 @@ edition = "2021"
 # Cargo will crawl the entire cndp repo looking for cndp-cne package.
 cndp-cne = {git = "https://github.com/CloudNativeDataPlane/cndp", branch = "main" }
 crossbeam-channel = "0.5.4"
-clap = "3.2.11"
+clap = { version = "3.2.11", features = ["derive"] }
 ctrlc = "3.2.2"
+etherparse = "0.10.1"
 env_logger = "0.9.0"
+hex = "0.4"
 log = "0.4"
-pnet ="0.30.0"
-
+prettytable-rs = "0.8"
+term = "0.7"

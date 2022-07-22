@@ -22,7 +22,7 @@ fn main() {
         .about("CNE loopback example application.")
         .arg(
             Arg::with_name("config")
-                .short("c")
+                .short('c')
                 .long("config")
                 .required(true)
                 .takes_value(true)
@@ -30,7 +30,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("port")
-                .short("p")
+                .short('p')
                 .long("port")
                 .required(true)
                 .takes_value(true)
@@ -38,7 +38,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("affinity")
-                .short("a")
+                .short('a')
                 .long("affinity")
                 .required(false) // optional parameter
                 .default_value("")
