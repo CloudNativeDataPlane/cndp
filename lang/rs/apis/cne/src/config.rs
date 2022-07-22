@@ -205,12 +205,20 @@ impl Config {
         port
     }
 
+    #[allow(dead_code)]
+    // Keep this for future use.
     pub(crate) fn get_port_by_name(&self, port_name: &str) -> Result<Port, CneError> {
+        let port_index = self.get_port_index_from_name(port_name)?;
+
+        self.get_port_by_index(port_index)
+    }
+
+    pub(crate) fn get_port_index_from_name(&self, port_name: &str) -> Result<u16, CneError> {
         let port_index = self.lports.get_index_of(port_name).ok_or_else(|| {
             CneError::ConfigError(format!("Port name {} is not present in config", port_name))
         })?;
 
-        self.get_port_by_index(port_index as u16)
+        Ok(port_index as u16)
     }
 
     pub(crate) fn get_port_details(&self, port_index: u16) -> Result<PortDetails, CneError> {

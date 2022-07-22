@@ -28,6 +28,7 @@ pub struct CneInstance {
 struct CneInstanceInner {
     cfg: Option<Config>,
     tid: i32,
+    ports: HashMap<u16, Port>,
 }
 
 // CNE Singleton instance.
@@ -40,7 +41,11 @@ impl CneInstance {
 
         unsafe {
             ONCE.call_once(|| {
-                let cne_inner = CneInstanceInner { cfg: None, tid: -1 };
+                let cne_inner = CneInstanceInner {
+                    cfg: None,
+                    tid: -1,
+                    ports: HashMap::new(),
+                };
                 // Create instance.
                 let singleton = CneInstance {
                     inner: RwLock::new(cne_inner),
@@ -81,6 +86,14 @@ impl CneInstance {
 
         // Setup.
         cfg.setup()?;
+
+        // Populate ports map.
+        let num_ports = cfg.get_num_ports();
+        for port_index in 0..num_ports {
+            let port = cfg.get_port_by_index(port_index)?;
+            cne.ports.insert(port_index, port);
+        }
+
         cne.cfg = Some(cfg);
 
         Ok(())
@@ -103,6 +116,7 @@ impl CneInstance {
             self.unregister_thread(cne.tid)?;
         }
         cne.tid = -1;
+        cne.ports.clear();
 
         Ok(())
     }
@@ -174,9 +188,9 @@ impl CneInstance {
         }
     }
 
-    /// Creates a [Port] instance corresponding to the port index.
+    /// Gets a [Port] instance corresponding to the port index.
     ///
-    /// Returns an [Port] or error in case of failure.
+    /// Returns a [Port] or error in case of failure.
     ///
     /// # Arguments
     /// * `port_index` - port index in JSONC file lports section.
@@ -187,8 +201,8 @@ impl CneInstance {
     pub fn get_port(&self, port_index: u16) -> Result<Port, CneError> {
         let cne = self.read()?;
 
-        if let Some(cfg) = &cne.cfg {
-            cfg.get_port_by_index(port_index)
+        if let Some(_cfg) = &cne.cfg {
+            Self::get_port_from_map(&cne.ports, port_index)
         } else {
             Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
@@ -196,9 +210,9 @@ impl CneInstance {
         }
     }
 
-    /// Creates a [Port] instance corresponding to the port name.
+    /// Gets a [Port] instance corresponding to the port name.
     ///
-    /// Returns an [Port] or error in case of failure.
+    /// Returns a [Port] or error in case of failure.
     ///
     /// # Arguments
     /// * `port_name` - port name in JSONC file lports section.
@@ -210,7 +224,8 @@ impl CneInstance {
         let cne = self.read()?;
 
         if let Some(cfg) = &cne.cfg {
-            cfg.get_port_by_name(port_name)
+            let port_index = cfg.get_port_index_from_name(port_name)?;
+            Self::get_port_from_map(&cne.ports, port_index)
         } else {
             Err(CneError::PortError(
                 "Cannot find port. CNE is not configured".to_string(),
@@ -304,5 +319,15 @@ impl CneInstance {
         self.lock
             .lock()
             .map_err(|e| CneError::PortError(e.to_string()))
+    }
+
+    fn get_port_from_map(ports: &HashMap<u16, Port>, port_index: u16) -> Result<Port, CneError> {
+        match ports.get(&port_index) {
+            Some(port) => Ok(port.clone()),
+            None => {
+                let err_msg = format!("Port {} is not configured", port_index);
+                Err(CneError::PortError(err_msg))
+            }
+        }
     }
 }
