@@ -1,6 +1,0 @@
-# Ignore target directory
-target/
-# Ignore build directory
-build/
-# Ignore generated file bindings.rs
-**/bindings.rs
