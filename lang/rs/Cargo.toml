@@ -10,7 +10,4 @@ members = [
     "examples/echo_server",
     "examples/fwd"
 ]
-exclude = [
-    "examples/pktfwd"
-]
 
