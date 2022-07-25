@@ -67,8 +67,78 @@ sudo ldconfig
 
 The following statement may be necessary if libbpf is installed from source instead of the package manager.
 
-```bash
+```cmd
 export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
+```
+
+### Install libxdp from source
+
+Install dependencies:
+
+```cmd
+sudo apt-get update; sudo apt-get install -y git gcc-multilib clang llvm lld m4
+```
+
+Clone libxdp:
+
+```cmd
+git clone https://github.com/xdp-project/xdp-tools.git
+cd xdp-tools/
+```
+
+Run ./configure
+
+```bash
+./configure
+Found clang binary 'clang' with version 14 (from 'Ubuntu clang version 14.0.0-1ubuntu1')
+libbpf support: Submodule 'libbpf' (https://github.com/xdp-project/libbpf/) registered for path 'lib/libbpf'
+Cloning into '/xdp-tools/lib/libbpf'...
+Submodule path 'lib/libbpf': checked out '87dff0a2c775c5943ca9233e69c81a25f2ed1a77'
+submodule v0.8.0
+  perf_buffer__consume support: yes (submodule)
+  btf__load_from_kernel_by_id support: yes (submodule)
+  btf__type_cnt support: yes (submodule)
+  bpf_object__next_map support: yes (submodule)
+  bpf_object__next_program support: yes (submodule)
+  bpf_program__insn_cnt support: yes (submodule)
+  bpf_map_create support: yes (submodule)
+  perf_buffer__new_raw support: yes (submodule)
+  bpf_xdp_attach support: yes (submodule)
+zlib support: yes
+ELF support: yes
+pcap support: yes
+secure_getenv support: yes
+```
+
+Build and install the libbpf git submodule:
+
+```cmd
+cd lib/libbpf/
+git submodule init && git submodule update
+cd src
+make CFLAGS+=-fpic; PREFIX=/usr make install
+cd -
+```
+
+Update pkg-config path as shown in the previous section.
+
+In the top level xdp-tools directory:
+
+```cmd
+make -j; PREFIX=/usr make -j install
+```
+
+check pkg-config can find libxdp:
+
+```cmd
+pkg-config --modversion libxdp
+1.2.2
+```
+
+on some systems it maybe necessary to run:
+
+```bash
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig
 ```
 
 ## Fedora Installation Instructions
