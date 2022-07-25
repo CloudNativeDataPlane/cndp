@@ -7,7 +7,7 @@
 #include <getopt.h>
 #include <bsd/string.h>
 #include <bpf/bpf.h>
-#ifdef USE_LIBXDP
+#if USE_LIBXDP
 #include <xdp/xsk.h>
 #else
 #include <bpf/xsk.h>
