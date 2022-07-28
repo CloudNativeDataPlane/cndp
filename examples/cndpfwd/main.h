@@ -64,6 +64,7 @@ enum {
 #define MODE_FWD            "fwd"            /**< L2 Forwarding mode */
 #define MODE_ACL_STRICT     "acl-strict"     /**< ACL forwarding with permit list mode */
 #define MODE_ACL_PERMISSIVE "acl-permissive" /**< ACL forwarding with deny list mode */
+#define MODE_TX_ONLY_RX     "tx-only-rx"     /**< Transmit only plus RX enabled */
 
 typedef enum {
     UNKNOWN_TEST,
@@ -72,7 +73,8 @@ typedef enum {
     TXONLY_TEST,
     FWD_TEST,
     ACL_STRICT_TEST,
-    ACL_PERMISSIVE_TEST
+    ACL_PERMISSIVE_TEST,
+    TXONLY_RX_TEST
 } test_t;
 
 #define XSKDEV_API_NAME "xskdev"
@@ -175,6 +177,8 @@ get_app_mode(const char *type)
             return ACL_STRICT_TEST;
         else if (!strncasecmp(type, MODE_ACL_PERMISSIVE, nlen))
             return ACL_PERMISSIVE_TEST;
+        else if (!strncasecmp(type, MODE_TX_ONLY_RX, nlen))
+            return TXONLY_RX_TEST;
         else {
             cne_printf("[yellow]*** [magenta]Unknown mode[]: '[red]%s[]'\n", type);
             cne_printf("    [magenta]Known modes default[] '[cyan]%s[magenta]'[]:\n", MODE_DROP);

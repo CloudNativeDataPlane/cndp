@@ -53,13 +53,6 @@ extern "C" {
 #endif
 
 /**
- * Enable the use of libxdp
- */
-#if HAS_LIBXDP == 1
-#define USE_LIBXDP 1
-#endif
-
-/**
  * Helper routine to set a default value if x == y then x = z.
  *
  * @param x

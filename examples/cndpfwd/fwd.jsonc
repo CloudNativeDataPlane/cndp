@@ -121,7 +121,8 @@
     //   no-metrics - (O) Disable metrics gathering and thread
     //   no-restapi - (O) Disable RestAPI support
     //   cli        - (O) Enable/Disable CLI supported
-    //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
+    //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx,
+    //                    acl-strict, acl-permissive
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
     "options": {
         "pkt_api": "xskdev",

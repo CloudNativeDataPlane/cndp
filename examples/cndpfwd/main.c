@@ -181,6 +181,49 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
 
+    if (fwd->pkt_api == PKTDEV_PKT_API)
+        n_pkts = pktdev_buf_alloc(pd->lport, tx_mbufs, fwd->burst);
+    else {
+        region_info_t *ri = &lport->umem->rinfo[lport->region_idx];
+
+        n_pkts = pktmbuf_alloc_bulk(ri->pool, tx_mbufs, fwd->burst);
+    }
+
+    if (n_pkts > 0) {
+        for (int j = 0; j < n_pkts; j++) {
+            pktmbuf_t *xb = tx_mbufs[j];
+            uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
+
+            p[0]                 = 0xfd3c78299efefd3c;
+            p[1]                 = 0x00450008b82c9efe;
+            p[2]                 = 0x110400004f122e00;
+            p[3]                 = 0xa8c00100a8c01e22;
+            p[4]                 = 0x1a002e16d2040101;
+            p[5]                 = 0x706f6e6d6c6b9a9e;
+            p[6]                 = 0x7877767574737271;
+            p[7]                 = 0x31307a79;
+            pktmbuf_data_len(xb) = 60;
+        }
+
+        n = __tx_flush(pd, fwd->pkt_api, tx_mbufs, n_pkts);
+        if (n == PKTDEV_ADMIN_STATE_DOWN)
+            return -1;
+        pd->tx_overrun += n;
+    }
+
+    return 0;
+}
+
+static int
+_txonly_rx_test(jcfg_lport_t *lport, struct fwd_info *fwd)
+{
+    struct fwd_port *pd = lport->priv_;
+    pktmbuf_t *tx_mbufs[fwd->burst];
+    int n_pkts, n;
+
+    if (!pd)
+        CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
+
     /* Cleanup RX side */
     n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
     if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
@@ -318,10 +361,21 @@ thread_func(void *arg)
     struct fwd_info *fwd               = func_arg->fwd;
     jcfg_thd_t *thd                    = func_arg->thd;
     jcfg_lport_t *lport;
+    // clang-format off
     struct {
         int (*func)(jcfg_lport_t *lport, struct fwd_info *fwd);
-    } tests[] = {{NULL},      {_drop_test},   {_loopback_test}, {_txonly_test},
-                 {_fwd_test}, {acl_fwd_test}, {acl_fwd_test},   {NULL}};
+    } tests[] = {
+        {NULL},
+        {_drop_test},
+        {_loopback_test},
+        {_txonly_test},
+        {_fwd_test},
+        {acl_fwd_test},
+        {acl_fwd_test},
+        {_txonly_rx_test},
+        {NULL}
+    };
+    // clang-format on
 
     if (thd->group->lcore_cnt > 0)
         pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &thd->group->lcore_bitmap);
@@ -509,10 +563,20 @@ __on_exit(int val, void *arg, int exit_type)
 int
 main(int argc, char **argv)
 {
-    const char *tests[] = {"Unknown", "Drop",       "Loopback",       "Tx Only",
-                           "Forward", "ACL Strict", "ACL Permissive", NULL};
-    const char *apis[]  = {"Unknown", "XSKDEV", "PKTDEV", NULL};
-    int signals[]       = {SIGINT, SIGUSR1, SIGTERM};
+    // clang-format off
+    const char *tests[] = {
+        "Unknown", "Drop",
+        "Loopback",
+        "Tx Only",
+        "Forward",
+        "ACL Strict",
+        "ACL Permissive",
+        "Tx Only+RX",
+        NULL
+    };
+    // clang-format on
+    const char *apis[] = {"Unknown", "XSKDEV", "PKTDEV", NULL};
+    int signals[]      = {SIGINT, SIGUSR1, SIGTERM};
 
     memset(&fwd_info, 0, sizeof(struct fwd_info));
 

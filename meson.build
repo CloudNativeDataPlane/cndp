@@ -164,7 +164,8 @@ if nl_cli_dep.found()
 endif
 
 cne_conf.set10('HAS_XSK_UMEM_SHARED', false)
-cne_conf.set10('HAS_LIBXDP', false)
+cne_conf.set10('USE_LIBXDP', false)
+cne_conf.set10('USE_LIBBPF_8', false)
 xdp_dep = dependency('libxdp', version : '>=1.2.0', required: false, method: 'pkg-config', static: use_static_libs)
 bpf_dep = dependency('libbpf', required: false, method: 'pkg-config', static: use_static_libs)
 if not bpf_dep.found()
@@ -174,7 +175,11 @@ endif
 if cc.has_header('linux/if_xdp.h')
     if xdp_dep.found() and cc.has_header('xdp/xsk.h')
         if bpf_dep.found() and cc.has_header('bpf/bpf.h')
-            cne_conf.set10('HAS_LIBXDP', true)
+            bpf_8_dep = dependency('libbpf', version : '>=0.8.0', required: false, method: 'pkg-config')
+            if bpf_8_dep.found()
+                cne_conf.set10('USE_LIBBPF_8', true)
+            endif
+            cne_conf.set10('USE_LIBXDP', true)
             cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
             extra_ldflags += '-lbpf'
             extra_ldflags += '-lxdp'

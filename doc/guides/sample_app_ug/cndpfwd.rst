@@ -13,6 +13,7 @@ The cndpfwd sample application is a simple example of packet processing using CN
  * fwd
  * acl-strict
  * acl-permissive
+ * tx-only-rx (TX-Only plus draining RX ring)
 
 In forward mode ('fwd'), the destination logical port on which to forward the packet is specified by
 the last octet of the destination MAC address. It should be a valid lport number 0-N. If the
@@ -48,7 +49,8 @@ a linux environment:
 .. code-block:: console
 
     Usage: ./builddir/examples/cndpfwd/cndpfwd [-h] [-c json_file] [-b burst] <mode>
-      <mode>         Mode types [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict or acl-permissive
+      <mode>         Mode types [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx,
+                     acl-strict or acl-permissive
       -a <api>       The API type to use xskdev or pktdev APIs, default is xskdev.\n"
                      The -a option overrides JSON file.\n"
       -b <burst>     Burst size. If not present default burst size 256 max 256.
@@ -196,7 +198,8 @@ The configuration json file is located in the ``cndpfwd`` example sub-directory
         //   no-metrics - (O) Disable metrics gathering and thread
         //   no-restapi - (O) Disable RestAPI support
         //   cli        - (O) Enable/Disable CLI supported
-        //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
+        //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx
+        //                    acl-strict, acl-permissive
         //   uds_path   - (0) Path to unix domain socket to get xsk map fd
         "options": {
             "pkt_api": "xskdev",
