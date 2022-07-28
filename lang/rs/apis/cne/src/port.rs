@@ -2,9 +2,10 @@
  * Copyright (c) 2020-2022 Intel Corporation.
  */
 
+use spin::{Mutex, MutexGuard};
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::Arc;
 
 use cne_sys::bindings::{
     _pktdev_rx_burst, _pktdev_tx_burst, _pktmbuf_alloc_bulk, _xskdev_rx_burst, _xskdev_tx_burst,
@@ -277,8 +278,6 @@ impl Port {
     }
 
     fn lock(&self) -> Result<MutexGuard<PortInner>, CneError> {
-        self.inner
-            .lock()
-            .map_err(|e| CneError::PortError(e.to_string()))
+        Ok(self.inner.lock())
     }
 }

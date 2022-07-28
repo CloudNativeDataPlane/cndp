@@ -2,7 +2,8 @@
  * Copyright (c) 2020-2022 Intel Corporation.
  */
 
-use std::sync::{Arc, Mutex, MutexGuard};
+use spin::{Mutex, MutexGuard};
+use std::sync::Arc;
 
 use super::error::*;
 use super::packet::*;
@@ -141,8 +142,6 @@ impl BufferedTxPort {
     }
 
     fn lock(&self) -> Result<MutexGuard<Vec<Packet>>, CneError> {
-        self.pkts
-            .lock()
-            .map_err(|e| CneError::PortTxBuffError(e.to_string()))
+        Ok(self.pkts.lock())
     }
 }

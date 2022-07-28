@@ -8,6 +8,9 @@
 # eg 2:./run_loopback.sh ../../fwd.json 0 25 -> Run using user specified values.
 CRATE=loopback
 
+# Build (This will do incremental build)
+cargo build --release
+
 # JSON file. Use default jsonc file in library crate.
 CONFIG=${1:-"./fwd.jsonc"}
 
