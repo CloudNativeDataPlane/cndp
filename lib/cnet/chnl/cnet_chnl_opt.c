@@ -128,20 +128,6 @@ chnl_sbreserve(struct chnl_buf *sb, uint32_t cc)
 }
 
 /**
- * This routine sets the minimum amount of data that must be queued to a chnl
- * buffer before a listening process will be woken up, subject to the following
- * constraints: 'cb_lowat' cannot be less than 1 or more than 'cb_hiwat'.
- */
-static inline void
-chnl_sblimit(struct chnl_buf *sb, uint32_t cc)
-{
-    sb->cb_lowat = (int32_t)CNE_MAX(cc, (uint32_t)1);
-
-    if (sb->cb_lowat > sb->cb_hiwat)
-        sb->cb_lowat = sb->cb_hiwat;
-}
-
-/**
  * This routine get an integer chnl option value, regardless of the
  * size of the integer.
  *

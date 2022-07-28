@@ -216,7 +216,10 @@ endif
 
 # for clang 32-bit compiles we need libatomic for 64-bit atomic ops
 if cc.get_id() == 'clang'
-    atomic_dep = dependency('atomic', required: true, static: use_static_libs)
+    atomic_dep = dependency('atomic', required: false, method: 'pkg-config', static: use_static_libs)
+    if not atomic_dep.found()
+        atomic_dep = cc.find_library('atomic', required: true)
+    endif
     add_project_link_arguments('-latomic', language: 'c')
     extra_ldflags += '-latomic'
 endif
