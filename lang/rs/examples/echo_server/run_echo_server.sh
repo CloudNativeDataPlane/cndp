@@ -14,6 +14,9 @@
 
 CRATE=echo_server
 
+# Build (This will do incremental build)
+cargo build --release
+
 # Mode - pnet or cne. Default is cne.
 MODE=${1:-"cne"}
 

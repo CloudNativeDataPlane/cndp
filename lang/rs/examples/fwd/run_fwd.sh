@@ -8,6 +8,9 @@
 
 CRATE=fwd
 
+# Build (This will do incremental build)
+cargo build --release
+
 # Mode - drop,rx-only,tx-only,lb,fwd. Default is drop.
 MODE=${1:-"drop"}
 
