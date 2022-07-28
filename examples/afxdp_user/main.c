@@ -12,7 +12,11 @@ typedef __signed__ int s32;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
+#else
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #pragma GCC diagnostic ignored "-Wsign-compare"
 

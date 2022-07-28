@@ -356,15 +356,15 @@ _vec_find_index(void **vec, void *v)
  * @param _nb
  *   The number of items to remove from the vector
  */
-#define vec_remove(_v, _nb)                             \
-    do {                                                \
-        vec_hdr_t *h = vec_header(_v);                  \
-        int _n       = h->len - _nb;                    \
-        if (_n >= 0) {                                  \
-            char *src = &h->data[0] + (_nb * h->esize); \
-            memmove(&h->data[0], src, _n * h->esize);   \
-            h->len = _n;                                \
-        }                                               \
+#define vec_remove(_v, _nb)                                     \
+    do {                                                        \
+        vec_hdr_t *h = vec_header(_v);                          \
+        int _n       = h->len - _nb;                            \
+        if (_n >= 0) {                                          \
+            char *src = (char *)&h->data[0] + (_nb * h->esize); \
+            memmove(&h->data[0], src, _n * h->esize);           \
+            h->len = _n;                                        \
+        }                                                       \
     } while (0)
 
 /**
