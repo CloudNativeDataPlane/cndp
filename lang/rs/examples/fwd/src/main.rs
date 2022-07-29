@@ -25,10 +25,10 @@ enum Mode {
     Drop,
     RxOnly,
     TxOnly,
-    #[clap(alias = "lb")]
-    Loopback,
-    #[clap(alias = "fwd")]
-    Forward,
+    #[clap(alias = "loopback")]
+    Lb,
+    #[clap(alias = "forward")]
+    Fwd,
 }
 
 fn main() {
@@ -229,7 +229,7 @@ fn run_thread(
                     }
                 }
             }
-            if mode == Mode::Forward {
+            if mode == Mode::Fwd {
                 if let Err(e) = flush_tx_buff_pkts(&buff_tx_ports) {
                     log::error!("Error flushing Tx packets: {}", e.to_string());
                 }
@@ -260,8 +260,8 @@ fn run_test(
     match mode {
         Mode::Drop | Mode::RxOnly => drop(port, pkts),
         Mode::TxOnly => tx_only(port, pkts),
-        Mode::Loopback => loopback(port, pkts),
-        Mode::Forward => forward(port, num_ports, buff_tx_ports, pkts),
+        Mode::Lb => loopback(port, pkts),
+        Mode::Fwd => forward(port, num_ports, buff_tx_ports, pkts),
     }
 }
 

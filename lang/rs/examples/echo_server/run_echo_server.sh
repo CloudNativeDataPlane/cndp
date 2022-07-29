@@ -24,7 +24,7 @@ if [[ "$MODE" == "pnet" ]]; then
     # interface name.
     IFACE=${2:-"enp134s0"}
 
-    sudo -E RUST_LOG=info `which cargo` run -p $CRATE --release -- $MODE -i $IFACE
+    sudo -E RUST_LOG=info "$(which cargo)" run -p "$CRATE" --release -- "$MODE" -i "$IFACE"
 elif [ "$MODE" == "cne" ]; then
     # JSON file. Use default jsonc file in library crate.
     CONFIG=${2:-"./fwd.jsonc"}
@@ -41,9 +41,9 @@ elif [ "$MODE" == "cne" ]; then
 
     # Need to LD_PRELOAD libpmd_af_xdp.so since Rust binary doesn't include it and is required for applications.
     # Including libpmd_af_xdp.so as whole-archive during linking of rust binary doesn't seem to work.
-    sudo -E LD_LIBRARY_PATH=$LD_LIBRARY_PATH LD_PRELOAD=$LD_LIBRARY_PATH/libpmd_af_xdp.so RUST_LOG=info `which cargo` run -p $CRATE --release -- $MODE -c $CONFIG -p $PORT -b $BURST -a $CORE
+    sudo -E LD_LIBRARY_PATH="$LD_LIBRARY_PATH" LD_PRELOAD="$LD_LIBRARY_PATH"/libpmd_af_xdp.so RUST_LOG=info "$(which cargo)" run -p "$CRATE" --release -- "$MODE" -c "$CONFIG" -p "$PORT" -b "$BURST" -a "$CORE"
 else
-    cargo run -p $CRATE --release -- help
+    cargo run -p "$CRATE" --release -- help
 fi
 
 stty sane
