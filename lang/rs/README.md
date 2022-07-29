@@ -1,4 +1,4 @@
-### Rust CNE Bindings, High Level API and Example Applications.
+# Rust CNE Bindings, High Level API and Example Applications
 
 Rust bindings for CNDP CNE C library.
 
@@ -47,11 +47,11 @@ Following are the steps required to build Rust bindings, high level APIs and exa
       If no command line options are passed, the script will be executed with default values used in the script.
    4. Run loopback example:  `cd apis/cne`. Execute [./run_loopback.sh](./run_loopback.sh)
    5. Run echo server example: `cd examples/echo_server`. Execute [./run_echo_server.sh](./run_echo_server.sh)
-   6. Run packet forward example: `cd examples/fwd`. Execute [./run_fwd.h](./run_fwd.h) `<drop|fwd|tx-only|lb>`
+   6. Run packet forward example: `cd examples/fwd`. Execute [./run_fwd.h](./run_fwd.h) `<JSONC config file>` `[[drop | rx-only], tx-only, [fwd | forward], [lb | loopback]]`
 
 9. To generate high level API crate documentation execute [./generate_cne_docs.sh](./generate_cne_docs.sh)
 
-### Wireguard with CNDP
+## Wireguard with CNDP
 
 Wireguard user space (implemented in Rust) uses CNDP to send and receive packets from/to user space.
 
