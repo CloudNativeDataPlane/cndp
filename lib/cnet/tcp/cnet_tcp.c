@@ -968,7 +968,7 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
         pktmbuf_reset(mbuf);
 
     /* Create the options and obtain the options length */
-    optlen = tcp_send_options(pcb->tcb, opts, flags);
+    optlen = tcp_send_options(pcb->tcb, (uint8_t *)opts, flags);
 
     /* move the starting offset to account for headers */
     pktmbuf_data_off(mbuf) += sizeof(struct cne_tcp_hdr) + optlen + sizeof(struct cne_ipv4_hdr) +
