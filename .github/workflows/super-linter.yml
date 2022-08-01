@@ -31,6 +31,6 @@ jobs:
           VALIDATE_BASH: true
           VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_GO: true
-          VALIDATE_RUST_CLIPPY: true
+          VALIDATE_RUST_2021: true
           VALIDATE_PYTHON_PYLINT: true
           VALIDATE_MARKDOWN: true
