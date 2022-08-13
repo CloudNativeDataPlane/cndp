@@ -3,7 +3,7 @@
  */
 
 #include <pktdev.h>               // for pktdev_info
-#include <pktdev_driver.h>        // for pktdev_create_done, pktdev_allocate, pktd...
+#include <pktdev_driver.h>        // for pktdev_allocate, pktd...
 #include <errno.h>                // for errno, ENODEV, ENOMEM, ENOSPC
 #include <stdatomic.h>            // for memory_order_relaxed, atomic_fetch_add
 #include <stdint.h>               // for uint16_t, uint32_t
@@ -157,6 +157,14 @@ static const struct pktdev_ops ops = {
     .dev_close     = pmd_close,
 };
 
+static int pmd_ring_probe(lport_cfg_t *cfg);
+
+static struct pktdev_driver ring_drv = {
+    .probe = pmd_ring_probe,
+};
+
+PMD_REGISTER_DEV(net_ring, ring_drv)
+
 static struct cne_pktdev *
 do_pmd_ring_create(const char *name, struct ring_internal_args *args)
 {
@@ -175,10 +183,10 @@ do_pmd_ring_create(const char *name, struct ring_internal_args *args)
     /* reserve an pktdev entry */
     dev = pktdev_allocate(name, NULL);
     if (!dev) {
-        CNE_ERR("%s: Could not pktdev_allocate\n", __FUNCTION__);
         errno = ENOSPC;
-        goto error;
+        CNE_ERR_GOTO(error, "Could not pktdev_allocate\n");
     }
+    dev->drv = &ring_drv;
 
     /* now put it all together
      * - store queue data in internals,
@@ -206,8 +214,6 @@ do_pmd_ring_create(const char *name, struct ring_internal_args *args)
     /* finally assign rx and tx ops */
     dev->rx_pkt_burst = pmd_ring_rx;
     dev->tx_pkt_burst = pmd_ring_tx;
-
-    pktdev_create_done(dev);
 
     return dev;
 
@@ -261,36 +267,5 @@ pmd_ring_probe(lport_cfg_t *cfg)
         return -1;
     }
 
-    pktdev_create_done(dev);
-
     return pktdev_portid(dev);
 }
-
-static int
-pmd_ring_remove(int pid)
-{
-    struct cne_pktdev *dev = NULL;
-    char name[64]          = {0};
-
-    CNE_DEBUG("Removing RING device\n");
-
-    if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
-        return -ENODEV;
-
-    /* find the device entry */
-    dev = pktdev_allocated(name);
-    if (!dev)
-        return -1;
-
-    pktdev_release_port(dev);
-
-    memset(dev, 0, sizeof(struct cne_pktdev));
-    return 0;
-}
-
-static struct pktdev_driver ring_drv = {
-    .probe  = pmd_ring_probe,
-    .remove = pmd_ring_remove,
-};
-
-PMD_REGISTER_DEV(net_ring, ring_drv)

@@ -47,7 +47,11 @@ pktdev_port_setup(lport_cfg_t *c)
         CNE_ERR_RET("PMD %s probe routine missing\n", c->pmd_name);
 
     if ((lport = drv->probe(c)) < 0)
-        CNE_ERR_RET("driver probe(%s:%s) failed %d \n", c->ifname, c->pmd_name, lport);
+        CNE_ERR_RET("driver probe(%s:%s) failed\n", c->ifname, c->pmd_name);
+
+    if (lport >= CNE_MAX_ETHPORTS)
+        CNE_ERR_RET("Invalid port number %d >= CNE_MAX_ETHPORTS\n", lport);
+    pktdev_devices[lport].state = PKTDEV_ACTIVE;
 
     if (pktdev_start(lport) < 0)
         CNE_ERR_RET("pktdev_start(%d) failed\n", lport);
@@ -105,22 +109,28 @@ pktdev_offloads_get(uint16_t lport_id, struct offloads *off)
 int
 pktdev_port_remove(int lport)
 {
-    struct pktdev_driver *drv;
-    char name[LPORT_NAME_LEN] = {0};
-    struct pktdev_info dev_info;
+    struct cne_pktdev *dev;
 
-    if (pktdev_get_name_by_port(lport, name, sizeof(name)) < 0)
+    dev = pktdev_get(lport);
+    if (!dev || !dev->drv)
         return -1;
 
-    if (pktdev_info_get(lport, &dev_info) < 0)
-        return -1;
-
-    TAILQ_FOREACH (drv, &pktdev_drv_list, next) {
-        if (!strcmp(dev_info.driver_name, drv->name))
-            return drv->remove(lport);
+    if (dev->drv->remove) {
+        if (dev->drv->remove(dev) < 0)
+            return -1;
     }
 
-    return -1;        // Should only return success if drv->remove was successful
+    pktdev_release_port(dev);
+
+    return 0;
+}
+
+void
+pktdev_port_remove_all(void)
+{
+    for (int lport = 0; lport < CNE_MAX_ETHPORTS; lport++)
+        if (pktdev_port_remove(lport) <= 0) /* ignore return value */
+            continue;
 }
 
 void

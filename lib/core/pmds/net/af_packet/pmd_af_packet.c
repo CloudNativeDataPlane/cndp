@@ -15,7 +15,7 @@
 #include <cne_lport.h>              // for lport_cfg_t, lport_stats_t
 #include <pktdev.h>                 // for pktdev_info
 #include <pktdev_core.h>            // for cne_pktdev, pktdev_ops
-#include <pktdev_driver.h>          // for pktdev_allocate, pktdev_create_done, pkt...
+#include <pktdev_driver.h>          // for pktdev_allocate, pkt...
 #include <pktmbuf.h>                // for pktmbuf_info_t, pktmbuf_t, pktmbuf...
 #include "netdev_funcs.h"           // for netdev_get_mac_addr
 #include <net/ethernet.h>           // for ether_addr
@@ -241,6 +241,14 @@ static const struct pktdev_ops ops = {
     .pkt_alloc     = pmd_pkt_alloc,
 };
 
+static int pmd_af_packet_probe(lport_cfg_t *c);
+
+static struct pktdev_driver af_packet_drv = {
+    .probe = pmd_af_packet_probe,
+};
+
+PMD_REGISTER_DEV(net_af_packet, af_packet_drv);
+
 static int
 pmd_af_packet_probe(lport_cfg_t *c)
 {
@@ -268,6 +276,7 @@ pmd_af_packet_probe(lport_cfg_t *c)
     dev = pktdev_allocate(c->name, c->ifname);
     if (!dev)
         CNE_ERR_GOTO(err_exit, "pktdev_allocate(%s, %s) failed\n", c->name, c->ifname);
+    dev->drv = &af_packet_drv;
 
     lport->lport_id = dev->data->lport_id;
     lport->pi       = c->pi;
@@ -369,7 +378,6 @@ pmd_af_packet_probe(lport_cfg_t *c)
     dev->rx_pkt_burst      = pmd_af_packet_rx;
     dev->tx_pkt_burst      = pmd_af_packet_tx;
 
-    pktdev_create_done(dev);
     return (pktdev_portid(dev));
 
 err_exit:
@@ -387,31 +395,10 @@ err_exit:
     if (fd != -1)
         close(fd);
 
-    if (dev)
-        pktdev_release_port(dev);
+    pktdev_release_port(dev);
 
     if (lport)
         free(lport);
 
     return ret;
 }
-
-static int
-pmd_af_packet_remove(int lport_id)
-{
-    struct cne_pktdev *dev;
-
-    dev = pktdev_get(lport_id);
-    if (!dev)
-        return -1;
-
-    pktdev_release_port(dev);
-    return 0;
-}
-
-static struct pktdev_driver af_packet_drv = {
-    .probe  = pmd_af_packet_probe,
-    .remove = pmd_af_packet_remove,
-};
-
-PMD_REGISTER_DEV(net_af_packet, af_packet_drv);

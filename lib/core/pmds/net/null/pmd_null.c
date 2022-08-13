@@ -116,6 +116,14 @@ static const struct pktdev_ops pmd_null_ops = {
     .stats_reset   = pmd_null_stats_reset,
 };
 
+static int pmd_null_probe(lport_cfg_t *cfg);
+
+static struct pktdev_driver null_drv = {
+    .probe = pmd_null_probe,
+};
+
+PMD_REGISTER_DEV(net_null, null_drv)
+
 static int
 pmd_null_probe(lport_cfg_t *cfg)
 {
@@ -128,6 +136,7 @@ pmd_null_probe(lport_cfg_t *cfg)
     dev = pktdev_allocate(cfg->name, NULL);
     if (!dev)
         return -1;
+    dev->drv = &null_drv;
 
     priv = calloc(1, sizeof(*priv));
     if (!priv)
@@ -147,26 +156,5 @@ pmd_null_probe(lport_cfg_t *cfg)
     dev->rx_pkt_burst      = pmd_null_rx_burst;
     dev->tx_pkt_burst      = pmd_null_tx_burst;
 
-    pktdev_create_done(dev);
     return dev->data->lport_id;
 }
-
-static int
-pmd_null_remove(int lport_id)
-{
-    struct cne_pktdev *dev;
-
-    dev = pktdev_get(lport_id);
-    if (!dev)
-        return -1;
-
-    pktdev_release_port(dev);
-    return 0;
-}
-
-static struct pktdev_driver null_drv = {
-    .probe  = pmd_null_probe,
-    .remove = pmd_null_remove,
-};
-
-PMD_REGISTER_DEV(net_null, null_drv)

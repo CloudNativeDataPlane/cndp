@@ -77,34 +77,27 @@ pktdev_allocate(const char *name, const char *ifname)
     size_t name_len        = 0;
 
     name_len = strnlen(name, PKTDEV_NAME_MAX_LEN);
-    if (name_len == 0) {
-        PKTDEV_LOG(ERR, "Zero length Ethernet device name\n");
-        return NULL;
-    }
+    if (name_len == 0)
+        CNE_NULL_RET("Zero length Ethernet device name\n");
 
-    if ((name_len + 1) >= PKTDEV_NAME_MAX_LEN) {        // Need space for terminating char
-        PKTDEV_LOG(ERR, "Ethernet device name is too long\n");
-        return NULL;
-    }
+    if ((name_len + 1) >= PKTDEV_NAME_MAX_LEN)        // Need space for terminating char
+        CNE_NULL_RET("Ethernet device name is too long\n");
 
-    if (pktdev_allocated(name) != NULL) {
-        PKTDEV_LOG(ERR, "Device with name %s already allocated\n", name);
-        goto leave;
-    }
+    if (pktdev_allocated(name) != NULL)
+        CNE_NULL_RET("Device with name %s already allocated\n", name);
 
     lport_id = pktdev_find_free_port();
-    if (lport_id >= CNE_MAX_ETHPORTS) {
-        PKTDEV_LOG(ERR, "Reached maximum number of lports\n");
-        goto leave;
-    }
+    if (lport_id >= CNE_MAX_ETHPORTS)
+        CNE_NULL_RET("Reached maximum number of lports\n");
 
     dev       = &pktdev_devices[lport_id];
     dev->data = &pktdev_data[lport_id];
 
     strlcpy(dev->data->name, name, sizeof(dev->data->name));
     if (strncmp(dev->data->name, name, name_len) != 0) {
-        PKTDEV_LOG(ERR, "Setting the pkt_dev name failed \n");
-        return NULL;
+        dev->state = PKTDEV_UNUSED;
+        dev->data  = NULL;
+        CNE_NULL_RET("Setting the pkt_dev name failed\n");
     }
 
     if (ifname && ifname[0] != '\0')
@@ -112,8 +105,6 @@ pktdev_allocate(const char *name, const char *ifname)
 
     dev->data->lport_id  = lport_id;
     dev->data->numa_node = cne_device_socket_id((char *)(uintptr_t)ifname);
-
-leave:
 
     return dev;
 }
@@ -164,7 +155,7 @@ pktdev_start(uint16_t lport_id)
         return -1;
 
     if (dev->data->admin_state) {
-        PKTDEV_LOG(DEBUG, "Device with lport_id=%" PRIu16 " already started\n", lport_id);
+        CNE_DEBUG("Device with lport_id=%" PRIu16 " already started\n", lport_id);
         return 0;
     }
 
@@ -186,7 +177,7 @@ pktdev_stop(uint16_t lport_id)
         return -1;
 
     if (dev->data->admin_state == false) {
-        PKTDEV_LOG(INFO, "Device with lport_id=%" PRIu16 " already stopped\n", lport_id);
+        CNE_DEBUG("Device with lport_id=%" PRIu16 " already stopped\n", lport_id);
         return 0;
     }
 
@@ -248,6 +239,8 @@ pktdev_close(uint16_t lport_id)
 
     pktdev_stop(lport_id);
     CALL_PMD(dev->dev_ops->dev_close, dev);
+
+    pktdev_release_port(dev);
 
     return 0;
 }
@@ -327,15 +320,6 @@ pktdev_info_get(uint16_t lport_id, struct pktdev_info *dev_info)
 }
 
 void
-pktdev_create_done(struct cne_pktdev *dev)
-{
-    if (dev == NULL)
-        return;
-
-    dev->state = PKTDEV_ACTIVE;
-}
-
-void
 pktdev_release_port(struct cne_pktdev *dev)
 {
     if (dev == NULL)
@@ -374,10 +358,8 @@ pktdev_get_name_by_port(uint16_t lport_id, char *name, uint32_t len)
 int
 pktdev_get_port_by_name(const char *name, uint16_t *lport_id)
 {
-    if (name == NULL || lport_id == NULL) {
-        PKTDEV_LOG(ERR, "Null pointer is specified\n");
-        return -EINVAL;
-    }
+    if (name == NULL || lport_id == NULL)
+        CNE_ERR_RET_VAL(-EINVAL, "Null pointer is specified\n");
 
     PKTDEV_FOREACH (pid) {
         if (pktdev_devices[pid].state == PKTDEV_UNUSED)
