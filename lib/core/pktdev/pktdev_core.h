@@ -15,10 +15,7 @@
  * public API because they are used by inline functions in the published API.
  *
  * Applications should not use these directly.
- *
  */
-
-#define PKTDEV_LOG(level, ...) cne_log(CNE_LOG_##level, __func__, __LINE__, "" __VA_ARGS__)
 
 /*
  * Definitions of all functions exported by an Ethernet driver through the
@@ -187,11 +184,12 @@ struct pktdev_ops {
  * process, while the actual configuration data for the device is shared.
  */
 struct cne_pktdev {
-    eth_rx_burst_t rx_pkt_burst;      /**< Pointer to PMD receive function. */
-    eth_tx_burst_t tx_pkt_burst;      /**< Pointer to PMD transmit function. */
-    eth_tx_prep_t tx_pkt_prepare;     /**< Pointer to PMD transmit prepare function. */
-    struct pktdev_data *data;         /**< Pointer to device data. */
-    void *process_private;            /**< Pointer to per-process device data. */
+    eth_rx_burst_t rx_pkt_burst;      /**< Pointer to PMD receive function */
+    eth_tx_burst_t tx_pkt_burst;      /**< Pointer to PMD transmit function */
+    eth_tx_prep_t tx_pkt_prepare;     /**< Pointer to PMD transmit prepare function */
+    struct pktdev_data *data;         /**< Pointer to device data */
+    struct pktdev_driver *drv;        /**< Pointer to driver data */
+    void *process_private;            /**< Pointer to per-process device data */
     const struct pktdev_ops *dev_ops; /**< Functions exported by PMD */
     enum pktdev_state state;          /**< Flag indicating the lport state */
 } __cne_cache_aligned;

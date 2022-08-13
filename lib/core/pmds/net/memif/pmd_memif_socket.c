@@ -806,6 +806,14 @@ static const struct pktdev_ops ops = {
     .pkt_alloc     = pmd_pkt_alloc,
 };
 
+static int cne_pmd_memif_socket_probe(lport_cfg_t *c);
+
+static struct pktdev_driver memif_socket_drv = {
+    .probe = cne_pmd_memif_socket_probe,
+};
+
+PMD_REGISTER_DEV(net_memif_socket, memif_socket_drv);
+
 static int
 cne_memif_create(struct cne_pktdev *dev, enum cne_memif_role_t role, cne_memif_interface_id_t id,
                  uint32_t flags, const char *socket_filename,
@@ -894,12 +902,13 @@ cne_pmd_memif_socket_probe(lport_cfg_t *c)
     else
         CNE_ERR_RET("Not Support Mode\n");
 
-    dev = pktdev_allocate(c->name, c->ifname);
-
     CNE_LOG(DEBUG, "Initializing memif_socket for %s\n", c->ifname);
 
+    dev = pktdev_allocate(c->name, c->ifname);
     if (!dev)
         CNE_ERR_GOTO(exit, "Failed to init lport\n");
+
+    dev->drv = &memif_socket_drv;
 
     /* use abstract address by default */
     flags |= CNE_ETH_MEMIF_FLAG_SOCKET_ABSTRACT;
@@ -920,41 +929,9 @@ cne_pmd_memif_socket_probe(lport_cfg_t *c)
 
     cne_memif_connect_start(dev);
 
-    pktdev_create_done(dev);
-
     return (pktdev_portid(dev));
 exit:
-    if (dev)
-        pktdev_release_port(dev);
+    pktdev_release_port(dev);
 
     return ret;
 }
-
-static int
-cne_pmd_memif_socket_remove(int pid)
-{
-    struct cne_pktdev *dev = NULL;
-    char name[64]          = {0};
-
-    CNE_LOG(DEBUG, "Removing memif_socket\n");
-
-    if (pktdev_get_name_by_port(pid, name, sizeof(name)) < 0)
-        return -ENODEV;
-
-    /* find the device entry */
-    dev = pktdev_allocated(name);
-    if (dev == NULL)
-        return -1;
-
-    pktdev_release_port(dev);
-
-    memset(dev, 0, sizeof(struct cne_pktdev));
-    return 0;
-}
-
-static struct pktdev_driver memif_socket_drv = {
-    .probe  = cne_pmd_memif_socket_probe,
-    .remove = cne_pmd_memif_socket_remove,
-};
-
-PMD_REGISTER_DEV(net_memif_socket, memif_socket_drv);

@@ -192,7 +192,7 @@ pktdev_rx_burst(uint16_t lport_id, pktmbuf_t **rx_pkts, const uint16_t nb_pkts)
 
     /* Check packet stream status */
     if (!pktdev_admin_state(lport_id)) {
-        PKTDEV_LOG(DEBUG, "Packet stream is disabled for '%d'\n", lport_id);
+        CNE_DEBUG("Packet stream is disabled for '%d'\n", lport_id);
         return PKTDEV_ADMIN_STATE_DOWN;
     }
 
@@ -273,7 +273,7 @@ pktdev_tx_burst(uint16_t lport_id, pktmbuf_t **tx_pkts, uint16_t nb_pkts)
 
     /* Check packet stream status */
     if (!pktdev_admin_state(lport_id)) {
-        PKTDEV_LOG(DEBUG, "Packet stream is disabled for '%d'\n", lport_id);
+        CNE_DEBUG("Packet stream is disabled for '%d'\n", lport_id);
         return PKTDEV_ADMIN_STATE_DOWN;
     }
 

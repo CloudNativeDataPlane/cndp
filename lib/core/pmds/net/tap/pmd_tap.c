@@ -14,7 +14,7 @@
 #include <cne_lport.h>              // for lport_cfg_t, lport_stats_t
 #include <pktdev.h>                 // for pktdev_info
 #include <pktdev_core.h>            // for cne_pktdev, pktdev_ops
-#include <pktdev_driver.h>          // for pktdev_allocate, pktdev_create_done, pkt...
+#include <pktdev_driver.h>          // for pktdev_allocate, pkt...
 #include <pktmbuf.h>                // for pktmbuf_info_t, pktmbuf_t, pktmbuf...
 #include "netdev_funcs.h"           // for netdev_get_mac_addr
 #include <net/ethernet.h>           // for ether_addr
@@ -297,6 +297,19 @@ static const struct pktdev_ops tun_ops = {
     .pkt_alloc     = pmd_pkt_alloc,
 };
 
+static int pmd_tap_probe(lport_cfg_t *c);
+static int pmd_tun_probe(lport_cfg_t *c);
+
+static struct pktdev_driver tap_drv = {
+    .name  = PMD_NET_TAP_NAME,
+    .probe = pmd_tap_probe,
+};
+
+static struct pktdev_driver tun_drv = {
+    .name  = PMD_NET_TUN_NAME,
+    .probe = pmd_tun_probe,
+};
+
 static int
 _tap_probe(int tap_type, lport_cfg_t *c)
 {
@@ -320,6 +333,7 @@ _tap_probe(int tap_type, lport_cfg_t *c)
     dev = pktdev_allocate(c->name, c->name);
     if (!dev)
         CNE_ERR_GOTO(err_exit, "pktdev_allocate(%s, %s) failed\n", c->name, c->name);
+    dev->drv = (tap_type == IFF_TAP) ? &tap_drv : &tun_drv;
 
     lport->lport_id = dev->data->lport_id;
     lport->pi       = c->pi;
@@ -354,7 +368,6 @@ _tap_probe(int tap_type, lport_cfg_t *c)
         dev->tx_pkt_burst = pmd_tun_tx;
     }
 
-    pktdev_create_done(dev);
     return pktdev_portid(dev);
 
 err_exit:
@@ -381,31 +394,6 @@ pmd_tun_probe(lport_cfg_t *c)
 {
     return _tap_probe(IFF_TUN, c);
 }
-
-static int
-pmd_tap_remove(int lport_id)
-{
-    struct cne_pktdev *dev;
-
-    dev = pktdev_get(lport_id);
-    if (!dev)
-        return -1;
-
-    pktdev_release_port(dev);
-    return 0;
-}
-
-static struct pktdev_driver tap_drv = {
-    .name   = PMD_NET_TAP_NAME,
-    .probe  = pmd_tap_probe,
-    .remove = pmd_tap_remove,
-};
-
-static struct pktdev_driver tun_drv = {
-    .name   = PMD_NET_TUN_NAME,
-    .probe  = pmd_tun_probe,
-    .remove = pmd_tap_remove,
-};
 
 CNE_INIT(vdrvinit_tuntap)
 {
