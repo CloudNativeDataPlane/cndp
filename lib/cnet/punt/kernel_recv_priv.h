@@ -62,16 +62,6 @@ struct kernel_recv_node_main {
 /**
  * @internal
  *
- * Get the Ethernet Rx node data.
- *
- * @return
- *   Pointer to Ethernet Rx node data.
- */
-struct kernel_recv_node_main *kernel_recv_get_node_data_get(void);
-
-/**
- * @internal
- *
  * Get the Kernel Recv node.
  *
  * @return
