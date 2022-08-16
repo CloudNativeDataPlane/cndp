@@ -215,7 +215,7 @@ __cne_node_enqueue_prologue(struct cne_graph *graph, struct cne_node *node, cons
         __cne_node_enqueue_tail_update(graph, node);
 
     if (unlikely(node->size < (idx + space)))
-        __cne_node_stream_alloc(graph, node);
+        __cne_node_stream_alloc_size(graph, node, node->size + space);
 }
 
 /**
@@ -465,7 +465,7 @@ cne_node_next_stream_get(struct cne_graph *graph, struct cne_node *node, cne_edg
     uint16_t free_space = node->size - idx;
 
     if (unlikely(free_space < nb_objs))
-        __cne_node_stream_alloc_size(graph, node, nb_objs);
+        __cne_node_stream_alloc_size(graph, node, node->size + nb_objs);
 
     return &node->objs[idx];
 }
