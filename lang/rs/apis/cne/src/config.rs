@@ -17,8 +17,8 @@ use std::result::Result;
 
 use cne_sys::bindings::{
     _pktmbuf_info_name_set, lport_cfg_t, mmap_addr, mmap_alloc, mmap_free, mmap_size, mmap_t,
-    mmap_type_by_name, pktdev_close, pktdev_port_remove, pktdev_port_setup, pktmbuf_destroy,
-    pktmbuf_info_t, pktmbuf_pool_create, uds_info_t, udsc_close, udsc_handshake, xskdev_info_t,
+    mmap_type_by_name, pktdev_close, pktdev_port_setup, pktmbuf_destroy, pktmbuf_info_t,
+    pktmbuf_pool_create, uds_info_t, udsc_close, udsc_handshake, xskdev_info_t,
     xskdev_socket_create, xskdev_socket_destroy, LPORT_BUSY_POLLING, LPORT_FORCE_WAKEUP,
     LPORT_SHARED_UMEM, LPORT_SKB_MODE, LPORT_UNPRIVILEGED, MEMPOOL_CACHE_MAX_SIZE,
 };
@@ -595,12 +595,6 @@ impl Config {
                         let ret = unsafe { pktdev_close(lport_id) };
                         if ret < 0 {
                             let err_msg = format!("pktdev_close() failed for lport {}", lport_name);
-                            return Err(CneError::ConfigError(err_msg));
-                        }
-                        let ret = unsafe { pktdev_port_remove(lport_id as i32) };
-                        if ret < 0 {
-                            let err_msg =
-                                format!("pktdev_port_remove() failed for lport {}", lport_name);
                             return Err(CneError::ConfigError(err_msg));
                         }
                     }
