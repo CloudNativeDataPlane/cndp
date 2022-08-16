@@ -41,7 +41,6 @@ struct pktdev_driver {
     TAILQ_ENTRY(pktdev_driver) next; /**< Next in list */
     const char *name;                /**< driver name */
     pktdev_probe_t *probe;           /**< device probe function */
-    pktdev_remove_t *remove;         /**< Remove routine */
 };
 
 /**

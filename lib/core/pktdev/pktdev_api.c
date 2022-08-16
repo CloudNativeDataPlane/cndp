@@ -106,33 +106,6 @@ pktdev_offloads_get(uint16_t lport_id, struct offloads *off)
     return 0;
 }
 
-int
-pktdev_port_remove(int lport)
-{
-    struct cne_pktdev *dev;
-
-    dev = pktdev_get(lport);
-    if (!dev || !dev->drv)
-        return -1;
-
-    if (dev->drv->remove) {
-        if (dev->drv->remove(dev) < 0)
-            return -1;
-    }
-
-    pktdev_release_port(dev);
-
-    return 0;
-}
-
-void
-pktdev_port_remove_all(void)
-{
-    for (int lport = 0; lport < CNE_MAX_ETHPORTS; lport++)
-        if (pktdev_port_remove(lport) <= 0) /* ignore return value */
-            continue;
-}
-
 void
 lport_cfg_dump(FILE *f, lport_cfg_t *c)
 {
@@ -141,12 +114,10 @@ lport_cfg_dump(FILE *f, lport_cfg_t *c)
             f = stdout;
 
         cne_fprintf(f, "lport_cfg_t: %p\n", c);
-        cne_fprintf(f, "  name          : %s\n", c->name);
+        cne_fprintf(f, "  name            : %s\n", c->name);
         cne_fprintf(f, "  netdev          : %s\n", c->ifname);
         cne_fprintf(f, "  pmd_name        : %s\n", c->pmd_name);
         cne_fprintf(f, "  qid             : %u\n", c->qid);
-
-        cne_fprintf(f, "                    Rx/Tx values");
         cne_fprintf(f, "  bufcnt          : %u\n", c->bufcnt);
         cne_fprintf(f, "  bufsz           : %u\n", c->bufsz);
     }
