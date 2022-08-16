@@ -394,23 +394,6 @@ CNDP_API int pktdev_portid(struct cne_pktdev *dev);
 CNDP_API int pktdev_port_setup(lport_cfg_t *c);
 
 /**
- * Remove or destroy a lport which releases its resources.
- * Please make sure to stop a lport with pktdev_stop() before
- * removing it.
- *
- * @param lport_id
- *   The lport ID to use for the removal of the lport from the system
- * @return
- *   -1 on error or 0 success
- */
-CNDP_API int pktdev_port_remove(int lport_id);
-
-/**
- * Remove all lports and releases each lport resources, ignoring errors.
- */
-CNDP_API void pktdev_port_remove_all(void);
-
-/**
  * Dump out a lport_cfg_t structure.
  *
  * @param f

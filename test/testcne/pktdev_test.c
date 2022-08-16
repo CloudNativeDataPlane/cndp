@@ -313,12 +313,6 @@ general_tests(const char *ifname, const char *pmd)
     } else
         tst_ok("PASS --- TEST: pktdev close success\n");
 
-    if (pktdev_port_remove(lport)) {
-        tst_error("ERROR - Could not remove the lport\n");
-        goto leave;
-    } else
-        tst_ok("PASS --- TEST: pktdev remove success\n");
-
     lport = -1;
     sleep(1);
 

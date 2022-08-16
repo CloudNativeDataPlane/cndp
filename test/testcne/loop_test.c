@@ -24,7 +24,7 @@
 
 #include "loop_test.h"
 #include "cne_common.h"          // for CNE_SET_USED, __cne_unused, cne_countof
-#include "pktdev_api.h"          // for pktdev_port_remove, pktdev_port_setup
+#include "pktdev_api.h"          // for pktdev_port_setup
 #include "cne_lport.h"           // for lport_cfg_t, lport_stats_t, LPORT_DFLT...
 #include "netdev_funcs.h"        // for netdev_link, netdev_get_link, netdev_s...
 #include "xskdev.h"              // for XSKDEV_DFLT_RX_NUM_DESCS, XSKDEV_DFLT_...
@@ -319,8 +319,8 @@ loop_main(int argc, char **argv)
     }
 
 leave:
-    if (pktdev_port_remove(lport) < 0)
-        tst_error("pktdev_port_remove(%d) failed\n", lport);
+    if (pktdev_close(lport) < 0)
+        tst_error("pktdev_close(%d) failed\n", lport);
 
     benchmark_done = true;
 
