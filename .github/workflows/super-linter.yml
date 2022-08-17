@@ -27,6 +27,10 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: "main"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set the LINTER_RULES_PATH to be the top-level directory of the repo so
+          # that .golangci.yml is available to the golangci-lint linter
+          # https://github.com/github/super-linter/blob/main/docs/using-rules-files.md
+          LINTER_RULES_PATH: /
           VALIDATE_CLANG_FORMAT: true
           VALIDATE_BASH: true
           VALIDATE_GITHUB_ACTIONS: true
