@@ -86,6 +86,10 @@ print_port_stats(int lport_id, struct fwd_port *p, struct fwd_info *fwd)
     prt_cnt(skip, col, stats.ierrors, RED_TYPE);
     prt_cnt(skip, col, stats.imissed, RED_TYPE);
     prt_cnt(skip, col, stats.rx_invalid, RED_TYPE);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    prt_cnt(skip, col, stats.rx_ring_full, CYAN_TYPE);
+    prt_cnt(skip, col, stats.rx_fill_ring_empty, CYAN_TYPE);
+#endif
 
     prt_cnt(skip, col, tx_pps, YELLOW_TYPE);
     prt_cnt(skip, col, stats.opackets, MAGENTA_TYPE);
@@ -93,6 +97,9 @@ print_port_stats(int lport_id, struct fwd_port *p, struct fwd_info *fwd)
     prt_cnt(skip, col, stats.oerrors, RED_TYPE);
     prt_cnt(skip, col, stats.odropped, CYAN_TYPE);
     prt_cnt(skip, col, stats.tx_invalid, RED_TYPE);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    prt_cnt(skip, col, stats.tx_ring_empty, CYAN_TYPE);
+#endif
 
     if (fwd->flags & FWD_ACL_STATS) {
         prt_cnt(skip, col, acl_prefilter_pps, YELLOW_TYPE);
@@ -177,12 +184,19 @@ struct stats_line {
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Errors"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Missed"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Invalid"},
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    {COL_LINE, "[green]%-*s [yellow]|[]\n", "   ring full"},
+    {COL_LINE, "[green]%-*s [yellow]|[]\n", "   ring empty"},
+#endif
     {HDR_LINE, "[yellow:-:italic]%-*s [green:-:-]%-*s [yellow]|[]\n", "Pkts/s", "TX"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Total Pkts"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Total MBs"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Errors"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Dropped"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Invalid"},
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    {COL_LINE, "[green]%-*s [yellow]|[]\n", "   ring empty"},
+#endif
 
     {HDR_LINE | ACL_LINE, "[yellow:-:italic]%-*s [green:-:-]%-*s [yellow]|[]\n", "Pkts/s",
      "ACL Drop"},
