@@ -194,14 +194,27 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             pktmbuf_t *xb = tx_mbufs[j];
             uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
 
-            p[0]                 = 0xfd3c78299efefd3c;
-            p[1]                 = 0x00450008b82c9efe;
-            p[2]                 = 0x110400004f122e00;
-            p[3]                 = 0xa8c00100a8c01e22;
-            p[4]                 = 0x1a002e16d2040101;
-            p[5]                 = 0x706f6e6d6c6b9a9e;
-            p[6]                 = 0x7877767574737271;
-            p[7]                 = 0x31307a79;
+            /*
+             * IPv4/UDP 64 byte packet
+             * Port Src/Dest       :           1234/ 5678
+             * Pkt Type            :           IPv4 / UDP
+             * IP  Destination     :           198.18.1.1
+             *     Source          :        198.18.0.1/24
+             * MAC Destination     :    3c:fd:fe:e4:34:c0
+             *     Source          :    3c:fd:fe:e4:38:40
+             * 0000   3cfd fee4 34c0 3cfd fee4 3840 08004500
+             * 0010   002e 60ac 0000 4011 8cec c612 0001c612
+             * 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e6f70
+             * 0030   7172 7374 7576 7778 797a 3031
+             */
+            p[0]                 = 0x3cfdfee434c03cfd;
+            p[1]                 = 0xfee4384008004500;
+            p[2]                 = 0x002e60ac00004011;
+            p[3]                 = 0x8cecc6120001c612;
+            p[4]                 = 0x010104d2162e001a;
+            p[5]                 = 0x93c66b6c6d6e6f70;
+            p[6]                 = 0x7172737475767778;
+            p[7]                 = 0x797a3031;
             pktmbuf_data_len(xb) = 60;
         }
 
