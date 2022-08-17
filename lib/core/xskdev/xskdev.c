@@ -1049,20 +1049,36 @@ xskdev_stats_get(xskdev_info_t *xi, lport_stats_t *stats)
         CNE_ERR_RET("getsockopt() failed for XDP_STATISTICS for fd %d, %s, %d, %d.\n", fd,
                     xi->ifname, xi->prog_id, xi->if_index);
 
-    stats->imissed += xdp_stats.rx_dropped;
-    stats->rx_invalid += xdp_stats.rx_invalid_descs;
-    stats->tx_invalid += xdp_stats.tx_invalid_descs;
-
+    /* Adjust statistics to be consistent after a xskdev_stats_reset() call */
+    stats->imissed    = (xdp_stats.rx_dropped - xi->orig_stats.rx_dropped);
+    stats->rx_invalid = (xdp_stats.rx_invalid_descs - xi->orig_stats.rx_invalid_descs);
+    stats->tx_invalid = (xdp_stats.tx_invalid_descs - xi->orig_stats.tx_invalid_descs);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    stats->rx_ring_full = (xdp_stats.rx_ring_full - xi->orig_stats.rx_ring_full);
+    stats->rx_fill_ring_empty =
+        (xdp_stats.rx_fill_ring_empty_descs - xi->orig_stats.rx_fill_ring_empty_descs);
+    stats->tx_ring_empty = (xdp_stats.tx_ring_empty_descs - xi->orig_stats.tx_ring_empty_descs);
+#endif
     return 0;
 }
 
 int
 xskdev_stats_reset(xskdev_info_t *xi)
 {
+    socklen_t optlen = sizeof(struct xdp_statistics);
+    int ret, fd;
+
     if (!xi)
         return -1;
 
     memset(&xi->stats, 0, sizeof(lport_stats_t));
+
+    /* Grab the new set of XDP stats to simulate a reset of the stats */
+    fd  = xsk_socket__fd(xi->rxq.xsk);
+    ret = getsockopt(fd, SOL_XDP, XDP_STATISTICS, &xi->orig_stats, &optlen);
+    if (ret != 0)
+        CNE_ERR_RET("getsockopt() failed for XDP_STATISTICS for fd %d, %s, %d, %d.\n", fd,
+                    xi->ifname, xi->prog_id, xi->if_index);
 
     return 0;
 }
@@ -1180,6 +1196,11 @@ xskdev_print_stats(const char *name, lport_stats_t *s, bool dbg_stats)
     cne_printf("[beige]odropped           : [cyan]%'lu[]\n", s->odropped);
     cne_printf("[beige]rx_invalid         : [cyan]%'lu[]\n", s->rx_invalid);
     cne_printf("[beige]tx_invalid         : [cyan]%'lu[]\n", s->tx_invalid);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    cne_printf("[beige]rx_ring_full       : [cyan]%'lu[]\n", s->rx_ring_full);
+    cne_printf("[beige]rx_fill_ring_empty : [cyan]%'lu[]\n", s->rx_fill_ring_empty);
+    cne_printf("[beige]tx_ring_empty      : [cyan]%'lu[]\n", s->tx_ring_empty);
+#endif
 
     if (dbg_stats) {
         cne_printf("[yellow]----- [cyan]Debug Stats [yellow]-----[]\n");

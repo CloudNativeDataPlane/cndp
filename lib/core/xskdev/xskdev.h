@@ -131,7 +131,7 @@ typedef struct xskdev_info {
         __get_mbuf_addr_tx;               /**< Internal function to set the mbuf address on tx */
     xskdev_get_mbuf_rx_t __get_mbuf_rx;   /**< Internal function to get the mbuf address on rx */
     xskdev_pull_cq_addr_t __pull_cq_addr; /**< Internal function to pull the complete queue */
-
+    struct xdp_statistics orig_stats; /**< Internal XDP statistics structure of original stats */
 } xskdev_info_t;
 
 /**
