@@ -731,6 +731,8 @@ pmd_dev_info(struct cne_pktdev *dev, struct pktdev_info *dev_info)
     dev_info->driver_name    = internals->pmd_name;
     dev_info->max_rx_pktlen  = (uint32_t)-1;
     dev_info->min_rx_bufsize = 0;
+    dev_info->rx_fd          = -1;
+    dev_info->tx_fd          = -1;
 
     return 0;
 }

@@ -44,7 +44,23 @@ _thd(struct json_object *obj, int flags, struct json_object *parent __cne_unused
     if (!key || flags == JSON_C_VISIT_SECOND)
         return ret;
 
-    if (json_object_is_type(obj, json_type_string)) {
+    if (json_object_is_type(obj, json_type_int)) {
+        if (!strcasecmp(key, "idle_timeout")) {
+            int val;
+
+            val = json_object_get_int(obj);
+            if (val < 0)
+                CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "idle_timeout is invalid %d\n", val);
+            thd->idle_timeout = (uint32_t)val;
+        } else if (!strcasecmp(key, "intr_timeout")) {
+            int val;
+
+            val = json_object_get_int(obj);
+            if (val < 0)
+                CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "intr_timeout is invalid %d\n", val);
+            thd->intr_timeout = (uint32_t)val;
+        }
+    } else if (json_object_is_type(obj, json_type_string)) {
         if (!strcasecmp(key, "group")) {
             if (thd->group_name)
                 free(thd->group_name);
