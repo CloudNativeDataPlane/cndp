@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) <2019-2022>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include <stdint.h>            // for uint64_t, uint8_t, uint16_t, uint...
@@ -33,11 +34,18 @@
 #include "pktmbuf.h"             // for DEFAULT_BURST_SIZE, pktmbuf_mtod
 #include "seq.h"                 // for pkt_seq_t
 #include "stats.h"               // for pkt_stats_t, txgen_page_stats
+#include "latency.h"
 
 /* Allocated the txgen structure for global use */
 txgen_t txgen;
 
 enum { UNKNOWN_TYPE_THREAD, RXTX_TYPE_THREAD, RX_TYPE_THREAD, TX_TYPE_THREAD };
+
+double
+next_poisson_time(double rateParameter)
+{
+    return -logf(1.0f - ((double)random()) / (double)(RAND_MAX)) / rateParameter;
+}
 
 static int
 txgen_thread_type(char *name)
@@ -478,6 +486,80 @@ txgen_main_transmit(port_info_t *info)
         txgen_tx_flush(info);
 }
 
+static __inline__ tstamp_t *
+txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
+{
+    tstamp_t *tstamp;
+    char *p;
+
+    p = pktmbuf_mtod(m, char *);
+
+    p += sizeof(struct cne_ether_hdr);
+
+    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
+                                                    : sizeof(struct cne_ipv6_hdr);
+
+    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
+                                            : sizeof(struct cne_tcp_hdr);
+
+    /* Force pointer to be aligned correctly */
+    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
+
+    tstamp = (tstamp_t *)p;
+
+    return tstamp;
+}
+
+static __inline__ void
+txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
+{
+    uint32_t flags;
+    int i;
+    uint64_t lat;
+
+    flags = atomic_load(&(info->port_flags));
+
+    for (i = 0; i < nb_pkts; i++) {
+
+        if (flags & (SAMPLING_LATENCIES)) {
+            tstamp_t *tstamp;
+            tstamp = txgen_tstamp_pointer(info, pkts[i]);
+
+            if (tstamp->magic == TSTAMP_MAGIC) {
+                lat = (cne_rdtsc_precise() - tstamp->timestamp);
+
+                if (flags & (SAMPLING_LATENCIES)) {
+                    latsamp_stats_t *stats = &info->latsamp_stats;
+                    uint64_t now           = cne_rdtsc_precise();
+                    stats->pkt_counter++;
+                    if (stats->next == 0 || now >= stats->next) {
+                        if (stats->idx < stats->num_samples) {
+                            stats->data[stats->idx] =
+                                (lat * Billion) /
+                                cne_get_timer_hz(); /* Do we want to keep it as cycles? */
+                            stats->idx++;
+                        }
+
+                        /* Calculate next sampling point TODO: Use poisson */
+                        if (info->latsamp_type == LATSAMPLER_POISSON) {
+                            double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
+                            stats->next                 = now + next_possion_time_ns *
+                                                    (double)cne_get_timer_hz();        // Time based
+                        } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
+                            stats->next =
+                                now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
+                        }
+                    }
+                }
+
+            } else
+                info->magic_errors++;
+
+            info->latency_nb_pkts++;
+        }
+    }
+}
+
 /**
  *
  * txgen_main_receive - Main receive routine for packets of a lport.
@@ -504,8 +586,11 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
      * Read packet from RX queues and free the mbufs
      */
     nb_rx = pktdev_rx_burst(lport->lpid, pkts_burst, nb_pkts);
-    if ((nb_rx == 0) || (nb_rx == PKTDEV_ADMIN_STATE_DOWN))
+    if ((nb_rx == 0) || (nb_rx == PKTDEV_ADMIN_STATE_DOWN)) {
         return;
+    }
+
+    txgen_recv_tstamp(info, pkts_burst, nb_rx);
 
     /* packets are not freed in the next call. */
     txgen_packet_classify_bulk(pkts_burst, nb_rx, lport->lpid);
@@ -704,6 +789,8 @@ _page_display(void)
 
     if (txgen.flags & PCAP_PAGE_FLAG)
         txgen_page_pcap(txgen.info);
+    else if (txgen.flags & LATENCY_PAGE_FLAG)
+        txgen_page_latency();
     else
         txgen_page_stats();
 }

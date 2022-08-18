@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) <2019-2022>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include <execinfo.h>        // for backtrace, backtrace_symbols
@@ -146,8 +147,10 @@ main(int argc, char **argv)
 
     memset(&txgen, 0, sizeof(txgen));
 
-    txgen.ident = 0x1234;
-    txgen.hz    = cne_get_timer_hz(); /* Get the starting HZ value. */
+    txgen.ident             = 0x1234;
+    txgen.hz                = cne_get_timer_hz(); /* Get the starting HZ value. */
+    txgen.nb_ports_per_page = DEFAULT_PORTS_PER_PAGE;
+    txgen.starting_port     = 0;
 
     display_pause();      /* Set the screen to be paused as we do not need it updating now */
     txgen_force_update(); /* force the first screen update after the screen is not paused. */

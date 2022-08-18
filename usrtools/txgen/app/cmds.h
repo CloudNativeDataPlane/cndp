@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) <2019-2022>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #ifndef _TXGEN_CMDS_H_
@@ -64,6 +65,8 @@ void single_set_pkt_size(port_info_t *info, uint16_t size);
 void single_set_tx_rate(port_info_t *info, const char *rate);
 void single_set_ttl_value(port_info_t *info, uint8_t ttl);
 void single_set_port_value(port_info_t *info, char type, uint32_t portValue);
+void single_set_latsampler_params(port_info_t *info, char *type, uint32_t num_samples,
+                                  uint32_t sampling_rate, char outfile[]);
 
 /* Pattern */
 void pattern_set_type(port_info_t *info, char *str);
@@ -72,6 +75,10 @@ void pattern_set_user_pattern(port_info_t *info, char *str);
 /* Enable or toggle types */
 void enable_pcap(port_info_t *info, uint32_t state);
 void enable_capture(port_info_t *info, uint32_t state);
+void start_stop_latency_sampler(port_info_t *info, uint32_t state);
+void txgen_start_latency_sampler(port_info_t *info);
+void txgen_stop_latency_sampler(port_info_t *info);
+void txgen_set_page(char *str);
 
 /* PCAP */
 void pcap_filter(port_info_t *info, char *str);

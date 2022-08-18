@@ -268,7 +268,6 @@ txgen_page_stats(void)
         /* Display the lport number for the column */
         snprintf(buff, sizeof(buff), "%s:%d", txgen_flags_string(info), pid);
         display_set_color("stats.lport.flags");
-        cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1, buff);
         display_set_color(NULL);
 
         row = LINK_STATE_ROW;

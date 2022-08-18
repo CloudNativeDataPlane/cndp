@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) <2019-2022>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include <stdatomic.h>           // for atomic_load, atomic_exchange
@@ -976,4 +977,170 @@ void
 enable_capture(port_info_t *info, uint32_t state)
 {
     txgen_set_capture(info, state);
+}
+
+/**
+ *
+ * start_stop_latency_sampler - Starts or stops latency sampler.
+ *
+ * DESCRIPTION
+ * Starts or stops latency sampler.
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+void
+start_stop_latency_sampler(port_info_t *info, uint32_t state)
+{
+    if (state == ENABLE_STATE)
+        txgen_start_latency_sampler(info);
+    else if (state == DISABLE_STATE)
+        txgen_stop_latency_sampler(info);
+}
+
+/**
+ *
+ * txgen_start_latency_sampler - Starts latency sampler.
+ *
+ * DESCRIPTION
+ * Starts latency sampler.
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+void
+txgen_start_latency_sampler(port_info_t *info)
+{
+
+    /* Start sampler */
+    if (txgen_tst_port_flags(info, SAMPLING_LATENCIES))
+        return;
+
+    if (info->latsamp_rate == 0 || info->latsamp_type == LATSAMPLER_UNSPEC ||
+        info->latsamp_num_samples == 0) {
+        CNE_ERR("Set proper sampling type, number, rate and outfile!");
+        return;
+    }
+
+    info->latsamp_stats.pkt_counter = 0;
+    info->latsamp_stats.next        = 0;
+    info->latsamp_stats.idx         = 0;
+    info->latsamp_stats.num_samples = info->latsamp_num_samples;
+
+    if (info->pkt.pktSize < (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t))
+        info->pkt.pktSize += sizeof(tstamp_t);
+
+    info->pkt.ipProto = IPPROTO_UDP;
+    txgen_packet_ctor(info);
+
+    /* Start sampling */
+    txgen_set_port_flags(info, SAMPLING_LATENCIES);
+}
+
+/**
+ *
+ * txgen_stop_latency_sampler - Stops latency sampler
+ *
+ * DESCRIPTION
+ * Stops latency sampler
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+void
+txgen_stop_latency_sampler(port_info_t *info)
+{
+    FILE *outfile;
+    uint32_t i, count;
+
+    if (txgen_tst_port_flags(info, SAMPLING_LATENCIES) == 0)
+        return;
+
+    /* Stop sampling */
+    txgen_clr_port_flags(info, SAMPLING_LATENCIES);
+
+    /* Dump stats to file */
+    outfile = fopen(info->latsamp_outfile, "w");
+    if (outfile != NULL) {
+        fprintf(outfile, "Latency\n");
+        for (i = 0; i < info->latsamp_stats.idx; i++) {
+            fprintf(outfile, "%" PRIu64 "\n", info->latsamp_stats.data[i]);
+            count++;
+        }
+        fclose(outfile);
+    }
+
+    /* Reset stats data */
+    info->latsamp_stats.pkt_counter = 0;
+    info->latsamp_stats.next        = 0;
+    info->latsamp_stats.idx         = 0;
+    info->latsamp_stats.num_samples = 0;
+
+    if (info->pkt.pktSize >= (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t)) {
+        info->pkt.pktSize -= sizeof(tstamp_t);
+    }
+
+    info->pkt.ipProto = IPPROTO_UDP;
+    txgen_packet_ctor(info);
+}
+
+/**
+ *
+ * txgen_set_page - Set the page type to display
+ *
+ * DESCRIPTION
+ * Set the page type to display
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+void
+txgen_set_page(char *str)
+{
+    uint16_t page       = 0;
+    jcfg_lport_t *lport = txgen.info->lport;
+
+    if (str == NULL)
+        return;
+
+    if ((str[0] >= '0') && (str[0] <= '9')) {
+        page = atoi(str);
+        if (page > pktdev_port_count())
+            return;
+    }
+
+    /* Switch to the correct page */
+    if (_cp("latency") || _cp("lat")) {
+        txgen.flags &= ~PAGE_MASK_BITS;
+        txgen.flags |= LATENCY_PAGE_FLAG;
+    } else if (_cp("pcap")) {
+        txgen.flags &= ~PAGE_MASK_BITS;
+        txgen.flags |= PCAP_PAGE_FLAG;
+
+        if (txgen.info[lport->lpid].pcap)
+            txgen.info[lport->lpid].pcap->pkt_idx = 0;
+    } else {
+        uint16_t start_port;
+        if (_cp("main"))
+            page = 0;
+        start_port = (page * txgen.nb_ports_per_page);
+        if ((txgen.starting_port != start_port) && (start_port < pktdev_port_count())) {
+            txgen.starting_port = start_port;
+            txgen.ending_port   = start_port + txgen.nb_ports_per_page;
+            if (txgen.ending_port > (txgen.starting_port + pktdev_port_count()))
+                txgen.ending_port = (txgen.starting_port + pktdev_port_count());
+        }
+        if (txgen.flags & PAGE_MASK_BITS) {
+            txgen.flags &= ~PAGE_MASK_BITS;
+            txgen.flags |= PRINT_LABELS_FLAG;
+        }
+    }
+
+    txgen_clear_display();
 }
