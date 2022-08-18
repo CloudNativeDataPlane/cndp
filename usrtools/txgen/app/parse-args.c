@@ -30,6 +30,7 @@
 #include "pcap.h"              // for txgen_pcap_parse
 #include "pktmbuf.h"           // for pktmbuf_pool_create, pktmbuf_info_t
 #include "port-cfg.h"          // for port_info_t
+#include "cmds.h"
 
 static int
 process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
@@ -90,7 +91,8 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                             CNE_ERR_RET("COULD NOT FIND PORT %s\n", obj.opt->val.arr[i]->str);
                     }
 
-                    pinfo       = &txgen.info[lpid];
+                    pinfo = &txgen.info[lpid];
+                    txgen_port_defaults(lpid);
                     pinfo->pcap = _pcap_open(file, lpid);
                     if (pinfo->pcap == NULL)
                         CNE_ERR_RET("Could NOT FIND PCAP\n");
