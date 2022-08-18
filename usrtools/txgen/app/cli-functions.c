@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation.
+ * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include "cli-functions.h"
@@ -72,6 +73,63 @@ static const char *status_help[] = {
     "dport|"        /*  5 */ \
     "ttl"           /*  6 */
 
+
+/**
+ *
+ * single_set_latsamp_params - Set the port latency sampler parameters
+ *
+ * DESCRIPTION
+ * Set the given port list with the given latency sampler parameters
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+void
+single_set_latsampler_params(port_info_t *info, char *type, uint32_t num_samples,
+                             uint32_t sampling_rate, char outfile[])
+{
+    FILE *fp = NULL;
+    uint32_t sampler_type;
+
+    /* Stop if latency sampler is running */
+    if (txgen_tst_port_flags(info, SAMPLING_LATENCIES)) {
+        CNE_WARN("Latency sampler is already running, stop it first!");
+        return;
+    }
+    /* Validate sampler type*/
+    if (!strcasecmp(type, "simple"))
+        sampler_type = LATSAMPLER_SIMPLE;
+    else if (!strcasecmp(type, "poisson"))
+        sampler_type = LATSAMPLER_POISSON;
+    else {
+        CNE_ERR("Unknown latsampler type %s! Valid values: simple, poisson", type);
+        return;
+    }
+
+    /* Validate file path */
+    fp = fopen(outfile, "w+");
+    if (fp == NULL) {
+        CNE_ERR("Cannot write to file path %s!", outfile);
+        return;
+    }
+    fclose(fp);
+
+    if (num_samples > MAX_LATENCY_ENTRIES) {
+        CNE_ERR("Too many samples requested. Max %d!", MAX_LATENCY_ENTRIES);
+        return;
+    }
+
+    info->latsamp_type        = sampler_type;
+    info->latsamp_rate        = sampling_rate;
+    info->latsamp_num_samples = num_samples;
+    strcpy(info->latsamp_outfile, outfile);
+
+    txgen_packet_ctor(info);
+}
+
+
 static struct cli_map set_map[] = {
     {10, "set %P %|" set_types " %d"},
     {20, "set %P type ipv4"},
@@ -82,6 +140,7 @@ static struct cli_map set_map[] = {
     {25, "set %P user pattern %s"},
     {30, "set %P src ip %4"},
     {31, "set %P dst ip %4"},
+    {100, "set %P latsampler %|simple|poisson %d %d %s"},
     {-1, NULL}
     };
 // clang-format on
@@ -111,6 +170,11 @@ static const char *set_help[] = {
     "set <portlist> user pattern <string> - A 16 byte string, must set 'pattern user' command",
     "set <portlist> [src|dst] ip ipaddr - Set IP addresses, Source must include network mask "
     "e.g. 10.1.2.3/24",
+    "set <portlist> latsampler [simple|poisson] <num-samples> <rate> <outfile>    - Set latency "
+    "sampler parameters",
+    "        num-samples: number of samples.",
+    "        rate: sampling rate i.e., samples per second.",
+    "        outfile: path to output file to dump all sampled latencies",
     CLI_HELP_PAUSE,
     NULL};
 
@@ -123,6 +187,7 @@ set_cmd(int argc, char **argv)
     struct cli_map *m;
     struct in_addr ip;
     int prefixlen;
+    uint32_t u1, u2;
 
     m = cli_mapping(set_map, argc, argv);
     if (!m)
@@ -210,6 +275,12 @@ set_cmd(int argc, char **argv)
             foreach_port(portlist,
                 single_set_ipaddr(info, 'd', &ip, 0));
             break;
+        case 100:
+            u1 = strtol(argv[4], NULL, 0);
+            u2 = strtol(argv[5], NULL, 0);
+            foreach_port(portlist,
+                single_set_latsampler_params(info, argv[3], u1, u2, argv[6]));
+            break;
         default:
             return cli_cmd_error("Command invalid", "Set", argc, argv);
     }
@@ -276,7 +347,11 @@ pcap_cmd(int argc, char **argv)
     return 0;
 }
 
-static struct cli_map start_map[] = {{10, "start %P"}, {20, "stop %P"}, {-1, NULL}};
+static struct cli_map start_map[] = {{10, "start %P"},
+                                     {20, "stop %P"},
+                                     {50, "start %P latsampler"},
+                                     {60, "stop %P latsampler"},
+                                     {-1, NULL}};
 
 static const char *start_help[] = {
     "",
@@ -284,6 +359,9 @@ static const char *start_help[] = {
     "stop <portlist>                    - Stop transmitting packets",
     "stp                                - Stop all lports from transmitting",
     "str                                - Start all lports transmitting",
+    "start <portlist> latsampler        - Start latency sampler, make sure to set sampling "
+    "parameters before starting",
+    "stop <portlist> latsampler            - Stop latency sampler, dumps to file if specified",
     CLI_HELP_PAUSE,
     NULL};
 
@@ -305,6 +383,12 @@ start_stop_cmd(int argc, char **argv)
         break;
     case 20:
         foreach_port(portlist, txgen_stop_transmitting(info));
+        break;
+    case 50:
+        foreach_port(portlist, txgen_start_latency_sampler(info));
+        break;
+    case 60:
+        foreach_port(portlist, txgen_stop_latency_sampler(info));
         break;
     default:
         return cli_cmd_error("Start/Stop command invalid", "Start", argc, argv);
@@ -504,6 +588,40 @@ misc_cmd(int argc, char **argv)
     return 0;
 }
 
+static struct cli_map page_map[] = {{10, "page %d"},
+                                    {11, "page "
+                                         "%|main|pcap|latency"},
+                                    {-1, NULL}};
+
+static const char *page_help[] = {
+    "",
+    "page [0-2]                         - Show the port pages or configuration or sequence page",
+    "page main                          - Display page zero",
+    "page pcap                          - Display the pcap page",
+    "page latency                       - Display the latency page",
+    CLI_HELP_PAUSE,
+    NULL};
+
+static int
+page_cmd(int argc, char **argv)
+{
+    struct cli_map *m;
+
+    m = cli_mapping(page_map, argc, argv);
+    if (!m)
+        return cli_cmd_error("Page invalid command", "Page", argc, argv);
+
+    switch (m->index) {
+    case 10:
+    case 11:
+        txgen_set_page(argv[1]);
+        break;
+    default:
+        return cli_cmd_error("Page invalid command", "Page", argc, argv);
+    }
+    return 0;
+}
+
 /**********************************************************/
 /**********************************************************/
 /****** CONTEXT (list of instruction) */
@@ -533,6 +651,7 @@ static struct cli_tree default_tree[] = {
     c_alias("str", "start all", "start all lports sending packets"),
     c_alias("stp", "stop all", "stop all lports sending packets"),
     c_cmd("pcap", pcap_cmd, "pcap commands"),
+    c_cmd("page", page_cmd, "change page displays"),
     c_cmd("set", set_cmd, "set a number of options"),
 
     c_alias("on", "enable screen", "Enable screen updates"),
@@ -552,6 +671,7 @@ init_tree(void)
         return -1;
 
     cli_help_add("Title", NULL, title_help);
+    cli_help_add("Page", page_map, page_help);
     cli_help_add("Enable", enable_map, enable_help);
     cli_help_add("Set", set_map, set_help);
     cli_help_add("PCAP", pcap_map, pcap_help);

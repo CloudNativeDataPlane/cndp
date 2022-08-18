@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #ifndef _PORT_CFG_H_
@@ -47,6 +48,18 @@ struct mbuf_table {
     pktmbuf_t *m_table[DEFAULT_BURST_SIZE];
 };
 
+#define MAX_LATENCY_ENTRIES \
+    50108        // Max 101000?, limited by max allowed size of latsamp_stats_t.data[]
+#define MAX_LATENCY_QUEUES 10
+
+typedef struct {
+    uint64_t data[MAX_LATENCY_ENTRIES]; /** Record for latencies */
+    uint32_t idx;                       /**< Index to the latencies array */
+    uint64_t next;                      /**< Next latency entry */
+    uint64_t pkt_counter;               /**< Pkt counter */
+    uint32_t num_samples;
+} latsamp_stats_t __cne_cache_aligned;
+
 enum { /* Per lport flag bits */
        /* Supported packet modes non-exclusive */
        CAPTURE_PKTS = (1 << 5), /**< Capture received packets */
@@ -57,6 +70,8 @@ enum { /* Per lport flag bits */
 
        /* Exclusive Packet sending modes */
        SEND_PCAP_PKTS = (1 << 12), /**< Send a pcap file of packets */
+
+       SAMPLING_LATENCIES = (1 << 14), /**< Sampling latency measurements> */
 
        RUNNING_FLAG = (1 << 8),
 };
@@ -85,6 +100,8 @@ typedef struct port_info_s {
     uint64_t tx_next_cycle;                /**< Next cycle counter value to send next burst */
 
     /* Packet buffer space for traffic generator, shared for all packets per lport */
+    uint16_t seqIdx;                      /**< Current Packet sequence index 0 to NUM_SEQ_PKTS */
+    uint16_t seqCnt;                      /**< Current packet sequence max count */
     pthread_mutex_t port_lock;            /**< Used to sync up packet constructor between cores */
     pkt_seq_t pkt;                        /**< Packet information */
     pkt_stats_t stats;                    /**< Statistics for a number of stats */
@@ -103,11 +120,31 @@ typedef struct port_info_s {
     fill_t fill_pattern_type;             /**< Type of pattern to fill with */
     char user_pattern[USER_PATTERN_SIZE]; /**< User set pattern values */
 
+    uint32_t latency_nb_pkts;
+    uint64_t jitter_threshold;
+    uint64_t jitter_threshold_clks;
+    uint64_t jitter_count;
+    uint64_t prev_latency;
+    uint64_t max_latency;
+    uint64_t max_avg_latency; /**< TX Latency sequence */
+    uint64_t avg_latency;     /**< Latency delta in clock ticks */
+    uint64_t min_avg_latency; /**< RX Latency sequence */
+
     pcap_info_t *pcap;    /**< PCAP information header */
     uint64_t pcap_cycles; /**< number of cycles for pcap sending */
 
     int32_t pcap_result;             /**< PCAP result of filter compile */
     struct bpf_program pcap_program; /**< PCAP filter program structure */
+
+    /* Latency sampling data */
+    /* Depending on MAX_LATENCY_ENTRIES, this could blow up static array memory usage
+     * over the limit allowed by x86_64 architecture */
+    latsamp_stats_t latsamp_stats; /**< Per core stats */
+    uint32_t latsamp_type;         /**< Type of lat sampler  */
+    uint32_t latsamp_rate;         /**< Sampling rate i.e., samples per second  */
+    uint32_t latsamp_num_samples;  /**< Number of samples to collect  */
+    char latsamp_outfile[256];     /**< Path to file for dumping latency samples */
+    uint32_t magic_errors;
 } port_info_t;
 
 /**

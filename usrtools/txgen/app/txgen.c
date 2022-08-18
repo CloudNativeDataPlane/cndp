@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include <stdint.h>            // for uint64_t, uint8_t, uint16_t, uint...
@@ -10,6 +11,7 @@
 #include <netinet/in.h>        // for in_addr, IPPROTO_UDP, ntohs
 #include <pthread.h>           // for pthread_mutex_lock, pthread_mutex...
 #include <string.h>            // for memset, memcpy
+#include <hexdump.h>
 
 #include "txgen.h"
 #include "tcp.h"             // for txgen_tcp_hdr_ctor
@@ -33,11 +35,18 @@
 #include "pktmbuf.h"             // for DEFAULT_BURST_SIZE, pktmbuf_mtod
 #include "seq.h"                 // for pkt_seq_t
 #include "stats.h"               // for pkt_stats_t, txgen_page_stats
+#include "latency.h"
 
 /* Allocated the txgen structure for global use */
 txgen_t txgen;
 
 enum { UNKNOWN_TYPE_THREAD, RXTX_TYPE_THREAD, RX_TYPE_THREAD, TX_TYPE_THREAD };
+
+double
+next_poisson_time(double rateParameter)
+{
+    return -logf(1.0f - ((double)random()) / (double)(RAND_MAX)) / rateParameter;
+}
 
 static int
 txgen_thread_type(char *name)
@@ -136,6 +145,77 @@ txgen_fill_pattern(uint8_t *p, uint32_t len, uint32_t type, char *user)
     }
 }
 
+static __inline__ tstamp_t *
+txgen_tstamp_pointer_tx(port_info_t *info, pktmbuf_t *m)
+{
+    tstamp_t *tstamp;
+    uint8_t *p;
+
+    p = pktmbuf_mtod(m, char *);
+
+    p += sizeof(struct cne_ether_hdr);
+
+    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
+                                                    : sizeof(struct cne_ipv6_hdr);
+
+    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
+                                            : sizeof(struct cne_tcp_hdr);
+
+    /* Force pointer to be aligned correctly */
+    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
+
+    tstamp = (tstamp_t *)p;
+
+    return tstamp;
+}
+
+static __inline__ tstamp_t *
+txgen_tstamp_pointer_rx(port_info_t *info, pktmbuf_t *m)
+{
+    tstamp_t *tstamp;
+    uint8_t *p;
+
+    p = pktmbuf_mtod_offset(m, char *, sizeof(pktmbuf_t));
+
+    p += sizeof(struct cne_ether_hdr);
+
+    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
+                                                    : sizeof(struct cne_ipv6_hdr);
+
+    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
+                                            : sizeof(struct cne_tcp_hdr);
+
+    /* Force pointer to be aligned correctly */
+    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
+
+    tstamp = (tstamp_t *)p;
+
+    return tstamp;
+}
+
+static inline void
+txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
+{
+    pkt_seq_t *pkt            = &info->pkt;
+    struct cne_ether_hdr *eth = (struct cne_ether_hdr *)&pkt->hdr.eth;
+    char *l3_hdr              = (char *)&eth[1]; /* Point to l3 hdr location */
+    int i;
+
+    for (i = 0; i < cnt; i++) {
+        tstamp_t *tstamp;
+
+        tstamp            = txgen_tstamp_pointer_tx(info, pkts[i]);
+        tstamp->timestamp = cne_rdtsc_precise();
+        tstamp->magic     = TSTAMP_MAGIC;
+
+        /* Construct the UDP header */
+        txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
+
+        /* IPv4 Header constructor */
+        txgen_ipv4_ctor(pkt, l3_hdr);
+    }
+}
+
 /**
  *
  * txgen_send_burst - Send a burst of packet as fast as possible.
@@ -154,12 +234,18 @@ txgen_send_burst(port_info_t *info)
     struct mbuf_table *mtab = &info->tx_mbufs;
     pktmbuf_t **pkts;
     uint32_t ret, cnt;
+    uint32_t tstamp_flag;
 
     if ((cnt = mtab->len) == 0)
         return;
 
+    tstamp_flag = txgen_tst_port_flags(info, (SAMPLING_LATENCIES));
+
     mtab->len = 0;
     pkts      = mtab->m_table;
+
+    if (tstamp_flag)
+        txgen_tstamp_apply(info, pkts, cnt);
 
     /* Send all of the packets before we can exit this function */
     while (cnt && txgen_tst_port_flags(info, SENDING_PACKETS)) {
@@ -332,6 +418,53 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
     }
 }
 
+static __inline__ void
+_process_tstamp(port_info_t *info, pktmbuf_t *pkt)
+{
+    uint64_t lat, jitter;
+    tstamp_t *tstamp;
+
+    tstamp = txgen_tstamp_pointer_rx(info, pkt);
+    if (tstamp->magic == TSTAMP_MAGIC) {
+        lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
+        latsamp_stats_t *stats = &info->latsamp_stats;
+        uint64_t now           = cne_rdtsc_precise();
+
+        info->avg_latency += lat;
+        if (lat > info->prev_latency)
+            jitter = lat - info->prev_latency;
+        else
+            jitter = info->prev_latency - lat;
+        if (lat > info->max_latency)
+            info->max_latency = lat;
+        if (jitter > info->jitter_threshold_clks)
+            info->jitter_count++;
+        info->prev_latency = lat;
+
+        stats->pkt_counter++;
+        if (stats->next == 0 || now >= stats->next) {
+            if (stats->idx < stats->num_samples) {
+                stats->data[stats->idx] =
+                    (lat * Billion) / cne_get_timer_hz(); /* Do we want to keep it as cycles? */
+                stats->idx++;
+            }
+
+            /* Calculate next sampling point TODO: Use poisson */
+            if (info->latsamp_type == LATSAMPLER_POISSON) {
+                double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
+                stats->next =
+                    now + next_possion_time_ns * (double)cne_get_timer_hz();        // Time based
+            } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
+                stats->next = now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
+            }
+        }
+    } else {
+        info->magic_errors++;
+    }
+
+    info->latency_nb_pkts++;
+}
+
 /**
  *
  * txgen_packet_classify_bulk - Classify a set of packets in one call.
@@ -345,9 +478,12 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
  */
 #define PREFETCH_OFFSET 3
 static __inline__ void
-txgen_packet_classify_bulk(pktmbuf_t **pkts, int nb_rx, int pid)
+txgen_packet_classify_bulk(port_info_t *info, pktmbuf_t **pkts, int nb_rx, int pid)
 {
     int j, i;
+    uint32_t flags;
+
+    flags = atomic_load(&(info->port_flags));
 
     /* Prefetch first packets */
     for (j = 0; j < PREFETCH_OFFSET && j < nb_rx; j++)
@@ -357,13 +493,17 @@ txgen_packet_classify_bulk(pktmbuf_t **pkts, int nb_rx, int pid)
     for (i = 0; i < (nb_rx - PREFETCH_OFFSET); i++) {
         cne_prefetch0(pktmbuf_mtod(pkts[j], void *));
         j++;
-
+        if (flags & (SAMPLING_LATENCIES))
+            _process_tstamp(info, pkts[i]);
         txgen_packet_classify(pkts[i], pid);
     }
 
     /* Handle remaining prefetched packets */
-    for (; i < nb_rx; i++)
+    for (; i < nb_rx; i++) {
+        if (flags & (SAMPLING_LATENCIES))
+            _process_tstamp(info, pkts[i]);
         txgen_packet_classify(pkts[i], pid);
+    }
 }
 
 typedef struct {
@@ -432,6 +572,7 @@ txgen_send_pkts(port_info_t *info)
         cnt = info->tx_burst;
 
     int nb = pktdev_buf_alloc(info->lport->lpid, pkts, cnt);
+
     for (int i = 0; i < nb; i++) {
         pktmbuf_t *xb = info->tx_mbufs.m_table[i];
 
@@ -503,20 +644,24 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
     /*
      * Read packet from RX queues and free the mbufs
      */
-    nb_rx = pktdev_rx_burst(lport->lpid, pkts_burst, nb_pkts);
-    if ((nb_rx == 0) || (nb_rx == PKTDEV_ADMIN_STATE_DOWN))
+    nb_rx = pktdev_rx_burst(lport->lpid, (pktmbuf_t **)pkts_burst, nb_pkts);
+    if (nb_rx == PKTDEV_ADMIN_STATE_DOWN) {
         return;
-
-    /* packets are not freed in the next call. */
-    txgen_packet_classify_bulk(pkts_burst, nb_rx, lport->lpid);
-
-    if (unlikely(txgen_tst_port_flags(info, CAPTURE_PKTS))) {
-        capture = &txgen.captures[pid];
-        if (unlikely((capture->port == pid)))
-            txgen_packet_capture_bulk(pkts_burst, nb_rx, capture);
     }
 
-    pktmbuf_free_bulk(pkts_burst, nb_rx);
+    if (nb_rx) {
+
+        /* packets are not freed in the next call. */
+        txgen_packet_classify_bulk(info, pkts_burst, nb_rx, lport->lpid);
+
+        if (unlikely(txgen_tst_port_flags(info, CAPTURE_PKTS))) {
+            capture = &txgen.captures[pid];
+            if (unlikely((capture->port == pid)))
+                txgen_packet_capture_bulk(pkts_burst, nb_rx, capture);
+        }
+
+        pktmbuf_free_bulk(pkts_burst, nb_rx);
+    }
 }
 
 /**
@@ -534,13 +679,13 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
 static void
 txgen_rxtx(port_info_t *info)
 {
-    pktmbuf_t *pkts_burst[DEFAULT_BURST_SIZE];
+    pktmbuf_t *pkts_burst[MAX_BURST_SIZE];
     uint64_t curr_tsc;
 
     if (!info->link.link_status)
         return;
 
-    txgen_main_receive(info, pkts_burst, DEFAULT_BURST_SIZE);
+    txgen_main_receive(info, pkts_burst, MAX_BURST_SIZE);
 
     curr_tsc = cne_rdtsc();
 
@@ -704,6 +849,8 @@ _page_display(void)
 
     if (txgen.flags & PCAP_PAGE_FLAG)
         txgen_page_pcap(txgen.info);
+    else if (txgen.flags & LATENCY_PAGE_FLAG)
+        txgen_page_latency();
     else
         txgen_page_stats();
 }

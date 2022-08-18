@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #ifndef _TXGEN_H_
@@ -16,6 +17,7 @@
 #include <sys/queue.h>
 #include <netinet/in.h>
 #include <net/if.h>
+#include <math.h>
 #include <fcntl.h>
 #include <setjmp.h>
 #include <stdarg.h>
@@ -72,6 +74,9 @@ extern "C" {
 #define MAX_MATRIX_ENTRIES 128
 #define MAX_STRING         256
 #define Million            (uint64_t)(1000000ULL)
+#define Billion            (uint64_t)(1000000000ULL)
+#define TSTAMP_MAGIC       (('T' << 8) + 's')
+#define MAX_BURST_SIZE     256
 
 #define iBitsTotal(_x) (uint64_t)(((_x.ipackets * PKT_OVERHEAD_SIZE) + _x.ibytes) * 8)
 #define oBitsTotal(_x) (uint64_t)(((_x.opackets * PKT_OVERHEAD_SIZE) + _x.obytes) * 8)
@@ -153,7 +158,8 @@ enum {
     PKT_OVERHEAD_SIZE =
         (INTER_FRAME_GAP + START_FRAME_DELIMITER + PKT_PREAMBLE_SIZE + ETHER_CRC_LEN),
 
-    PCAP_PAGE_SIZE = 25, /**< Size of the PCAP display page */
+    PCAP_PAGE_SIZE         = 25, /**< Size of the PCAP display page */
+    DEFAULT_PORTS_PER_PAGE = 4,
 };
 
 #define CNE_ETHER_MIN_LEN 64
@@ -169,6 +175,14 @@ struct app_options {
     bool cli;        /**< Enable Cli*/
     char *mode;      /**< Application mode*/
 };
+
+/* LatSampler types */
+enum { LATSAMPLER_UNSPEC, LATSAMPLER_SIMPLE, LATSAMPLER_POISSON };
+
+typedef struct {
+    uint64_t timestamp;
+    uint16_t magic;
+} tstamp_t;
 
 /* Ethernet addresses of lports */
 typedef struct txgen_s {
@@ -187,6 +201,9 @@ typedef struct txgen_s {
     uint64_t max_total_ibytes;   /**< Total Max seen input byte rate */
     uint64_t max_total_obytes;   /**< Total Max seen output byte rate */
     capture_t captures[CNE_MAX_ETHPORTS];
+    uint8_t starting_port;     /**< Starting port to display */
+    uint8_t ending_port;       /**< Ending port to display */
+    uint8_t nb_ports_per_page; /**< Number of ports to display per page */
 } txgen_t;
 
 enum {                                /* TXGen flags bits, skip the first 16 bits */
@@ -195,8 +212,11 @@ enum {                                /* TXGen flags bits, skip the first 16 bit
        PRINT_LABELS_FLAG = (1 << 18), /**< Print constant labels on stats display */
        PROMISCUOUS_ON_FLAG = (1 << 19), /**< Enable promiscuous mode */
        PCAP_PAGE_FLAG      = (1 << 20), /**< Display the PCAP page */
+       LATENCY_PAGE_FLAG   = (1 << 21), /**< Display the Latency page */
        UPDATE_DISPLAY_FLAG = (1 << 31)
 };
+
+#define PAGE_MASK_BITS (LATENCY_PAGE_FLAG | PCAP_PAGE_FLAG)
 
 extern txgen_t txgen;
 
@@ -209,6 +229,7 @@ void txgen_launch_one_lcore(void *arg);
 void txgen_stats(void *arg);
 uint64_t txgen_wire_size(port_info_t *info);
 void txgen_input_start(void);
+double next_poisson_time(double rateParameter);
 
 static __inline__ void
 txgen_set_port_flags(port_info_t *info, uint32_t flags)
