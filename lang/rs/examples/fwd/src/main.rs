@@ -278,7 +278,19 @@ fn tx_only(port: &Port, pkts: &mut [Packet]) -> Result<(), CneError> {
     let alloc_pkts = port.prepare_tx_packets(pkts)? as usize;
 
     // Fill a byte array with some values.
-    let input = "fd3c78299efefd3c00450008b82c9efe110400004f122e00a8c00100a8c01e221a002e16d2040101706f6e6d6c6b9a9e787776757473727131307a79";
+    // IPv4/UDP 64 byte packet
+    // Port Src/Dest       :           1234/ 5678
+    // Pkt Type            :           IPv4 / UDP
+    // IP  Destination     :           198.18.1.1
+    //     Source          :        198.18.0.1/24
+    // MAC Destination     :    3c:fd:fe:e4:34:c0
+    //     Source          :    3c:fd:fe:e4:38:40
+    //
+    // 0000   3cfd fee4 34c0 3cfd fee4 3840 0800 4500
+    // 0010   002e 60ac 0000 4011 8cec c612 0001 c612
+    // 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e 6f70
+    // 0030   7172 7374 7576 7778 797a 3031
+    let input = "3cfdfee434c03cfdfee4384008004500002e60ac000040118cecc6120001c612010104d2162e001a93c66b6c6d6e6f707172737475767778797a3031";
     let ret = hex::decode(input);
     assert!(ret.is_ok());
     let p = ret.unwrap();
