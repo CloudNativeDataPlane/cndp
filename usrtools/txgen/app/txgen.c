@@ -144,6 +144,52 @@ txgen_fill_pattern(uint8_t *p, uint32_t len, uint32_t type, char *user)
     }
 }
 
+static __inline__ tstamp_t *
+txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
+{
+    tstamp_t *tstamp;
+    char *p;
+
+    p = pktmbuf_mtod(m, char *);
+
+    p += sizeof(struct cne_ether_hdr);
+
+    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
+                                                    : sizeof(struct cne_ipv6_hdr);
+
+    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
+                                            : sizeof(struct cne_tcp_hdr);
+
+    /* Force pointer to be aligned correctly */
+    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
+
+    tstamp = (tstamp_t *)p;
+
+    return tstamp;
+}
+
+static inline void
+txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
+{
+    tstamp_t *tstamp;
+    pkt_seq_t *pkt            = &info->pkt;
+    struct cne_ether_hdr *eth = (struct cne_ether_hdr *)&pkt->hdr.eth;
+    char *l3_hdr              = (char *)&eth[1]; /* Point to l3 hdr location for GRE header */
+    int i;
+
+    for (i = 0; i < cnt; i++) {
+        tstamp            = txgen_tstamp_pointer(info, pkts[i]);
+        tstamp->timestamp = cne_rdtsc_precise();
+        tstamp->magic     = TSTAMP_MAGIC;
+
+        /* Construct the UDP header */
+        txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
+
+        /* IPv4 Header constructor */
+        txgen_ipv4_ctor(pkt, l3_hdr);
+    }
+}
+
 /**
  *
  * txgen_send_burst - Send a burst of packet as fast as possible.
@@ -420,6 +466,9 @@ txgen_send_pkts(port_info_t *info)
     uint64_t txCnt;
     uint16_t txLen, cnt;
     pktmbuf_t **pkts;
+    uint32_t tstamp_flag;
+
+    tstamp_flag = txgen_tst_port_flags(info, (SAMPLING_LATENCIES));
 
     if (!txgen_tst_port_flags(info, SEND_FOREVER)) {
         txCnt = pkt_atomic64_tx_count(&info->current_tx_count, info->tx_burst);
@@ -438,6 +487,9 @@ txgen_send_pkts(port_info_t *info)
 
     if (cnt > info->tx_burst)
         cnt = info->tx_burst;
+
+    if (tstamp_flag)
+        txgen_tstamp_apply(info, pkts, cnt);
 
     int nb = pktdev_buf_alloc(info->lport->lpid, pkts, cnt);
     for (int i = 0; i < nb; i++) {
@@ -486,30 +538,6 @@ txgen_main_transmit(port_info_t *info)
         txgen_tx_flush(info);
 }
 
-static __inline__ tstamp_t *
-txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
-{
-    tstamp_t *tstamp;
-    char *p;
-
-    p = pktmbuf_mtod(m, char *);
-
-    p += sizeof(struct cne_ether_hdr);
-
-    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
-                                                    : sizeof(struct cne_ipv6_hdr);
-
-    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
-                                            : sizeof(struct cne_tcp_hdr);
-
-    /* Force pointer to be aligned correctly */
-    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
-
-    tstamp = (tstamp_t *)p;
-
-    return tstamp;
-}
-
 static __inline__ void
 txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
 {
@@ -526,32 +554,29 @@ txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
             tstamp = txgen_tstamp_pointer(info, pkts[i]);
 
             if (tstamp->magic == TSTAMP_MAGIC) {
-                lat = (cne_rdtsc_precise() - tstamp->timestamp);
+                lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
+                latsamp_stats_t *stats = &info->latsamp_stats;
+                uint64_t now           = cne_rdtsc_precise();
 
-                if (flags & (SAMPLING_LATENCIES)) {
-                    latsamp_stats_t *stats = &info->latsamp_stats;
-                    uint64_t now           = cne_rdtsc_precise();
-                    stats->pkt_counter++;
-                    if (stats->next == 0 || now >= stats->next) {
-                        if (stats->idx < stats->num_samples) {
-                            stats->data[stats->idx] =
-                                (lat * Billion) /
-                                cne_get_timer_hz(); /* Do we want to keep it as cycles? */
-                            stats->idx++;
-                        }
+                stats->pkt_counter++;
+                if (stats->next == 0 || now >= stats->next) {
+                    if (stats->idx < stats->num_samples) {
+                        stats->data[stats->idx] =
+                            (lat * Billion) /
+                            cne_get_timer_hz(); /* Do we want to keep it as cycles? */
+                        stats->idx++;
+                    }
 
-                        /* Calculate next sampling point TODO: Use poisson */
-                        if (info->latsamp_type == LATSAMPLER_POISSON) {
-                            double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
-                            stats->next                 = now + next_possion_time_ns *
-                                                    (double)cne_get_timer_hz();        // Time based
-                        } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
-                            stats->next =
-                                now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
-                        }
+                    /* Calculate next sampling point TODO: Use poisson */
+                    if (info->latsamp_type == LATSAMPLER_POISSON) {
+                        double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
+                        stats->next                 = now + next_possion_time_ns *
+                                                (double)cne_get_timer_hz();        // Time based
+                    } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
+                        stats->next =
+                            now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
                     }
                 }
-
             } else
                 info->magic_errors++;
 
