@@ -1,8 +1,6 @@
-/*-
- * Copyright(c) <2016-2021>, Intel Corporation. All rights reserved.
+/* SPDX-License-Identifier: BSD-3-Clause
+ * Copyright (c) <2016-2022>, Intel Corporation. All rights reserved.
  * Copyright (c) 2022 Red Hat, Inc.
- *
- * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdio.h>

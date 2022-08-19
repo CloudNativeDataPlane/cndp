@@ -150,6 +150,9 @@ txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
     tstamp_t *tstamp;
     char *p;
 
+    if (!m)
+        return NULL;
+
     p = pktmbuf_mtod(m, char *);
 
     p += sizeof(struct cne_ether_hdr);
@@ -178,15 +181,17 @@ txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
     int i;
 
     for (i = 0; i < cnt; i++) {
-        tstamp            = txgen_tstamp_pointer(info, pkts[i]);
-        tstamp->timestamp = cne_rdtsc_precise();
-        tstamp->magic     = TSTAMP_MAGIC;
+        tstamp = txgen_tstamp_pointer(info, pkts[i]);
+        if (tstamp) {
+            tstamp->timestamp = cne_rdtsc_precise();
+            tstamp->magic     = TSTAMP_MAGIC;
 
-        /* Construct the UDP header */
-        txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
+            /* Construct the UDP header */
+            txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
 
-        /* IPv4 Header constructor */
-        txgen_ipv4_ctor(pkt, l3_hdr);
+            /* IPv4 Header constructor */
+            txgen_ipv4_ctor(pkt, l3_hdr);
+        }
     }
 }
 
