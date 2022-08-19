@@ -1081,9 +1081,8 @@ txgen_stop_latency_sampler(port_info_t *info)
     info->latsamp_stats.idx         = 0;
     info->latsamp_stats.num_samples = 0;
 
-    if (info->pkt.pktSize >= (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t)) {
+    if (info->pkt.pktSize >= (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t))
         info->pkt.pktSize -= sizeof(tstamp_t);
-    }
 
     info->pkt.ipProto = IPPROTO_UDP;
     txgen_packet_ctor(info);
