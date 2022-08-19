@@ -150,9 +150,6 @@ txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
     tstamp_t *tstamp;
     char *p;
 
-    if (!m)
-        return NULL;
-
     p = pktmbuf_mtod(m, char *);
 
     p += sizeof(struct cne_ether_hdr);
@@ -175,9 +172,6 @@ static inline void
 txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
 {
     tstamp_t *tstamp;
-    pkt_seq_t *pkt            = &info->pkt;
-    struct cne_ether_hdr *eth = (struct cne_ether_hdr *)&pkt->hdr.eth;
-    char *l3_hdr              = (char *)&eth[1]; /* Point to l3 hdr location for GRE header */
     int i;
 
     for (i = 0; i < cnt; i++) {
@@ -185,12 +179,6 @@ txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
         if (tstamp) {
             tstamp->timestamp = cne_rdtsc_precise();
             tstamp->magic     = TSTAMP_MAGIC;
-
-//            /* Construct the UDP header */
-//            txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
-
-//            /* IPv4 Header constructor */
-//            txgen_ipv4_ctor(pkt, l3_hdr);
         }
     }
 }
@@ -213,12 +201,18 @@ txgen_send_burst(port_info_t *info)
     struct mbuf_table *mtab = &info->tx_mbufs;
     pktmbuf_t **pkts;
     uint32_t ret, cnt;
+    uint32_t tstamp_flag;
 
     if ((cnt = mtab->len) == 0)
         return;
 
+    tstamp_flag = txgen_tst_port_flags(info, (SAMPLING_LATENCIES));
+
     mtab->len = 0;
     pkts      = mtab->m_table;
+
+    if (tstamp_flag)
+        txgen_tstamp_apply(info, pkts, cnt);
 
     /* Send all of the packets before we can exit this function */
     while (cnt && txgen_tst_port_flags(info, SENDING_PACKETS)) {
@@ -471,9 +465,6 @@ txgen_send_pkts(port_info_t *info)
     uint64_t txCnt;
     uint16_t txLen, cnt;
     pktmbuf_t **pkts;
-    uint32_t tstamp_flag;
-
-    tstamp_flag = txgen_tst_port_flags(info, (SAMPLING_LATENCIES));
 
     if (!txgen_tst_port_flags(info, SEND_FOREVER)) {
         txCnt = pkt_atomic64_tx_count(&info->current_tx_count, info->tx_burst);
@@ -494,6 +485,7 @@ txgen_send_pkts(port_info_t *info)
         cnt = info->tx_burst;
 
     int nb = pktdev_buf_alloc(info->lport->lpid, pkts, cnt);
+
     for (int i = 0; i < nb; i++) {
         pktmbuf_t *xb = info->tx_mbufs.m_table[i];
 
@@ -504,10 +496,6 @@ txgen_send_pkts(port_info_t *info)
             memcpy(pktmbuf_mtod(xb, uint8_t *), (uint8_t *)&info->pkt.hdr, xb->data_len);
         }
     }
-
-    if (tstamp_flag)
-        txgen_tstamp_apply(info, pkts, cnt);
-
     info->tx_mbufs.len += nb;
 
     txgen_send_burst(info);
