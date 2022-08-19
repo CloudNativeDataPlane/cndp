@@ -6,7 +6,7 @@ TXGen - Traffic Generator powered by CNDP
 ** (TXGen) Sounds like 'Packet-Gen'**
 
 ---
-**Copyright &copy; \<2019-2022\>, Intel Corporation. All rights reserved.**
+**Copyright &copy; \2019-2022\ Intel Corporation. All rights reserved.**
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2014-2021> Intel Corporation. All rights reserved.
+ * Copyright (c) 2014-2022 Intel Corporation.
  */
 
 #include <stdint.h>            // for uint32_t, uint16_t, int32_t, uint8_t
