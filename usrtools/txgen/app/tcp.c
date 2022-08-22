@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2019-2022 Intel Corporation.
  */
 
 #include <netinet/in.h>        // for htonl, htons, in_addr

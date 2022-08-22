@@ -16,13 +16,13 @@ func CloudMonInfo(color bool) string {
 	if !color {
 		return fmt.Sprintf("%s, Version: %s Pid: %d %s",
 			"CNDP Monitor Tool", Version(), os.Getpid(),
-			"Copyright © 2019-2021 Intel Corporation")
+			"Copyright (c) 2019-2022 Intel Corporation")
 	}
 
 	return fmt.Sprintf("[%s, Version: %s Pid: %s %s]",
 		cz.Yellow("CNDP Monitor Tool"), cz.Green(Version()),
 		cz.Red(os.Getpid()),
-		cz.SkyBlue("Copyright © 2019-2021 Intel Corporation"))
+		cz.SkyBlue("Copyright (c) 2019-2022 Intel Corporation"))
 }
 
 func sprintf(msg string, w ...interface{}) string {
