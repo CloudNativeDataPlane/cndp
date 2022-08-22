@@ -24,7 +24,7 @@
 /* The name of the umem used by default for all lport groups */
 #define LPORT_GROUP_UMEM_NAME "lport-group"
 
-/* Wrap strol to parse null-terminated string as u16 decimal value */
+/* Wrap strtol to parse null-terminated string as u16 decimal value */
 static int
 parse_u16(const char *str, char **endp, uint16_t *value)
 {
