@@ -49,6 +49,7 @@
 #include "vec_test.h"          // for vec_main
 #include "msgchan_test.h"
 #include "tailqs_test.h"
+#include "idlemgr_test.h"
 
 struct struct_sizes {
     const char *name;
@@ -113,6 +114,7 @@ all_tests(int argc, char **argv)
     hash_main(argc, argv);
     hash_perf_main(argc, argv);
     hmap_main(argc, argv);
+    idlemgr_main(argc, argv);
 #ifdef HAS_UINTR_SUPPORT
     ibroker_main(argc, argv);
 #endif
@@ -161,6 +163,7 @@ static struct cli_tree default_tree[] = {
     c_cmd("hash_perf", hash_perf_main, "Run the hash perf test"),
     c_cmd("hash", hash_main, "Run the hash test"),
     c_cmd("hmap", hmap_main, "Run the HashMap CFG file tests"),
+    c_cmd("idlemgr", idlemgr_main, "Run the idlemgr test"),
 #ifdef HAS_UINTR_SUPPORT
     c_cmd("ibroker", ibroker_main, "Run the ibroker tests"),
 #endif
