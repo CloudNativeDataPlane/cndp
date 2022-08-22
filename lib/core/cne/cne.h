@@ -45,8 +45,8 @@ enum {
 typedef void (*on_exit_fn_t)(int sig, void *arg, int exit_type);
 #endif
 
-#define COPYRIGHT_MSG       "Copyright (c) <2020-2022>, Intel Corporation. All rights reserved."
-#define COPYRIGHT_MSG_SHORT "Copyright (c) <2020-2022>, Intel Corporation"
+#define COPYRIGHT_MSG       "Copyright (c) 2020-2022 Intel Corporation. All rights reserved."
+#define COPYRIGHT_MSG_SHORT "Copyright (c) 2020-2022 Intel Corporation"
 #define POWERED_BY_CNDP     "Powered by CNDP"
 
 /**

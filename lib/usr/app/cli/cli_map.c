@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2021> Intel Corporation.
+ * Copyright (c) 2019-2022 Intel Corporation.
  */
 
 #include <cne_strings.h>        // for cne_strtok, cne_stropt

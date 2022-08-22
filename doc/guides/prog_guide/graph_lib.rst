@@ -1,6 +1,6 @@
 ..  SPDX-License-Identifier: BSD-3-Clause
     Copyright (c) 2020 Marvell International Ltd.
-    Copyright (c) <2019-2021>, Intel Corporation. All rights reserved.
+    Copyright (c) 2019-2022 Intel Corporation.
 
 .. _Graph_Library:
 

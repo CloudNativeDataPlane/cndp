@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2019-2021> Intel Corporation.
+ * Copyright (c) 2019-2022 Intel Corporation.
  */
 
 // IWYU pragma: no_include "generic/cne_cycles.h"
