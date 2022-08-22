@@ -4,7 +4,7 @@
 .. _commands:
 
 ``*** TXGen ***``
-Copyright &copy \<2019-2021\>, Intel Corporation.
+Copyright &copy 2019-2022 Intel Corporation.
 
 The txgen output display needs 132 columns and about 42 lines to display
 currentlyt. I am using an xterm of 132x42, but you can have a larger display

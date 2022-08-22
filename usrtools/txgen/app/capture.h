@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) <2010-2020>, Intel Corporation. All rights reserved.
+ * Copyright (c) 2010-2022 Intel Corporation.
  */
 
 #ifndef _TXGEN_CAPTURE_H_
