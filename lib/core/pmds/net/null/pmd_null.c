@@ -96,6 +96,8 @@ pmd_null_infos_get(struct cne_pktdev *dev, struct pktdev_info *dev_info)
         return -1;
 
     dev_info->driver_name = PMD_NET_NULL_NAME;
+    dev_info->rx_fd       = -1;
+    dev_info->tx_fd       = -1;
     return 0;
 }
 
