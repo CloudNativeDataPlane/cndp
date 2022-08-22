@@ -22,6 +22,7 @@ deps += [
     uds,
     udsc,
     xskdev,
+    idlemgr,
 ]
 
 executable('cndpfwd',
