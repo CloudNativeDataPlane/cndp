@@ -92,11 +92,23 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
         else if (!strncmp(key, JCFG_LPORT_DESC_NAME, keylen) ||
                  !strncmp(key, JCFG_LPORT_DESCRIPTION_NAME, keylen))
             lport->desc = strdup(json_object_get_string(obj));
-        else if (!strncmp(key, JCFG_LPORT_BUSY_TIMEOUT_NAME, keylen))
-            lport->busy_timeout = (uint16_t)json_object_get_int(obj);
-        else if (!strncmp(key, JCFG_LPORT_BUSY_BUDGET_NAME, keylen))
-            lport->busy_budget = (uint16_t)json_object_get_int(obj);
-        else if (!strncmp(key, JCFG_LPORT_UNPRIVILEGED_NAME, keylen))
+        else if (!strncmp(key, JCFG_LPORT_BUSY_TIMEOUT_NAME, keylen)) {
+            int val;
+
+            val = json_object_get_int(obj);
+            if (val < 0 || val > USHRT_MAX)
+                CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "%s: Invalid Range\n",
+                                JCFG_LPORT_BUSY_TIMEOUT_NAME);
+            lport->busy_timeout = (uint16_t)val;
+        } else if (!strncmp(key, JCFG_LPORT_BUSY_BUDGET_NAME, keylen)) {
+            int val;
+
+            val = json_object_get_int(obj);
+            if (val < 0 || val > USHRT_MAX)
+                CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "%s: Invalid Range\n",
+                                JCFG_LPORT_BUSY_BUDGET_NAME);
+            lport->busy_budget = (uint16_t)val;
+        } else if (!strncmp(key, JCFG_LPORT_UNPRIVILEGED_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_UNPRIVILEGED : 0;
         else if (!strncmp(key, JCFG_LPORT_FORCE_WAKEUP_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_FORCE_WAKEUP : 0;

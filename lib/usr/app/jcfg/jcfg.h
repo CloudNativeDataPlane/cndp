@@ -214,6 +214,8 @@ typedef struct jcfg_thd {
     int tid;                   /**< System Thread id value */
     volatile uint16_t quit;    /**< Set to non-zero to force thread to quit */
     volatile uint16_t pause;   /**< Set to non-zero to pause thread */
+    uint32_t idle_timeout;     /**< Idle timeout value in milliseconds */
+    uint32_t intr_timeout;     /**< Interrupt timeout value in milliseconds */
 } jcfg_thd_t;
 
 /**
@@ -234,7 +236,7 @@ typedef struct jcfg_lport_group {
     jcfg_umem_t *umem;                 /**< UMEM configuration structure */
     uint16_t busy_timeout;             /**< busy timeout value in milliseconds */
     uint16_t busy_budget;              /**< busy budget 0xFFFF disabled, 0 use default, >0 budget */
-    uint16_t flags; /**< Flags to configure lport in lport_cfg_t.flags in cne_lport.h */
+    uint16_t flags;                    /**< Flags to configure lport in lport_cfg_t.flags */
 } jcfg_lport_group_t;
 
 /** JCFG lport group configuration names */
@@ -413,7 +415,6 @@ CNDP_API void *jcfg_object_lookup(jcfg_info_t *jinfo, jcfg_cb_type_t cbtype, con
 #define jcfg_lookup_default(j, n)     (jcfg_opt_t *)jcfg_object_lookup(j, JCFG_DEFAULT_TYPE, n)
 #define jcfg_lookup_application(j, n) (jcfg_opt_t *)jcfg_object_lookup(j, JCFG_APPLICATION_TYPE, n)
 #define jcfg_lookup_umem(j, n)        (jcfg_umem_t *)jcfg_object_lookup(j, JCFG_UMEM_TYPE, n)
-#define jcfg_lookup_lport(j, n)       (jcfg_lport_t *)jcfg_object_lookup(j, JCFG_LPORT_TYPE, n)
 #define jcfg_lookup_lport(j, n)       (jcfg_lport_t *)jcfg_object_lookup(j, JCFG_LPORT_TYPE, n)
 #define jcfg_lookup_lgroup(j, n)      (jcfg_lgroup_t *)jcfg_object_lookup(j, JCFG_LGROUP_TYPE, n)
 #define jcfg_lookup_thread(j, n)      (jcfg_thd_t *)jcfg_object_lookup(j, JCFG_THREAD_TYPE, n)
