@@ -422,6 +422,30 @@ xskdev_buf_reset(xskdev_info_t *xi, void *buf, uint32_t buf_len, size_t headroom
     xi->buf_mgmt.buf_reset(buf, buf_len, headroom);
 }
 
+/**
+ * Return the file descriptors for the given xskdev_info struct pointer.
+ *
+ * @param xi
+ *   Pointer to xskdev_info_t structure
+ * @param rx_fd
+ *   The pointer to return the Rx file descriptor
+ * @param tx_fd
+ *   The pointer to return the Tx file descriptor
+ * @return
+ *   -1 on error or 0 on success
+ */
+CNDP_API __cne_always_inline int
+xskdev_get_fd(xskdev_info_t *xi, int *rx_fd, int *tx_fd)
+{
+    if (!xi)
+        return -1;
+    if (rx_fd)
+        *rx_fd = xi->rxq.fds.fd;
+    if (tx_fd)
+        *tx_fd = xi->txq.fds.fd;
+    return 0;
+}
+
 #ifdef __cplusplus
 }
 #endif

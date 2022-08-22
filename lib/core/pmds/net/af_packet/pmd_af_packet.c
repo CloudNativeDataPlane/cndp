@@ -179,6 +179,12 @@ pmd_dev_info(struct cne_pktdev *dev, struct pktdev_info *dev_info)
 
     dev_info->driver_name = PMD_NET_AF_PACKET_NAME;
     dev_info->if_index    = if_nametoindex(lport->if_name);
+    dev_info->rx_fd       = -1;
+    dev_info->tx_fd       = -1;
+    if (lport->rxq)
+        dev_info->rx_fd = lport->rxq->fd;
+    if (lport->txq)
+        dev_info->tx_fd = lport->txq->fd;
 
     return 0;
 }
