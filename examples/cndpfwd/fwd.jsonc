@@ -140,6 +140,8 @@
     //                   are optional if all thread names are unique
     //      group  - (O) The lcore-group this thread belongs to. The
     //      lports - (O) The list of lports assigned to this thread and can not shared lports.
+    //      idle_timeout - (O) if non-zero use value is in milliseconds to detect idle state
+    //      intr_timeout - (O) number of milliseconds to wait on interrupt
     //      description | desc - (O) The description
     "threads": {
         "main": {
@@ -149,11 +151,15 @@
         "fwd:0": {
             "group": "group0",
             "lports": ["eth0:0"],
+            "idle_timeout": 10,
+            "intr_timeout": 2000,
             "description": "Thread 0"
         },
         "fwd:1": {
             "group": "group1",
             "lports": ["eth1:0"],
+            "idle_timeout": 10,
+            "intr_timeout": 2000,
             "description": "Thread 1"
         }
     }

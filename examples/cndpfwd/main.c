@@ -18,6 +18,7 @@
 #include <txbuff.h>            // for txbuff_t, txbuff_add, txbuff_free, txbuff_pk...
 #include <cne_system.h>        // for cne_lcore_id
 #include <jcfg.h>              // for jcfg_thd_t, jcfg_lport_t, jcfg_lport_by_index
+#include <idlemgr.h>
 
 #include "main.h"
 
@@ -99,7 +100,7 @@ _drop_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (n_pkts)
         pktmbuf_free_bulk(pd->rx_mbufs, n_pkts);
 
-    return 0;
+    return n_pkts;
 }
 
 static int
@@ -143,7 +144,7 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             txbuff_flush(txbuff[dst->lpid]);
     }
 
-    return 0;
+    return n_pkts;
 }
 
 static int
@@ -168,7 +169,7 @@ _loopback_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             return -1;
         pd->tx_overrun += n;
     }
-    return 0;
+    return n_pkts;
 }
 
 static int
@@ -387,6 +388,7 @@ thread_func(void *arg)
     struct fwd_info *fwd               = func_arg->fwd;
     jcfg_thd_t *thd                    = func_arg->thd;
     jcfg_lport_t *lport;
+    idlemgr_t *imgr = NULL;
     // clang-format off
     struct {
         int (*func)(jcfg_lport_t *lport, struct fwd_info *fwd);
@@ -422,8 +424,45 @@ thread_func(void *arg)
     cne_printf("   [green]Forwarding Thread ID [orange]%d [green]on lcore [orange]%d[]\n", thd->tid,
                cne_lcore_id());
 
+    if (thd->idle_timeout) {
+        struct fwd_port *pd;
+        struct pktdev_info info;
+        int fd = -1;
+
+        cne_printf("   [green]Create idlemgr for thread [orange]%s [green]idle/intr "
+                   "timeout [orange]%d[]/[orange]%d [green]ms[]\n",
+                   thd->name, thd->idle_timeout, thd->intr_timeout);
+        imgr = idlemgr_create(thd->name, thd->lport_cnt, thd->idle_timeout, thd->intr_timeout);
+        if (!imgr)
+            CNE_ERR_GOTO(leave, "failed to create idle managed\n");
+
+        foreach_thd_lport (thd, lport) {
+            switch (fwd->pkt_api) {
+            case XSKDEV_PKT_API:
+                pd = lport->priv_;
+                if (xskdev_get_fd(pd->xsk, &fd, NULL) < 0)
+                    CNE_ERR_GOTO(leave, "failed to get file descriptors for %s\n", lport->name);
+                break;
+            case PKTDEV_PKT_API:
+                memset(&info, 0, sizeof(info));
+                if (pktdev_info_get(lport->lpid, &info) < 0)
+                    CNE_ERR_GOTO(leave, "failed to get info for %s\n", lport->name);
+                fd = info.rx_fd;
+                break;
+            default:
+                break;
+            }
+            if (fd == -1) /* account for PMDs that are not based on file descriptors */
+                continue;
+            if (idlemgr_add(imgr, fd, 0) < 0)
+                goto leave;
+        }
+    }
+
     for (;;) {
         foreach_thd_lport (thd, lport) {
+            int n_pkts;
+
             if (thd->quit == THD_QUIT) /* Make sure we check quit often to break out ASAP */
                 goto leave;
             if (thd->pause) {
@@ -431,8 +470,13 @@ thread_func(void *arg)
                 continue;
             }
 
-            if (tests[fwd->test].func(lport, fwd))
+            if ((n_pkts = tests[fwd->test].func(lport, fwd)) < 0)
                 goto leave;
+
+            if (thd->idle_timeout) {
+                if (idlemgr_process(imgr, n_pkts) < 0)
+                    CNE_ERR_GOTO(leave, "idlemgr_process failed\n");
+            }
         }
     }
 
@@ -440,6 +484,9 @@ leave:
     if (fwd->test == FWD_TEST || fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST)
         destroy_per_thread_txbuff(thd, fwd);
 leave_no_lport:
+    if (imgr)
+        idlemgr_destroy(imgr);
+
     while (thd->quit != THD_QUIT)
         usleep(1000);
     // Free thread_func_arg_t.
