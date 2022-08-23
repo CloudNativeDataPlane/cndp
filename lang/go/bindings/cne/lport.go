@@ -90,6 +90,8 @@ func (sys *System) setupLPort(lportName string, lportInfo *LPortInfo) error {
 
 	for i := 0; i < len(netdevName) && i < C.LPORT_NAME_LEN; i++ {
 		pcfg.ifname[i] = C.char(netdevName[i])
+	}
+	for i := 0; i < len(lportName) && i < C.LPORT_NAME_LEN; i++ {
 		pcfg.name[i] = C.char(lportName[i])
 	}
 
