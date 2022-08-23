@@ -28,6 +28,8 @@
 #include "pktmbuf.h"             // for pktmbuf_data_len, pktmbuf_t, ...
 
 static void chnl_free(struct chnl *ch);
+static struct chnl *alloc_chnl(void);
+static void free_chnl(struct chnl *ch);
 
 static inline int
 alloc_cd(struct chnl *ch)
@@ -71,6 +73,45 @@ mp_init(mempool_t *mp, void *opaque_arg __cne_unused, void *_b, unsigned i __cne
     ch->ch_cd = -1;
 }
 
+static inline struct chnl *
+alloc_chnl(void)
+{
+    stk_t *stk      = this_stk;
+    struct chnl *ch = NULL;
+
+    if (stk && stk->chnl_objs && mempool_get(stk->chnl_objs, (void *)&ch) < 0)
+        CNE_NULL_RET("Allocation for channel structure failed\n");
+
+    if (alloc_cd(ch) < 0) {
+        free_chnl(ch);
+        CNE_NULL_RET("Allocation of channel descriptor failed\n");
+    }
+    chnl_state_set(ch, _NOSTATE);
+
+    return ch;
+}
+
+static inline void
+free_chnl(struct chnl *ch)
+{
+    stk_t *stk = this_stk;
+
+    if (!ch || !stk || !stk->chnl_objs)
+        CNE_RET("Free for channel structure failed\n");
+
+    free_cd(ch);
+
+    vec_free(ch->ch_rcv.cb_vec);
+    vec_free(ch->ch_snd.cb_vec);
+
+    if (cne_mutex_destroy(&ch->ch_mutex))
+        CNE_RET("unable to destroy ch_mutex\n");
+
+    mp_init(&stk->chnl_objs, NULL, (void *)ch, 0);
+
+    mempool_put(stk->chnl_objs, (void *)ch);
+}
+
 /*
  * This routine allocates a chnl structure from the free list,
  * and initializes it for use.
@@ -101,15 +142,8 @@ chnl_alloc(void)
     } else
         CNE_NULL_RET("Unable to acquire mutex\n");
 
-    if (mempool_get(stk->chnl_objs, (void *)&ch) < 0)
-        CNE_NULL_RET("Allocate for chnl_obj failed\n");
-
-    if (alloc_cd(ch) < 0) {
-        mempool_put(stk->chnl_objs, ch);
-        CNE_NULL_RET("allocate of channel descriptor failed\n");
-    }
-
-    chnl_state_set(ch, _NOSTATE);
+    if ((ch = alloc_chnl()) == NULL)
+        return NULL;
 
     return ch;
 }
@@ -121,30 +155,12 @@ chnl_alloc(void)
 static void
 chnl_free(struct chnl *ch)
 {
-    stk_t *stk = this_stk;
+    if (ch) {
+        if (chnl_state_tst(ch, _CHNL_FREE))
+            CNE_RET("chnl is already free!");
 
-    if (!ch || !stk)
-        return;
-
-    if (chnl_state_tst(ch, _CHNL_FREE))
-        CNE_RET("chnl is already free!");
-
-    free_cd(ch);
-
-    vec_free(ch->ch_rcv.cb_vec);
-    vec_free(ch->ch_snd.cb_vec);
-
-    ch->ch_rcv.cb_vec = NULL;
-    ch->ch_snd.cb_vec = NULL;
-
-    /* Set chnl structure to the free state */
-    chnl_state_set(ch, _CHNL_FREE);
-    ch->ch_pcb = NULL;
-
-    if (cne_mutex_destroy(&ch->ch_mutex))
-        CNE_ERR("unable to destroy ch_mutex\n");
-
-    mempool_put(stk->chnl_objs, (void *)ch);
+        free_chnl(ch);
+    }
 }
 
 /*
@@ -690,8 +706,10 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
     if (!ch || !mbufs)
         return __errno_set(EFAULT);
 
-    if (chnl_state_tst(ch, _CHNL_FREE) || is_set(ch->ch_state, _CANTSENDMORE))
-        CNE_ERR_RET_VAL(__errno_set(EPIPE), "State is free or cant sent more\n");
+    if (chnl_state_tst(ch, _CHNL_FREE))
+        CNE_ERR_RET_VAL(__errno_set(EPIPE), "state is free\n");
+    if (is_set(ch->ch_state, _CANTSENDMORE))
+        CNE_ERR_RET_VAL(__errno_set(EPIPE), "can't sent more\n");
 
     if (nb_mbufs == 0)
         return 0;

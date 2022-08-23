@@ -308,6 +308,11 @@ chnl_snd_rcv_more(struct chnl *ch, int which)
 static inline void
 chnl_cant_snd_rcv_more(struct chnl *ch, int32_t which)
 {
+    CNE_INFO("Setting flags can't %s more data\n",
+             ((which & _CANTSENDMORE & _CANTRECVMORE) == (_CANTSENDMORE & _CANTRECVMORE))
+                 ? "Send/Receive"
+             : (which & _CANTSENDMORE) ? "Send"
+                                       : "Receive");
     ch->ch_state |= (which & (_CANTSENDMORE | _CANTRECVMORE));
 }
 

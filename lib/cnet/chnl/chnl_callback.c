@@ -36,7 +36,8 @@ __callback(struct pcb_entry *pcb)
                                                            : CHNL_UDP_RECV_TYPE;
 
         pcb->ch->ch_callback(ctype, pcb->ch->ch_cd);
-    }
+    } else
+        pktmbuf_free_bulk(pcb->ch->ch_rcv.cb_vec, vec_len(pcb->ch->ch_rcv.cb_vec));
 }
 
 static uint16_t

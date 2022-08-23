@@ -27,13 +27,13 @@ option('enable_punting', type: 'boolean', value: 'true',
 option('enable_tcp_dump', type: 'boolean', value: 'false',
     description: 'enable TCP dump header')
 
-option('cnet_num_tcbs', type: 'integer', value: '512',
+option('cnet_num_tcbs', type: 'integer', value: '1024',
     description: 'Max number of TCBs')
 
-option('cnet_num_channels', type: 'integer', value: '512',
+option('cnet_num_channels', type: 'integer', value: '1024',
     description: 'Max number of Channels')
 
-option('cnet_num_routes', type: 'integer', value: '512',
+option('cnet_num_routes', type: 'integer', value: '1024',
     description: 'Max number of Routes')
 # ------
 

@@ -238,7 +238,7 @@ tcp_chnl_listen(struct chnl *ch, int32_t backlog)
 
     /* tcb is null if chnl is not bound */
     if (!tcb || !tcb->pcb)
-        CNE_ERR_RET_VAL(__errno_set(EFAULT), "Channel Not bound\n");
+        CNE_ERR_RET_VAL(__errno_set(EFAULT), "Channel Not bound tcb %p\n", tcb);
 
     if (tcb->state > TCPS_LISTEN)
         CNE_ERR_RET_VAL(__errno_set(EISCONN), "Invalid state %d\n", tcb->state);

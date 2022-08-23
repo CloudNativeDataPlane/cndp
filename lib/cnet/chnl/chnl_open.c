@@ -75,31 +75,28 @@ create_chnl(int otype, int domain, int type, const char *name, int port, int fla
     opt = (flags & CHNL_ENABLE_UDP_CHECKSUM) ? 1 : 0;
     chnl_set_opt(cd, 0, SO_UDP_CHKSUM, &opt, sizeof(uint32_t));
 
-    if (name) {
-        if (domain == AF_INET) {
-            struct in_caddr addr;
+    if (domain == AF_INET) {
+        struct in_caddr addr;
 
-            in_caddr_zero(&addr);
+        in_caddr_zero(&addr);
 
-            if (inet_pton(AF_INET, name, (void *)&addr.cin_addr.s_addr) != 1)
-                CNE_ERR_RET("Unable to convert IP4 address to network order\n");
-            addr.cin_family = domain;
-            addr.cin_len    = sizeof(struct in_addr);
-            addr.cin_port   = htobe16(port);
+        if (name && inet_pton(AF_INET, name, (void *)&addr.cin_addr.s_addr) != 1)
+            CNE_ERR_RET("Unable to convert IP4 address to network order\n");
+        addr.cin_family = domain;
+        addr.cin_len    = sizeof(struct in_addr);
+        addr.cin_port   = htobe16(port);
 
-            if (otype == TCP4_LISTEN || otype == UDP4_LISTEN) {
-                if (chnl_bind(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)) == -1)
-                    CNE_ERR_RET("chnl_bind() failed\n");
-            } else if (otype == TCP4_CONNECT || otype == UDP4_CONNECT) {
-                if (chnl_connect(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)))
-                    CNE_ERR_RET("chnl_connect() failed\n");
-            }
-        } else if (domain == AF_INET6)
-            CNE_ERR_RET("IPv6 is not supported\n");
-    } else {
-        if ((otype == TCP4_LISTEN || otype == TCP6_LISTEN) && type == SOCK_STREAM)
-            chnl_listen(cd, CNET_TCP_BACKLOG_COUNT);
-    }
+        if (otype == TCP4_LISTEN || otype == UDP4_LISTEN) {
+            if (chnl_bind(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)) == -1)
+                CNE_ERR_RET("chnl_bind() failed\n");
+            if (type == SOCK_STREAM)
+                chnl_listen(cd, CNET_TCP_BACKLOG_COUNT);
+        } else if (otype == TCP4_CONNECT || otype == UDP4_CONNECT) {
+            if (chnl_connect(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)))
+                CNE_ERR_RET("chnl_connect() failed\n");
+        }
+    } else if (domain == AF_INET6)
+        CNE_ERR_RET("IPv6 is not supported\n");
 
     return cd;
 }
@@ -163,7 +160,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
     case TCP4_LISTEN:
     case TCP6_LISTEN:
         if (!CNET_ENABLE_TCP)
-            CNE_ERR_RET(" [cyan]TCP is disabled[]");
+            CNE_ERR_RET(" [cyan]TCP is disabled[]\n");
         domain = (pt->otype == TCP4_LISTEN) ? AF_INET : AF_INET6;
         typ    = SOCK_STREAM;
 
@@ -178,7 +175,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
     case TCP4_CONNECT:
     case TCP6_CONNECT:
         if (!CNET_ENABLE_TCP)
-            CNE_ERR_RET(" [cyan]TCP is disabled[]");
+            CNE_ERR_RET(" [cyan]TCP is disabled[]\n");
         domain = (pt->otype == TCP4_CONNECT) ? AF_INET : AF_INET6;
         typ    = SOCK_STREAM;
 
