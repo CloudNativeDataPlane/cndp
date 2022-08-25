@@ -116,11 +116,15 @@ func OpenWithFile(path string) (*System, error) {
 	if strings.HasPrefix(str, "{") {
 		err = fmt.Errorf("path does not appear to be a valid filepath")
 	} else {
-		if configFile, err := os.Open(str); err == nil {
+		var configFile *os.File
+
+		if configFile, err = os.Open(str); err == nil {
+			var bytes []byte
+
 			defer configFile.Close()
 
 			// Read the JSON-C file into a single byte array for later parsing
-			if bytes, err := io.ReadAll(configFile); err == nil {
+			if bytes, err = io.ReadAll(configFile); err == nil {
 				return open(jsonc.ToJSON(bytes))
 			}
 		}
