@@ -11,6 +11,7 @@
 #include <netinet/in.h>        // for in_addr, IPPROTO_UDP, ntohs
 #include <pthread.h>           // for pthread_mutex_lock, pthread_mutex...
 #include <string.h>            // for memset, memcpy
+#include <hexdump.h>
 
 #include "txgen.h"
 #include "tcp.h"             // for txgen_tcp_hdr_ctor
@@ -148,9 +149,9 @@ static __inline__ tstamp_t *
 txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
 {
     tstamp_t *tstamp;
-    char *p;
+    uint8_t *p, *start;
 
-    p = pktmbuf_mtod(m, char *);
+    start = p = pktmbuf_mtod(m, char *);
 
     p += sizeof(struct cne_ether_hdr);
 
@@ -165,21 +166,36 @@ txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
 
     tstamp = (tstamp_t *)p;
 
+    cne_printf("tstamp ptr: %p, offset: %ld\n", tstamp, p - start);
+
     return tstamp;
 }
 
 static inline void
 txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
 {
-    tstamp_t *tstamp;
+    pkt_seq_t *pkt            = &info->pkt;
+    struct cne_ether_hdr *eth = (struct cne_ether_hdr *)&pkt->hdr.eth;
+    char *l3_hdr              = (char *)&eth[1]; /* Point to l3 hdr location */
     int i;
 
+    cne_printf("txgen_tstamp_apply lport : %s\n", info->lport->name);
     for (i = 0; i < cnt; i++) {
-        tstamp = txgen_tstamp_pointer(info, pkts[i]);
-        if (tstamp) {
-            tstamp->timestamp = cne_rdtsc_precise();
-            tstamp->magic     = TSTAMP_MAGIC;
-        }
+        tstamp_t *tstamp;
+
+        tstamp            = txgen_tstamp_pointer(info, pkts[i]);
+        tstamp->timestamp = cne_rdtsc_precise();
+        tstamp->magic     = TSTAMP_MAGIC;
+        cne_printf("tstamp ptr: %p ", tstamp);
+        cne_printf("tstamp->magic : %x tstamp->timestamp : %lu\n", tstamp->magic,
+                   tstamp->timestamp);
+        cne_hexdump(NULL, "tstamp", tstamp, sizeof(tstamp_t));
+
+        /* Construct the UDP header */
+        txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
+
+        /* IPv4 Header constructor */
+        txgen_ipv4_ctor(pkt, l3_hdr);
     }
 }
 
@@ -545,9 +561,18 @@ txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
 
         if (flags & (SAMPLING_LATENCIES)) {
             tstamp_t *tstamp;
+
+            cne_printf("txgen_recv_tstamp lport: %s\n", info->lport->name);
             tstamp = txgen_tstamp_pointer(info, pkts[i]);
+            cne_hexdump(NULL, "tstamp", tstamp, sizeof(tstamp_t));
+
+            uint8_t *p;
+
+            p = pktmbuf_mtod(pkts[i], char *);
+            cne_hexdump(NULL, "p", p, 48);
 
             if (tstamp->magic == TSTAMP_MAGIC) {
+                cne_printf("GOT THE TIMESTAMP");
                 lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
                 latsamp_stats_t *stats = &info->latsamp_stats;
                 uint64_t now           = cne_rdtsc_precise();
@@ -571,8 +596,12 @@ txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
                             now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
                     }
                 }
-            } else
+            } else {
+                cne_printf("info->magic_errors expected: %x got : %x\n", TSTAMP_MAGIC,
+                           tstamp->magic);
+                cne_printf("tstamp->timestamp : %lu\n", tstamp->timestamp);
                 info->magic_errors++;
+            }
 
             info->latency_nb_pkts++;
         }

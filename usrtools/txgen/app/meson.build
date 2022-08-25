@@ -22,7 +22,7 @@ sources = files(
 	'cne_net_crc.c',
 )
 
-deps += [cli, kvargs, pktdev, pktmbuf, mempool, mmap, ring, jcfg, thread, uds, metrics, timer, pmd_af_xdp, pmd_tap]
+deps += [cli, kvargs, pktdev, pktmbuf, mempool, mmap, ring, jcfg, thread, uds, metrics, timer, pmd_af_xdp, pmd_tap, utils]
 
 executable('txgen',
     sources,
