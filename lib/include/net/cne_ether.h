@@ -411,12 +411,12 @@ __get_ether_addr3(const char *s, struct ether_addr *ea)
 /**
  * Convert string with Ethernet address to an ether_addr.
  *
- * @param str
+ * @param s
  *   A pointer to buffer contains the formatted MAC address.
  *   The supported formats are:
  *     XX:XX:XX:XX:XX:XX or XXXX:XXXX:XXXX
  *   where XX is a hex digit: 0-9, a-f, or A-F.
- * @param eth_addr
+ * @param ea
  *   A pointer to a ether_addr structure.
  * @return
  *   0 if successful
@@ -440,7 +440,7 @@ ether_unformat_addr(const char *s, struct ether_addr *ea)
  * @param a
  *   String containing the MAC address in two forms
  *      XX:XX:XX:XX:XX:XX or XXXX:XXXX:XXX
- * @param _e
+ * @param e
  *   pointer to a struct ether_addr to place the return value.
  * @return
  *   Pointer to the struct ether_addr structure;

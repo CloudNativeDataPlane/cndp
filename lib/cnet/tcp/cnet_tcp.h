@@ -118,7 +118,7 @@ tstampGEQ(uint32_t a, uint32_t b)
 /* Number of milli-seconds for 24 days */
 #define TCP_PAWS_IDLE (24 * 24 * 60 * 60 * 1000)
 
-/* TCP states (numeric values match those in RFC2452) */
+/** TCP states (numeric values match those in RFC2452) */
 typedef enum {
     TCPS_FREE = 0,
     TCPS_CLOSED,      /**< TCB is Closed */

@@ -56,7 +56,6 @@ INPUT                   = @TOPDIR@/doc/api/doxy-api-index.md \
                           @TOPDIR@/lib/usr/clib/fib \
                           @TOPDIR@/lib/usr/clib/graph \
                           @TOPDIR@/lib/usr/clib/hmap \
-                          @TOPDIR@/lib/usr/clib/net \
                           @TOPDIR@/lib/usr/clib/nodes \
                           @TOPDIR@/lib/usr/clib/rib \
                           @TOPDIR@/lib/usr/clib/thread \
