@@ -45,7 +45,7 @@ Use cases for the MsgChan library include:
 Anatomy of a MsgChan
 --------------------
 
-Creating a MsgChan is a simple call to mc_create(const char *name, int size, uint32_t flags).
+Creating a MsgChan is a simple call to mc_create(const char \*name, int size, uint32_t flags).
 Giving the name of the channel to create or attach to as a child msgchan. The parent msgchan
 is the first one to be created and any other attempts to create the message channel will create
 a child msgchan if allowed.
