@@ -10,6 +10,7 @@ Release Notes
     :maxdepth: 1
     :numbered:
 
+    22.08
     22.04
     22.01
     21.09
