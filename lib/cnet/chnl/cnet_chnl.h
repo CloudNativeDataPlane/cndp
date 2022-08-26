@@ -40,7 +40,7 @@ extern "C" {
 /**
  * Callback function for a channel to accept or receive packets
  *
- * @param ctype
+ * @param chnl_type
  *   The type of channel callback defined by chnl_type_t enum.
  * @param cd
  *   The channel descriptor value
@@ -62,6 +62,7 @@ enum {
     SHUT_BIT_RDWR = 0x03, /**< Shutdown Read and write side */
 };
 
+/** Channel callback types */
 typedef enum {
     CHNL_UDP_RECV_TYPE,   /**< Callback for receiving UDP packets */
     CHNL_UDP_CLOSE_TYPE,  /**< Callback for UDP close */
@@ -212,7 +213,7 @@ CNDP_API int chnl_recv(int cd, pktmbuf_t **mbufs, size_t len);
  * @returns
  *   0 on success or -1 on failure.
  *
- * @Note ERRNO
+ * @note On failure, errno is set to one of the following.
  * EACCES
  *   An attempt was made to send to a broadcast address without the
  *   SO_BROADCAST option set.
@@ -267,7 +268,7 @@ CNDP_API int chnl_sendto(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_
  *   the size of the buffer pointed to by name.  On return, it contains the
  *   size of the chnl name.
  *
- * @NOTE
+ * @note
  *   If namelen is less than the actual length of the address, the
  *   value stored at name will be silently truncated.
  *
@@ -289,7 +290,7 @@ CNDP_API int chnl_getchnlname(int cd, struct sockaddr *name, socklen_t *namelen)
  *   the size of the buffer pointed to by name.  On return, it contains the
  *   size of the chnl name.
  *
- * @NOTE
+ * @note
  *   If namelen is less than the actual length of the address, the
  *   value stored at name will be silently truncated.
  *
