@@ -1,0 +1,57 @@
+..  SPDX-License-Identifier: BSD-3-Clause
+    Copyright (c) 2021-2022 Intel Corporation.
+
+CNDP Release 22.08
+==================
+
+New Features
+------------
+* TCP stack support added to CNET (Experimental)
+* Go bindings and API restructure
+* Rust bindings and API restructure
+* MsgChan library added for message passing between threads and Go to C code
+* Ring library supports user-allocated memory to prepare for multi-process
+* Pktmbuf library supports external metadata to prepare for larger metadata needed for IPv6
+* GitHub Actions for unit tests, clang-format, and linting
+* Update VPP CNDP plugin to run on VPP 22.02
+* Fedora 35 container support
+* Updates for libbpf 0.5.0, and 0.8.0
+* Support for libxdp 1.2.0
+* Fuzz tests for log, mempool, and mmap libraries
+* Unit tests for cne, metrics, and cthread libraries
+* Logical port group fixes in json parser
+* Updates to memif PMD
+* Header fixes for C/C++ compilation
+
+Notable Changes
+---------------
+* Experimental TCP stack support is added to CNET.
+* Go and Rust bindings and API are restructured to be consistent with Go package and Rust crate
+  naming conventions.
+
+Known Issues
+-------------
+* CNET stack assumes a single IP address per logical port, which means a 1:1 mapping between IP
+  address and hardware queue. This is counter-intuitive to the way IP addresses are typically
+  assigned, where a single IP address is assigned to a device which has many queues.
+
+Limitations
+------------
+* Still need to use a full netdev (Physical Function) with CNDP at this time. Support for
+  Virtual Functions and Sub-devices will follow in later releases.
+
+Tested Platforms System information
+-----------------------------------
+* CPU = Intel(R) Xeon(R) Gold 6139 CPU @ 2.30GHz
+* BIOS = SE5C620.86B.00.01.0015.110720180833
+* Baseboard = Intel S2600WFQ
+* OS = Ubuntu 20.04.4 LTS (Focal Fossa)
+* Kernel = 5.4.0-89-generic
+
+Tested NICs
+------------
+* Ethernet controller: Intel Corporation Ethernet Controller XL710 for 40GbE QSFP+ (rev 02)
+
+  * driver: i40e
+  * version: 2.8.20-k
+  * firmware-version: 6.01 0x800035da 1.1747.0
