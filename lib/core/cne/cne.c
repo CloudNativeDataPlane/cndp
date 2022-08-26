@@ -9,6 +9,7 @@
 #include <cne_tty.h>            // for tty_is_inited
 #include <sys/queue.h>          // for STAILQ_INIT, STAILQ_INSERT_TAIL, STAILQ_REMOVE
 #include <locale.h>
+#include <assert.h>
 #include <cne_tailq.h>
 #include <cne_log.h>
 
@@ -20,14 +21,13 @@
 static cne_private_t __cne = {.initial_uid = -1};
 
 __thread __typeof__(struct cne_entry *) per_thread__cne;
-#define this_cne per_thread__cne
 
 int
 cne_id(void)
 {
-    if (per_thread__cne)
-        return per_thread__cne->uid;
-    return -1;
+    assert(per_thread__cne != NULL);
+
+    return per_thread__cne->uid;
 }
 
 static inline struct cne_entry *
@@ -67,7 +67,7 @@ __create_entry(const char *name, int uid)
     STAILQ_INSERT_TAIL(&__cne.list, e, next);
     atomic_fetch_add(&__cne.active, 1);
 
-    this_cne = e;
+    per_thread__cne = e;
 
     return uid;
 }
@@ -171,6 +171,8 @@ cne_unregister(int tidx)
     STAILQ_REMOVE(&__cne.list, e, cne_entry, next);
     atomic_fetch_sub(&__cne.active, 1);
 
+    per_thread__cne = NULL;
+
     return 0;
 }
 
@@ -213,7 +215,7 @@ cne_dump(FILE *f)
         struct cne_entry *e = &__cne.entries[i];
 
         if (e->magic_id == CNE_MAGIC_ID)
-            fprintf(f, "  Thread %s has UID %d private pointer is %p\n", e->name, e->uid, e->priv_);
+            fprintf(f, "  Thread %-24s @ %p, UID %4d, private %p\n", e->name, e, e->uid, e->priv_);
     }
 }
 
