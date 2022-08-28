@@ -653,7 +653,6 @@ int
 chnl_recv(int cd, pktmbuf_t **mbufs, size_t len)
 {
     struct chnl *ch = ch_get(cd);
-    ssize_t ret;
 
     if (len == 0)
         return 0;
@@ -666,14 +665,16 @@ chnl_recv(int cd, pktmbuf_t **mbufs, size_t len)
             return __errno_set(EPIPE);
         return __errno_set(EINPROGRESS);
     }
-    if (!chnl_state_tst(ch, _ISCONNECTED))
-        return __errno_set(ENOTCONN);
+
+    if (!chnl_state_tst(ch, _ISCONNECTED)) {
+        /* ignore the disconnecting state for now as more data maybe present */
+        if (!chnl_state_tst(ch, _ISDISCONNECTING))
+            return __errno_set(ENOTCONN);
+    }
 
     __errno_set(0);
 
-    ret = ch->ch_proto->funcs->recv_func(ch, mbufs, len);
-
-    return ret;
+    return ch->ch_proto->funcs->recv_func(ch, mbufs, len);
 }
 
 static int

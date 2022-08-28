@@ -349,23 +349,26 @@ _vec_find_index(void **vec, void *v)
     } while (0)
 
 /**
- * Remove a number of items from the vector.
+ * Remove a number of items from the front of a vector list.
  *
- * @param _v
+ * @param v
  *   The pointer to the vector to remove the entries from
- * @param _nb
+ * @param nb
  *   The number of items to remove from the vector
  */
-#define vec_remove(_v, _nb)                                     \
-    do {                                                        \
-        vec_hdr_t *h = vec_header(_v);                          \
-        int _n       = h->len - _nb;                            \
-        if (_n >= 0) {                                          \
-            char *src = (char *)&h->data[0] + (_nb * h->esize); \
-            memmove(&h->data[0], src, _n * h->esize);           \
-            h->len = _n;                                        \
-        }                                                       \
-    } while (0)
+static inline void
+vec_remove(void *v, uint32_t nb)
+{
+    vec_hdr_t *h = vec_header(v);
+
+    if (h && h->len && nb <= h->len) {
+        int n = h->len - nb;
+
+        if (n > 0)
+            memmove(v, CNE_PTR_ADD(v, (nb * h->esize)), n * h->esize);
+        h->len = n;
+    }
+}
 
 /**
  * Dump out a vec_hdr_t structure

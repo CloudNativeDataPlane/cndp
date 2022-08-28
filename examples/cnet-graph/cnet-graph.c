@@ -222,7 +222,7 @@ tcp_recv(int cd)
         nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
         if (nb_mbufs <= 0) {
             if (nb_mbufs < 0)
-                CNE_ERR("Receive packets failed\n");
+                CNE_ERR("Receive packets failed %d: %s\n", errno, strerror(errno));
             break;
         }
 
