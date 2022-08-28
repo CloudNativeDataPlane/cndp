@@ -87,12 +87,10 @@ udp_chnl_recv(struct chnl *ch, pktmbuf_t **mbufs, int nb_mbufs)
     tlen = vec_len(ch->ch_rcv.cb_vec);
     if (tlen > 0) {
         n = (tlen > nb_mbufs) ? nb_mbufs : tlen;
+
         memcpy(mbufs, ch->ch_rcv.cb_vec, sizeof(pktmbuf_t *) * n);
 
-        tlen -= n;
-        memmove(ch->ch_rcv.cb_vec, ch->ch_rcv.cb_vec + (sizeof(pktmbuf_t *) * n),
-                tlen * sizeof(pktmbuf_t *));
-        vec_set_len(ch->ch_rcv.cb_vec, tlen);
+        vec_remove(ch->ch_rcv.cb_vec, n);
     }
     for (int i = 0; i < n; i++)
         sz += pktmbuf_data_len(mbufs[i]);
