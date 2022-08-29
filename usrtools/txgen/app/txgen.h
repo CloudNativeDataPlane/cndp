@@ -76,6 +76,7 @@ extern "C" {
 #define Million            (uint64_t)(1000000ULL)
 #define Billion            (uint64_t)(1000000000ULL)
 #define TSTAMP_MAGIC       (('T' << 8) + 's')
+#define MAX_BURST_SIZE     256
 
 #define iBitsTotal(_x) (uint64_t)(((_x.ipackets * PKT_OVERHEAD_SIZE) + _x.ibytes) * 8)
 #define oBitsTotal(_x) (uint64_t)(((_x.opackets * PKT_OVERHEAD_SIZE) + _x.obytes) * 8)

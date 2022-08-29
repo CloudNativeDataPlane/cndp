@@ -146,12 +146,12 @@ txgen_fill_pattern(uint8_t *p, uint32_t len, uint32_t type, char *user)
 }
 
 static __inline__ tstamp_t *
-txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
+txgen_tstamp_pointer_tx(port_info_t *info, pktmbuf_t *m)
 {
     tstamp_t *tstamp;
-    uint8_t *p, *start;
+    uint8_t *p;
 
-    start = p = pktmbuf_mtod(m, char *);
+    p = pktmbuf_mtod(m, char *);
 
     p += sizeof(struct cne_ether_hdr);
 
@@ -166,7 +166,29 @@ txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
 
     tstamp = (tstamp_t *)p;
 
-    cne_printf("tstamp ptr: %p, offset: %ld\n", tstamp, p - start);
+    return tstamp;
+}
+
+static __inline__ tstamp_t *
+txgen_tstamp_pointer_rx(port_info_t *info, pktmbuf_t *m)
+{
+    tstamp_t *tstamp;
+    uint8_t *p;
+
+    p = pktmbuf_mtod_offset(m, char *, sizeof(pktmbuf_t));
+
+    p += sizeof(struct cne_ether_hdr);
+
+    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
+                                                    : sizeof(struct cne_ipv6_hdr);
+
+    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
+                                            : sizeof(struct cne_tcp_hdr);
+
+    /* Force pointer to be aligned correctly */
+    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
+
+    tstamp = (tstamp_t *)p;
 
     return tstamp;
 }
@@ -179,17 +201,12 @@ txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
     char *l3_hdr              = (char *)&eth[1]; /* Point to l3 hdr location */
     int i;
 
-    cne_printf("txgen_tstamp_apply lport : %s\n", info->lport->name);
     for (i = 0; i < cnt; i++) {
         tstamp_t *tstamp;
 
-        tstamp            = txgen_tstamp_pointer(info, pkts[i]);
+        tstamp            = txgen_tstamp_pointer_tx(info, pkts[i]);
         tstamp->timestamp = cne_rdtsc_precise();
         tstamp->magic     = TSTAMP_MAGIC;
-        cne_printf("tstamp ptr: %p ", tstamp);
-        cne_printf("tstamp->magic : %x tstamp->timestamp : %lu\n", tstamp->magic,
-                   tstamp->timestamp);
-        cne_hexdump(NULL, "tstamp", tstamp, sizeof(tstamp_t));
 
         /* Construct the UDP header */
         txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
@@ -401,6 +418,42 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
     }
 }
 
+static __inline__ void
+_process_tstamp(port_info_t *info, pktmbuf_t *pkt)
+{
+    uint64_t lat;
+    tstamp_t *tstamp;
+
+    tstamp = txgen_tstamp_pointer_rx(info, pkt);
+    if (tstamp->magic == TSTAMP_MAGIC) {
+        lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
+        latsamp_stats_t *stats = &info->latsamp_stats;
+        uint64_t now           = cne_rdtsc_precise();
+
+        stats->pkt_counter++;
+        if (stats->next == 0 || now >= stats->next) {
+            if (stats->idx < stats->num_samples) {
+                stats->data[stats->idx] =
+                    (lat * Billion) / cne_get_timer_hz(); /* Do we want to keep it as cycles? */
+                stats->idx++;
+            }
+
+            /* Calculate next sampling point TODO: Use poisson */
+            if (info->latsamp_type == LATSAMPLER_POISSON) {
+                double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
+                stats->next =
+                    now + next_possion_time_ns * (double)cne_get_timer_hz();        // Time based
+            } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
+                stats->next = now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
+            }
+        }
+    } else {
+        info->magic_errors++;
+    }
+
+    info->latency_nb_pkts++;
+}
+
 /**
  *
  * txgen_packet_classify_bulk - Classify a set of packets in one call.
@@ -414,9 +467,12 @@ txgen_packet_classify(pktmbuf_t *m, int pid)
  */
 #define PREFETCH_OFFSET 3
 static __inline__ void
-txgen_packet_classify_bulk(pktmbuf_t **pkts, int nb_rx, int pid)
+txgen_packet_classify_bulk(port_info_t *info, pktmbuf_t **pkts, int nb_rx, int pid)
 {
     int j, i;
+    uint32_t flags;
+
+    flags = atomic_load(&(info->port_flags));
 
     /* Prefetch first packets */
     for (j = 0; j < PREFETCH_OFFSET && j < nb_rx; j++)
@@ -426,13 +482,17 @@ txgen_packet_classify_bulk(pktmbuf_t **pkts, int nb_rx, int pid)
     for (i = 0; i < (nb_rx - PREFETCH_OFFSET); i++) {
         cne_prefetch0(pktmbuf_mtod(pkts[j], void *));
         j++;
-
+        if (flags & (SAMPLING_LATENCIES))
+            _process_tstamp(info, pkts[i]);
         txgen_packet_classify(pkts[i], pid);
     }
 
     /* Handle remaining prefetched packets */
-    for (; i < nb_rx; i++)
+    for (; i < nb_rx; i++) {
+        if (flags & (SAMPLING_LATENCIES))
+            _process_tstamp(info, pkts[i]);
         txgen_packet_classify(pkts[i], pid);
+    }
 }
 
 typedef struct {
@@ -548,66 +608,6 @@ txgen_main_transmit(port_info_t *info)
         txgen_tx_flush(info);
 }
 
-static __inline__ void
-txgen_recv_tstamp(port_info_t *info, pktmbuf_t **pkts, uint16_t nb_pkts)
-{
-    uint32_t flags;
-    int i;
-    uint64_t lat;
-
-    flags = atomic_load(&(info->port_flags));
-
-    for (i = 0; i < nb_pkts; i++) {
-
-        if (flags & (SAMPLING_LATENCIES)) {
-            tstamp_t *tstamp;
-
-            cne_printf("txgen_recv_tstamp lport: %s\n", info->lport->name);
-            tstamp = txgen_tstamp_pointer(info, pkts[i]);
-            cne_hexdump(NULL, "tstamp", tstamp, sizeof(tstamp_t));
-
-            uint8_t *p;
-
-            p = pktmbuf_mtod(pkts[i], char *);
-            cne_hexdump(NULL, "p", p, 48);
-
-            if (tstamp->magic == TSTAMP_MAGIC) {
-                cne_printf("GOT THE TIMESTAMP");
-                lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
-                latsamp_stats_t *stats = &info->latsamp_stats;
-                uint64_t now           = cne_rdtsc_precise();
-
-                stats->pkt_counter++;
-                if (stats->next == 0 || now >= stats->next) {
-                    if (stats->idx < stats->num_samples) {
-                        stats->data[stats->idx] =
-                            (lat * Billion) /
-                            cne_get_timer_hz(); /* Do we want to keep it as cycles? */
-                        stats->idx++;
-                    }
-
-                    /* Calculate next sampling point TODO: Use poisson */
-                    if (info->latsamp_type == LATSAMPLER_POISSON) {
-                        double next_possion_time_ns = next_poisson_time(info->latsamp_rate);
-                        stats->next                 = now + next_possion_time_ns *
-                                                (double)cne_get_timer_hz();        // Time based
-                    } else {        // LATSAMPLER_SIMPLE or LATSAMPLER_UNSPEC
-                        stats->next =
-                            now + cne_get_timer_hz() / info->latsamp_rate;        // Time based
-                    }
-                }
-            } else {
-                cne_printf("info->magic_errors expected: %x got : %x\n", TSTAMP_MAGIC,
-                           tstamp->magic);
-                cne_printf("tstamp->timestamp : %lu\n", tstamp->timestamp);
-                info->magic_errors++;
-            }
-
-            info->latency_nb_pkts++;
-        }
-    }
-}
-
 /**
  *
  * txgen_main_receive - Main receive routine for packets of a lport.
@@ -633,23 +633,24 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
     /*
      * Read packet from RX queues and free the mbufs
      */
-    nb_rx = pktdev_rx_burst(lport->lpid, pkts_burst, nb_pkts);
-    if ((nb_rx == 0) || (nb_rx == PKTDEV_ADMIN_STATE_DOWN)) {
+    nb_rx = pktdev_rx_burst(lport->lpid, (pktmbuf_t **)pkts_burst, nb_pkts);
+    if (nb_rx == PKTDEV_ADMIN_STATE_DOWN) {
         return;
     }
 
-    txgen_recv_tstamp(info, pkts_burst, nb_rx);
+    if (nb_rx) {
 
-    /* packets are not freed in the next call. */
-    txgen_packet_classify_bulk(pkts_burst, nb_rx, lport->lpid);
+        /* packets are not freed in the next call. */
+        txgen_packet_classify_bulk(info, pkts_burst, nb_rx, lport->lpid);
 
-    if (unlikely(txgen_tst_port_flags(info, CAPTURE_PKTS))) {
-        capture = &txgen.captures[pid];
-        if (unlikely((capture->port == pid)))
-            txgen_packet_capture_bulk(pkts_burst, nb_rx, capture);
+        if (unlikely(txgen_tst_port_flags(info, CAPTURE_PKTS))) {
+            capture = &txgen.captures[pid];
+            if (unlikely((capture->port == pid)))
+                txgen_packet_capture_bulk(pkts_burst, nb_rx, capture);
+        }
+
+        pktmbuf_free_bulk(pkts_burst, nb_rx);
     }
-
-    pktmbuf_free_bulk(pkts_burst, nb_rx);
 }
 
 /**
@@ -667,13 +668,13 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
 static void
 txgen_rxtx(port_info_t *info)
 {
-    pktmbuf_t *pkts_burst[DEFAULT_BURST_SIZE];
+    pktmbuf_t *pkts_burst[MAX_BURST_SIZE];
     uint64_t curr_tsc;
 
     if (!info->link.link_status)
         return;
 
-    txgen_main_receive(info, pkts_burst, DEFAULT_BURST_SIZE);
+    txgen_main_receive(info, pkts_burst, MAX_BURST_SIZE);
 
     curr_tsc = cne_rdtsc();
 
