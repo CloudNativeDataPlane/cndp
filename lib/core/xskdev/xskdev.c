@@ -266,7 +266,7 @@ fq_add(xskdev_info_t *xi)
     }
     xi->stats.fq_add_count += nb;
 
-    return 0;
+    return xsk_prod_nb_free(fq, 0);
 }
 
 static __cne_always_inline uint16_t
@@ -399,7 +399,9 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     xsk_ring_cons__release(rx, rcvd);
 
-    fq_add(xi);
+    /* Attempt to keep the FQ as full as possible */
+    while (fq_add(xi) >= FQ_ADD_BURST_COUNT)
+        ;
 
     return (uint16_t)rcvd;
 }
@@ -907,6 +909,7 @@ xskdev_socket_create(struct lport_cfg *c)
 
     xi->unprivileged = (c->flags & LPORT_UNPRIVILEGED) ? true : false;
     xi->needs_wakeup = (c->flags & LPORT_FORCE_WAKEUP) ? true : false;
+
     xi->busy_polling = (c->flags & LPORT_BUSY_POLLING) ? true : false;
     xi->skb_mode     = (c->flags & LPORT_SKB_MODE) ? true : false;
     xi->shared_umem  = (c->flags & LPORT_SHARED_UMEM) ? true : false;
