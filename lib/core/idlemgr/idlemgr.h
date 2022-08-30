@@ -117,10 +117,10 @@ CNDP_API int idlemgr_set_timeouts(idlemgr_t *imgr, uint32_t idle, uint32_t intr)
 CNDP_API int idlemgr_get_timeouts(idlemgr_t *imgr, uint32_t *idle, uint32_t *intr);
 
 /**
- * Add an file descriptor to the idlemgr instance
+ * Add a file descriptor to the idlemgr instance
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+ *   The idlemgr_t pointer to the idlemgr instance
  * @param fd
  *   The file descriptor to add to epoll and the idlemgr_t instance
  * @param eflags
@@ -131,10 +131,10 @@ CNDP_API int idlemgr_get_timeouts(idlemgr_t *imgr, uint32_t *idle, uint32_t *int
 CNDP_API int idlemgr_add(idlemgr_t *imgr, int fd, uint32_t eflags);
 
 /**
- * Delete an file descriptor from the idlemgr instance
+ * Delete a file descriptor from the idlemgr instance
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+  *   The idlemgr_t pointer to the idlemgr instance
  * @param fd
  *   The file descriptor to delete from epoll and the idlemgr_t instance
  * @return
@@ -149,7 +149,7 @@ CNDP_API int idlemgr_del(idlemgr_t *imgr, int fd);
  * Call this API frequently normally during each RX loop iteration.
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+ *   The idlemgr_t pointer to the idlemgr instance
  * @param active
  *   When zero it means idle and non-zero means active.
  * @return
@@ -167,7 +167,7 @@ CNDP_API int idlemgr_process(idlemgr_t *imgr, int active);
  * Return the idle manager struct epoll_event list, after idlemgr_process() returned active FDs.
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+ *   The idlemgr_t pointer to the idlemgr instance
  * @return
  *   NULL on error or pointer to idle manager event list.
  */
@@ -187,7 +187,7 @@ CNDP_API idlemgr_t *idlemgr_find_by_name(const char *name);
  * Grab the statistics of the idlemgr_t instance.
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+ *   The idlemgr_t pointer to the idlemgr instance
  * @param stats
  *   Pointer to the location of the idlemgr_stats_t structure to be filled in.
  * @return
@@ -199,7 +199,7 @@ CNDP_API int idlemgr_stats(idlemgr_t *imgr, idlemgr_stats_t *stats);
  * Dump out information about the idlemgr_t instance
  *
  * @param imgr
- *   The idlemgr_t pointer to destroy
+ *   The idlemgr_t pointer to the idlemgr instance
  * @return
  *   N/A
  */
