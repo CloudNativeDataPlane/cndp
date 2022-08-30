@@ -77,7 +77,7 @@ test2(void)
     idlemgr_t *imgr = NULL;
     uint32_t idle = 0xFFFFFF, intr = 0xFFFFFF;
 
-    imgr = idlemgr_create("test1", 2, 0, 0);
+    imgr = idlemgr_create("test2", 2, 0, 0);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() failed and should have succeeded\n");
 
@@ -123,7 +123,7 @@ test2(void)
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &lcore_bitmap);
     CNE_INFO("LCore ID %d\n", cne_lcore_id());
 
-    imgr = idlemgr_create("test3", 2, 10, 1000);
+    imgr = idlemgr_create("test2", 2, 10, 1000);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() failed and should have succeeded\n");
 
@@ -172,7 +172,7 @@ test3(void)
 {
     idlemgr_t *imgr = NULL, *imgr2 = NULL;
 
-    imgr = idlemgr_create("test1", 10, 0, 0);
+    imgr = idlemgr_create("test3", 10, 0, 0);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() succeeded for test1 name\n");
 
@@ -184,16 +184,16 @@ test3(void)
     idlemgr_destroy(imgr);
     imgr = imgr2 = NULL;
 
-    imgr = idlemgr_create("test1", 10, 10, 1000);
+    imgr = idlemgr_create("test3", 10, 10, 1000);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() succeeded for test1 name\n");
 
-    imgr2 = idlemgr_create("test2", 10, 20, 2000);
+    imgr2 = idlemgr_create("test3", 10, 20, 2000);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() should succeed with name test2\n");
     idlemgr_destroy(imgr2);
 
-    imgr2 = idlemgr_create("test2", 10, 30, 3000);
+    imgr2 = idlemgr_create("test3", 10, 30, 3000);
     if (imgr == NULL)
         CNE_ERR_GOTO(leave, "idlemgr_create() should succeed with name test2\n");
     idlemgr_list_dump();

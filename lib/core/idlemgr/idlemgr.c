@@ -67,7 +67,7 @@ idlemgr_create(const char *name, uint16_t max_fds, uint32_t idle_timeout, uint32
         CNE_NULL_RET("invalid name provided\n");
 
     if (max_fds == 0 || max_fds > IDLE_MGR_MAX_FDS)
-        CNE_NULL_RET("invalid max number of file destructors %d, max %d\n", max_fds,
+        CNE_NULL_RET("invalid max number of file descriptors %d, max %d\n", max_fds,
                      IDLE_MGR_MAX_FDS);
 
     if (idle_timeout > IDLE_MGR_MAX_IDLE_TIMEOUT)
@@ -240,7 +240,6 @@ idlemgr_del(idlemgr_t *_imgr, int fd)
         imgr_unlock(imgr);
         return 0;
     }
-    return -1;
 
 err_leave:
     imgr_unlock(imgr);
