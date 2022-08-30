@@ -110,6 +110,11 @@ pmd_dev_info(struct cne_pktdev *dev, struct pktdev_info *dev_info)
     dev_info->default_rxportconf.ring_size = ETH_AF_XDP_DFLT_NUM_DESCS;
     dev_info->default_txportconf.ring_size = ETH_AF_XDP_DFLT_NUM_DESCS;
 
+    dev_info->rx_fd = -1;
+    dev_info->tx_fd = -1;
+    if (xskdev_get_fd(lport->xi, &dev_info->rx_fd, &dev_info->tx_fd) < 0)
+        return -1;
+
     return 0;
 }
 

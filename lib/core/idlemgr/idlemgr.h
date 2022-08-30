@@ -134,7 +134,7 @@ CNDP_API int idlemgr_add(idlemgr_t *imgr, int fd, uint32_t eflags);
  * Delete a file descriptor from the idlemgr instance
  *
  * @param imgr
-  *   The idlemgr_t pointer to the idlemgr instance
+ *   The idlemgr_t pointer to the idlemgr instance
  * @param fd
  *   The file descriptor to delete from epoll and the idlemgr_t instance
  * @return
