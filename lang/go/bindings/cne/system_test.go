@@ -7,7 +7,6 @@ package cne
 import (
 	"io"
 	"os"
-	"strconv"
 	"time"
 
 	"testing"
@@ -83,48 +82,6 @@ func TestGetPort(t *testing.T) {
 		if lport == nil {
 			t.Errorf("error getting port information\n")
 			return
-		}
-	})
-	t.Run("TestGetPortInValid", func(t *testing.T) {
-
-	})
-}
-
-func BenchmarkGetPortSerial(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		lport := cneSys.LPortList()[0]
-		if lport == nil {
-			b.Errorf("error getting port information\n")
-			return
-		}
-	}
-}
-
-func BenchmarkGetPortParallel(b *testing.B) {
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			lport := cneSys.LPortList()[0]
-			if lport == nil {
-				b.Errorf("error getting port information\n")
-				return
-			}
-		}
-	})
-}
-
-func BenchmarkRegisterThreadParallel(b *testing.B) {
-	i := 0
-	b.RunParallel(func(pb *testing.PB) {
-		str := strconv.Itoa(i)
-		i++
-		tid := cneSys.RegisterThread("register_thread" + str)
-		if tid <= 0 {
-			return
-		}
-		defer cneSys.UnregisterThread(tid)
-
-		for pb.Next() {
-
 		}
 	})
 }
