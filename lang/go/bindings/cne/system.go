@@ -23,7 +23,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"unsafe"
 
 	"github.com/tidwall/jsonc"
@@ -32,7 +31,6 @@ import (
 // System structure to hold internal information for binding layer to CNDP
 type System struct {
 	tid  int
-	mu   sync.Mutex
 	jcfg *Config
 }
 
@@ -58,28 +56,31 @@ func open(cfg interface{}) (*System, error) {
 
 	sys := &System{}
 
-	sys.tid = sys.RegisterThread("main")
+	sys.tid = RegisterThread("main")
+	if sys.tid < 0 {
+		return nil, fmt.Errorf("failed to register main thread")
+	}
 
 	switch v := cfg.(type) {
 	case *Config: //  Initialize the binding layer with a cne.Config structure
 		jcfg := v
 
 		if err := jcfg.validateConfig(); err != nil {
-			sys.UnregisterThread(sys.tid)
-			return nil, err
+			UnregisterThread(sys.tid)
+			return nil, fmt.Errorf("failed to validate configuration")
 		}
 		sys.jcfg = jcfg
 
 	case []byte: // Initialize the binding layer with a JSON byte array
 		if jcfg, err := processConfig(v); err != nil {
-			sys.UnregisterThread(sys.tid)
-			return nil, err
+			UnregisterThread(sys.tid)
+			return nil, fmt.Errorf("failed to process configuration")
 		} else {
 			sys.jcfg = jcfg
 		}
 
 	default:
-		sys.UnregisterThread(sys.tid)
+		UnregisterThread(sys.tid)
 		return nil, fmt.Errorf("invalid argument type not *Config or []byte, %T", v)
 	}
 
@@ -136,7 +137,10 @@ func OpenWithFile(path string) (*System, error) {
 // Close the binding layer and cleanup UMEM and LPorts
 func (sys *System) Close() error {
 
-	defer sys.UnregisterThread(sys.tid)
+	if sys.tid < 0 {
+		return fmt.Errorf("system not initialized")
+	}
+	defer UnregisterThread(sys.tid)
 
 	if err := sys.cleanupUMEM(); err != nil {
 		return fmt.Errorf("error cleaning up mempool %w", err)
@@ -156,32 +160,21 @@ func (sys *System) JsonCfg() *Config {
 }
 
 // RegisterThread locks a thread and registers it to CNDP to get the CNE UID value
-func (sys *System) RegisterThread(name string) int {
+func RegisterThread(name string) int {
 
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
 	runtime.LockOSThread()
 
-	sys.mu.Lock()
-	defer sys.mu.Unlock()
-
-	tid := int(C.cne_id())
-	if tid < 0 {
-		tid = int(C.cne_register(cName))
-	}
-
-	return tid
+	return int(C.cne_register(cName))
 }
 
 // UnregisterThread unregister the thread from CNDP
-func (sys *System) UnregisterThread(tid int) int {
+func UnregisterThread(tid int) {
 
-	sys.mu.Lock()
-	defer sys.mu.Unlock()
-
-	ret := int(C.cne_unregister(C.int(tid)))
+	if ret := int(C.cne_unregister(C.int(tid))); ret < 0 {
+		fmt.Printf("cne_unregister(%v) failed", tid)
+	}
 	runtime.UnlockOSThread()
-
-	return ret
 }

@@ -139,7 +139,7 @@ func (f *fwdInfo) displayStats() {
 	}
 }
 
-// receive test routinue and drop the packets on all lport attached to this thread
+// receive test routine and drop the packets on all lport attached to this thread
 func (f *fwdInfo) receivePackets(thdName string, lportNames []string) {
 
 	lports := f.handle.LPortsByName(lportNames)
@@ -147,11 +147,11 @@ func (f *fwdInfo) receivePackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := f.handle.RegisterThread(thdName)
-	if tid <= 0 {
+	tid := cne.RegisterThread(thdName)
+	if tid < 0 {
 		return
 	}
-	defer f.handle.UnregisterThread(tid)
+	defer cne.UnregisterThread(tid)
 
 	packets := make([]*cne.Packet, 256)
 
@@ -183,31 +183,32 @@ func (f *fwdInfo) transmitPackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := f.handle.RegisterThread(thdName)
-	if tid <= 0 {
+	tid := cne.RegisterThread(thdName)
+	if tid < 0 {
 		return
 	}
-	defer f.handle.UnregisterThread(tid)
+	defer cne.UnregisterThread(tid)
 
 	txPackets := make([]*cne.Packet, 256)
 
 	// IPv4/UDP 64 byte packet
 	// TTL/Port Src/Dest   :       64/ 1234/ 5678
 	// Pkt Type:VLAN ID    :      IPv4 / UDP:0001
-	// 802.1p CoS/DSCP/IPP :            0/  0/  0
-	// VxLAN Flg/Grp/vid   :     0000/    0/    0
 	// IP  Destination     :           198.18.1.1
 	// 	   Source          :        198.18.0.1/24
 	// MAC Destination     :    3c:fd:fe:e4:34:c0
-	// 	   Source          :    3c:fd:fe:e4:38:40
+	// 	   Source          :    3c:fd:fe:e4:38:44
+	// Make sure the destination MAC address does not match
+	// the port the packet is being sent as the NIC will
+	// drop the packet.
 	//
-	// 0000   3cfd fee4 34c0 3cfd fee4 3840 0800 4500
+	// 0000   3cfd fee4 34c0 3cfd fee4 3844 0800 4500
 	// 0010   002e 60ac 0000 4011 8cec c612 0001 c612
 	// 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e 6f70
 	// 0030   7172 7374 7576 7778 797a 3031
 
 	data, err := hex.DecodeString(
-		"3cfdfee434c03cfdfee4384008004500" +
+		"3cfdfee434c03cfdfee4384408004500" +
 			"002e60ac000040118cecc6120001c612" +
 			"010104d2162e001a93c66b6c6d6e6f70" +
 			"7172737475767778797a3031")
@@ -228,13 +229,21 @@ func (f *fwdInfo) transmitPackets(thdName string, lportNames []string) {
 			default:
 				size := cne.PktBufferAlloc(pid, txPackets)
 
+				if size != len(txPackets) {
+					tlog.DoPrintf("expected %d, got %d", len(txPackets), size)
+				}
 				if size > 0 {
 					pkts := txPackets[:size]
 
 					if err := cne.WritePktDataList(pkts, 0, data); err != nil {
 						log.Fatalf("Error writing packet data list: %s\n", err.Error())
 					}
-					cne.TxBurst(pid, pkts, true)
+					nb := cne.TxBurst(pid, pkts, true)
+					if nb != len(pkts) {
+						tlog.DoPrintf("only sent %v packets out of %v\n", nb, len(pkts))
+					}
+				} else {
+					tlog.DoPrintf("unable to allocate mbufs\n")
 				}
 			}
 		}
@@ -249,11 +258,11 @@ func (f *fwdInfo) reTransmitPackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := f.handle.RegisterThread(thdName)
-	if tid <= 0 {
+	tid := cne.RegisterThread(thdName)
+	if tid < 0 {
 		return
 	}
-	defer f.handle.UnregisterThread(tid)
+	defer cne.UnregisterThread(tid)
 
 	packets := make([]*cne.Packet, 256)
 
@@ -289,11 +298,11 @@ func (f *fwdInfo) verifyIPv4ChecksumPackets(thdName string, lportNames []string)
 		return
 	}
 
-	tid := f.handle.RegisterThread(thdName)
-	if tid <= 0 {
+	tid := cne.RegisterThread(thdName)
+	if tid < 0 {
 		return
 	}
-	defer f.handle.UnregisterThread(tid)
+	defer cne.UnregisterThread(tid)
 
 	packets := make([]*cne.Packet, 256)
 
@@ -427,6 +436,7 @@ func main() {
 	f := fwdSetup()
 
 	defer f.handle.Close()
+	defer f.app.Stop()
 	defer f.stop()
 
 	// For each JSON configuration thread create a Go thread and pass
