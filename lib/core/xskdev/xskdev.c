@@ -304,7 +304,11 @@ __get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, void
     *bufs = xsk_umem__get_data(umem_addr, (uint64_t)addr + xi->buf_mgmt.pool_header_sz);
 
     xskdev_buf_set_data_len(xi, *bufs, d->len);
+#if USE_LIBBPF_8
+    xskdev_buf_set_data(xi, *bufs, offset);
+#else
     xskdev_buf_set_data(xi, *bufs, offset - xi->buf_mgmt.buf_headroom);
+#endif
 
     return d->len;
 }

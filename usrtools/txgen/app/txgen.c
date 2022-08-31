@@ -146,36 +146,12 @@ txgen_fill_pattern(uint8_t *p, uint32_t len, uint32_t type, char *user)
 }
 
 static __inline__ tstamp_t *
-txgen_tstamp_pointer_tx(port_info_t *info, pktmbuf_t *m)
+txgen_tstamp_pointer(port_info_t *info, pktmbuf_t *m)
 {
     tstamp_t *tstamp;
     uint8_t *p;
 
     p = pktmbuf_mtod(m, char *);
-
-    p += sizeof(struct cne_ether_hdr);
-
-    p += (info->pkt.ethType == CNE_ETHER_TYPE_IPV4) ? sizeof(struct cne_ipv4_hdr)
-                                                    : sizeof(struct cne_ipv6_hdr);
-
-    p += (info->pkt.ipProto == IPPROTO_UDP) ? sizeof(struct cne_udp_hdr)
-                                            : sizeof(struct cne_tcp_hdr);
-
-    /* Force pointer to be aligned correctly */
-    p = CNE_PTR_ALIGN_CEIL(p, sizeof(uint64_t));
-
-    tstamp = (tstamp_t *)p;
-
-    return tstamp;
-}
-
-static __inline__ tstamp_t *
-txgen_tstamp_pointer_rx(port_info_t *info, pktmbuf_t *m)
-{
-    tstamp_t *tstamp;
-    uint8_t *p;
-
-    p = pktmbuf_mtod_offset(m, char *, sizeof(pktmbuf_t));
 
     p += sizeof(struct cne_ether_hdr);
 
@@ -204,7 +180,7 @@ txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
     for (i = 0; i < cnt; i++) {
         tstamp_t *tstamp;
 
-        tstamp            = txgen_tstamp_pointer_tx(info, pkts[i]);
+        tstamp            = txgen_tstamp_pointer(info, pkts[i]);
         tstamp->timestamp = cne_rdtsc_precise();
         tstamp->magic     = TSTAMP_MAGIC;
 
@@ -424,7 +400,7 @@ _process_tstamp(port_info_t *info, pktmbuf_t *pkt)
     uint64_t lat, jitter;
     tstamp_t *tstamp;
 
-    tstamp = txgen_tstamp_pointer_rx(info, pkt);
+    tstamp = txgen_tstamp_pointer(info, pkt);
     if (tstamp->magic == TSTAMP_MAGIC) {
         lat                    = (cne_rdtsc_precise() - tstamp->timestamp);
         latsamp_stats_t *stats = &info->latsamp_stats;
