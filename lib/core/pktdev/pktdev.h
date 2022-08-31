@@ -95,6 +95,8 @@ struct pktdev_info {
     struct pktdev_portconf default_txportconf;
     /** Generic device capabilities (PKTDEV_DEV_CAPA_). */
     uint64_t dev_capa;
+    int rx_fd; /**< The Rx file descriptor value or -1 if not available */
+    int tx_fd; /**< The Tx file descriptor value or -1 if not available */
 } __cne_cache_aligned;
 
 #include <pktdev_api.h>         // for pktdev_admin_state

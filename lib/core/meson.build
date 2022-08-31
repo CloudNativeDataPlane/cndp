@@ -9,23 +9,24 @@
 # core libs which are widely reused, so their deps are kept to a minimum.
 
 special_dirs = [
-	'osal',
-	'log',
+    'osal',
+    'log',
 ]
 
 dirs = [
-	'events',
+    'events',
     'kvargs',
-	'mmap',
-	'cne',
-	'ring',
-	'hash',
-	'mempool',
-	'pktmbuf',
-	'xskdev',
-	'pktdev',
-	'txbuff',
+    'mmap',
+    'cne',
+    'ring',
+    'hash',
+    'mempool',
+    'pktmbuf',
+    'xskdev',
+    'pktdev',
+    'txbuff',
     'pmds',
+    'idlemgr',
 ]
 
 # handle the special case for OSAL and log directory.

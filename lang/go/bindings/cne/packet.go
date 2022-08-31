@@ -134,13 +134,16 @@ func PktData(pkt *Packet) []byte {
 }
 
 // WritePktData writes a byte slice of the packet data into the packet buffer.
-// Return nil or the pointer to the data in the packet buffer
-func WritePktData(pkt *Packet, offset int, data []byte) unsafe.Pointer {
+func WritePktData(pkt *Packet, offset int, data []byte) int {
 
 	if len(data) == 0 || pkt == nil {
-		return nil
+		return -1
 	}
-	return C.pktmbuf_write(unsafe.Pointer(&data[0]), C.uint(len(data)), (*C.pktmbuf_t)(pkt), C.uint(offset))
+	pkt_data := (uintptr(pkt.buf_addr) + uintptr(pkt.data_off) + uintptr(offset))
+	slice := MakeByteSlice(pkt_data, len(data))
+	copy(slice, data)
+	pkt.data_len = C.ushort(len(data))
+	return 0
 }
 
 // WritePktDataList take a slice of *Packet objects and writes the data to each packet at the given offset
@@ -151,7 +154,7 @@ func WritePktDataList(pkts []*Packet, offset int, data []byte) error {
 	}
 
 	for _, pkt := range pkts {
-		if WritePktData(pkt, offset, data) == nil {
+		if WritePktData(pkt, offset, data) < 0 {
 			return fmt.Errorf("unable to write data to packets")
 		}
 	}
