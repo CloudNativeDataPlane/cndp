@@ -18,9 +18,13 @@ package cne
 import "C"
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"runtime"
 	"sort"
+	"strconv"
 )
 
 const (
@@ -82,12 +86,120 @@ type LPortInfo struct {
 	flags           int
 }
 
-// LCoreGroupInfo is the JSON LCoreGroup information structure
-type LCoreGroupInfo struct {
-	Initial      []int    `json:"initial"`
-	Group0       []int    `json:"group0"`
-	Group1       []int    `json:"group1"`
-	DefaultGroup []string `json:"default"`
+// sortUnique sorts a list of ints, removing duplicates
+func sortUnique(l []int) []int {
+	if len(l) <= 1 {
+		return l
+	}
+	sort.Ints(l)
+
+	i := 0
+	for j := 1; j < len(l); j++ {
+		if l[i] == l[j] {
+			continue
+		}
+		i++
+		l[i] = l[j]
+	}
+	i++
+	l = l[:i]
+	return l
+}
+
+// LCoreInfo is the list of lcores for a JSON LCoreGroup
+type LCoreInfo []int
+
+// MarshalJSON implements the json.Marshaler interface.
+// The output is sorted by core number with duplicates removed.
+// Contiguous ranges will be unmashalled as a string of the form "x-y".
+func (lc LCoreInfo) MarshalJSON() ([]byte, error) {
+	b := []byte{'['}
+	sl := append([]int{}, lc...)
+	sl = sortUnique(sl)
+
+	i := 0
+	for i < len(sl) {
+		j := i + 1
+		// find contiguous range
+		for j < len(sl) && sl[j] == sl[j-1]+1 {
+			j++
+		}
+		if len(b) != 1 {
+			b = append(b, ',')
+		}
+		if i == j-1 {
+			b = strconv.AppendInt(b, int64(sl[i]), 10)
+		} else {
+			b = append(b, '"')
+			b = strconv.AppendInt(b, int64(sl[i]), 10)
+			b = append(b, '-')
+			b = strconv.AppendInt(b, int64(sl[j-1]), 10)
+			b = append(b, '"')
+		}
+		i = j
+	}
+	b = append(b, ']')
+	return b, nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The marshalled LCoreInfo is sorted by core number with duplicates removed.
+func (lc *LCoreInfo) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	cores := []int{}
+
+	if len(data) < 2 {
+		return errors.New("json unmarshall lcore group: string too short")
+	}
+	if data[0] != '[' || data[len(data)-1] != ']' {
+		return errors.New("json unmarshall lcore group: bracket(s) not found")
+	}
+	// remove brackets
+	data = data[1 : len(data)-1]
+
+	fields := bytes.Split(data, []byte{','})
+	for _, field := range fields {
+		field = bytes.TrimSpace(field)
+		// remove quotes
+		if len(field) >= 2 && field[0] == '"' && field[len(field)-1] == '"' {
+			field = field[1 : len(field)-1]
+		}
+		if len(field) == 0 {
+			continue
+		}
+		if field[0] == '-' {
+			return errors.New("json unmarshall lcore group: negative core number not allowed")
+		}
+		nums := bytes.Split(field, []byte{'-'})
+		if len(nums) > 2 {
+			return errors.New("json unmarshall lcore group: too many fields in core range")
+		}
+		lo, err := strconv.Atoi(string(nums[0]))
+		if err != nil {
+			return fmt.Errorf("json unmarshall lcore group: invalid core number '%s'", string(nums[0]))
+		}
+		if len(nums) == 1 {
+			cores = append(cores, lo)
+			continue
+		}
+		hi, err := strconv.Atoi(string(nums[1]))
+		if err != nil {
+			return fmt.Errorf("json unmarshall lcore group: invalid core number '%s'", string(nums[0]))
+		}
+		if lo > hi {
+			return fmt.Errorf("json unmarshall lcore group: core range low (%d) > high (%d)", lo, hi)
+		} else if hi == lo {
+			cores = append(cores, lo)
+			continue
+		}
+		for i := lo; i <= hi; i++ {
+			cores = append(cores, i)
+		}
+	}
+	cores = sortUnique(cores)
+
+	*lc = []int(cores)
+	return nil
 }
 
 // OptionInfo is the JSON Option information structure
@@ -113,7 +225,7 @@ type Config struct {
 	DefaultData     *DefaultInfo           `json:"defaults"`     // Default data
 	UmemInfoMap     map[string]*UmemInfo   `json:"umems"`        // UMEM data
 	LPortInfoMap    map[string]*LPortInfo  `json:"lports"`       // LPort data
-	LCoreGroupData  *LCoreGroupInfo        `json:"lcore-groups"` // LCoreGroup data
+	LCoreGroupData  map[string]LCoreInfo   `json:"lcore-groups"` // LCoreGroup data
 	OptionData      *OptionInfo            `json:"options"`      // Option data
 	ThreadInfoMap   map[string]*ThreadInfo `json:"threads"`      // Thread data
 }
@@ -126,6 +238,20 @@ func (jcfg *Config) validateRegions() error {
 		}
 	}
 
+	return nil
+}
+
+func (jcfg *Config) validateLCoreGroups() error {
+	numCpu := runtime.NumCPU()
+	for group, cores := range jcfg.LCoreGroupData {
+		for _, core := range cores {
+			if core < 0 {
+				return fmt.Errorf("core %d in lcore group %s is < 0", core, group)
+			} else if core >= numCpu {
+				return fmt.Errorf("core %d in lcore group %s is >= core count %d", core, group, numCpu)
+			}
+		}
+	}
 	return nil
 }
 
@@ -188,6 +314,11 @@ func (jcfg *Config) validateConfig() error {
 
 	// Validate the region numbers for each UmemData
 	if err := jcfg.validateRegions(); err != nil {
+		return err
+	}
+
+	// Validate the lcore groups
+	if err := jcfg.validateLCoreGroups(); err != nil {
 		return err
 	}
 
