@@ -30,8 +30,9 @@ typedef struct pkt_seq_s {
     uint16_t ipProto;        /**< TCP or UDP or ICMP */
     uint16_t ether_hdr_size; /**< Size of Ethernet header in packet for VLAN ID */
 
-    uint16_t pktSize; /**< Size of packet in bytes not counting FCS */
-    uint8_t ttl;      /**< TTL value for IPv4 headers */
+    uint16_t pktSize;     /**< Size of packet in bytes not counting FCS */
+    uint16_t lastPktSize; /**< Size of packet in bytes not counting FCS before latency timestamp */
+    uint8_t ttl;          /**< TTL value for IPv4 headers */
 
     pkt_hdr_t hdr __cne_cache_aligned; /**< Packet header data */
     uint8_t pad[DEFAULT_MBUF_SIZE - sizeof(pkt_hdr_t)];

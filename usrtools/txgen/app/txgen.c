@@ -621,9 +621,8 @@ txgen_main_receive(port_info_t *info __cne_unused, pktmbuf_t *pkts_burst[], uint
      * Read packet from RX queues and free the mbufs
      */
     nb_rx = pktdev_rx_burst(lport->lpid, (pktmbuf_t **)pkts_burst, nb_pkts);
-    if (nb_rx == PKTDEV_ADMIN_STATE_DOWN) {
+    if (nb_rx == PKTDEV_ADMIN_STATE_DOWN)
         return;
-    }
 
     if (nb_rx) {
 

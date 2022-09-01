@@ -1020,7 +1020,6 @@ start_stop_latency_sampler(port_info_t *info, uint32_t state)
 void
 txgen_start_latency_sampler(port_info_t *info)
 {
-
     /* Start sampler */
     if (txgen_tst_port_flags(info, SAMPLING_LATENCIES))
         return;
@@ -1036,10 +1035,11 @@ txgen_start_latency_sampler(port_info_t *info)
     info->latsamp_stats.idx         = 0;
     info->latsamp_stats.num_samples = info->latsamp_num_samples;
 
-    if (info->pkt.pktSize < (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t))
-        info->pkt.pktSize += sizeof(tstamp_t);
+    if (info->pkt.pktSize < (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t)) {
+        info->pkt.lastPktSize = info->pkt.pktSize;
+        info->pkt.pktSize     = (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t);
+    }
 
-    info->pkt.ipProto = IPPROTO_UDP;
     txgen_packet_ctor(info);
 
     /* Start sampling */
@@ -1085,11 +1085,8 @@ txgen_stop_latency_sampler(port_info_t *info)
     info->latsamp_stats.next        = 0;
     info->latsamp_stats.idx         = 0;
     info->latsamp_stats.num_samples = 0;
+    info->pkt.pktSize               = info->pkt.lastPktSize;
 
-    if (info->pkt.pktSize >= (CNE_ETHER_MIN_LEN - ETHER_CRC_LEN) + sizeof(tstamp_t))
-        info->pkt.pktSize -= sizeof(tstamp_t);
-
-    info->pkt.ipProto = IPPROTO_UDP;
     txgen_packet_ctor(info);
 }
 
