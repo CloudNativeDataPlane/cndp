@@ -353,6 +353,7 @@ static struct cli_map start_map[] = {{10, "start %P"},
                                      {60, "stop %P  %|latsampler|lat|latency"},
                                      {-1, NULL}};
 
+// clang-format off
 static const char *start_help[] = {
     "",
     "start <portlist>                         - Start transmitting packets",
@@ -360,10 +361,11 @@ static const char *start_help[] = {
     "stp                                      - Stop all lports from transmitting",
     "str                                      - Start all lports transmitting",
     "start <portlist> latsampler|lat|latency  - Start latency sampler, make sure to set sampling "
-    "parameters before starting",
+                                                "parameters before starting",
     "stop <portlist> latsampler|lat|latency   - Stop latency sampler, dumps to file if specified",
     CLI_HELP_PAUSE,
     NULL};
+// clang-format on
 
 static int
 start_stop_cmd(int argc, char **argv)
