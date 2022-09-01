@@ -349,19 +349,19 @@ pcap_cmd(int argc, char **argv)
 
 static struct cli_map start_map[] = {{10, "start %P"},
                                      {20, "stop %P"},
-                                     {50, "start %P latsampler"},
-                                     {60, "stop %P latsampler"},
+                                     {50, "start %P %|latsampler|lat|latency"},
+                                     {60, "stop %P  %|latsampler|lat|latency"},
                                      {-1, NULL}};
 
 static const char *start_help[] = {
     "",
-    "start <portlist>                   - Start transmitting packets",
-    "stop <portlist>                    - Stop transmitting packets",
-    "stp                                - Stop all lports from transmitting",
-    "str                                - Start all lports transmitting",
-    "start <portlist> latsampler        - Start latency sampler, make sure to set sampling "
+    "start <portlist>                         - Start transmitting packets",
+    "stop <portlist>                          - Stop transmitting packets",
+    "stp                                      - Stop all lports from transmitting",
+    "str                                      - Start all lports transmitting",
+    "start <portlist> latsampler|lat|latency  - Start latency sampler, make sure to set sampling "
     "parameters before starting",
-    "stop <portlist> latsampler            - Stop latency sampler, dumps to file if specified",
+    "stop <portlist> latsampler|lat|latency   - Stop latency sampler, dumps to file if specified",
     CLI_HELP_PAUSE,
     NULL};
 
@@ -588,17 +588,15 @@ misc_cmd(int argc, char **argv)
     return 0;
 }
 
-static struct cli_map page_map[] = {{10, "page %d"},
-                                    {11, "page "
-                                         "%|main|pcap|latency"},
-                                    {-1, NULL}};
+static struct cli_map page_map[] = {
+    {10, "page %d"}, {11, "page %|main|pcap|latency|lat"}, {-1, NULL}};
 
 static const char *page_help[] = {
     "",
     "page [0-2]                         - Show the port pages or configuration or sequence page",
     "page main                          - Display page zero",
     "page pcap                          - Display the pcap page",
-    "page latency                       - Display the latency page",
+    "page latency|lat                   - Display the latency page",
     CLI_HELP_PAUSE,
     NULL};
 
