@@ -420,8 +420,10 @@ _process_tstamp(port_info_t *info, pktmbuf_t *pkt)
         stats->pkt_counter++;
         if (stats->next == 0 || now >= stats->next) {
             if (stats->idx < stats->num_samples) {
-                stats->data[stats->idx] =
-                    (lat * Billion) / cne_get_timer_hz(); /* Do we want to keep it as cycles? */
+                uint64_t hz = cne_get_timer_hz();
+
+                /* Do we want to keep it as cycles? */
+                stats->data[stats->idx] = (lat * Billion) / ((hz == 0) ? 1 : hz);
                 stats->idx++;
             }
 
