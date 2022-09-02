@@ -1061,7 +1061,7 @@ void
 txgen_stop_latency_sampler(port_info_t *info)
 {
     FILE *outfile;
-    uint32_t i, count;
+    uint32_t i;
 
     if (txgen_tst_port_flags(info, SAMPLING_LATENCIES) == 0)
         return;
@@ -1073,10 +1073,8 @@ txgen_stop_latency_sampler(port_info_t *info)
     outfile = fopen(info->latsamp_outfile, "w");
     if (outfile != NULL) {
         fprintf(outfile, "Latency\n");
-        for (i = 0; i < info->latsamp_stats.idx; i++) {
+        for (i = 0; i < info->latsamp_stats.idx; i++)
             fprintf(outfile, "%" PRIu64 "\n", info->latsamp_stats.data[i]);
-            count++;
-        }
         fclose(outfile);
     }
 

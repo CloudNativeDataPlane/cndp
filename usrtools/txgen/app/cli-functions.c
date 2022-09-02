@@ -124,7 +124,7 @@ single_set_latsampler_params(port_info_t *info, char *type, uint32_t num_samples
     info->latsamp_type        = sampler_type;
     info->latsamp_rate        = sampling_rate;
     info->latsamp_num_samples = num_samples;
-    strcpy(info->latsamp_outfile, outfile);
+    strlcpy(info->latsamp_outfile, outfile, sizeof(info->latsamp_outfile));
 
     txgen_packet_ctor(info);
 }
