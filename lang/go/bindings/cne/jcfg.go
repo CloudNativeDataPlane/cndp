@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"runtime"
 	"sort"
 	"strconv"
 )
@@ -243,13 +242,24 @@ func (jcfg *Config) validateRegions() error {
 }
 
 func (jcfg *Config) validateLCoreGroups() error {
-	numCpu := runtime.NumCPU()
 	for group, cores := range jcfg.LCoreGroupData {
 		for _, core := range cores {
 			if core < 0 {
 				return fmt.Errorf("core %d in lcore group %s is < 0", core, group)
-			} else if core >= numCpu {
-				return fmt.Errorf("core %d in lcore group %s is >= core count %d", core, group, numCpu)
+			}
+		}
+	}
+	return nil
+}
+
+func (jcfg *Config) validateThreadInfoMap() error {
+	for threadName, info := range jcfg.ThreadInfoMap {
+		if info.Group != "" && len(jcfg.LCoreGroupData[info.Group]) == 0 {
+			return fmt.Errorf("lcore group %s for thread %s is missing or empty", info.Group, threadName)
+		}
+		for _, lport := range info.LPorts {
+			if jcfg.LPortInfoMap[lport] == nil {
+				return fmt.Errorf("invalid lport %s for thread %s", lport, threadName)
 			}
 		}
 	}
@@ -277,35 +287,6 @@ func (jcfg *Config) unitMultipliersToValues() {
 	}
 }
 
-func (jcfg *Config) valuesToUnitMultipliers() {
-
-	convert := func(v uint) uint {
-		if v > UnitMultiplier {
-			return v / UnitMultiplier
-		}
-		return v
-	}
-
-	// Convert count or size numbers by multiplying them by UnitMultiplier (1024)
-	def := jcfg.DefaultData
-
-	def.BufCnt = convert(def.BufCnt)
-	def.BufSize = convert(def.BufSize)
-	def.RxDesc = convert(def.RxDesc)
-	def.TxDesc = convert(def.TxDesc)
-
-	for _, umem := range jcfg.UmemInfoMap {
-		umem.BufCnt = convert(umem.BufCnt)
-		umem.BufSize = convert(umem.BufSize)
-		umem.RxDesc = convert(umem.RxDesc)
-		umem.TxDesc = convert(umem.TxDesc)
-
-		for i := 0; i < len(umem.Regions); i++ {
-			umem.Regions[i] = convert(umem.Regions[i])
-		}
-	}
-}
-
 func (jcfg *Config) validateConfig() error {
 
 	// Must have UMEM data structure(s)
@@ -320,6 +301,11 @@ func (jcfg *Config) validateConfig() error {
 
 	// Validate the lcore groups
 	if err := jcfg.validateLCoreGroups(); err != nil {
+		return err
+	}
+
+	// Validate the threads
+	if err := jcfg.validateThreadInfoMap(); err != nil {
 		return err
 	}
 
@@ -363,19 +349,21 @@ func (jcfg *Config) validateConfig() error {
 }
 
 func processConfig(jsonText []byte) (*Config, error) {
+	jsonText = bytes.TrimSpace(jsonText)
 
 	if len(jsonText) == 0 {
 		return nil, fmt.Errorf("empty json text string")
+	}
+
+	// test for a JSON-C or JSON string, which must start with a '{'
+	if jsonText[0] != '{' {
+		return nil, fmt.Errorf("string does not appear to be a valid JSON text missing starting '{'")
 	}
 
 	jcfg := &Config{}
 
 	// Convert JSON-C to JSON format and then unmarshal the data
 	if err := json.Unmarshal(jsonText, jcfg); err != nil {
-		return nil, err
-	}
-
-	if err := jcfg.validateConfig(); err != nil {
 		return nil, err
 	}
 
