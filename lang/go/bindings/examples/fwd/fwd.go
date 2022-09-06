@@ -147,11 +147,11 @@ func (f *fwdInfo) receivePackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := cne.RegisterThread(thdName)
-	if tid < 0 {
+	err := f.handle.RegisterThread(thdName)
+	if err != nil {
 		return
 	}
-	defer cne.UnregisterThread(tid)
+	defer f.handle.UnregisterThread(thdName)
 
 	packets := make([]*cne.Packet, 256)
 
@@ -183,11 +183,11 @@ func (f *fwdInfo) transmitPackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := cne.RegisterThread(thdName)
-	if tid < 0 {
+	err := f.handle.RegisterThread(thdName)
+	if err != nil {
 		return
 	}
-	defer cne.UnregisterThread(tid)
+	defer f.handle.UnregisterThread(thdName)
 
 	txPackets := make([]*cne.Packet, 256)
 
@@ -258,11 +258,11 @@ func (f *fwdInfo) reTransmitPackets(thdName string, lportNames []string) {
 		return
 	}
 
-	tid := cne.RegisterThread(thdName)
-	if tid < 0 {
+	err := f.handle.RegisterThread(thdName)
+	if err != nil {
 		return
 	}
-	defer cne.UnregisterThread(tid)
+	defer f.handle.UnregisterThread(thdName)
 
 	packets := make([]*cne.Packet, 256)
 
@@ -298,11 +298,11 @@ func (f *fwdInfo) verifyIPv4ChecksumPackets(thdName string, lportNames []string)
 		return
 	}
 
-	tid := cne.RegisterThread(thdName)
-	if tid < 0 {
+	err := f.handle.RegisterThread(thdName)
+	if err != nil {
 		return
 	}
-	defer cne.UnregisterThread(tid)
+	defer f.handle.UnregisterThread(thdName)
 
 	packets := make([]*cne.Packet, 256)
 

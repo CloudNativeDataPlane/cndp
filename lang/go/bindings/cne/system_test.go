@@ -48,23 +48,14 @@ func TestSystem(t *testing.T) {
 	})
 
 	t.Run("OpenWithConfig", func(t *testing.T) {
-		if configFile, err := os.Open(*configStr); err != nil {
+		// Read the JSON-C file into a single byte slice for later parsing
+		b, err := os.ReadFile(*configStr)
+		if err != nil {
 			t.Errorf("unable to open config file: %#v: %v", configStr, err)
 		} else {
-			defer configFile.Close()
-
-			var bytes []byte
-
-			// Read the JSON-C file into a single byte slice for later parsing
-			if bytes, err = io.ReadAll(configFile); err != nil {
-				t.Errorf("unable to load config file: %#v: %v", configStr, err)
-			}
-
-			if jcfg, err := processConfig(jsonc.ToJSON(bytes)); err != nil {
+			if jcfg, err := processConfig(jsonc.ToJSON(b)); err != nil {
 				t.Errorf("unable to process config file: %#v: %v", configStr, err)
 			} else {
-				jcfg.valuesToUnitMultipliers()
-
 				// Open with a cne.Config structure
 				if cneSys, err := OpenWithConfig(jcfg); err != nil {
 					t.Errorf("error parsing JSON string %#v: %v", configStr, err)
