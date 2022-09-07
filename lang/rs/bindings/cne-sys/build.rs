@@ -110,9 +110,8 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
-    // Write the bindings to the $CARGO_MANIFEST_DIR/src/bindings.rs file.
-    let mut out_path_manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    out_path_manifest.push("src");
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path_manifest = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path_manifest.join("bindings.rs"))
         .expect("Couldn't write bindings!");
