@@ -9,7 +9,9 @@ use std::sync::RwLock;
 use std::sync::{Mutex, MutexGuard};
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-use cne_sys::bindings::{cne_id, cne_register, cne_unregister, pktmbuf_info_t};
+use cne_sys::bindings::{
+    cne_check_registration, cne_id, cne_register, cne_unregister, pktmbuf_info_t,
+};
 
 use super::config::*;
 use super::error::*;
@@ -134,11 +136,12 @@ impl CneInstance {
     pub fn register_thread(&self, s: &str) -> Result<i32, CneError> {
         let _lock = self.lock()?;
 
-        let mut tid = unsafe { cne_id() };
-        if tid < 0 {
-            // Register thread with CNE.
-            tid = unsafe { cne_register(get_cstring_from_str(s).as_ptr()) };
-        }
+        let registered = unsafe { cne_check_registration() };
+        let tid = match registered {
+            0 => unsafe { cne_register(get_cstring_from_str(s).as_ptr()) },
+            _ => unsafe { cne_id() },
+        };
+
         if tid < 0 {
             Err(CneError::RegisterError(
                 "Error registering thread with CNE".to_string(),
