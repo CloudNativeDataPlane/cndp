@@ -30,6 +30,12 @@ cne_id(void)
     return per_thread__cne->uid;
 }
 
+int
+cne_check_registration(void)
+{
+    return per_thread__cne ? 1 : 0;
+}
+
 static inline struct cne_entry *
 __get_entry(int tidx)
 {
