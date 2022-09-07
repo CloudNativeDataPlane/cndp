@@ -156,9 +156,17 @@ CNDP_API int cne_get_private(int tidx, void **v);
  * Get the unique ID value using the internal ID get routine
  *
  * @return
- *   The unique ID value or -1 on error
+ *   The unique ID value. Function asserts on error.
  */
 CNDP_API int cne_id(void);
+
+/**
+ * Check if calling thread is registered with CNE.
+ *
+ * @return
+ *   1 if thread is registered or 0 if not registered.
+ */
+CNDP_API int cne_check_registration(void);
 
 /**
  * Return the max number of threads allowed
