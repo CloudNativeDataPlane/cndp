@@ -43,11 +43,10 @@ func TestGetChannel(t *testing.T) {
 func TestRxBurst(t *testing.T) {
 
 	t.Run("TestRxBurst", func(t *testing.T) {
-		tid := RegisterThread("RxBurst")
-		if tid < 0 {
-			t.Fatalf("error registering thread")
+		err := cneSys.RegisterThread("RxBurst")
+		if err != nil {
+			t.Fatalf("error registering thread: %v", err)
 		}
-		defer UnregisterThread(tid)
 
 		for _, lport := range cneSys.LPortList() {
 
@@ -58,17 +57,21 @@ func TestRxBurst(t *testing.T) {
 				PktBufferFree(rxPackets[:size])
 			}
 		}
+
+		err = cneSys.UnregisterThread("RxBurst")
+		if err != nil {
+			t.Fatalf("error unregistering thread: %v", err)
+		}
 	})
 }
 
 func TestPktBufferAlloc(t *testing.T) {
 
 	t.Run("TestPktBufferAlloc", func(t *testing.T) {
-		tid := RegisterThread("PktBufferAlloc")
-		if tid < 0 {
-			t.Fatalf("error registering thread")
+		err := cneSys.RegisterThread("PktBufferAlloc")
+		if err != nil {
+			t.Fatalf("error registering thread: %v", err)
 		}
-		defer UnregisterThread(tid)
 
 		for _, lport := range cneSys.LPortList() {
 
@@ -78,6 +81,11 @@ func TestPktBufferAlloc(t *testing.T) {
 			if size > 0 {
 				PktBufferFree(txPackets[:size])
 			}
+		}
+
+		err = cneSys.UnregisterThread("PktBufferAlloc")
+		if err != nil {
+			t.Fatalf("error unregistering thread: %v", err)
 		}
 	})
 }
@@ -90,22 +98,26 @@ func TestTxBurst(t *testing.T) {
 	}
 
 	t.Run("TestTxBurst", func(t *testing.T) {
-		tid := RegisterThread("TxBurst")
-		if tid < 0 {
-			t.Fatalf("error registering thread")
+		err := cneSys.RegisterThread("TxBurst")
+		if err != nil {
+			t.Fatalf("error registering thread: %v", err)
 		}
-		defer UnregisterThread(tid)
 
 		for _, lport := range cneSys.LPortList() {
 			txPackets := make([]*Packet, 256)
 
 			size := PktBufferAlloc(lport.LPortID(), txPackets)
 			if size <= 0 {
-				return
+				break
 			}
 			WritePktDataList(txPackets[:size], 0, data)
 
 			TxBurst(lport.LPortID(), txPackets[:size], true)
+		}
+
+		err = cneSys.UnregisterThread("TxBurst")
+		if err != nil {
+			t.Fatalf("error unregistering thread: %v", err)
 		}
 	})
 }
@@ -113,11 +125,10 @@ func TestTxBurst(t *testing.T) {
 func TestLoopback(t *testing.T) {
 
 	t.Run("TestLoopback", func(t *testing.T) {
-		tid := RegisterThread("Loopback")
-		if tid < 0 {
-			t.Fatalf("error registering thread")
+		err := cneSys.RegisterThread("Loopback")
+		if err != nil {
+			t.Fatalf("error registering thread: %v", err)
 		}
-		defer UnregisterThread(tid)
 
 		for _, lport := range cneSys.LPortList() {
 			rxPackets := make([]*Packet, 256)
@@ -128,6 +139,11 @@ func TestLoopback(t *testing.T) {
 
 				TxBurst(lport.LPortID(), rxPackets[:size], true)
 			}
+		}
+
+		err = cneSys.UnregisterThread("Loopback")
+		if err != nil {
+			t.Fatalf("error unregistering thread: %v", err)
 		}
 	})
 }

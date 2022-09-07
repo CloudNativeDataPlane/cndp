@@ -23,15 +23,29 @@ __on_exit(int sig __cne_unused, void *arg __cne_unused, int exit_type __cne_unus
 static void *
 cne_register_test(void *arg)
 {
-    int tuid, cuid, tcnt, ret = 0;
+    int tuid = 0, cuid, tcnt, ret = 0;
     int v = 1234, vv = 0;
     void *setv  = &v;
     void *tempv = &vv;
     void **getv = &tempv;
 
+    ret = cne_check_registration();
+    if (ret > 0) {
+        tst_error("Check registration returned success before registering thread with CNE");
+        goto err;
+    } else
+        tst_ok("PASS --- TEST: Thread is not yet registered with CNE");
+
     tuid = cne_register("TestCNERegister");
     if (tuid)
         tst_ok("PASS --- TEST: New thread registered, uid %d", tuid);
+
+    ret = cne_check_registration();
+    if (!ret) {
+        tst_error("Check registration failed after registering thread with CNE");
+        goto err;
+    } else
+        tst_ok("PASS --- TEST: Thread is registered with CNE");
 
     cuid = cne_entry_uid();
     if (tuid != cuid) {
