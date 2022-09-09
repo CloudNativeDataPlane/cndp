@@ -191,82 +191,50 @@ err_prefer:
     return 0;
 }
 
-static int
-fq_reserved(xskdev_info_t *xi, uint16_t size)
+static inline void
+xsk_ring_prod__cancel(struct xsk_ring_prod *prod, __u32 nb)
 {
-    struct xskdev_umem *ux   = xi->rxq.ux;
-    struct xsk_ring_prod *fq = &ux->fq;
-    void *bufs[size];
-    uint16_t nb_bufs = size;
-    uint32_t pos     = 0;
-    int ret          = 0;
-
-    ret = xsk_ring_prod__reserve(fq, nb_bufs, &pos);
-    if (ret != nb_bufs)
-        return -1;
-
-    if (xskdev_buf_alloc(xi, bufs, nb_bufs) <= 0) {
-        xi->stats.fq_alloc_failed++;
-        return -1;
-    }
-    xi->stats.rx_buf_alloc += nb_bufs;
-
-    for (int i = 0; i < nb_bufs; i++) {
-        __u64 *fq_addr;
-        void *buf       = bufs[i];
-        uint64_t offset = (uint64_t)xskdev_buf_get_addr(xi, buf) - (uint64_t)xi->rxq.ux->umem_addr -
-                          (uint64_t)xi->buf_mgmt.pool_header_sz;
-
-        xskdev_buf_reset(xi, buf, xi->rxq.ux->obj_sz, xi->buf_mgmt.buf_headroom);
-
-        fq_addr  = xsk_ring_prod__fill_addr(fq, pos++);
-        *fq_addr = offset;
-    }
-
-    xsk_ring_prod__submit(fq, nb_bufs);
-
-    return 0;
+    prod->cached_prod -= nb;
 }
 
-static int
+static void
 fq_add(xskdev_info_t *xi)
 {
     struct xskdev_umem *ux   = xi->rxq.ux;
     struct xsk_ring_prod *fq = &ux->fq;
     void *bufs[FQ_ADD_BURST_COUNT];
-    uint16_t nb_bufs;
+    uint32_t nb_bufs;
     uint32_t pos = 0;
-    int nb;
 
-    nb_bufs = FQ_ADD_BURST_COUNT;
+    xi->stats.fq_add_called++;
 
-    if (xskdev_buf_alloc(xi, (void **)bufs, nb_bufs) <= 0) {
-        xi->stats.fq_alloc_failed++;
-        return -1;
+    for (;;) {
+        if (xsk_ring_prod__reserve(fq, FQ_ADD_BURST_COUNT, &pos) != FQ_ADD_BURST_COUNT) {
+            xi->stats.fq_reserve_failed++;
+            break;
+        }
+
+        nb_bufs = xskdev_buf_alloc(xi, (void **)bufs, FQ_ADD_BURST_COUNT);
+        if (nb_bufs != FQ_ADD_BURST_COUNT) {
+            xi->stats.fq_alloc_zero++;
+            xsk_ring_prod__cancel(fq, nb_bufs);
+            break;
+        }
+        xi->stats.rx_buf_alloc += nb_bufs;
+
+        for (uint32_t i = 0; i < nb_bufs; i++) {
+            void *buf       = bufs[i];
+            uint64_t offset = (uint64_t)xskdev_buf_get_addr(xi, buf) - (uint64_t)ux->umem_addr -
+                              (uint64_t)xi->buf_mgmt.pool_header_sz;
+
+            xskdev_buf_reset(xi, buf, ux->obj_sz, xi->buf_mgmt.buf_headroom);
+
+            *xsk_ring_prod__fill_addr(fq, pos++) = offset;
+        }
+
+        xsk_ring_prod__submit(fq, nb_bufs);
+        xi->stats.fq_add_count += nb_bufs;
     }
-    xi->stats.rx_buf_alloc += nb_bufs;
-
-    nb = xsk_ring_prod__reserve(fq, nb_bufs, &pos);
-
-    for (int i = 0; i < nb; i++) {
-        void *buf       = bufs[i];
-        uint64_t offset = (uint64_t)xskdev_buf_get_addr(xi, buf) - (uint64_t)ux->umem_addr -
-                          (uint64_t)xi->buf_mgmt.pool_header_sz;
-
-        xskdev_buf_reset(xi, buf, ux->obj_sz, xi->buf_mgmt.buf_headroom);
-
-        *xsk_ring_prod__fill_addr(fq, pos++) = offset;
-    }
-
-    xsk_ring_prod__submit(fq, nb);
-
-    if (nb != nb_bufs) {
-        xskdev_buf_free(xi, &bufs[nb], nb_bufs - nb);
-        xi->stats.fq_buf_freed += nb_bufs - nb;
-    }
-    xi->stats.fq_add_count += nb;
-
-    return xsk_prod_nb_free(fq, 0);
 }
 
 static __cne_always_inline uint16_t
@@ -399,9 +367,7 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     xsk_ring_cons__release(rx, rcvd);
 
-    /* Attempt to keep the FQ as full as possible */
-    while (fq_add(xi) >= FQ_ADD_BURST_COUNT)
-        ;
+    fq_add(xi); /* Attempt to keep the FQ as full as possible */
 
     return (uint16_t)rcvd;
 }
@@ -973,9 +939,7 @@ xskdev_socket_create(struct lport_cfg *c)
     if (configure_busy_poll(xi))
         CNE_INFO("Busy polling is not supported\n");
 
-    /* Fill fq ring with available fq size. */
-    if (fq_reserved(xi, umem->fq_size) < 0)
-        CNE_ERR_GOTO(err, "Failed reserved fill of FQ\n");
+    fq_add(xi); /* Attempt to keep the FQ as full as possible */
 
     xskdev_list_lock();
     TAILQ_INSERT_TAIL(&xskdev_list, xi, next);
@@ -1214,9 +1178,11 @@ xskdev_print_stats(const char *name, lport_stats_t *s, bool dbg_stats)
         cne_printf("[beige]rx_rcvd_count      : [cyan]%'lu[]\n", s->rx_rcvd_count);
         cne_printf("[beige]rx_burst_called    : [cyan]%'lu[]\n", s->rx_burst_called);
 
+        cne_printf("[beige]fq_add_called      : [cyan]%'lu[]\n", s->fq_add_called);
         cne_printf("[beige]fq_add_count       : [cyan]%'lu[]\n", s->fq_add_count);
-        cne_printf("[beige]fq_alloc_failed    : [cyan]%'lu[]\n", s->fq_alloc_failed);
-        cne_printf("[beige]fq_buf_freed       : [cyan]%'lu[]\n", s->fq_buf_freed);
+        cne_printf("[beige]fq_few_entries     : [cyan]%'lu[]\n", s->fq_full);
+        cne_printf("[beige]fq_alloc_zero      : [cyan]%'lu[]\n", s->fq_alloc_zero);
+        cne_printf("[beige]fq_reserve_failed  : [cyan]%'lu[]\n", s->fq_reserve_failed);
 
         cne_printf("[beige]tx_kicks           : [cyan]%'lu[]\n", s->tx_kicks);
         cne_printf("[beige]tx_kick_failed     : [cyan]%'lu[]\n", s->tx_kick_failed);
