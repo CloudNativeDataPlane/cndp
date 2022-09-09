@@ -124,8 +124,11 @@ metrics_port_stats(metrics_client_t *c, char *name, lport_stats_t *s)
     metrics_append(c, ",\"%s_n_rx_count\":%ld", name, s->rx_rcvd_count);
     metrics_append(c, ",\"%s_n_rx_burst_called\":%ld", name, s->rx_burst_called);
 
+    metrics_append(c, ",\"%s_n_fq_add_called\":%ld", name, s->fq_add_called);
     metrics_append(c, ",\"%s_n_fq_add_count\":%ld", name, s->fq_add_count);
-    metrics_append(c, ",\"%s_n_fq_alloc_failed\":%ld", name, s->fq_alloc_failed);
+    metrics_append(c, ",\"%s_n_fq_full\":%ld", name, s->fq_full);
+    metrics_append(c, ",\"%s_n_fq_alloc_zero\":%ld", name, s->fq_alloc_zero);
+    metrics_append(c, ",\"%s_n_fq_reserve_failed\":%ld", name, s->fq_reserve_failed);
 
     metrics_append(c, ",\"%s_n_tx_kicks\":%ld", name, s->tx_kicks);
     metrics_append(c, ",\"%s_n_tx_failed_kicks\":%ld", name, s->tx_kick_failed);
