@@ -4,6 +4,7 @@
 
 use std::env;
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 
 fn main() {
@@ -13,7 +14,7 @@ fn main() {
 
     // If CNDP_INSTALL_PATH is passed in as a command line argument in cargo build use it
     // to get CNDP library and include path.
-    let (cndp_lib_dir, cndp_include_dir) = match cndp_install_path {
+    let (cndp_lib_dir, mut cndp_include_dir) = match cndp_install_path {
         Some(install_path) => (
             install_path.to_string() + &default_lib_dir,
             install_path + &default_include_dir,
@@ -29,6 +30,9 @@ fn main() {
         }
     };
 
+    // Append "cndp" subdirectory to include directory path.
+    cndp_include_dir.push_str("/cndp");
+
     // Tell cargo to tell rustc to link the cndp shared library.
     println!("cargo:rustc-link-search=native={}", cndp_lib_dir);
     println!("cargo:rustc-link-lib=cndp");
@@ -39,7 +43,7 @@ fn main() {
         .filter_map(Result::ok)
         .filter_map(|f| {
             f.path().extension().and_then(|s| s.to_str()).and_then(|s| {
-                if s.eq("h") || s.eq("c") || s.eq("build") {
+                if s.eq("h") || s.eq("c") {
                     Some(f)
                 } else {
                     None
@@ -53,17 +57,29 @@ fn main() {
     // Build rust_bindings library.
     let rust_bindings_build_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let rust_bindings_build_path = rust_bindings_build_path.to_str().unwrap();
-    meson::build("./src/c_src", rust_bindings_build_path);
+
+    cc::Build::new()
+        .file("src/c_src/bindings.c")
+        .include(Path::new(&cndp_include_dir))
+        .out_dir(Path::new(rust_bindings_build_path))
+        .compile("cne_rust_bindings");
 
     // Set rust_bindings library path.
     println!(
         "cargo:rustc-link-search=native={}",
         rust_bindings_build_path
     );
-    println!("cargo:rustc-link-lib=cne_rust_bindings");
+    println!("cargo:rustc-link-lib=static=cne_rust_bindings");
+
+    // Resolve libbsd using pkg-config.
+    let bsd_lib_dir = pkg_config::get_variable("libbsd", "libdir").unwrap();
+
+    // Tell cargo to tell rustc to link libbsd shared library.
+    println!("cargo:rustc-link-search=native={}", bsd_lib_dir);
+    println!("cargo:rustc-link-lib=bsd");
 
     // Set cndp include search path CNDP_INCLUDE_PATH from environment variable.
-    let cndp_include_clang_arg = format!(r#"-I{}/cndp"#, cndp_include_dir);
+    let cndp_include_clang_arg = format!(r#"-I{}"#, cndp_include_dir);
 
     // Set LD_LIBRARY_PATH env. This is required to run cargo tests.
     println!(

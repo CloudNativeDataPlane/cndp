@@ -17,5 +17,5 @@ name = "cne_sys"
 
 [build-dependencies]
 bindgen = "^0.59"
-meson = "^1.0.0"
+cc = "^1.0.0"
 pkg-config = "^0.3"
