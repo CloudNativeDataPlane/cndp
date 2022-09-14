@@ -12,12 +12,13 @@ Programmer's Guide
 
     intro
     overview
-    ring_lib
+    cnet
+    crypto
+    graph_lib
+    idlemgr
     mempool_lib
     msgchan
     pktmbuf_lib
-    graph_lib
-    crypto
+    ring_lib
     xskdev_buffer_mgmt
-    cnet
     glossary
