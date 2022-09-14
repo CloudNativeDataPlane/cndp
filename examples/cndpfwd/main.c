@@ -225,7 +225,7 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         pd->tx_overrun += n;
     }
 
-    return 0;
+    return n_pkts;
 }
 
 static int
@@ -288,7 +288,7 @@ _txonly_rx_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         pd->tx_overrun += n;
     }
 
-    return 0;
+    return n_pkts;
 }
 
 static void
