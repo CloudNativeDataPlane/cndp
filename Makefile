@@ -84,9 +84,6 @@ uninstall: FORCE
 docs: FORCE
 	${Build} ${verbose} docs
 
-help: FORCE
-	${Build} ${verbose} help
-
 py-reqs: FORCE
 # regenerate requirements.txt for all Python files
 	tools/gen_requirements.sh
