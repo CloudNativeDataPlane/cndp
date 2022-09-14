@@ -121,18 +121,20 @@ typedef struct lport_stats {
     uint64_t tx_ring_empty;      /**< Number of times the TX ring is empty */
 #endif
     /* FQ debug stats */
-    uint64_t fq_add_count;    /**< Number of FQ buffers added */
-    uint64_t fq_alloc_failed; /**< Number of buffer allocations failed */
-    uint64_t fq_buf_freed;    /**< Number of buffers freed from FQ add */
-                              /* TX debug stats */
-    uint64_t tx_kicks;        /**< Number of times we need to do a tx kick */
-    uint64_t tx_kick_failed;  /**< Number of times the tx kick failed */
-    uint64_t tx_kick_again;   /**< Number of times tx kick needed to be restarted */
-    uint64_t tx_ring_full;    /**< TX Ring is full */
-    uint64_t tx_copied;       /**< TX packet was copied */
-                              /* CQ debug stats */
-    uint64_t cq_empty;        /**< CQ is empty counter */
-    uint64_t cq_buf_freed;    /**< Number of buffers freed */
+    uint64_t fq_add_called;     /**< Number of FQ add called */
+    uint64_t fq_add_count;      /**< Number of FQ buffers added */
+    uint64_t fq_full;           /**< Not enough entries */
+    uint64_t fq_alloc_zero;     /**< Number of times xskdev_buf_alloc returned zero */
+    uint64_t fq_reserve_failed; /**< Number of time reserve FQ call failed */
+    /* TX debug stats */
+    uint64_t tx_kicks;       /**< Number of times we need to do a tx kick */
+    uint64_t tx_kick_failed; /**< Number of times the tx kick failed */
+    uint64_t tx_kick_again;  /**< Number of times tx kick needed to be restarted */
+    uint64_t tx_ring_full;   /**< TX Ring is full */
+    uint64_t tx_copied;      /**< TX packet was copied */
+                             /* CQ debug stats */
+    uint64_t cq_empty;       /**< CQ is empty counter */
+    uint64_t cq_buf_freed;   /**< Number of buffers freed */
 } lport_stats_t;
 
 #ifdef __cplusplus

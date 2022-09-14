@@ -123,9 +123,11 @@ print_port_stats(int lport_id, struct fwd_port *p, struct fwd_info *fwd)
         prt_cnt(skip, col, stats.rx_rcvd_count, CYAN_TYPE);
         prt_cnt(skip, col, stats.rx_burst_called, CYAN_TYPE);
 
+        prt_cnt(skip, col, stats.fq_add_called, CYAN_TYPE);
         prt_cnt(skip, col, stats.fq_add_count, CYAN_TYPE);
-        prt_cnt(skip, col, stats.fq_alloc_failed, RED_TYPE);
-        prt_cnt(skip, col, stats.fq_buf_freed, CYAN_TYPE);
+        prt_cnt(skip, col, stats.fq_full, CYAN_TYPE);
+        prt_cnt(skip, col, stats.fq_alloc_zero, CYAN_TYPE);
+        prt_cnt(skip, col, stats.fq_reserve_failed, CYAN_TYPE);
 
         prt_cnt(skip, col, stats.tx_kicks, CYAN_TYPE);
         prt_cnt(skip, col, stats.tx_kick_failed, RED_TYPE);
@@ -216,9 +218,11 @@ struct stats_line {
     {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Rcvd Count"},
     {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Burst Called"},
 
-    {HDR_LINE | DBG_LINE, "[yellow:-:italic]%-*s [cyan:-:-]%-*s [yellow]|[]\n", "Added", "FQ"},
-    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Alloc Failed"},
-    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Buf Freed"},
+    {HDR_LINE | DBG_LINE, "[yellow:-:italic]%-*s [cyan:-:-]%-*s [yellow]|[]\n", "Called", "FQ"},
+    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Added"},
+    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Full"},
+    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Alloc Zero"},
+    {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Rsvd Failed"},
 
     {HDR_LINE | DBG_LINE, "[yellow:-:italic]%-*s [cyan:-:-]%-*s [yellow]|[]\n", "Kicks", "TX"},
     {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Kicks Failed"},
