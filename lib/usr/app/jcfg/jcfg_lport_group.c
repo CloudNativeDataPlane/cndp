@@ -10,6 +10,11 @@
 #include <stdlib.h>                    // for NULL, calloc, free, size_t
 #include <bsd/sys/queue.h>             // for STAILQ_INSERT_TAIL
 #include <stdint.h>                    // for uint32_t
+#if USE_LIBXDP
+#include <xdp/xsk.h>
+#else
+#include <bpf/xsk.h>
+#endif
 
 #include "jcfg.h"                // for jcfg_lport_t, jcfg_info_t, jcfg_data_t
 #include "jcfg_private.h"        // for jcfg
@@ -17,7 +22,6 @@
 #include "cne_common.h"          // for __cne_unused
 #include "cne_log.h"             // for CNE_LOG_ERR, CNE_ERR, CNE_ERR_RET
 #include "cne_strings.h"
-#include "bpf/xsk.h"
 #include "cne_lport.h"
 #include "netdev_funcs.h"
 
