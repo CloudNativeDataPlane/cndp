@@ -182,7 +182,9 @@ if cc.has_header('linux/if_xdp.h')
             endif
             cne_conf.set10('USE_LIBXDP', true)
             cne_conf.set10('HAS_XSK_UMEM_SHARED', true)
+            add_project_link_arguments('-lbpf', language: 'c')
             extra_ldflags += '-lbpf'
+            add_project_link_arguments('-lxdp', language: 'c')
             extra_ldflags += '-lxdp'
         endif
     else
