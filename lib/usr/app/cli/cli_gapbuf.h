@@ -7,6 +7,7 @@
 #include <string.h>         // for memmove, strlen
 #include <cne_log.h>        // for cne_panic
 #include <stdint.h>         // for uint32_t
+#include <stddef.h>         // for ptrdiff_t
 
 #include "cne_common.h"        // for CNDP_API
 
@@ -364,7 +365,10 @@ static inline void
 gb_expand_buf(struct gapbuf *gb, uint32_t more)
 {
     if (((gb->ebuf - gb->buf) + more) > gb_buf_size(gb)) {
-        char *old = gb->buf;
+        ptrdiff_t point_off = gb->point - gb->buf;
+        ptrdiff_t ebuf_off  = gb->ebuf - gb->buf;
+        ptrdiff_t gap_off   = gb->gap - gb->buf;
+        ptrdiff_t egap_off  = gb->egap - gb->buf;
 
         more = (gb->ebuf - gb->buf) + more + GB_DEFAULT_GAP_SIZE;
 
@@ -372,10 +376,10 @@ gb_expand_buf(struct gapbuf *gb, uint32_t more)
         if (gb->buf == NULL)
             cne_panic("realloc(%d) in %s failed", more, __func__);
 
-        gb->point += (gb->buf - old);
-        gb->ebuf += (gb->buf - old);
-        gb->gap += (gb->buf - old);
-        gb->egap += (gb->buf - old);
+        gb->point = gb->buf + point_off;
+        gb->ebuf  = gb->buf + ebuf_off;
+        gb->gap   = gb->buf + gap_off;
+        gb->egap  = gb->buf + egap_off;
     }
 }
 
