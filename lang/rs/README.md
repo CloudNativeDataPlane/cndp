@@ -21,13 +21,15 @@ Following are the steps required to build Rust bindings, high level APIs and exa
 
     4. Append LD_LIBRARY_PATH environment variable with CNDP library path.
 
-        `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu`
+        Ubuntu: `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu`
+        Fedora: `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64`
 
 3. Install [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). Rust version >= 1.56.0 is required.
 
 4. Install dependencies needed by rust bindgen tool. Please refer rust bindgen [requirements](https://rust-lang.github.io/rust-bindgen/requirements.html) for details.
 
-   `sudo apt-get install llvm-dev libclang-dev clang`
+   Ubuntu: `sudo apt-get install llvm-dev libclang-dev clang`
+   Fedora: `dnf install clang-devel`
 
 5. `cd lang/rs`
 
