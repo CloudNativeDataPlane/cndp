@@ -9,12 +9,17 @@ use std::path::PathBuf;
 
 fn main() {
     let cndp_install_path = env::var("CNDP_INSTALL_PATH").ok();
-    let default_lib_dir = String::from("/usr/local/lib/x86_64-linux-gnu");
     let default_include_dir = String::from("/usr/local/include");
+    // Default CNDP CNE library path is different for Ubuntu and Fedora.
+    let default_lib_dir = match os_info::get().os_type() {
+        os_info::Type::Ubuntu => String::from("/usr/local/lib/x86_64-linux-gnu"),
+        os_info::Type::Fedora => String::from("/usr/local/lib64"),
+        _ => String::from("/usr/local/lib/x86_64-linux-gnu"),
+    };
 
     // If CNDP_INSTALL_PATH is passed in as a command line argument in cargo build use it
     // to get CNDP library and include path.
-    let (cndp_lib_dir, mut cndp_include_dir) = match cndp_install_path {
+    let (cndp_lib_dir, mut cndp_include_dir) = match cndp_install_path.to_owned() {
         Some(install_path) => (
             install_path.to_string() + &default_lib_dir,
             install_path + &default_include_dir,
@@ -33,8 +38,19 @@ fn main() {
     // Append "cndp" subdirectory to include directory path.
     cndp_include_dir.push_str("/cndp");
 
-    // Tell cargo to tell rustc to link the cndp shared library.
+    // Tell cargo to tell rustc to link the CNDP CNE shared libraries.
     println!("cargo:rustc-link-search=native={}", cndp_lib_dir);
+
+    // libcndp.so is present in /usr/local/lib/x86_64-linux-gnu for both Ubuntu and Fedora.
+    let mut libcndp_so_path = String::from("/usr/local/lib/x86_64-linux-gnu");
+
+    // If custom cndp_install_path path is present, prefix it with libcndp_so_path.
+    libcndp_so_path = match cndp_install_path {
+        Some(install_path) => install_path + &libcndp_so_path,
+        None => libcndp_so_path,
+    };
+    // Tell cargo to tell rustc to link the cndp shared library.
+    println!("cargo:rustc-link-search=native={}", libcndp_so_path);
     println!("cargo:rustc-link-lib=cndp");
 
     // Tell cargo to invalidate the built crate whenever the .h or .c or meson.build files in bindings directory changes.
