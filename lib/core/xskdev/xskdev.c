@@ -883,7 +883,7 @@ xskdev_socket_create(struct lport_cfg *c)
     xi->xdp_flags    = XDP_FLAGS_UPDATE_IF_NOEXIST;
     xi->xdp_flags    = ((xi->skb_mode) ? XDP_FLAGS_SKB_MODE : XDP_FLAGS_DRV_MODE) | xi->xdp_flags;
     cfg.xdp_flags    = xi->xdp_flags;
-    cfg.bind_flags   = (xi->skb_mode) ? XDP_COPY | XDP_USE_NEED_WAKEUP : XDP_USE_NEED_WAKEUP;
+    cfg.bind_flags   = ((xi->skb_mode) ? XDP_COPY : XDP_ZEROCOPY) | XDP_USE_NEED_WAKEUP;
     cfg.rx_size      = c->rx_nb_desc;
     cfg.tx_size      = c->tx_nb_desc;
     cfg.libbpf_flags = xi->unprivileged ? XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD : 0;
@@ -900,17 +900,19 @@ xskdev_socket_create(struct lport_cfg *c)
     } else
         ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx,
                                  &xi->txq.tx, &cfg);
-    if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #else
     if (xi->shared_umem)
         CNE_INFO("Shared UMEM is enabled, but not supported by kernel or libbpf\n");
 
     ret = xsk_socket__create(&xi->rxq.xsk, xi->ifname, c->qid, umem->umem, &xi->rxq.rx, &xi->txq.tx,
                              &cfg);
-    if (ret)
-        CNE_ERR_GOTO(err, "Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
 #endif
+    if (ret) {
+        CNE_WARN("Failed to create xsk socket. ret = %d %s\n", ret, strerror(errno));
+        if (errno == EOPNOTSUPP)
+            CNE_WARN("Retry with zero copy disabled i.e., SKB_MODE enabled\n");
+        goto err;
+    }
 
     xi->rxq.fds.fd     = xsk_socket__fd(xi->rxq.xsk);
     xi->rxq.fds.events = POLLIN;
