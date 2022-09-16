@@ -198,7 +198,7 @@ xsk_ring_prod__cancel(struct xsk_ring_prod *prod, __u32 nb)
 }
 
 static void
-fq_add(xskdev_info_t *xi)
+fq_add(xskdev_info_t *xi, int times)
 {
     struct xskdev_umem *ux   = xi->rxq.ux;
     struct xsk_ring_prod *fq = &ux->fq;
@@ -208,7 +208,7 @@ fq_add(xskdev_info_t *xi)
 
     xi->stats.fq_add_called++;
 
-    for (;;) {
+    for (int i = 0; i < times; i++) {
         if (xsk_ring_prod__reserve(fq, FQ_ADD_BURST_COUNT, &pos) != FQ_ADD_BURST_COUNT) {
             xi->stats.fq_reserve_failed++;
             break;
@@ -367,7 +367,7 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     xsk_ring_cons__release(rx, rcvd);
 
-    fq_add(xi); /* Attempt to keep the FQ as full as possible */
+    fq_add(xi, 2); /* Attempt to keep the FQ as full as possible */
 
     return (uint16_t)rcvd;
 }
@@ -939,7 +939,7 @@ xskdev_socket_create(struct lport_cfg *c)
     if (configure_busy_poll(xi))
         CNE_INFO("Busy polling is not supported\n");
 
-    fq_add(xi); /* Attempt to keep the FQ as full as possible */
+    fq_add(xi, 0xFFFF); /* Attempt to keep the FQ as full as possible */
 
     xskdev_list_lock();
     TAILQ_INSERT_TAIL(&xskdev_list, xi, next);
