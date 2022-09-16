@@ -53,6 +53,11 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", libcndp_so_path);
     println!("cargo:rustc-link-lib=cndp");
 
+    // CNDP pmd_af_xdp static library should be linked as whole archive.
+    // This will avoid preload PMD (eg: LD_PRELOAD=libpmd_af_xdp.so) while running
+    // CNDP CNE Rust binaries.
+    println!("cargo:rustc-link-lib=static:-bundle,+whole-archive=pmd_af_xdp");
+
     // Tell cargo to invalidate the built crate whenever the .h or .c or meson.build files in bindings directory changes.
     let bindings_parse_files = fs::read_dir("./src/c_src")
         .expect("Error reading directory")
