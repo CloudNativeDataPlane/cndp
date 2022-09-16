@@ -38,4 +38,18 @@ RUN make && make install
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
+# Install Rust bindgen dependencies.
+RUN dnf -y install clang-devel curl
+
+# Install Rust and Cargo.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Set Cargo path.
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Build and install Rust packet fwd example application.
+# 'fwd' binary will be installed in /cndp/usr/local/bin
+WORKDIR /cndp/lang/rs
+RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
+
 WORKDIR /cndp
