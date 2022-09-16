@@ -44,6 +44,20 @@ RUN make && make install
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
+# Install Rust bindgen dependencies.
+RUN apt-get install -y \
+    llvm-dev libclang-dev clang curl
+
+# Install Rust and Cargo.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Set Cargo path.
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Build and install Rust packet fwd example application.
+WORKDIR /cndp/lang/rs
+RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
+
 # Setup container to run CNDP applications
 FROM ubuntu:22.04
 
@@ -61,6 +75,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
+COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
 COPY --from=build /usr/lib64/libbpf.so.0 /usr/lib/
