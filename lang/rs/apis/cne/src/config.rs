@@ -195,14 +195,13 @@ impl Config {
             CneError::ConfigError(format!("Port {} is not configured", port_index))
         })?;
 
-        let port = match lport.pkt_api {
+        match lport.pkt_api {
             Some(pkt_api) => Ok(Port::new(port_index, pkt_api)),
             None => {
                 let err_msg = format!("Port {} is not configured", port_index);
                 Err(CneError::PortError(err_msg))
             }
-        };
-        port
+        }
     }
 
     #[allow(dead_code)]
