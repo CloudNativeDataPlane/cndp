@@ -200,9 +200,12 @@ if cc.has_header('linux/if_xdp.h')
     endif
 endif
 
+# Check whether the compiler and linker support User Interrupts. Some compilers have the -muintr
+# flag, but the assembler can fail if it does not support the instructions. Check this by testing
+# whether a simple program compiles and links.
 cne_conf.set('HAS_UINTR_SUPPORT', false)
-if cc.has_argument('-muintr') and cc.get_id() == 'gcc' and cc.has_header('x86gprintrin.h')
-    message('GCC Version: ' + cc.version())
+tp = '#include <x86gprintrin.h>\nint main() { _stui(); return 0; }'
+if cc.get_id() == 'gcc' and cc.links(tp, args: '-muintr', name: '-muintr')
     cne_conf.set('HAS_UINTR_SUPPORT', true)
     add_project_arguments('-muintr', language: 'c')
 endif
