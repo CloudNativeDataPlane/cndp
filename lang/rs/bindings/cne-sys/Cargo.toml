@@ -11,6 +11,7 @@ version = "0.2.0"
 edition = "2021"
 license = "BSD-3-Clause"
 keywords = ["networking", "cloud native", "AF_XDP"]
+rust-version = "1.63"
 
 [lib]
 name = "cne_sys"

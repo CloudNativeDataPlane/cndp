@@ -28,7 +28,7 @@ Following are the steps required to build this library and run test cases.
 
 4. `cd lang/rs/bindings/cne-sys`
 
-5. Build CNE Rust bindings library. Rust version >= 1.56.0 is required.
+5. Build CNE Rust bindings library. Rust version >= 1.63.0 is required.
    1. If CNDP is installed in a system wide path run `cargo build`
    2. If CNDP is installed in a custom location run `CNDP_INSTALL_PATH=<path> cargo build`.
       Here path refers to the absolute path of top-level directory where CNDP is installed.

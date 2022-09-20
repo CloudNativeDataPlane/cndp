@@ -24,7 +24,8 @@ Following are the steps required to build Rust bindings, high level APIs and exa
         Ubuntu: `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu`
         Fedora: `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64`
 
-3. Install [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). Rust version >= 1.56.0 is required.
+3. Install [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html). Rust version >= 1.63.0 is required.
+   If you have a previous version of Rust installed via rustup, run `rustup update stable` to get latest version.
 
 4. Install dependencies needed by rust bindgen tool. Please refer rust bindgen [requirements](https://rust-lang.github.io/rust-bindgen/requirements.html) for details.
 
