@@ -199,9 +199,18 @@ endif
 
 cne_conf.set('HAS_UINTR_SUPPORT', false)
 if cc.has_argument('-muintr') and cc.get_id() == 'gcc' and cc.has_header('x86gprintrin.h')
+  ret=run_command('cat', '/etc/redhat-release', check:false)
+  os_ver = ''
+  if ( ret.returncode() == 0)
+    os_ver = ret.stdout().strip()
+  endif
+  if ( ret.returncode() == -11 or not os_ver.contains('9.0'))
     message('GCC Version: ' + cc.version())
     cne_conf.set('HAS_UINTR_SUPPORT', true)
     add_project_arguments('-muintr', language: 'c')
+  else
+    message('>>>Remove uintr')
+  endif
 endif
 
 # Check for libdlb
