@@ -1,2 +1,3 @@
+go env -w CGO_LDFLAGS_ALLOW='-Wl,--(?:no-)?whole-archive'
 (go mod tidy && LD_LIBRARY_PATH=/work/projects/intel/networking.dataplane/cndp/usr/local/lib/x86_64-linux-gnu go test -v)
 stty sane

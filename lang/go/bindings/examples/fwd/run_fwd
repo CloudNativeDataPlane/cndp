@@ -3,8 +3,8 @@
 cdir=$(pwd)
 PROJECT_PATH="${cdir}/../../../../.."
 
-cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu \
-    LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so ./fwd $*"
+cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu ./fwd $*"
+go env -w CGO_LDFLAGS_ALLOW='-Wl,--(?:no-)?whole-archive'
 
 go mod tidy
 rc=$?

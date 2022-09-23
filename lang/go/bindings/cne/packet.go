@@ -5,9 +5,6 @@
 package cne
 
 /*
-#cgo CFLAGS: -I../../../../usr/local/include/cndp
-#cgo LDFLAGS: -L../../../../usr/local/lib/x86_64-linux-gnu -lcndp
-
 #include <cne_common.h>
 #include <pktmbuf.h>
 #include <pktdev.h>

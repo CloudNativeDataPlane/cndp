@@ -3,8 +3,10 @@
 cdir=$(pwd)
 PROJECT_PATH="${cdir}/../../../.."
 
-precmd="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu LD_PRELOAD=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu/libpmd_af_xdp.so"
+precmd="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu"
 cmdstring="$precmd ./cne.test -test.v -config ../examples/fwd/fwd.jsonc"
+
+go env -w CGO_LDFLAGS_ALLOW='-Wl,--(?:no-)?whole-archive'
 
 function go_tidy() {
     go mod tidy

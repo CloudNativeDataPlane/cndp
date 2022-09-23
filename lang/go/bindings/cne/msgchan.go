@@ -5,9 +5,6 @@
 package cne
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../../../../usr/local/include/cndp
-#cgo LDFLAGS: -L${SRCDIR}/../../../../usr/local/lib/x86_64-linux-gnu -lcndp
-
 #include <cne_common.h>
 #include <msgchan.h>
 */
