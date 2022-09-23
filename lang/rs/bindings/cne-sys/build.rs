@@ -3,6 +3,7 @@
  */
 
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -20,10 +21,16 @@ fn main() {
     // If CNDP_INSTALL_PATH is passed in as a command line argument in cargo build use it
     // to get CNDP library and include path.
     let (cndp_lib_dir, mut cndp_include_dir) = match cndp_install_path.to_owned() {
-        Some(install_path) => (
-            install_path.to_string() + &default_lib_dir,
-            install_path + &default_include_dir,
-        ),
+        Some(install_path) => {
+            let abs_install_path = get_abs_path(&install_path);
+            match abs_install_path {
+                Some(path) => (
+                    path.to_string() + &default_lib_dir,
+                    path + &default_include_dir,
+                ),
+                None => panic!("Invalid CNDP_INSTALL_PATH = {}", install_path),
+            }
+        }
         None => {
             // PKG_CONFIG_PATH environment variable should be set to directory containing libcndp.pc file.
             // If we cannot resolve cndp using pkg-config then use default library/include path.
@@ -95,18 +102,19 @@ fn main() {
     // Resolve libbsd using pkg-config.
     let bsd_lib_dir = pkg_config::get_variable("libbsd", "libdir").unwrap();
 
-    // Tell cargo to tell rustc to link libbsd shared library.
+    // Tell cargo to tell rustc to link libbsd library.
     println!("cargo:rustc-link-search=native={}", bsd_lib_dir);
     println!("cargo:rustc-link-lib=bsd");
 
+    // Resolve libbpf using pkg-config.
+    let bpf_lib_dir = pkg_config::get_variable("libbpf", "libdir").unwrap();
+
+    // Tell cargo to tell rustc to link libbpf library.
+    println!("cargo:rustc-link-search=native={}", bpf_lib_dir);
+    println!("cargo:rustc-link-lib=bpf");
+
     // Set cndp include search path CNDP_INCLUDE_PATH from environment variable.
     let cndp_include_clang_arg = format!(r#"-I{}"#, cndp_include_dir);
-
-    // Set LD_LIBRARY_PATH env. This is required to run cargo tests.
-    println!(
-        "cargo:rustc-env=LD_LIBRARY_PATH={}:{}",
-        cndp_lib_dir, rust_bindings_build_path
-    );
 
     // The bindgen::Builder is the main entry point to bindgen, and lets you build up options for
     // the resulting bindings.
@@ -152,4 +160,11 @@ fn main() {
     bindings
         .write_to_file(out_path_manifest.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+fn get_abs_path(p: &str) -> Option<String> {
+    shellexpand::full(p)
+        .ok()
+        .and_then(|s| Path::new(OsStr::new(s.as_ref())).canonicalize().ok())
+        .and_then(|p| p.into_os_string().into_string().ok())
 }

@@ -56,6 +56,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Build and install Rust packet fwd example application.
 WORKDIR /cndp/lang/rs
+# Set PKG_CONFIG_PATH to resolve libbpf dependency for Rust library build.
+ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
 RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
