@@ -4,10 +4,11 @@
 sources = files('fwd.c', 'parse-args.c', 'stats.c')
 
 deps += [pktdev, graph, mempool, pktmbuf,
-    mmap, uds, metrics, pmd_af_xdp, pmd_af_packet, nodes]
+    mmap, uds, metrics, nodes]
 
 executable('l3fwd-graph',
     sources,
     c_args: cflags,
     install: true,
+    link_whole: cndp_pmds,
     dependencies: deps)

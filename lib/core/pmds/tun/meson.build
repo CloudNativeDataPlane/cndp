@@ -9,4 +9,4 @@ deps += [include]
 libtun = library('tun', sources, install: true, dependencies: deps)
 tun = declare_dependency(link_with: libtun, include_directories: include_directories('.'))
 
-cndp_pmds += libtun
+cndp_libs += libtun

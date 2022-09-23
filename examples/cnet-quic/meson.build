@@ -4,7 +4,7 @@
 sources = files('cnet-quic.c', 'parse-args.c', 'stats.c', 'quic-cli.c')
 
 deps += [pktdev, graph, mempool, pktmbuf, hmap, timer,
-    mmap, uds, metrics, pmd_af_xdp, fib, stack, utils]
+    mmap, uds, metrics, fib, stack, utils]
 
 quicly_path = get_option('quicly_path')
 picotls_path = get_option('picotls_path')
@@ -49,6 +49,7 @@ if quicly_dep.found()
         sources,
         c_args: [cflags, quic_cflags],
         install: true,
+        link_whole: cndp_pmds,
         dependencies: [deps, quic_dep])
 else
     message('**** Quicly not found at '+quicly_path+'\n   Update meson_options.txt file.\n   The quic-echo example cannot be built.')
