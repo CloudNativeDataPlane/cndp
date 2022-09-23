@@ -3,11 +3,24 @@
 
 sources = files('cnet-graph.c', 'parse-args.c', 'stats.c')
 
-deps += [pktdev, graph, mempool, pktmbuf, hmap, timer,
-    mmap, uds, metrics, pmd_af_xdp, fib, stack, utils]
+deps += [
+    fib,
+    graph,
+    hmap,
+    mempool,
+    metrics,
+    mmap,
+    pktdev,
+    pktmbuf,
+    stack,
+    timer,
+    uds,
+    utils,
+]
 
 executable('cnet-graph',
     sources,
     c_args: cflags,
     install: true,
+    link_whole: cndp_pmds,
     dependencies: deps)
