@@ -178,6 +178,18 @@ CNDP_API int netdev_get_offloads(const char *ifname, struct offloads *off);
 CNDP_API int netdev_get_channels(const char *ifname);
 
 /**
+ * Set the number of channels/queues on a device
+ *
+ * @param ifname
+ *    The interface name string or if_name
+ * @param count
+ *    The number of channels to set on device
+ * @return
+ *    negative error number on error or 0 on success
+ */
+CNDP_API int netdev_set_channels(const char *ifname, uint32_t count);
+
+/**
  * Get the number of descriptors in a ring
  *
  * @param ifname
