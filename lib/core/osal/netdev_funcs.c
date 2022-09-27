@@ -283,7 +283,7 @@ netdev_set_channels(const char *ifname, uint32_t count)
         goto err;
 
     if (eth_channels.combined_count != count) {
-        eth_channels.cmd = ETHTOOL_SCHANNELS;
+        eth_channels.cmd            = ETHTOOL_SCHANNELS;
         eth_channels.combined_count = count;
         if (ioctl(fd, SIOCETHTOOL, &ifr) < 0)
             goto err;
