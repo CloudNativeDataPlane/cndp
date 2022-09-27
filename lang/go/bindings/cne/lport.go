@@ -302,3 +302,16 @@ func (p *LPort) GetLPortChannels() (int, error) {
 
 	return GetChannels(p.netdev)
 }
+
+// SetChannels sets the number of channels for the given netdev device name
+func SetChannels(name string, count uint) error {
+
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	cnt := C.netdev_set_channels(cname, C.uint(count))
+	if cnt < 0 {
+		return fmt.Errorf("failed to set channel count for %s to %d", name, count)
+	}
+	return nil
+}

@@ -264,6 +264,40 @@ err:
 }
 
 int
+netdev_set_channels(const char *ifname, uint32_t count)
+{
+    struct ifreq ifr;
+    int fd;
+    struct ethtool_channels eth_channels;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return -errno;
+
+    memset(&ifr, 0, sizeof(struct ifreq));
+    strlcpy(ifr.ifr_name, ifname, IF_NAMESIZE);
+
+    eth_channels.cmd = ETHTOOL_GCHANNELS;
+    ifr.ifr_data     = (void *)&eth_channels;
+    if (ioctl(fd, SIOCETHTOOL, &ifr) < 0)
+        goto err;
+
+    if (eth_channels.combined_count != count) {
+        eth_channels.cmd = ETHTOOL_SCHANNELS;
+        eth_channels.combined_count = count;
+        if (ioctl(fd, SIOCETHTOOL, &ifr) < 0)
+            goto err;
+    }
+
+    close(fd);
+    return 0;
+
+err:
+    close(fd);
+    return -errno;
+}
+
+int
 netdev_get_ring_params(const char *ifname, uint32_t *rx_nb_desc, uint32_t *tx_nb_desc)
 {
     struct ethtool_ringparam eth_ringparam;
