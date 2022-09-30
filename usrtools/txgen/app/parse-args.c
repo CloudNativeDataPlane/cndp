@@ -13,7 +13,6 @@
 #include <cne_log.h>             // for CNE_LOG_ERR, CNE_ERR_RET, CNE_ERR
 #include <cne_lport.h>           // for lport_cfg
 #include <cne_mmap.h>            // for mmap_addr, mmap_alloc, mmap_size, mmap_t
-#include <pmd_af_xdp.h>          // for PMD_NET_AF_XDP_NAME
 #include <jcfg.h>                // for jcfg_obj_t, jcfg_thd_t, jcfg_umem_t
 #include <jcfg_process.h>        // for jcfg_process
 #include <stdint.h>              // for uint16_t, uint64_t, uint32_t

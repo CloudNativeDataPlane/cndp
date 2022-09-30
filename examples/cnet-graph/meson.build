@@ -4,9 +4,11 @@
 sources = files('cnet-graph.c', 'parse-args.c', 'stats.c')
 
 deps += [
+    events,
     fib,
     graph,
     hmap,
+    kvargs,
     mempool,
     metrics,
     mmap,
@@ -14,6 +16,7 @@ deps += [
     pktmbuf,
     stack,
     timer,
+    tun,
     uds,
     utils,
 ]

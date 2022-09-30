@@ -73,6 +73,7 @@ deps = [
     cne,
     cthread,
     dsa,
+    events,
     fib,
     uds,
     graph,
@@ -99,6 +100,7 @@ deps = [
     thread,
     timer,
     tst_common,
+    tun,
     utils,
     xskdev,
 ]
@@ -111,6 +113,7 @@ testcne = executable('test-cne',
     sources,
     c_args: cflags,
     install: true,
+    link_whole: cndp_pmds,
     dependencies: deps
     )
 
