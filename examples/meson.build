@@ -18,7 +18,7 @@ if cne_conf.get('HAS_UINTR_SUPPORT')
     dirs += ['ibroker']
 endif
 
-def_deps = [build_cfg, osal, include, log, cne, cli, thread, jcfg]
+def_deps = [build_cfg, osal, include, log, cne, cli, thread, jcfg, kvargs, hash]
 
 foreach d:dirs
     cflags = []

@@ -3,8 +3,18 @@
 
 sources = files('fwd.c', 'parse-args.c', 'stats.c')
 
-deps += [pktdev, graph, mempool, pktmbuf,
-    mmap, uds, metrics, nodes]
+deps += [
+    events,
+    graph,
+    mempool,
+    metrics,
+    mmap,
+    nodes,
+    pktdev,
+    pktmbuf,
+    tun,
+    uds,
+    ]
 
 executable('l3fwd-graph',
     sources,
