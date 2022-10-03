@@ -56,6 +56,20 @@ func (sys *System) initializeSystem() error {
 	return nil
 }
 
+// InitCNE initializes the CNE system and returns error on failure.
+//
+// The cne_init() is also called from OpenWithConfig(), which means
+// this routine does not need to be called if OpenWith*() routines
+// are used. It is OK to call this routine multiple times as it is
+// protected to only initialize once.
+func InitCNE() error {
+
+	if C.cne_init() < 0 {
+		return fmt.Errorf("error initializing CNE subsystem")
+	}
+	return nil
+}
+
 // OpenWithConfig by passing in a initialized cne.Config structure
 func OpenWithConfig(cfg *Config) (*System, error) {
 	if err := cfg.validateConfig(); err != nil {
@@ -66,6 +80,10 @@ func OpenWithConfig(cfg *Config) (*System, error) {
 	sys.tidMap = make(map[string]*int)
 	sys.groupSet = make(map[string]*unix.CPUSet)
 	sys.oldSet = make(map[string]*unix.CPUSet)
+
+	if err := InitCNE(); err != nil {
+		return nil, err
+	}
 
 	// create cpu sets for lcore groups
 	for group, cores := range cfg.LCoreGroupData {

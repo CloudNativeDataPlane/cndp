@@ -21,6 +21,11 @@ var (
 	LoopCount     int64  = 500000
 )
 
+func TestMsgChanStart(t *testing.T) {
+
+	cne.InitCNE()
+}
+
 func TestMsgChan(t *testing.T) {
 
 	g := Goblin(t)
@@ -78,6 +83,16 @@ func TestMsgChan(t *testing.T) {
 			g.Assert(recv == s.RecvRing).IsTrue(fmt.Sprintf("MsgChannel Recv Pointer %v != %v", recv, s.RecvRing))
 			g.Assert(send == s.SendRing).IsTrue(fmt.Sprintf("MsgChannel Recv Pointer %v != %v", recv, s.SendRing))
 		})
+		g.It("MsgChannel Info", func() {
+			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
+			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
+
+			s := mc.Info()
+
+			g.Assert(s != nil).IsTrue(fmt.Sprintf("MsgChan Info failed: %+v", s))
+
+			mc.Close()
+		})
 		g.It("MsgChannel RecvFree", func() {
 			mc, err := cne.NewMsgChannel(msgChanName, msgChanSize)
 			g.Assert(err == nil).IsTrue(fmt.Sprintf("NewMsgChannel error: %v", err))
@@ -104,6 +119,10 @@ func TestMsgChan(t *testing.T) {
 			g.Assert(uint(s) == msgChanSize-5).IsTrue(fmt.Sprintf("MsgChan Size %v != %v", s, msgChanSize-5))
 		})
 	})
+}
+
+func TestMsgChanEnd(t *testing.T) {
+
 }
 
 // Equal tells whether a and b contain the same elements.
