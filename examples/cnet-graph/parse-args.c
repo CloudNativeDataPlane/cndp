@@ -39,12 +39,16 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
     jcfg_obj_t obj;
     struct cnet_info *ci = arg;
     uint32_t cache_sz;
+    uint32_t total_region_cnt;
     char *umem_addr;
+    size_t nlen;
 
     if (!_obj)
         return -1;
 
     obj.hdr = _obj;
+
+    nlen = strnlen(obj.opt->name, MAX_STRLEN_SIZE);
 
     switch (obj.hdr->cbtype) {
     case JCFG_APPLICATION_TYPE:
@@ -54,19 +58,29 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
         break;
 
     case JCFG_OPTION_TYPE:
-        if (!strcmp(obj.opt->name, NO_METRICS_TAG)) {
+        if (!strncmp(obj.opt->name, NO_METRICS_TAG, nlen)) {
             if (obj.opt->val.type == BOOLEAN_OPT_TYPE)
                 ci->opts.no_metrics = obj.opt->val.boolean;
-        } else if (!strcmp(obj.opt->name, NO_RESTAPI_TAG)) {
+        } else if (!strncmp(obj.opt->name, NO_RESTAPI_TAG, nlen)) {
             if (obj.opt->val.type == BOOLEAN_OPT_TYPE)
                 ci->opts.no_restapi = obj.opt->val.boolean;
-        } else if (!strcmp(obj.opt->name, ENABLE_CLI_TAG)) {
+        } else if (!strncmp(obj.opt->name, ENABLE_CLI_TAG, nlen)) {
             if (obj.opt->val.type == BOOLEAN_OPT_TYPE)
                 ci->opts.cli = obj.opt->val.boolean;
         }
         break;
 
     case JCFG_UMEM_TYPE:
+        total_region_cnt = 0;
+        for (int i = 0; i < obj.umem->region_cnt; i++) {
+            region_info_t *ri = &obj.umem->rinfo[i];
+
+            total_region_cnt += ri->bufcnt;
+        }
+        if (total_region_cnt != obj.umem->bufcnt)
+            CNE_ERR_RET("Total region bufcnt %d does not match UMEM bufcnt %d\n",
+                        total_region_cnt / 1024, obj.umem->bufcnt / 1024);
+
         /* The UMEM object describes the total size of the UMEM space */
         obj.umem->mm = mmap_alloc(obj.umem->bufcnt, obj.umem->bufsz, obj.umem->mtype);
         if (obj.umem->mm == NULL)
@@ -115,6 +129,11 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
             if (!pd)
                 CNE_ERR_RET("Unable to allocate fwd_port structure\n");
             lport->priv_ = pd;
+
+            if (lport->flags & LPORT_SKB_MODE)
+                cne_printf("[yellow]**** [green]SKB_MODE is [red]enabled[]\n");
+            if (lport->flags & LPORT_BUSY_POLLING)
+                cne_printf("[yellow]**** [green]BUSY_POLLING is [red]enabled[]\n");
 
             pcfg.qid          = lport->qid;
             pcfg.bufsz        = umem->bufsz;
@@ -190,13 +209,13 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
 static void
 print_usage(char *prog_name)
 {
-    cne_printf("Usage: %s [-h] [-c json_file] <mode>\n"
-               "  <mode>         Mode types drop, tx-only, or [lb | loopback]\n"
+    cne_printf("Usage: %s [-h] [-c json_file] [-b burst] <mode>\n"
+               "  <mode>         Mode types [drop | rx-only] or [lb | loopback]\n"
+               "  -b <burst>     Burst size. If not present default burst size %d max %d.\n"
                "  -c <json-file> The JSON configuration file\n"
                "  -s <cmd-file>  File containing cli commands for setup\n"
                "  -C             Wait on unix domain socket for JSON or JSON-C file\n"
                "  -d             More debug stats are displayed\n"
-               "  -b <burst>     Burst size. If not present default burst size %d max %d.\n"
                "  -D             JCFG debug decoding\n"
                "  -V             JCFG information verbose\n"
                "  -P             JCFG debug parsing\n"

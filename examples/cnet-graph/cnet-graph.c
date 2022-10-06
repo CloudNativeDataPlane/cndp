@@ -159,9 +159,6 @@ udp_recv(int cd)
             CNE_ERR("Receive packets failed\n");
         break;
 
-    case TXONLY_TEST:
-        break;
-
     default:
         break;
     }
@@ -196,44 +193,50 @@ static int
 tcp_recv(int cd)
 {
     pktmbuf_t *mbufs[RECV_NB_MBUFS];
-    int nb_mbufs;
+    int nb_mbufs, tot_cnt = 0, cnt = 0;
 
     switch (cinfo->test) {
     case DROP_TEST:
-        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
-        if (nb_mbufs <= 0) {
-            if (nb_mbufs < 0 && errno != ENOTCONN)
-                CNE_ERR("Receive packets failed: %d %s\n", errno, strerror(errno));
-            break;
-        }
-
-        if (cne_log_get_level() >= CNE_LOG_DEBUG) {
-            for (int i = 0; i < nb_mbufs; i++) {
-                if (write(fileno(stdout), pktmbuf_mtod(mbufs[i], char *),
-                          pktmbuf_data_len(mbufs[i])) < 0)
-                    CNE_WARN("Write of %d bytes failed\n", pktmbuf_data_len(mbufs[i]));
+        for (;;) { /* Make sure we send all of the packets */
+            nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+            if (nb_mbufs <= 0) {
+                if (nb_mbufs < 0 && errno != ENOTCONN)
+                    CNE_ERR("Receive packets failed: %d %s\n", errno, strerror(errno));
+                break;
             }
-        }
+            cnt++;
+            tot_cnt += nb_mbufs;
 
-        pktmbuf_free_bulk(mbufs, nb_mbufs);
+            if (cne_log_get_level() >= CNE_LOG_DEBUG) {
+                for (int i = 0; i < nb_mbufs; i++) {
+                    if (write(fileno(stdout), pktmbuf_mtod(mbufs[i], char *),
+                              pktmbuf_data_len(mbufs[i])) < 0)
+                        CNE_WARN("Write of %d bytes failed\n", pktmbuf_data_len(mbufs[i]));
+                }
+            }
+
+            pktmbuf_free_bulk(mbufs, nb_mbufs);
+        }
+        CNE_DEBUG("Drop count [cyan]%3d[] in [cyan]%3d[] loops\n", tot_cnt, cnt);
         break;
 
     case LOOPBACK_TEST:
-        nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
-        if (nb_mbufs <= 0) {
-            if (nb_mbufs < 0)
-                CNE_ERR("Receive packets failed %d: %s\n", errno, strerror(errno));
-            break;
-        }
+        for (;;) { /* Make sure we send all of the packets */
+            nb_mbufs = chnl_recv(cd, mbufs, RECV_NB_MBUFS);
+            if (nb_mbufs <= 0) {
+                if (nb_mbufs < 0)
+                    CNE_ERR("Receive packets failed %d: %s\n", errno, strerror(errno));
+                break;
+            }
+            cnt++;
+            tot_cnt += nb_mbufs;
 
-        CNE_DEBUG("Loopback Received %d\n", nb_mbufs);
-        if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
-            pktmbuf_free_bulk(mbufs, nb_mbufs);
-            CNE_ERR("Unable to send packets\n");
+            if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
+                pktmbuf_free_bulk(mbufs, nb_mbufs);
+                CNE_ERR("Unable to send packets\n");
+            }
         }
-        break;
-
-    case TXONLY_TEST:
+        CNE_DEBUG("Loopback count [cyan]%3d[] in [cyan]%3d[] loops\n", tot_cnt, cnt);
         break;
 
     default:
@@ -477,7 +480,8 @@ main(int argc, char **argv)
                "[green]Mode[]: [magenta:-:italic]%s[], "
                "[green]Burst Size[]: [magenta]%d[] \n",
                tests[cinfo->test], cinfo->burst);
-    cne_printf("\n*** [yellow]cnet-graph[], [blue]PID[]: [green]%d[] [blue]lcore[]: [green]%d[]\n",
+    cne_printf("\n*** [yellow]cnet-graph[], [blue]PID[]: [green]%d[] [blue]lcore[]: "
+               "[green]%d[]\n",
                getpid(), cne_lcore_id());
 
     /* Create the CNET stack structure, options should have been parsed already */
