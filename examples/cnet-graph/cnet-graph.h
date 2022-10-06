@@ -49,15 +49,12 @@ enum {
 #define MODE_RX_ONLY  "rx-only"  /**< Alias for MODE_DROP */
 #define MODE_LB       "lb"       /**< Loopback mode */
 #define MODE_LOOPBACK "loopback" /**< Alias for MODE_LB */
-#define MODE_TX_ONLY  "tx-only"  /**< Transmit only */
-#define MODE_CONNECT  "connect"  /**< Open a connection */
 
 // clang-format off
 typedef enum {
     UNKNOWN_TEST,
     DROP_TEST,
     LOOPBACK_TEST,
-    TXONLY_TEST,
     MAX_TESTS
 } test_t;
 
@@ -67,7 +64,6 @@ typedef enum {
         {MODE_RX_ONLY,  DROP_TEST},     \
         {MODE_LB,       LOOPBACK_TEST}, \
         {MODE_LOOPBACK, LOOPBACK_TEST}, \
-        {MODE_TX_ONLY,  TXONLY_TEST}    \
     }
 // clang-format on
 
@@ -114,8 +110,6 @@ struct cnet_info {
     pthread_barrier_t barrier;                /**< Barrier for all threads */
     bool barrier_inited;                      /**< Barrier for all threads */
     graph_info_t graph_info[MAX_GRAPH_COUNT]; /**< Graph information */
-    void *netlink;                            /**< Network information */
-    char *connect;                            /**< Connection string */
 };
 
 extern struct cnet_info *cinfo; /**< global application information pointer */

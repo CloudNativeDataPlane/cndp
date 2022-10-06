@@ -33,7 +33,7 @@ fwd_host(metrics_client_t *c, const char *cmd __cne_unused, const char *params _
 static int
 fwd_app(metrics_client_t *c, const char *cmd __cne_unused, const char *params __cne_unused)
 {
-    metrics_append(c, "\"name\":\"l3fwd-graph\"");
+    metrics_append(c, "\"name\":\"cnet-graph\"");
 
     return 0;
 }
