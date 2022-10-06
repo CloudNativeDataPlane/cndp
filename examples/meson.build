@@ -2,7 +2,7 @@
 # Copyright (c) 2020-2022 Intel Corporation
 
 dirs = [
-    'afxdp_user',
+    'afxdp',
     'cli',
     'cndpfwd',
     'cnet-graph',
