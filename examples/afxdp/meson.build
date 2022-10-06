@@ -12,9 +12,10 @@ endif
 
 if build_afxdp_user
     message('**** Building xdpsock_user.c from the linux source as afxdp_user')
+    message('**** Building xsk_fwd.c from the linux source as afxdp_fwd')
     message('**** Found Linux source @ ' + linux_source_dir)
 
-    sources = files('main.c')
+    sources = files('afxdp_user.c')
 
     deps += [bpf_dep]
 
@@ -29,6 +30,20 @@ if build_afxdp_user
         ],
         install: true,
         dependencies: deps)
+
+    sources = files('afxdp_fwd.c')
+
+    executable('afxdp_fwd',
+        sources,
+        c_args: [
+            '-I'+linux_source_dir+'/usr/include',
+            '-I'+linux_source_dir+'/arch/x86/include',
+            '-I'+linux_source_dir+'/tools/include',
+            '-I'+linux_source_dir+'/samples/bpf',
+            cflags
+        ],
+        install: true,
+        dependencies: deps)
 else
-    message('**** Missing Linux source code, not building afxdp_user example:'+linux_source_dir)
+    message('**** Missing Linux source code, not building afxdp_user or afxdp_fwd example:'+linux_source_dir)
 endif
