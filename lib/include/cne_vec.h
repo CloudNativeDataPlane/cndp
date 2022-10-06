@@ -148,7 +148,7 @@ _vec_realloc_data(void *vec, uint32_t nelem, uint32_t esize)
 #define vec_alloc(vec, nelem)                                     \
     ({                                                            \
         if ((vec))                                                \
-            CNE_ERR("Vector all ready allocated\n");              \
+            CNE_ERR("Vector already allocated\n");                \
         else                                                      \
             (vec) = _vec_realloc((vec), nelem, sizeof((vec)[0])); \
         (vec);                                                    \

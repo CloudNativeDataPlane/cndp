@@ -430,7 +430,7 @@ process_worker_message(struct worker_info *wi)
     n = read(wi->read_fd, &msg, 1);
     if (n <= 0) {
         if (n != 0)
-            tst_error("Error=%d readming message: %s\n", errno, strerror(errno));
+            tst_error("Error=%d reading message: %s\n", errno, strerror(errno));
         wi->cancel(wi);
     }
 
