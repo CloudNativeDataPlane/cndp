@@ -315,3 +315,58 @@ func SetChannels(name string, count uint) error {
 	}
 	return nil
 }
+
+// SetLinkUp sets the link up for the given netdev device name
+func SetLinkUp(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ret := C.netdev_set_link_up(cname)
+	if ret < 0 {
+		return fmt.Errorf("failed to set link up on %s", name)
+	}
+	return nil
+}
+
+// SetLinkDown sets the link down for the given netdev device name
+func SetLinkDown(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ret := C.netdev_set_link_down(cname)
+	if ret < 0 {
+		return fmt.Errorf("failed to set link down on %s", name)
+	}
+	return nil
+}
+
+// EnablePromiscuous enables promiscuous for the given netdev device name
+func EnablePromiscuous(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	if C.netdev_promiscuous_enable(cname) == -1 {
+		return fmt.Errorf("failed to set promiscuous on %s", name)
+	}
+	return nil
+}
+
+// DisablePromiscuous disables promiscuous for the given netdev device name
+func DisablePromiscuous(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	if C.netdev_promiscuous_disable(cname) == -1 {
+		return fmt.Errorf("failed to disable promiscuous on %s", name)
+	}
+	return nil
+}
+
+// GetPromiscuous returns promiscuous status for the given netdev device name
+func GetPromiscuous(name string) (bool, error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	ret := C.netdev_promiscuous_get(cname)
+	if ret == 1 {
+		return true, nil
+	} else if ret == 0 {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to get promiscuous status of %s", name)
+}
