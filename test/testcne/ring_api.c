@@ -650,8 +650,7 @@ test_ring_thread(void *args)
     do {
         ws->function(ws);
 
-        // cne_printf("Done test function ws:%p id:%"PRIuPTR"\n", ws, ws->id);
-        rdy = epoll_wait(epfd, &ev, 2, 0);
+        rdy = epoll_wait(epfd, &ev, 1, 0);
         for (int i = 0; i < rdy; i++) {
             if (ev.events & EPOLLIN) {
                 process_supervisor_message(ev.data.ptr);
