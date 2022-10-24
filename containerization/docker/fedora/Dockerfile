@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2022 Intel Corporation.
 
-FROM fedora:35 AS build
+FROM fedora:37 AS build
 
 # Setup container to build CNDP applications
 RUN dnf -y upgrade && dnf -y install \
@@ -18,7 +18,17 @@ RUN dnf -y upgrade && dnf -y install \
     gcc-c++ \
     libpcap \
     libpcap-devel \
-    golang
+    golang \
+	clang \
+	llvm \
+	m4
+
+# Install libxdp
+RUN git clone https://github.com/xdp-project/xdp-tools.git
+WORKDIR /xdp-tools/
+RUN ./configure
+RUN make -j; PREFIX=/usr make -j install
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp
