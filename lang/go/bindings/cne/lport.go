@@ -370,3 +370,14 @@ func GetPromiscuous(name string) (bool, error) {
 	}
 	return false, fmt.Errorf("failed to get promiscuous status of %s", name)
 }
+
+// GetRingParams returns the rx and tx ring count for the given netdev device name
+func GetRingParams(name string) (rxDesc int, txDesc int, err error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	var rx, tx C.uint32_t
+	if C.netdev_get_ring_params(cname, &rx, &tx) < 0 {
+		return 0, 0, fmt.Errorf("failed to ring params for %s", name)
+	}
+	return int(rx), int(tx), nil
+}
