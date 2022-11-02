@@ -377,7 +377,7 @@ func GetRingParams(name string) (rxDesc int, txDesc int, err error) {
 	defer C.free(unsafe.Pointer(cname))
 	var rx, tx C.uint32_t
 	if C.netdev_get_ring_params(cname, &rx, &tx) < 0 {
-		return 0, 0, fmt.Errorf("failed to ring params for %s", name)
+		return 0, 0, fmt.Errorf("failed to get ring params for %s", name)
 	}
 	return int(rx), int(tx), nil
 }
