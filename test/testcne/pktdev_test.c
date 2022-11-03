@@ -370,7 +370,7 @@ pktdev_main(int argc, char **argv)
 
         if (!(strcmp(tests[i], "net_ring")))
             strlcpy(ifname, "ring0", sizeof(ifname));
-        else if (!strncmp(tests[i], PMD_NET_NULL_NAME, strnlen(PMD_NET_NULL_NAME, IF_NAMESIZE)))
+        else if (!strcmp(tests[i], PMD_NET_NULL_NAME))
             strlcpy(ifname, "null0", sizeof(ifname));
         else
             strlcpy(ifname, afxdp_ifname, sizeof(ifname));
