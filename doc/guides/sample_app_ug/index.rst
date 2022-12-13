@@ -12,6 +12,7 @@ Sample Applications User Guides
     compiling
     cli
     cndpfwd
+    cnet_graph
     dlb_test
     hello_world
     k8s_dp_integration
