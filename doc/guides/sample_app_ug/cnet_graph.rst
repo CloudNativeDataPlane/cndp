@@ -63,19 +63,19 @@ next node after the ``ip4_forward`` and ``ip4_output``.
 
     static struct pkt_eth_node_config pkt_conf[CNE_MAX_ETHPORTS];
     static int
-        initialize(void)
-        {
-            uint16_t nb_conf = 0;
+    initialize(void)
+    {
+        uint16_t nb_conf = 0;
 
-            for (uint16_t lportid = 0; lportid < pktdev_port_count(); lportid++)
-                    pkt_conf[nb_conf++].port_id = lportid;
+        for (uint16_t lportid = 0; lportid < pktdev_port_count(); lportid++)
+                pkt_conf[nb_conf++].port_id = lportid;
 
-            /* Pktdev node config, skip rx queue mapping */
-            if (cnet_eth_node_config(pkt_conf, nb_conf))
-                    CNE_ERR_RET("cnet_eth_node_config: failed\n");
+        /* Pktdev node config, skip rx queue mapping */
+        if (cnet_eth_node_config(pkt_conf, nb_conf))
+                CNE_ERR_RET("cnet_eth_node_config: failed\n");
 
-                return 0;
-        }
+            return 0;
+    }
 
 The application also initializes a cnet structure using ``cnet_create()``, which in turn calls
 ``cnet_config_create()``. This sets up the following components for the cnet stack:
