@@ -34,7 +34,7 @@ static struct test_data {
 };
 // clang-format on
 
-static bool
+static int
 test1(struct test_data *t)
 {
     int d, *u = NULL, ret = TST_PASSED;
@@ -43,7 +43,7 @@ test1(struct test_data *t)
     if (!u)
         return -1;
 
-    cne_printf("%s:\n", t->name);
+    tst_info("%s:\n", t->name);
 
     for (int j = 0; j < t->cnt; j++)
         vec_add(u, j + t->cnt);
@@ -54,7 +54,7 @@ test1(struct test_data *t)
         d = vec_pop(u);
 
         if ((uint64_t)d != (j + (t->cnt - 1))) {
-            cne_printf("Oooops %d - %ld\n", d, (j + (t->cnt - 1)));
+            tst_info("Oooops %d - %ld\n", d, (j + (t->cnt - 1)));
             ret = TST_FAILED;
             break;
         }
@@ -67,7 +67,7 @@ test1(struct test_data *t)
     return ret;
 }
 
-static bool
+static int
 test2(struct test_data *t)
 {
     int **u = NULL, ret = TST_PASSED;
@@ -76,7 +76,7 @@ test2(struct test_data *t)
     if (!u)
         return -1;
 
-    cne_printf("%s:\n", t->name);
+    tst_info("%s:\n", t->name);
 
     for (uint64_t j = 0; j < (uint64_t)t->cnt; j++) {
         void *v = (void *)(uintptr_t)(j + t->cnt);
@@ -90,7 +90,7 @@ test2(struct test_data *t)
         void *v = vec_pop(u);
 
         if (v != (void *)(uintptr_t)(j + (t->cnt - 1))) {
-            cne_printf("Oooops %ld - %ld\n", (uint64_t)v, (j + (t->cnt - 1)));
+            tst_info("Oooops %ld - %ld\n", (uint64_t)v, (j + (t->cnt - 1)));
             ret = TST_FAILED;
             break;
         }
@@ -103,12 +103,12 @@ test2(struct test_data *t)
     return ret;
 }
 
-static bool
+static int
 test3(struct test_data *t)
 {
     int **u = NULL, ret = TST_PASSED;
 
-    cne_printf("%s:\n", t->name);
+    tst_info("%s:\n", t->name);
 
     for (uint64_t j = 0; j < (uint64_t)t->cnt; j++) {
         void *v = (void *)(uintptr_t)(j + t->cnt);
@@ -122,7 +122,7 @@ test3(struct test_data *t)
         void *v = vec_pop(u);
 
         if (v != (void *)(uintptr_t)(j + (t->cnt - 1))) {
-            cne_printf("Oooops %ld - %ld\n", (uint64_t)v, (j + (t->cnt - 1)));
+            tst_info("Oooops %ld - %ld\n", (uint64_t)v, (j + (t->cnt - 1)));
             ret = TST_FAILED;
             break;
         }
@@ -133,6 +133,22 @@ test3(struct test_data *t)
     vec_free(u);
 
     return ret;
+}
+
+static void
+result_print(tst_info_t *tst, int ret)
+{
+    if (tst == NULL) {
+        tst_error("test case struct was empty");
+    }
+
+    if (ret == TST_PASSED) {
+        tst_ok("%s tests pass", tst->name);
+    } else if (ret == TST_SKIPPED) {
+        tst_skip("%s tests skipped", tst->name);
+    } else {
+        tst_error("%s tests failed", tst->name);
+    }
 }
 
 int
@@ -166,6 +182,7 @@ vec_main(int argc, char **argv)
             break;
     }
 
+    result_print(tst, ret);
     tst_end(tst, ret);
 
     tst = tst_start("Vec pointer");
@@ -175,15 +192,17 @@ vec_main(int argc, char **argv)
             break;
     }
 
+    result_print(tst, ret);
     tst_end(tst, ret);
 
-    tst = tst_start("Vec dynamic Allocation");
+    tst = tst_start("Vec dynamic allocation");
 
     for (int i = 0; i < cne_countof(tdata); i++) {
         if ((ret = test3(&tdata[i])) == TST_FAILED)
             break;
     }
 
+    result_print(tst, ret);
     tst_end(tst, ret);
 
     return 0;

@@ -40,9 +40,9 @@ tst_summary(void)
     cne_printf("-------------\n");
     cne_printf("Test Summary:\n");
     cne_printf("-------------\n");
-    cne_printf("Fail: %u\n", fail);
-    cne_printf("Pass: %u\n", atomic_load(&tst_stats.pass));
-    cne_printf("Skip: %u\n", atomic_load(&tst_stats.skip));
+    cne_printf("[red]Fail: %u[]\n", fail);
+    cne_printf("[green]Pass: %u[]\n", atomic_load(&tst_stats.pass));
+    cne_printf("[yellow]Skip: %u[]\n", atomic_load(&tst_stats.skip));
 
     return fail;
 }
