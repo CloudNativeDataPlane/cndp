@@ -208,15 +208,13 @@ test_node0_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
         for (i = 0; i < nb_objs; i++) {
             data = (pktmbuf_t *)objs[i];
             if ((pktmbuf_udata64(data) >> 32) != tm->test_node[0].idx) {
-                cne_printf("Data idx miss match at node 0, expected"
-                           " = %u got = %u\n",
-                           tm->test_node[0].idx, (uint32_t)(pktmbuf_udata64(data) >> 32));
+                tst_error("Data idx miss match at node 0, expected = %u got = %u",
+                          tm->test_node[0].idx, (uint32_t)(pktmbuf_udata64(data) >> 32));
                 goto end;
             }
 
             if ((pktmbuf_udata64(data) & 0xffff) != (i - count)) {
-                cne_printf("Expected buff count miss match at "
-                           "node 0\n");
+                tst_error("Expected buff count miss match at node 0");
                 goto end;
             }
 
@@ -227,7 +225,7 @@ test_node0_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
         }
 
         if (count != i) {
-            cne_printf("Count mismatch at node 0\n");
+            tst_error("Count mismatch at node 0");
             goto end;
         }
 
@@ -260,7 +258,7 @@ test_node0_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     else if (*(uint32_t *)node->ctx == tm->test_node[3].idx)
         test_node3_worker(graph, node, objs, nb_objs);
     else
-        cne_printf("Unexpected node context\n");
+        tst_error("Unexpected node context");
 
 end:
     return nb_objs;
@@ -281,14 +279,13 @@ test_node1_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     for (i = 0; i < nb_objs; i++) {
         data = (pktmbuf_t *)objs[i];
         if ((pktmbuf_udata64(data) >> 32) != tm->test_node[1].idx) {
-            cne_printf("Data idx miss match at node 1, expected = %u"
-                       " got = %u\n",
-                       tm->test_node[1].idx, (uint32_t)(pktmbuf_udata64(data) >> 32));
+            tst_error("Data idx miss match at node 1, expected = %u got = %u", tm->test_node[1].idx,
+                      (uint32_t)(pktmbuf_udata64(data) >> 32));
             goto end;
         }
 
         if ((pktmbuf_udata64(data) & 0xffff) != (i - count)) {
-            cne_printf("Expected buff count miss match at node 1\n");
+            tst_error("Expected buff count miss match at node 1");
             goto end;
         }
 
@@ -299,7 +296,7 @@ test_node1_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     }
 
     if (count != i) {
-        cne_printf("Count mismatch at node 1\n");
+        tst_error("Count mismatch at node 1");
         goto end;
     }
 
@@ -333,14 +330,13 @@ test_node2_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     for (i = 0; i < nb_objs; i++) {
         data = (pktmbuf_t *)objs[i];
         if ((pktmbuf_udata64(data) >> 32) != tm->test_node[2].idx) {
-            cne_printf("Data idx miss match at node 2, expected = %u"
-                       " got = %u\n",
-                       tm->test_node[2].idx, (uint32_t)(pktmbuf_udata64(data) >> 32));
+            tst_error("Data idx miss match at node 2, expected = %u got = %u", tm->test_node[2].idx,
+                      (uint32_t)(pktmbuf_udata64(data) >> 32));
             goto end;
         }
 
         if ((pktmbuf_udata64(data) & 0xffff) != (i - count)) {
-            cne_printf("Expected buff count miss match at node 2\n");
+            tst_error("Expected buff count miss match at node 2");
             goto end;
         }
 
@@ -351,7 +347,7 @@ test_node2_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     }
 
     if (count != i) {
-        cne_printf("Count mismatch at node 2\n");
+        tst_error("Count mismatch at node 2");
         goto end;
     }
 
@@ -385,14 +381,13 @@ test_node3_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     for (i = 0; i < nb_objs; i++) {
         data = (pktmbuf_t *)objs[i];
         if ((pktmbuf_udata64(data) >> 32) != tm->test_node[3].idx) {
-            cne_printf("Data idx miss match at node 3, expected = %u"
-                       " got = %u\n",
-                       tm->test_node[3].idx, (uint32_t)(pktmbuf_udata64(data) >> 32));
+            tst_error("Data idx miss match at node 3, expected = %u got = %u", tm->test_node[3].idx,
+                      (uint32_t)(pktmbuf_udata64(data) >> 32));
             goto end;
         }
 
         if ((pktmbuf_udata64(data) & 0xffff) != (i - count)) {
-            cne_printf("Expected buff count miss match at node 3\n");
+            tst_error("Expected buff count miss match at node 3");
             goto end;
         }
 
@@ -403,12 +398,12 @@ test_node3_worker(struct cne_graph *graph, struct cne_node *node, void **objs, u
     }
 
     if (count != i) {
-        cne_printf("Count mismatch at node 3\n");
+        tst_error("Count mismatch at node 3");
         goto end;
     }
 
     if (second_pass) {
-        cne_printf("Unexpected buffers are at node 3\n");
+        tst_error("Unexpected buffers are at node 3");
         goto end;
     } else {
         obj_node0 = nb_objs * 2;
@@ -439,9 +434,8 @@ test_lookup_functions(void)
             return -1;
 
         if (strcmp(name, node_names[i]) != 0) {
-            cne_printf("Test node name verify by ID = %d failed "
-                       "Expected = %s, got %s\n",
-                       i, node_names[i], name);
+            tst_error("Test node name verify by ID = %d failed Expected = %s, got %s", i,
+                      node_names[i], name);
             return -1;
         }
     }
@@ -450,9 +444,8 @@ test_lookup_functions(void)
     for (i = 1; i < MAX_NODES; i++) {
         uint32_t idx = cne_node_from_name(node_names[i]);
         if (idx != tm->test_node[i].idx) {
-            cne_printf("Test node ID verify by name = %s failed "
-                       "Expected = %d, got %d\n",
-                       node_names[i], tm->test_node[i].idx, idx);
+            tst_error("Test node ID verify by name = %s failed Expected = %d, got %d",
+                      node_names[i], tm->test_node[i].idx, idx);
             return -1;
         }
     }
@@ -461,8 +454,8 @@ test_lookup_functions(void)
     for (i = 1; i < MAX_NODES; i++) {
         uint32_t count = cne_node_edge_count(tm->test_node[i].idx);
         if (count != tm->test_node[i].node.nb_edges) {
-            cne_printf("Test number of edges for node = %s failed Expected = %d, got = %d\n",
-                       tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
+            tst_error("Test number of edges for node = %s failed Expected = %d, got = %d",
+                      tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
             return -1;
         }
     }
@@ -474,27 +467,27 @@ test_lookup_functions(void)
 
         count = cne_node_edge_get(tm->test_node[i].idx, NULL);
         if (count != tm->test_node[i].node.nb_edges * sizeof(char *)) {
-            cne_printf("Test number of edge count for node = %s failed Expected = %d, got = %d\n",
-                       tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
+            tst_error("Test number of edge count for node = %s failed Expected = %d, got = %d",
+                      tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
             return -1;
         }
         next_edges = malloc(count);
         if (!next_edges) {
-            cne_printf("Malloc of next edges failed\n");
+            tst_error("Malloc of next edges failed");
             return -1;
         }
         count = cne_node_edge_get(tm->test_node[i].idx, next_edges);
         if (count != tm->test_node[i].node.nb_edges) {
-            cne_printf("Test number of edges for node = %s failed Expected = %d, got %d\n",
-                       tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
+            tst_error("Test number of edges for node = %s failed Expected = %d, got %d",
+                      tm->test_node[i].node.name, tm->test_node[i].node.nb_edges, count);
             free(next_edges);
             return -1;
         }
 
         for (j = 0; j < count; j++) {
             if (strcmp(next_edges[j], tm->test_node[i].node.next_nodes[j]) != 0) {
-                cne_printf("Edge name miss match, expected = %s got = %s\n",
-                           tm->test_node[i].node.next_nodes[j], next_edges[j]);
+                tst_error("Edge name miss match, expected = %s got = %s",
+                          tm->test_node[i].node.next_nodes[j], next_edges[j]);
                 free(next_edges);
                 return -1;
             }
@@ -518,14 +511,14 @@ test_node_clone(void)
     /* Clone with same name, should fail */
     dummy_id = cne_node_clone(node_id, "test_node00");
     if (!cne_node_is_invalid(dummy_id)) {
-        cne_printf("Got valid id when clone with same name, Expecting fail\n");
+        tst_error("Got valid id when clone with same name, Expecting fail");
         return -1;
     }
 
     for (i = 1; i < MAX_NODES; i++) {
         tm->test_node[i].idx = cne_node_clone(node_id, tm->test_node[i].node.name);
         if (cne_node_is_invalid(tm->test_node[i].idx)) {
-            cne_printf("Got invalid node id\n");
+            tst_error("Got invalid node id");
             return -1;
         }
     }
@@ -533,7 +526,7 @@ test_node_clone(void)
     /* Clone from cloned node should fail */
     dummy_id = cne_node_clone(tm->test_node[1].idx, "dummy_node");
     if (!cne_node_is_invalid(dummy_id)) {
-        cne_printf("Got valid node id when cloning from cloned node, expected fail\n");
+        tst_error("Got valid node id when cloning from cloned node, expected fail");
         return -1;
     }
 
@@ -552,8 +545,8 @@ test_update_edges(void)
     count   = cne_node_edge_update(node_id, 0, tm->test_node[0].node.next_nodes,
                                    tm->test_node[0].node.nb_edges);
     if (count != tm->test_node[0].node.nb_edges) {
-        cne_printf("Update edges failed expected: %d got = %d\n", tm->test_node[0].node.nb_edges,
-                   count);
+        tst_error("Update edges failed expected: %d got = %d", tm->test_node[0].node.nb_edges,
+                  count);
         return -1;
     }
 
@@ -561,14 +554,14 @@ test_update_edges(void)
         count = cne_node_edge_update(tm->test_node[i].idx, 0, tm->test_node[i].node.next_nodes,
                                      tm->test_node[i].node.nb_edges);
         if (count != tm->test_node[i].node.nb_edges) {
-            cne_printf("Update edges failed expected: %d got = %d\n",
-                       tm->test_node[i].node.nb_edges, count);
+            tst_error("Update edges failed expected: %d got = %d", tm->test_node[i].node.nb_edges,
+                      count);
             return -1;
         }
 
         count = cne_node_edge_shrink(tm->test_node[i].idx, tm->test_node[i].node.nb_edges);
         if (count != tm->test_node[i].node.nb_edges) {
-            cne_printf("Shrink edges failed\n");
+            tst_error("Shrink edges failed");
             return -1;
         }
     }
@@ -596,19 +589,19 @@ test_create_graph(void)
     node_id       = cne_node_from_name("test_node00");
     dummy_node_id = cne_node_clone(node_id, "dummy_node");
     if (cne_node_is_invalid(dummy_node_id)) {
-        cne_printf("Got invalid node id\n");
+        tst_error("Got invalid node id");
         return -1;
     }
 
     graph_id = cne_graph_create("worker0", node_patterns_dummy);
     if (graph_id != CNE_GRAPH_ID_INVALID) {
-        cne_printf("Graph creation success with isolated node, expected graph creation fail\n");
+        tst_error("Graph creation success with isolated node, expected graph creation fail");
         return -1;
     }
 
     graph_id = cne_graph_create("worker0", node_patterns);
     if (graph_id == CNE_GRAPH_ID_INVALID) {
-        cne_printf("Graph creation failed with error = %d\n", errno);
+        tst_error("Graph creation failed with error = %d", errno);
         return -1;
     }
     return 0;
@@ -621,7 +614,7 @@ test_graph_walk(void)
     int i;
 
     if (!graph) {
-        cne_printf("Graph lookup failed\n");
+        tst_error("Graph lookup failed");
         return -1;
     }
 
@@ -640,18 +633,18 @@ test_graph_lookup_functions(void)
     for (i = 0; i < MAX_NODES; i++) {
         node = cne_graph_node_get(graph_id, tm->test_node[i].idx);
         if (!node) {
-            cne_printf("cne_graph_node_get, failed for node = %d\n", tm->test_node[i].idx);
+            tst_error("cne_graph_node_get, failed for node = %d", tm->test_node[i].idx);
             return -1;
         }
 
         if (tm->test_node[i].idx != node->id) {
-            cne_printf("Node id didn't match, expected = %d got = %d\n", tm->test_node[i].idx,
-                       node->id);
+            tst_error("Node id didn't match, expected = %d got = %d", tm->test_node[i].idx,
+                      node->id);
             return 0;
         }
 
         if (strncmp(node->name, node_names[i], CNE_NODE_NAMESIZE)) {
-            cne_printf("Node name didn't match, expected = %s got %s\n", node_names[i], node->name);
+            tst_error("Node name didn't match, expected = %s got %s", node_names[i], node->name);
             return -1;
         }
     }
@@ -659,18 +652,18 @@ test_graph_lookup_functions(void)
     for (i = 0; i < MAX_NODES; i++) {
         node = cne_graph_node_get_by_name("worker0", node_names[i]);
         if (!node) {
-            cne_printf("cne_graph_node_get, failed for node = %d\n", tm->test_node[i].idx);
+            tst_error("cne_graph_node_get, failed for node = %d", tm->test_node[i].idx);
             return -1;
         }
 
         if (tm->test_node[i].idx != node->id) {
-            cne_printf("Node id didn't match, expected = %d got = %d\n", tm->test_node[i].idx,
-                       node->id);
+            tst_error("Node id didn't match, expected = %d got = %d", tm->test_node[i].idx,
+                      node->id);
             return 0;
         }
 
         if (strncmp(node->name, node_names[i], CNE_NODE_NAMESIZE)) {
-            cne_printf("Node name didn't match, expected = %s got %s\n", node_names[i], node->name);
+            tst_error("Node name didn't match, expected = %s got %s", node_names[i], node->name);
             return -1;
         }
     }
@@ -690,16 +683,15 @@ graph_cluster_stats_cb_t(bool is_first, bool is_last, const struct cne_graph_clu
         cne_node_t id = cne_node_from_name(node_patterns[i]);
         if (id == st->id) {
             if (obj_stats[i] != st->objs) {
-                cne_printf("Obj count miss match for node = %s expected = %" PRId64 ", got=%" PRId64
-                           "\n",
-                           node_patterns[i], obj_stats[i], st->objs);
+                tst_error("Obj count miss match for node = %s expected = %" PRId64 ", got=%" PRId64,
+                          node_patterns[i], obj_stats[i], st->objs);
                 return -1;
             }
 
             if (fn_calls[i] != st->calls) {
-                cne_printf("Func call miss match for node = %s expected = %" PRId64
-                           ", got = %" PRId64 "\n",
-                           node_patterns[i], fn_calls[i], st->calls);
+                tst_error("Func call miss match for node = %s expected = %" PRId64
+                          ", got = %" PRId64,
+                          node_patterns[i], fn_calls[i], st->calls);
                 return -1;
             }
         }
@@ -725,7 +717,7 @@ test_print_stats(void)
 
     stats = cne_graph_cluster_stats_create(&s_param);
     if (stats == NULL) {
-        cne_printf("Unable to get stats\n");
+        tst_info("Unable to get stats");
         return -1;
     }
     /* Clear screen and move to top left */
@@ -745,10 +737,10 @@ graph_setup(void)
             mbuf_p[i][j] = &mbuf[i][j];
     }
     if (test_node_clone()) {
-        cne_printf("test_node_clone: fail\n");
+        tst_error("test_node_clone: fail");
         return -1;
     }
-    cne_printf("test_node_clone: pass\n");
+    tst_info("test_node_clone: pass");
 
     return 0;
 }
@@ -760,7 +752,7 @@ graph_teardown(void)
 
     id = cne_graph_destroy(cne_graph_from_name("worker0"));
     if (id)
-        cne_printf("Graph Destroy failed\n");
+        tst_error("Graph Destroy failed");
 }
 
 // clang-format off
@@ -817,10 +809,12 @@ graph_main(int argc, char **argv)
     if (graph_autotest_fn() < 0)
         goto leave;
 
+    tst_ok("%s tests passed", tst->name);
     tst_end(tst, TST_PASSED);
 
     return 0;
 leave:
+    tst_error("%s tests failed", tst->name);
     tst_end(tst, TST_FAILED);
     return -1;
 }

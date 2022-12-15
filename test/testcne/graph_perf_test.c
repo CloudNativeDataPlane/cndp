@@ -292,7 +292,7 @@ graph_node_count_edges(uint32_t stage, uint16_t node, uint16_t nodes_per_stage,
             const char *node_name = cne_node_id_to_name(node_map[stage + 1][i]);
 
             if (node_name == NULL) {
-                cne_printf("Invalid node name\n");
+                tst_error("Invalid node name");
                 goto fail;
             }
             ename[edges] = malloc(sizeof(char) * CNE_NODE_NAMESIZE);
@@ -336,7 +336,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
 
     graph_data = calloc(1, sizeof(struct test_graph_perf));
     if (graph_data == NULL) {
-        cne_printf("Failed to allocate graph common memory\n");
+        tst_error("Failed to allocate graph common memory");
         return -ENOMEM;
     }
     vec_add(test_graph_perf_vec, graph_data);
@@ -346,32 +346,32 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
     graph_data->node_data =
         malloc(sizeof(struct test_node_data) * (nb_srcs + nb_sinks + stages * nodes_per_stage));
     if (graph_data->node_data == NULL) {
-        cne_printf("Failed to reserve memzone for graph data\n");
+        tst_error("Failed to reserve memzone for graph data");
         goto memzone_free;
     }
 
     node_patterns = calloc(1, sizeof(char *) * (nb_srcs + nb_sinks + stages * nodes_per_stage + 1));
     if (node_patterns == NULL) {
-        cne_printf("Failed to reserve memory for node patterns\n");
+        tst_error("Failed to reserve memory for node patterns");
         goto data_free;
     }
 
     src_nodes = calloc(nb_srcs, sizeof(cne_node_t));
     if (src_nodes == NULL) {
-        cne_printf("Failed to reserve memory for src nodes\n");
+        tst_error("Failed to reserve memory for src nodes");
         goto pattern_free;
     }
 
     snk_nodes = calloc(nb_sinks, sizeof(cne_node_t));
     if (snk_nodes == NULL) {
-        cne_printf("Failed to reserve memory for snk nodes\n");
+        tst_error("Failed to reserve memory for snk nodes");
         goto src_free;
     }
 
     node_map =
         calloc(1, sizeof(cne_node_t *) * stages + sizeof(cne_node_t) * nodes_per_stage * stages);
     if (node_map == NULL) {
-        cne_printf("Failed to reserve memory for node map\n");
+        tst_error("Failed to reserve memory for node map");
         goto snk_free;
     }
 
@@ -388,7 +388,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
                 continue;
             node_patterns[graph_data->nb_nodes] = malloc(CNE_NODE_NAMESIZE);
             if (node_patterns[graph_data->nb_nodes] == NULL) {
-                cne_printf("Failed to create memory for pattern\n");
+                tst_error("Failed to create memory for pattern");
                 goto pattern_name_free;
             }
 
@@ -396,13 +396,13 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
             snprintf(nname, sizeof(nname), "%d-%d", i, j);
             node_map[i][j] = graph_node_get(TEST_GRAPH_WRK_NAME, nname);
             if (node_map[i][j] == CNE_NODE_ID_INVALID) {
-                cne_printf("Failed to create node[%s]\n", nname);
+                tst_error("Failed to create node[%s]", nname);
                 graph_data->nb_nodes++;
                 goto pattern_name_free;
             }
             node_name = cne_node_id_to_name(node_map[i][j]);
             if (node_name == NULL) {
-                cne_printf("Invalid node name\n");
+                tst_error("Invalid node name");
                 graph_data->nb_nodes++;
                 goto pattern_name_free;
             }
@@ -421,7 +421,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
             edges =
                 graph_node_count_edges(i, j, nodes_per_stage, edge_map, ename, node_data, node_map);
             if (edges == CNE_EDGE_ID_INVALID) {
-                cne_printf("Invalid edge configuration\n");
+                tst_error("Invalid edge configuration");
                 goto pattern_name_free;
             }
             if (!edges)
@@ -434,7 +434,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
             for (k = 0; k < edges; k++)
                 free(ename[k]);
             if (count != edges) {
-                cne_printf("Couldn't add edges %d %d\n", edges, count);
+                tst_error("Couldn't add edges %d %d", edges, count);
                 goto pattern_name_free;
             }
         }
@@ -448,7 +448,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         total_percent                       = 0;
         node_patterns[graph_data->nb_nodes] = malloc(CNE_NODE_NAMESIZE);
         if (node_patterns[graph_data->nb_nodes] == NULL) {
-            cne_printf("Failed to create memory for pattern\n");
+            tst_error("Failed to create memory for pattern");
             goto pattern_name_free;
         }
         /* Clone a source node */
@@ -456,13 +456,13 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         src_nodes[i] =
             graph_node_get(burst_one ? TEST_GRAPH_SRC_BRST_ONE_NAME : TEST_GRAPH_SRC_NAME, nname);
         if (src_nodes[i] == CNE_NODE_ID_INVALID) {
-            cne_printf("Failed to create node[%s]\n", nname);
+            tst_error("Failed to create node[%s]", nname);
             graph_data->nb_nodes++;
             goto pattern_name_free;
         }
         node_name = cne_node_id_to_name(src_nodes[i]);
         if (node_name == NULL) {
-            cne_printf("Failed to get node name\n");
+            tst_error("Failed to get node name");
             goto pattern_name_free;
         }
         snprintf(node_patterns[graph_data->nb_nodes], CNE_NODE_NAMESIZE, "%s", node_name);
@@ -479,7 +479,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
                 continue;
             node_name = cne_node_id_to_name(node_map[0][j]);
             if (node_name == NULL) {
-                cne_printf("Invalid node name\n");
+                tst_error("Invalid node name");
                 continue;
             }
             ename[edges] = malloc(sizeof(char) * CNE_NODE_NAMESIZE);
@@ -493,7 +493,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         if (!edges)
             continue;
         if (edges >= MAX_EDGES_PER_NODE || total_percent != 100) {
-            cne_printf("Invalid edge configuration\n");
+            tst_error("Invalid edge configuration");
             for (j = 0; j < edges; j++)
                 free(ename[j]);
             goto pattern_name_free;
@@ -504,7 +504,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         for (k = 0; k < edges; k++)
             free(ename[k]);
         if (count != edges) {
-            cne_printf("Couldn't add edges %d %d\n", edges, count);
+            tst_error("Couldn't add edges %d %d", edges, count);
             goto pattern_name_free;
         }
     }
@@ -515,7 +515,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
 
         node_patterns[graph_data->nb_nodes] = malloc(CNE_NODE_NAMESIZE);
         if (node_patterns[graph_data->nb_nodes] == NULL) {
-            cne_printf("Failed to create memory for pattern\n");
+            tst_error("Failed to create memory for pattern");
             goto pattern_name_free;
         }
 
@@ -523,13 +523,13 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         snprintf(nname, sizeof(nname), "%d", i);
         snk_nodes[i] = graph_node_get(TEST_GRAPH_SNK_NAME, nname);
         if (snk_nodes[i] == CNE_NODE_ID_INVALID) {
-            cne_printf("Failed to create node[%s]\n", nname);
+            tst_error("Failed to create node[%s]", nname);
             graph_data->nb_nodes++;
             goto pattern_name_free;
         }
         node_name = cne_node_id_to_name(snk_nodes[i]);
         if (node_name == NULL) {
-            cne_printf("Invalid node name\n");
+            tst_error("Invalid node name");
             graph_data->nb_nodes++;
             goto pattern_name_free;
         }
@@ -553,7 +553,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
                 continue;
 
             if (!node_data) {
-                cne_printf("graph_get_node_data() failed\n");
+                tst_error("graph_get_node_data() failed");
                 for (k = 0; k < edges; k++)
                     free(ename[k]);
                 goto pattern_name_free;
@@ -561,7 +561,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
 
             node_name = cne_node_id_to_name(snk_nodes[j]);
             if (node_name == NULL) {
-                cne_printf("Invalid node name\n");
+                tst_error("Invalid node name");
                 for (k = 0; k < edges; k++)
                     free(ename[k]);
                 goto pattern_name_free;
@@ -576,7 +576,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         if (!edges)
             continue;
         if (edges >= MAX_EDGES_PER_NODE || total_percent != 100) {
-            cne_printf("Invalid edge configuration\n");
+            tst_error("Invalid edge configuration");
             for (k = 0; k < edges; k++)
                 free(ename[k]);
             goto pattern_name_free;
@@ -588,7 +588,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
         for (k = 0; k < edges; k++)
             free(ename[k]);
         if (count != edges) {
-            cne_printf("Couldn't add edges %d %d\n", edges, count);
+            tst_error("Couldn't add edges %d %d", edges, count);
             goto pattern_name_free;
         }
     }
@@ -596,7 +596,7 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
     /* Create a Graph */
     graph_id = cne_graph_create(gname, (const char **)(uintptr_t)node_patterns);
     if (graph_id == CNE_GRAPH_ID_INVALID) {
-        cne_printf("Graph creation failed with error = %d\n", errno);
+        tst_error("Graph creation failed with error = %d", errno);
         goto pattern_name_free;
     }
     graph_data->graph_id = graph_id;
@@ -649,7 +649,7 @@ measure_perf_get(cne_graph_t graph_id)
 
         stats = cne_graph_cluster_stats_create(&param);
         if (stats == NULL) {
-            cne_printf("Failed to create stats\n");
+            tst_error("Failed to create stats");
             free(data);
             return -ENOMEM;
         }
@@ -1003,10 +1003,12 @@ graph_perf_main(int argc, char **argv)
     if (test_graph_perf_func() < 0)
         goto leave;
 
+    tst_ok("%s tests passed", tst->name);
     tst_end(tst, TST_PASSED);
 
     return 0;
 leave:
+    tst_error("%s tests failed", tst->name);
     tst_end(tst, TST_FAILED);
     return -1;
 }
