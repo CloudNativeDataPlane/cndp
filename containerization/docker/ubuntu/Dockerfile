@@ -17,7 +17,12 @@ RUN apt-get update && apt-get install -y \
     libnl-cli-3-dev \
     libnuma-dev \
     libpcap-dev \
-    wget
+    wget \
+    llvm-dev \
+    libclang-dev \
+    clang \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Build and install libbpf version >=0.3.0 and <=0.6.1
 SHELL ["/bin/bash", "-c"]
@@ -44,10 +49,6 @@ RUN make && make install
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
-# Install Rust bindgen dependencies.
-RUN apt-get install -y \
-    llvm-dev libclang-dev clang curl
-
 # Install Rust and Cargo.
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 
@@ -73,7 +74,8 @@ RUN apt-get update && apt-get install -y \
     libnl-3-200 \
     libnl-cli-3-200 \
     libnuma1 \
-    libpcap0.8
+    libpcap0.8 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
