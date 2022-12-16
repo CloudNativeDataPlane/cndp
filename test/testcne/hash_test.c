@@ -162,7 +162,7 @@ test_crc32_hash_alg_equiv(void)
     unsigned i, j;
     size_t data_len;
 
-    cne_printf("\n# CRC32 implementations equivalence test\n");
+    tst_info("CRC32 implementations equivalence test");
     for (i = 0; i < CRC32_ITERATIONS; i++) {
         /* Randomizing data_len of data set */
         data_len = (size_t)((rand() % sizeof(data64)) + 1);
@@ -179,14 +179,14 @@ test_crc32_hash_alg_equiv(void)
         /* Check against 4-byte-operand sse4.2 CRC32 if available */
         cne_hash_crc_set_alg(CRC32_SSE42);
         if (hash_val != cne_hash_crc(data64, data_len, init_val)) {
-            cne_printf("Failed checking CRC32_SW against CRC32_SSE42\n");
+            tst_error("Failed checking CRC32_SW against CRC32_SSE42");
             break;
         }
 
         /* Check against 8-byte-operand sse4.2 CRC32 if available */
         cne_hash_crc_set_alg(CRC32_SSE42_x64);
         if (hash_val != cne_hash_crc(data64, data_len, init_val)) {
-            cne_printf("Failed checking CRC32_SW against CRC32_SSE42_x64\n");
+            tst_error("Failed checking CRC32_SW against CRC32_SSE42_x64");
             break;
         }
     }
@@ -197,7 +197,7 @@ test_crc32_hash_alg_equiv(void)
     if (i == CRC32_ITERATIONS)
         return 0;
 
-    cne_printf("Failed test data (hex, %zu bytes total):\n", data_len);
+    tst_error("Failed test data (hex, %zu bytes total):", data_len);
     for (j = 0; j < data_len; j++)
         cne_printf("%02X%c", ((uint8_t *)data64)[j],
                    ((j + 1) % 16 == 0 || j == data_len - 1) ? '\n' : ' ');
@@ -1020,8 +1020,7 @@ fbk_hash_unit_test(void)
     double used_entries;
 
     /* Try creating hashes with invalid parameters */
-    cne_printf("# Testing hash creation with invalid parameters "
-               "- expect error msgs\n");
+    tst_info("Testing hash creation with invalid parameters - expect error msgs");
     handle = cne_fbk_hash_create(&invalid_params_1);
     RETURN_IF_ERROR_FBK(handle != NULL, "fbk hash creation should have failed");
 
@@ -1186,7 +1185,7 @@ test_hash_creation_with_bad_parameters(void)
     handle = cne_hash_create(NULL);
     if (handle != NULL) {
         cne_hash_free(handle);
-        cne_printf("Impossible creating hash successfully without any parameter\n");
+        tst_error("Impossible creating hash successfully without any parameter");
         return -1;
     }
 
@@ -1196,7 +1195,7 @@ test_hash_creation_with_bad_parameters(void)
     handle         = cne_hash_create(&params);
     if (handle != NULL) {
         cne_hash_free(handle);
-        cne_printf("Impossible creating hash successfully with entries in parameter exceeded\n");
+        tst_error("Impossible creating hash successfully with entries in parameter exceeded");
         return -1;
     }
 
@@ -1206,8 +1205,8 @@ test_hash_creation_with_bad_parameters(void)
     handle         = cne_hash_create(&params);
     if (handle != NULL) {
         cne_hash_free(handle);
-        cne_printf("Impossible creating hash successfully if entries less than bucket_entries in "
-                   "parameter\n");
+        tst_error("Impossible creating hash successfully if entries less than bucket_entries in "
+                  "parameter");
         return -1;
     }
 
@@ -1217,7 +1216,7 @@ test_hash_creation_with_bad_parameters(void)
     handle         = cne_hash_create(&params);
     if (handle != NULL) {
         cne_hash_free(handle);
-        cne_printf("Impossible creating hash successfully if key_len in parameter is zero\n");
+        tst_error("Impossible creating hash successfully if key_len in parameter is zero");
         return -1;
     }
 
@@ -1226,12 +1225,12 @@ test_hash_creation_with_bad_parameters(void)
     params.name = "same_name";
     handle      = cne_hash_create(&params);
     if (handle == NULL) {
-        cne_printf("Cannot create first hash table with 'same_name'\n");
+        tst_error("Cannot create first hash table with 'same_name'");
         return -1;
     }
     cne_hash_free(handle);
 
-    cne_printf("# Test successful. No more errors expected\n");
+    tst_ok("Test successful. No more errors expected");
 
     return 0;
 }
@@ -1252,7 +1251,7 @@ test_hash_creation_with_good_parameters(void)
     params.hash_func = NULL;
     handle           = cne_hash_create(&params);
     if (handle == NULL) {
-        cne_printf("Creating hash with null hash_func failed\n");
+        tst_error("Creating hash with null hash_func failed");
         return -1;
     }
 
@@ -1276,14 +1275,14 @@ test_average_table_utilization(uint32_t ext_table)
     int ret;
     unsigned int cnt;
 
-    cne_printf("\n# Running test to determine average utilization"
-               "\n  before adding elements begins to fail\n");
+    tst_info("Running test to determine average utilization"
+             " before adding elements begins to fail");
     if (ext_table)
-        cne_printf("ext table is enabled\n");
+        tst_info("ext table is enabled");
     else
-        cne_printf("ext table is disabled\n");
+        tst_info("ext table is disabled");
 
-    cne_printf("Measuring performance, please wait\n");
+    tst_info("Measuring performance, please wait");
     fflush(stdout);
     ut_params.entries   = 1 << 16;
     ut_params.name      = "test_average_utilization";
@@ -1340,9 +1339,9 @@ test_average_table_utilization(uint32_t ext_table)
 
     average_keys_added /= ITERATIONS;
 
-    cne_printf("\nAverage table utilization = %.2f%% (%u/%u)\n",
-               ((double)average_keys_added / ut_params.entries * 100), average_keys_added,
-               ut_params.entries);
+    tst_info("\nAverage table utilization = %.2f%% (%u/%u)",
+             ((double)average_keys_added / ut_params.entries * 100), average_keys_added,
+             ut_params.entries);
     cne_hash_free(handle);
 
     return 0;
@@ -1382,7 +1381,7 @@ test_hash_iteration(uint32_t ext_table)
         ret = cne_hash_add_key_data(handle, keys[added_keys], data[added_keys]);
         if (ret < 0) {
             if (ext_table) {
-                cne_printf("Insertion failed for ext table\n");
+                tst_error("Insertion failed for ext table");
                 goto err;
             }
             break;
@@ -1395,8 +1394,8 @@ test_hash_iteration(uint32_t ext_table)
         for (i = 0; i < NUM_ENTRIES; i++) {
             if (memcmp(next_key, keys[i], ut_params.key_len) == 0) {
                 if (next_data != data[i]) {
-                    cne_printf("Data found in the hash table is"
-                               "not the data added with the key\n");
+                    tst_error("Data found in the hash table is"
+                              "not the data added with the key");
                     goto err;
                 }
                 added_keys--;
@@ -1404,14 +1403,14 @@ test_hash_iteration(uint32_t ext_table)
             }
         }
         if (i == NUM_ENTRIES) {
-            cne_printf("Key found in the hash table was not added\n");
+            tst_error("Key found in the hash table was not added");
             goto err;
         }
     }
 
     /* Check if all keys have been iterated */
     if (added_keys != 0) {
-        cne_printf("There were still %u keys to iterate\n", added_keys);
+        tst_error("There were still %u keys to iterate", added_keys);
         goto err;
     }
 
@@ -1419,6 +1418,8 @@ test_hash_iteration(uint32_t ext_table)
     return 0;
 
 err:
+    tst_error("tst_hash_iteration() failed");
+
     cne_hash_free(handle);
     return -1;
 }
@@ -1452,18 +1453,18 @@ test_hash_add_delete_jhash2(void)
 
     handle = cne_hash_create(&hash_params_ex);
     if (handle == NULL) {
-        cne_printf("test_hash_add_delete_jhash2 fail to create hash\n");
+        tst_error("test_hash_add_delete_jhash2 fail to create hash");
         goto fail_jhash2;
     }
     pos1 = cne_hash_add_key(handle, (void *)&key[0]);
     if (pos1 < 0) {
-        cne_printf("test_hash_add_delete_jhash2 fail to add hash key\n");
+        tst_error("test_hash_add_delete_jhash2 fail to add hash key");
         goto fail_jhash2;
     }
 
     pos2 = cne_hash_del_key(handle, (void *)&key[0]);
     if (pos2 < 0 || pos1 != pos2) {
-        cne_printf("test_hash_add_delete_jhash2 delete different key from being added\n");
+        tst_error("test_hash_add_delete_jhash2 delete different key from being added");
         goto fail_jhash2;
     }
     ret = 0;
