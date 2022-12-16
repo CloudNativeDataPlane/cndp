@@ -113,7 +113,7 @@ create_table(unsigned int with_data, unsigned int table_index, unsigned int ext)
     free_table(table_index);
     htables[table_index] = cne_hash_create(&ut_params);
     if (htables[table_index] == NULL) {
-        cne_printf("Error creating table\n");
+        tst_error("Error creating table");
         free((void *)(uintptr_t)ut_params.name);
         return -1;
     }
@@ -268,7 +268,7 @@ timed_adds(unsigned int with_hash, unsigned int with_data, unsigned int table_in
             ret = cne_hash_add_key_with_hash_data(htables[table_index], (const void *)keys[i],
                                                   signatures[i], data);
             if (ret < 0) {
-                cne_printf("H+D: Failed to add key number %u\n", i);
+                tst_error("H+D: Failed to add key number %u", i);
                 return -1;
             }
         } else if (with_hash && !with_data) {
@@ -277,13 +277,13 @@ timed_adds(unsigned int with_hash, unsigned int with_data, unsigned int table_in
             if (ret >= 0)
                 positions[i] = ret;
             else {
-                cne_printf("H: Failed to add key number %u\n", i);
+                tst_error("H: Failed to add key number %u", i);
                 return -1;
             }
         } else if (!with_hash && with_data) {
             ret = cne_hash_add_key_data(htables[table_index], (const void *)keys[i], data);
             if (ret < 0) {
-                cne_printf("D: Failed to add key number %u\n", i);
+                tst_error("D: Failed to add key number %u", i);
                 return -1;
             }
         } else {
@@ -291,7 +291,7 @@ timed_adds(unsigned int with_hash, unsigned int with_data, unsigned int table_in
             if (ret >= 0)
                 positions[i] = ret;
             else {
-                cne_printf("Failed to add key number %u\n", i);
+                tst_error("Failed to add key number %u", i);
                 return -1;
             }
         }
@@ -329,40 +329,39 @@ timed_lookups(unsigned int with_hash, unsigned int with_data, unsigned int table
                 ret = cne_hash_lookup_with_hash_data(htables[table_index], (const void *)keys[j],
                                                      signatures[j], &ret_data);
                 if (ret < 0) {
-                    cne_printf("Key number %u was not found\n", j);
+                    tst_error("Key number %u was not found", j);
                     return -1;
                 }
                 expected_data = (void *)((uintptr_t)signatures[j]);
                 if (ret_data != expected_data) {
-                    cne_printf("Data returned for key number %u is %p,"
-                               " but should be %p\n",
-                               j, ret_data, expected_data);
+                    tst_error("Data returned for key number %u is %p,"
+                              " but should be %p",
+                              j, ret_data, expected_data);
                     return -1;
                 }
             } else if (with_hash && !with_data) {
                 ret = cne_hash_lookup_with_hash(htables[table_index], (const void *)keys[j],
                                                 signatures[j]);
                 if (ret < 0 || ret != positions[j]) {
-                    cne_printf("Key looked up in %d, should be in %d\n", ret, positions[j]);
+                    tst_error("Key looked up in %d, should be in %d", ret, positions[j]);
                     return -1;
                 }
             } else if (!with_hash && with_data) {
                 ret = cne_hash_lookup_data(htables[table_index], (const void *)keys[j], &ret_data);
                 if (ret < 0) {
-                    cne_printf("Key number %u was not found\n", j);
+                    tst_error("Key number %u was not found", j);
                     return -1;
                 }
                 expected_data = (void *)((uintptr_t)signatures[j]);
                 if (ret_data != expected_data) {
-                    cne_printf("Data returned for key number %u is %p,"
-                               " but should be %p\n",
-                               j, ret_data, expected_data);
+                    tst_error("Data returned for key number %u is %p, but should be %p", j,
+                              ret_data, expected_data);
                     return -1;
                 }
             } else {
                 ret = cne_hash_lookup(htables[table_index], keys[j]);
                 if (ret < 0 || ret != positions[j]) {
-                    cne_printf("Key looked up in %d, should be in %d\n", ret, positions[j]);
+                    tst_error("Key looked up in %d, should be in %d", ret, positions[j]);
                     return -1;
                 }
             }
@@ -408,21 +407,18 @@ timed_lookups_multi(unsigned int with_hash, unsigned int with_data, unsigned int
                 ret = cne_hash_lookup_bulk_data(htables[table_index], (const void **)keys_burst,
                                                 BURST_SIZE, &hit_mask, ret_data);
                 if (ret != BURST_SIZE) {
-                    cne_printf("Expect to find %u keys,"
-                               " but found %d\n",
-                               BURST_SIZE, ret);
+                    tst_error("Expect to find %u keys, but found %d", BURST_SIZE, ret);
                     return -1;
                 }
                 for (k = 0; k < BURST_SIZE; k++) {
                     if ((hit_mask & (1ULL << k)) == 0) {
-                        cne_printf("Key number %u not found\n", j * BURST_SIZE + k);
+                        tst_error("Key number %u not found", j * BURST_SIZE + k);
                         return -1;
                     }
                     expected_data[k] = (void *)((uintptr_t)signatures[j * BURST_SIZE + k]);
                     if (ret_data[k] != expected_data[k]) {
-                        cne_printf("Data returned for key number %u is %p,"
-                                   " but should be %p\n",
-                                   j * BURST_SIZE + k, ret_data[k], expected_data[k]);
+                        tst_error("Data returned for key number %u is %p, but should be %p",
+                                  j * BURST_SIZE + k, ret_data[k], expected_data[k]);
                         return -1;
                     }
                 }
@@ -431,24 +427,18 @@ timed_lookups_multi(unsigned int with_hash, unsigned int with_data, unsigned int
                     htables[table_index], (const void **)keys_burst, &signatures[j * BURST_SIZE],
                     BURST_SIZE, &hit_mask, ret_data);
                 if (ret != BURST_SIZE) {
-                    cne_printf("Expect to find %u keys,"
-                               " but found %d\n",
-                               BURST_SIZE, ret);
+                    tst_error("Expect to find %u keys, but found %d", BURST_SIZE, ret);
                     return -1;
                 }
                 for (k = 0; k < BURST_SIZE; k++) {
                     if ((hit_mask & (1ULL << k)) == 0) {
-                        cne_printf("Key number %u"
-                                   " not found\n",
-                                   j * BURST_SIZE + k);
+                        tst_error("Key number %u not found", j * BURST_SIZE + k);
                         return -1;
                     }
                     expected_data[k] = (void *)((uintptr_t)signatures[j * BURST_SIZE + k]);
                     if (ret_data[k] != expected_data[k]) {
-                        cne_printf("Data returned for key"
-                                   " number %u is %p,"
-                                   " but should be %p\n",
-                                   j * BURST_SIZE + k, ret_data[k], expected_data[k]);
+                        tst_error("Data returned for key number %u is %p, but should be %p",
+                                  j * BURST_SIZE + k, ret_data[k], expected_data[k]);
                         return -1;
                     }
                 }
@@ -458,8 +448,8 @@ timed_lookups_multi(unsigned int with_hash, unsigned int with_data, unsigned int
                     BURST_SIZE, positions_burst);
                 for (k = 0; k < BURST_SIZE; k++) {
                     if (positions_burst[k] != positions[j * BURST_SIZE + k]) {
-                        cne_printf("Key looked up in %d, should be in %d\n", positions_burst[k],
-                                   positions[j * BURST_SIZE + k]);
+                        tst_error("Key looked up in %d, should be in %d", positions_burst[k],
+                                  positions[j * BURST_SIZE + k]);
                         return -1;
                     }
                 }
@@ -468,8 +458,8 @@ timed_lookups_multi(unsigned int with_hash, unsigned int with_data, unsigned int
                                      positions_burst);
                 for (k = 0; k < BURST_SIZE; k++) {
                     if (positions_burst[k] != positions[j * BURST_SIZE + k]) {
-                        cne_printf("Key looked up in %d, should be in %d\n", positions_burst[k],
-                                   positions[j * BURST_SIZE + k]);
+                        tst_error("Key looked up in %d, should be in %d", positions_burst[k],
+                                  positions[j * BURST_SIZE + k]);
                         return -1;
                     }
                 }
@@ -508,7 +498,7 @@ timed_deletes(unsigned int with_hash, unsigned int with_data, unsigned int table
         if (ret >= 0)
             positions[i] = ret;
         else {
-            cne_printf("Failed to delete key number %u\n", i);
+            tst_error("Failed to delete key number %u", i);
             return -1;
         }
     }
@@ -525,9 +515,6 @@ static int
 run_all_tbl_perf_tests(unsigned int with_pushes, unsigned int ext)
 {
     unsigned i, j, with_data, with_hash;
-
-    cne_printf("Measuring performance, please wait");
-    fflush(stdout);
 
     for (with_data = 0; with_data <= 1; with_data++) {
         for (i = 0; i < NUM_KEYSIZES; i++) {
@@ -552,10 +539,6 @@ run_all_tbl_perf_tests(unsigned int with_pushes, unsigned int ext)
                 if (timed_deletes(with_hash, with_data, i, ext) < 0)
                     return -1;
 
-                /* Print a dot to show progress on operations */
-                cne_printf(".");
-                fflush(stdout);
-
                 reset_table(i);
             }
             free_table(i);
@@ -566,24 +549,25 @@ run_all_tbl_perf_tests(unsigned int with_pushes, unsigned int ext)
     cne_printf("-----------------------------------\n");
     for (with_data = 0; with_data <= 1; with_data++) {
         if (with_data)
-            cne_printf("\n Operations with 8-byte data\n");
+            cne_printf("Operations with 8-byte data\n");
         else
-            cne_printf("\n Operations without data\n");
+            cne_printf("Operations without data\n");
         for (with_hash = 0; with_hash <= 1; with_hash++) {
             if (with_hash)
-                cne_printf("\nWith pre-computed hash values\n");
+                cne_printf("  With pre-computed hash values\n");
             else
-                cne_printf("\nWithout pre-computed hash values\n");
+                cne_printf("  Without pre-computed hash values\n");
 
-            cne_printf("\n%-18s%-18s%-18s%-18s%-18s\n", "Keysize", "Add", "Lookup", "Lookup_bulk",
+            cne_printf("    %-18s%-18s%-18s%-18s%-18s\n", "Keysize", "Add", "Lookup", "Lookup_bulk",
                        "Delete");
             for (i = 0; i < NUM_KEYSIZES; i++) {
-                cne_printf("%-18d", hashtest_key_lens[i]);
+                cne_printf("    %-18d", hashtest_key_lens[i]);
                 for (j = 0; j < NUM_OPERATIONS; j++)
                     cne_printf("%-18" PRIu64, cycles[i][j][with_hash][with_data]);
                 cne_printf("\n");
             }
         }
+        cne_printf("\n");
     }
     return 0;
 }
@@ -615,13 +599,13 @@ fbk_hash_perf_test(void)
 
     handle = cne_fbk_hash_create(&params);
     if (handle == NULL) {
-        cne_printf("Error creating table\n");
+        tst_error("Error creating table");
         return -1;
     }
 
     keys = calloc(ENTRIES, sizeof(*keys));
     if (keys == NULL) {
-        cne_printf("fbk hash: memory allocation for key store failed\n");
+        tst_error("fbk hash: memory allocation for key store failed");
         cne_fbk_hash_free(handle);
         return -1;
     }
@@ -640,7 +624,7 @@ fbk_hash_perf_test(void)
             break;
     }
     if (added == 0) {
-        cne_printf("Failed to add keys to key store\n");
+        tst_error("Failed to add keys to key store");
         free(keys);
         return -1;
     }
@@ -662,14 +646,14 @@ fbk_hash_perf_test(void)
         lookup_time += (double)(end - begin);
     }
 
-    cne_printf("\n\n *** FBK Hash function performance test results ***\n");
+    tst_info("FBK Hash function performance test results:");
     /*
      * The use of the 'value' variable ensures that the hash lookup is not
      * being optimised out by the compiler.
      */
     if (value != 0)
-        cne_printf("Number of ticks per lookup = %g\n",
-                   (double)lookup_time / ((double)TEST_ITERATIONS * (double)TEST_SIZE));
+        tst_info("Number of ticks per lookup = %g",
+                 (double)lookup_time / ((double)TEST_ITERATIONS * (double)TEST_SIZE));
 
     cne_fbk_hash_free(handle);
     free(keys);
@@ -680,21 +664,22 @@ fbk_hash_perf_test(void)
 static int
 test_hash_perf(void)
 {
-    unsigned int with_pushes;
-    cne_printf("\nWithout locks in the code\n");
-    for (with_pushes = 0; with_pushes <= 1; with_pushes++) {
-        if (with_pushes == 0)
-            cne_printf("\nALL ELEMENTS IN PRIMARY LOCATION\n");
-        else
-            cne_printf("\nELEMENTS IN PRIMARY OR SECONDARY LOCATION\n");
-        if (run_all_tbl_perf_tests(with_pushes, 0) < 0)
-            return -1;
-    }
+    int rc;
 
-    cne_printf("\n EXTENDABLE BUCKETS PERFORMANCE\n");
+    tst_info("ALL ELEMENTS IN PRIMARY LOCATION");
+    rc = run_all_tbl_perf_tests(0, 0);
+    if (rc < 0)
+        return rc;
 
-    if (run_all_tbl_perf_tests(1, 1) < 0)
-        return -1;
+    tst_info("ELEMENTS IN PRIMARY OR SECONDARY LOCATION");
+    rc = run_all_tbl_perf_tests(1, 0);
+    if (rc < 0)
+        return rc;
+
+    tst_info("EXTENDABLE BUCKETS PERFORMANCE");
+    rc = run_all_tbl_perf_tests(1, 1);
+    if (rc < 0)
+        return rc;
 
     if (fbk_hash_perf_test() < 0)
         return -1;
@@ -730,10 +715,12 @@ hash_perf_main(int argc, char **argv)
     if (test_hash_perf() < 0)
         goto leave;
 
+    tst_ok("PASS --- %s tests passed", tst->name);
     tst_end(tst, TST_PASSED);
 
     return 0;
 leave:
+    tst_error("FAILED --- %s tests failed", tst->name);
     tst_end(tst, TST_FAILED);
     return -1;
 }
