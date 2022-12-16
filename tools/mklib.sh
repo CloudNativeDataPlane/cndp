@@ -1,6 +1,7 @@
 #!/bin/bash
 
-outfile=$1
-shift 1
+outdir=$1
+outfile=$2
+shift 2
 
-echo "GROUP (" $* ")" > /tmp/$outfile
+echo "GROUP (" "$*" ")" > "$outdir/$outfile"
