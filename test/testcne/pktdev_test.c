@@ -114,74 +114,73 @@ general_tests(const char *ifname, const char *pmd)
                       (uint64_t)DEFAULT_MBUF_COUNT * (uint64_t)DEFAULT_MBUF_SIZE,
                       mmap_name_by_type(MMAP_HUGEPAGE_4KB));
 
-        cne_printf("\n[blue]>>>[white]TEST: Invalid PMD Name\n");
+        tst_info("TEST: Invalid PMD Name");
         reset_test_params(&pc, ifname, mmap, pmd);
         set_cleanup_params(mmap, &clnup);
         strlcpy(pc.pmd_name, PMD_NET_AF_XDP_NAME "_", sizeof(pc.pmd_name));
         retval = pktdev_port_setup(&pc);
         TST_ASSERT_FAIL_AND_CLEANUP(retval, "FAILED --- TEST: Invalid PMD Name\n", clean_up,
                                     &clnup);
-        tst_ok("PASS --- TEST: Invalid PMD Name\n");
+        tst_ok("PASS --- TEST: Invalid PMD Name");
 
-        cne_printf("\n[blue]>>>[white]TEST: Invalid ifname\n");
+        tst_info("TEST: Invalid ifname");
         reset_test_params(&pc, "UNKNOWN", mmap, pmd);
         retval = pktdev_port_setup(&pc);
         TST_ASSERT_FAIL_AND_CLEANUP(retval, "FAILED --- TEST: Invalid ifname\n", clean_up, &clnup);
-        tst_ok("PASS --- TEST: Invalid ifname\n");
+        tst_ok("PASS --- TEST: Invalid ifname");
     }
 
-    cne_printf("\n[blue]>>>[white] TEST: Valid ifname Test PMD %s[]\n", pmd);
+    tst_info("TEST: Valid ifname Test PMD %s", pmd);
     reset_test_params(&pc, ifname, mmap, pmd);
     set_cleanup_params(mmap, &clnup);
     retval = pktdev_port_setup(&pc);
     TST_ASSERT_SUCCESS_AND_CLEANUP(retval, "FAILED --- TEST: Valid ifname Test\n", clean_up,
                                    &clnup);
-    tst_ok("PASS --- TEST: Valid ifname Test[]\n");
+    tst_ok("PASS --- TEST: Valid ifname Test");
     lport = retval;
-    cne_printf("\n[blue]>>>[white]TEST: Set admin state Down[]\n");
+    tst_info("TEST: Set admin state Down");
     admin_state = false;
     retval      = pktdev_admin_state_set(lport, admin_state);
     TST_ASSERT_SUCCESS_AND_CLEANUP(retval, "FAIL --- pktdev_admin_state_set(%d) failed\n", clean_up,
                                    &clnup, lport);
     admin_state = pktdev_admin_state(lport);
     TST_ASSERT_EQUAL(admin_state, false, "TEST: Set admin state Down");
-    tst_ok("PASS --- TEST: Set admin state Down[]\n");
+    tst_ok("PASS --- TEST: Set admin state Down");
 
-    cne_printf("\n[blue]>>>[white]TEST: Set admin state up[]\n");
+    tst_info("TEST: Set admin state up");
     admin_state = true;
     retval      = pktdev_admin_state_set(lport, admin_state);
     TST_ASSERT_SUCCESS_AND_CLEANUP(retval, "FAIL --- pktdev_admin_state_set(%d) failed\n", clean_up,
                                    &clnup, lport);
     admin_state = pktdev_admin_state(lport);
     TST_ASSERT_EQUAL(admin_state, true, "TEST: Set admin state Up");
-    tst_ok("PASS --- TEST: Set admin state Up[]\n");
+    tst_ok("PASS --- TEST: Set admin state Up");
 
     if (!(strcmp(pmd, PMD_NET_AF_XDP_NAME))) {
-        cne_printf("\n[blue]>>>[white]TEST: Check lport MAC addr[]\n");
-        vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
+        tst_info("TEST: Check lport MAC addr");
         /* Display the lport MAC address. */
         retval = pktdev_macaddr_get(lport, &eaddr);
         TST_ASSERT_SUCCESS_AND_CLEANUP(retval, "FAIL --- TEST:  Check lport MAC addr\n", clean_up,
                                        &clnup);
-        cne_printf("[yellow]Port %u MAC: %02" PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8
-                   ":%02" PRIx8 ":%02" PRIx8 "\n",
-                   lport, eaddr.ether_addr_octet[0], eaddr.ether_addr_octet[1],
-                   eaddr.ether_addr_octet[2], eaddr.ether_addr_octet[3], eaddr.ether_addr_octet[4],
-                   eaddr.ether_addr_octet[5]);
-        tst_ok("PASS --- TEST:  Check lport MAC addr\n");
+        tst_info("Port %u MAC: %02" PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8 ":%02" PRIx8
+                 ":%02" PRIx8,
+                 lport, eaddr.ether_addr_octet[0], eaddr.ether_addr_octet[1],
+                 eaddr.ether_addr_octet[2], eaddr.ether_addr_octet[3], eaddr.ether_addr_octet[4],
+                 eaddr.ether_addr_octet[5]);
+        tst_ok("PASS --- TEST:  Check lport MAC addr");
 
-        cne_printf("\n[blue]>>>[white]TEST: Check lport enabled offloads[]\n");
+        tst_info("TEST: Check lport enabled offloads");
         struct offloads off;
         /* Display the lport MAC address. */
         retval = pktdev_offloads_get(lport, &off);
         TST_ASSERT_SUCCESS_AND_CLEANUP(retval, "FAIL --- TEST:  Check lport offloads\n", clean_up,
                                        &clnup);
-        cne_printf("\n\n[yellow]Port %u TX OFFLOAD %" PRIu32 "\n", lport, off.tx_checksum_offload);
-        cne_printf("[yellow]Port %u RX OFFLOAD %" PRIu32 "\n\n", lport, off.rx_checksum_offload);
-        tst_ok("PASS --- TEST:  Check lport enabled offloads[]\n");
+        tst_info("\n\nPort %u TX OFFLOAD %" PRIu32, lport, off.tx_checksum_offload);
+        tst_info("Port %u RX OFFLOAD %" PRIu32, lport, off.rx_checksum_offload);
+        tst_ok("PASS --- TEST:  Check lport enabled offloads");
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: pktdev_promiscuous_enable[]\n");
+    tst_info("TEST: pktdev_promiscuous_enable");
     /* Enable RX in promiscuous mode for the Ethernet device. */
     retval = netdev_promiscuous_enable(ifname);
     if (!(strcmp(pmd, PMD_NET_AF_XDP_NAME)))
@@ -190,128 +189,128 @@ general_tests(const char *ifname, const char *pmd)
     else
         TST_ASSERT_FAIL_AND_CLEANUP(retval, "FAIL --- pktdev_promiscuous_enable(%d)\n", clean_up,
                                     &clnup, lport);
-    tst_ok("PASS --- TEST:  pktdev_promiscuous_enable\n");
+    tst_ok("PASS --- TEST:  pktdev_promiscuous_enable");
 
-    cne_printf("\n[blue]>>>[white]TEST: Check lport's port_id[]\n");
+    tst_info("TEST: Check lport's port_id");
     /* Display the lport port_id */
     struct cne_pktdev *dev;
     dev    = pktdev_get(lport);
     portid = pktdev_portid(dev);
     TST_ASSERT(portid >= 0, "TEST: Get the port id");
-    tst_ok("PASS --- TEST: Get the portid of pktdev\n");
+    tst_ok("PASS --- TEST: Get the portid of pktdev");
 
-    cne_printf("\n[blue]>>>[white]TEST: Check lport's socket_id[]\n");
+    tst_info("TEST: Check lport's socket_id");
     /* Display the socket id of the lport */
     socketid = pktdev_socket_id(lport);
     TST_ASSERT(socketid >= 0, "TEST: Get the socket id");
-    tst_ok("PASS --- TEST: Get the socket id of pktdev\n");
+    tst_ok("PASS --- TEST: Get the socket id of pktdev");
 
-    cne_printf("\n[blue]>>>[white]TEST: Check pktdev port number[]\n");
+    tst_info("TEST: Check pktdev port number");
     /* Get the total number for the pktdev ports */
     dev_num = pktdev_port_count();
     TST_ASSERT(dev_num > 0, "TEST: Get the pktdev port number");
-    tst_ok("PASS --- TEST: Get the pktdev number\n");
+    tst_ok("PASS --- TEST: Get the pktdev number");
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_info_get\n[]");
+    tst_info("TEST: API test for pktdev_info_get");
     struct pktdev_info *dev_info = (struct pktdev_info *)malloc(sizeof(struct pktdev_info));
     if (!dev_info)
         goto leave;
     TST_ASSERT_GOTO(pktdev_info_get(lport, dev_info) == 0,
                     "ERROR - Could not get the pktdev info\n", leave);
-    tst_ok("PASS --- TEST: Get the pktdev info successful\n");
+    tst_ok("PASS --- TEST: Get the pktdev info successful");
     TST_ASSERT_GOTO(pktdev_info_get(lport + 1, dev_info) == -ENOTSUP,
                     "ERROR - The error code isn't correct\n", leave);
-    tst_ok("PASS --- TEST: Port info out of valid range checking passed\n");
+    tst_ok("PASS --- TEST: Port info out of valid range checking passed");
     TST_ASSERT_GOTO(pktdev_info_get(CNE_MAX_ETHPORTS + 1, dev_info) == -ENODEV,
                     "ERROR - The error code isn't correct\n", leave);
-    tst_ok("PASS --- TEST: Port number above max checking passed\n");
+    tst_ok("PASS --- TEST: Port number above max checking passed");
     free(dev_info);
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_socket_id\n[]");
+    tst_info("TEST: API test for pktdev_socket_id");
     if (pktdev_socket_id(lport) >= 0)
-        tst_ok("PASS --- TEST: socket is correct\n");
+        tst_ok("PASS --- TEST: socket is correct");
     else {
-        tst_error("ERROR - Returned socket id failed\n");
+        tst_error("ERROR - Returned socket id failed");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_portid\n[]");
+    tst_info("TEST: API test for pktdev_portid");
     if (pktdev_portid(pktdev_get(lport)) == lport)
-        tst_ok("PASS --- TEST: port id is correct\n");
+        tst_ok("PASS --- TEST: port id is correct");
     else {
-        tst_error("ERROR - Return port id error\n");
+        tst_error("ERROR - Return port id error");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_arg_get\n[]");
+    tst_info("TEST: API test for pktdev_arg_get");
     if (pktdev_arg_get(lport) != NULL)
-        tst_ok("PASS --- TEST: pktdev_arg_get action pass\n");
+        tst_ok("PASS --- TEST: pktdev_arg_get action pass");
     else {
-        tst_error("ERROR - Return pktdev_arg_get() failed\n");
+        tst_error("ERROR - Return pktdev_arg_get() failed");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for is_valid_port\n[]");
+    tst_info("TEST: API test for is_valid_port");
     if (pktdev_is_valid_port(lport) == 1)
-        tst_ok("PASS --- TEST: is_valid_port api test pass\n");
+        tst_ok("PASS --- TEST: is_valid_port api test pass");
     else {
-        tst_error("ERROR - Is_valid_port api test failed\n");
+        tst_error("ERROR - Is_valid_port api test failed");
         goto leave;
     }
     if (pktdev_is_valid_port(lport + 1) == 0)
-        tst_ok("PASS --- TEST: is_valid_port api test for invalid id pass\n");
+        tst_ok("PASS --- TEST: is_valid_port api test for invalid id pass");
     else {
-        tst_error("ERROR - is_valid_port api test for invalid id fail\n");
+        tst_error("ERROR - is_valid_port api test for invalid id fail");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_get_name_by_port\n[]");
+    tst_info("TEST: API test for pktdev_get_name_by_port");
     char name[100];
     int len = 100;
     if (pktdev_get_name_by_port(lport, name, len) == 0) {
-        tst_ok("PASS --- TEST: Get port name pass\n");
-        cne_printf("[blue]>>>[white]The pktdev name is: %s\n[]", name);
+        tst_info("The pktdev name is: %s", name);
+        tst_ok("PASS --- TEST: Get port name pass");
     } else {
-        tst_error("ERROR - Get port name failed\n");
+        tst_error("ERROR - Get port name failed");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_port_name\n[]");
+    tst_info("TEST: API test for pktdev_port_name");
     const char *name_link = NULL;
     name_link             = pktdev_port_name(lport);
     if (name_link != NULL) {
-        tst_ok("PASS --- TEST: Get port name pass\n");
-        cne_printf("[blue]>>>[white]the pktdev name is: %s\n[]", name_link);
+        tst_info("The pktdev name is: %d", name_link);
+        tst_ok("PASS --- TEST: Get port name pass");
     } else {
-        tst_error("ERROR - Get port name failed\n");
+        tst_error("ERROR - Get port name failed");
         goto leave;
     }
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for lport_cfg_dump\n[]");
+    tst_info("TEST: API test for lport_cfg_dump");
     lport_cfg_dump(NULL, &pc);
-    tst_ok("PASS --- TEST: lport config dump pass\n");
+    tst_ok("PASS --- TEST: lport config dump pass");
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_start\n[]");
+    tst_info("TEST: API test for pktdev_start");
     if (pktdev_start(lport) < 0) {
-        tst_error("ERROR - Could not start the lport\n");
+        tst_error("ERROR - Could not start the lport");
         goto leave;
     }
     sleep(1);
 
-    cne_printf("\n[blue]>>>[white]TEST: API test for pktdev_stop\n[]");
+    tst_info("TEST: API test for pktdev_stop");
     if (pktdev_stop(lport) < 0) {
-        tst_error("ERROR - Could not stop the lport\n");
+        tst_error("ERROR - Could not stop the lport");
         goto leave;
     } else
-        tst_ok("PASS --- TEST: pktdev stop success\n");
+        tst_ok("PASS --- TEST: pktdev stop success");
     sleep(1);
 
     /* Cleanup lport and complete test*/
     if (pktdev_close(lport)) {
-        tst_error("ERROR - Could not close the lport\n");
+        tst_error("ERROR - Could not close the lport");
         goto leave;
     } else
-        tst_ok("PASS --- TEST: pktdev close success\n");
+        tst_ok("PASS --- TEST: pktdev close success");
 
     lport = -1;
     sleep(1);
@@ -363,8 +362,8 @@ pktdev_main(int argc, char **argv)
     for (int i = 0; i < cne_countof(tests); i++) {
         memset(ifname, 0, IF_NAMESIZE);
         if (!(strcmp(afxdp_ifname, "UNKNOWN"))) {
-            cne_printf("[red]>>> No interface was specified for the pktdev tests \n"
-                       "[white] Need to specify at least 1 interface with the -i parameter\n");
+            tst_error("No interface was specified for the pktdev tests \n"
+                      "Need to specify at least 1 interface with the -i parameter");
             goto leave;
         }
 
@@ -375,18 +374,17 @@ pktdev_main(int argc, char **argv)
         else
             strlcpy(ifname, afxdp_ifname, sizeof(ifname));
 
-        cne_printf("\n[blue]>>> %s Tests\n", tests[i]);
-        vt_color(VT_DEFAULT_FG, VT_NO_CHANGE, VT_OFF);
+        tst_info("%s Tests", tests[i]);
 
         if (general_tests(ifname, tests[i]) < 0)
             goto leave;
     }
-    cne_printf("\n[magenta]>>>[green]ALL TESTS COMPLETE\n");
     tst_end(tst, TST_PASSED);
 
     return 0;
 
 leave:
+    tst_error("pktdev tests failed");
     tst_end(tst, TST_FAILED);
     return -1;
 }
