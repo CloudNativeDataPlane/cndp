@@ -18,13 +18,24 @@ Use GitHub Pull requests to change CNDP.
 
 C code should follow the CNDP coding standards.
 
-A .clang-format is available in the CNDP repo and can be run with ninja or a
-pre-commit hook is available and can be used to apply the clang format to
+A .clang-format file is available in the CNDP repo and can be run with ninja:
+
+``` bash
+ninja -C builddir clang-format
+```
+
+Or with git-clang-format if it is installed:
+
+``` bash
+git clang-format --diff
+```
+
+Or a pre-commit hook is available and can be used to apply the clang format to
 modified files in a commit by doing the following before committing changes:
 
 ``` bash
-$ cp .githooks/pre-commit .git/hooks/
-$ chmod +x .git/hooks/pre-commit
+cp .githooks/pre-commit .git/hooks/
+chmod +x .git/hooks/pre-commit
 ```
 
 Guidelines for public or private APIs is to hide as much of the internal API
@@ -86,6 +97,16 @@ int foobar(foo_t *foo) {
 
 Naming header files as xyz\_private.h and cne\_xyz.h is preferred. The .c files should be named
 xyz.c or cne\_xyz.c.
+
+### Braces for single line statements
+Do not use braces where a single statement (if, while, for, ...) will do:
+
+``` c
+if (foo)
+    do_this();
+else
+    do_that();
+```
 
 ## Maintainers
 
