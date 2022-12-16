@@ -271,7 +271,7 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
     for (count = 0; count <= dim; count++) {
         ret = cne_acl_classify(acx, data, results, count, CNE_ACL_MAX_CATEGORIES);
         if (ret != 0) {
-            cne_printf("Line %i: SSE classify failed!\n", __LINE__);
+            tst_error("Line %i: SSE classify failed!", __LINE__);
             goto err;
         }
 
@@ -279,9 +279,9 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
         for (i = 0; i < (int)count; i++) {
             result = results[i * CNE_ACL_MAX_CATEGORIES + ACL_ALLOW];
             if (result != test_data[i].allow) {
-                cne_printf("Line %i: Error in allow results at %i "
-                           "(expected %" PRIu32 " got %" PRIu32 ")!\n",
-                           __LINE__, i, test_data[i].allow, result);
+                tst_error("Line %i: Error in allow results at %i "
+                          "(expected %" PRIu32 " got %" PRIu32 ")!",
+                          __LINE__, i, test_data[i].allow, result);
                 ret = -EINVAL;
                 goto err;
             }
@@ -291,9 +291,9 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
         for (i = 0; i < (int)count; i++) {
             result = results[i * CNE_ACL_MAX_CATEGORIES + ACL_DENY];
             if (result != test_data[i].deny) {
-                cne_printf("Line %i: Error in deny results at %i "
-                           "(expected %" PRIu32 " got %" PRIu32 ")!\n",
-                           __LINE__, i, test_data[i].deny, result);
+                tst_error("Line %i: Error in deny results at %i "
+                          "(expected %" PRIu32 " got %" PRIu32 ")!",
+                          __LINE__, i, test_data[i].deny, result);
                 ret = -EINVAL;
                 goto err;
             }
@@ -304,7 +304,7 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
     ret = cne_acl_classify_alg(acx, data, results, dim, CNE_ACL_MAX_CATEGORIES,
                                CNE_ACL_CLASSIFY_SCALAR);
     if (ret != 0) {
-        cne_printf("Line %i: scalar classify failed!\n", __LINE__);
+        tst_error("Line %i: scalar classify failed!", __LINE__);
         goto err;
     }
 
@@ -312,9 +312,9 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
     for (i = 0; i < (int)dim; i++) {
         result = results[i * CNE_ACL_MAX_CATEGORIES + ACL_ALLOW];
         if (result != test_data[i].allow) {
-            cne_printf("Line %i: Error in allow results at %i "
-                       "(expected %" PRIu32 " got %" PRIu32 ")!\n",
-                       __LINE__, i, test_data[i].allow, result);
+            tst_error("Line %i: Error in allow results at %i "
+                      "(expected %" PRIu32 " got %" PRIu32 ")!",
+                      __LINE__, i, test_data[i].allow, result);
             ret = -EINVAL;
             goto err;
         }
@@ -324,9 +324,9 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
     for (i = 0; i < (int)dim; i++) {
         result = results[i * CNE_ACL_MAX_CATEGORIES + ACL_DENY];
         if (result != test_data[i].deny) {
-            cne_printf("Line %i: Error in deny results at %i "
-                       "(expected %" PRIu32 " got %" PRIu32 ")!\n",
-                       __LINE__, i, test_data[i].deny, result);
+            tst_error("Line %i: Error in deny results at %i "
+                      "(expected %" PRIu32 " got %" PRIu32 ")!",
+                      __LINE__, i, test_data[i].deny, result);
             ret = -EINVAL;
             goto err;
         }
@@ -337,6 +337,8 @@ test_classify_run(struct cne_acl_ctx *acx, struct ipv4_7tuple test_data[], size_
 err:
     /* swap data back to cpu order so that next time tests don't fail */
     bswap_test_data(test_data, dim, 0);
+    if (ret != 0)
+        tst_error("%s failed", __func__);
     return ret;
 }
 
@@ -348,14 +350,14 @@ test_classify_buid(struct cne_acl_ctx *acx, const struct cne_acl_ipv4vlan_rule *
     /* add rules to the context */
     ret = cne_acl_ipv4vlan_add_rules(acx, rules, num);
     if (ret != 0) {
-        cne_printf("Line %i: Adding rules to ACL context failed!\n", __LINE__);
+        tst_error("Line %i: Adding rules to ACL context failed!", __LINE__);
         return ret;
     }
 
     /* try building the context */
     ret = cne_acl_ipv4vlan_build(acx, ipv4_7tuple_layout, CNE_ACL_MAX_CATEGORIES);
     if (ret != 0) {
-        cne_printf("Line %i: Building ACL context failed!\n", __LINE__);
+        tst_error("Line %i: Building ACL context failed!", __LINE__);
         return ret;
     }
 
@@ -373,9 +375,11 @@ test_classify(void)
     struct cne_acl_ctx *acx;
     int i, ret;
 
+    tst_info("%s(%s)", __func__, "Test scalar and SSE ACL lookup");
+
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -389,15 +393,15 @@ test_classify(void)
 
         ret = test_classify_buid(acx, acl_test_rules, CNE_DIM(acl_test_rules));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: "
-                       "Adding rules to ACL context failed!\n",
-                       __LINE__, i);
+            tst_error("Line %i, iter: %d: "
+                      "Adding rules to ACL context failed!",
+                      __LINE__, i);
             break;
         }
 
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
 
@@ -405,7 +409,7 @@ test_classify(void)
         cne_acl_reset_rules(acx);
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
     }
@@ -423,15 +427,17 @@ test_classify_avx2(void)
     struct cne_acl_ctx *acx;
     int i, ret;
 
+    tst_info("%s(%s)", __func__, "Test avx2 ACL lookup");
+
     /* check if AVX2 is supported */
     if (!cne_cpu_get_flag_enabled(CNE_CPUFLAG_AVX2)) {
-        cne_printf("AVX2 not supported\n");
+        tst_info("AVX2 not supported");
         return 0;
     }
 
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -447,15 +453,15 @@ test_classify_avx2(void)
 
         ret = test_classify_buid(acx, acl_test_rules, CNE_DIM(acl_test_rules));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: "
-                       "Adding rules to ACL context failed!\n",
-                       __LINE__, i);
+            tst_error("Line %i, iter: %d: "
+                      "Adding rules to ACL context failed!",
+                      __LINE__, i);
             break;
         }
 
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
 
@@ -463,7 +469,7 @@ test_classify_avx2(void)
         cne_acl_reset_rules(acx);
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
     }
@@ -480,15 +486,17 @@ test_classify_avx512x16(void)
     struct cne_acl_ctx *acx;
     int i, ret;
 
+    tst_info("%s(%s)", __func__, "Test avx512x16 ACL lookup");
+
     /* check if AVX512 is supported */
     if (!cne_cpu_get_flag_enabled(CNE_CPUFLAG_AVX512F)) {
-        cne_printf("AVX512 not supported\n");
+        tst_info("AVX512 not supported");
         return 0;
     }
 
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -504,15 +512,15 @@ test_classify_avx512x16(void)
 
         ret = test_classify_buid(acx, acl_test_rules, CNE_DIM(acl_test_rules));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: "
-                       "Adding rules to ACL context failed!\n",
-                       __LINE__, i);
+            tst_error("Line %i, iter: %d: "
+                      "Adding rules to ACL context failed!",
+                      __LINE__, i);
             break;
         }
 
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
 
@@ -520,7 +528,7 @@ test_classify_avx512x16(void)
         cne_acl_reset_rules(acx);
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
     }
@@ -537,15 +545,17 @@ test_classify_avx512x32(void)
     struct cne_acl_ctx *acx;
     int i, ret;
 
+    tst_info("%s(%s)", __func__, "Test avx512x16 ACL lookup");
+
     /* check if AVX512 is supported */
     if (!cne_cpu_get_flag_enabled(CNE_CPUFLAG_AVX512F)) {
-        cne_printf("AVX512 not supported\n");
+        tst_info("AVX512 not supported");
         return 0;
     }
 
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -561,15 +571,15 @@ test_classify_avx512x32(void)
 
         ret = test_classify_buid(acx, acl_test_rules, CNE_DIM(acl_test_rules));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: "
-                       "Adding rules to ACL context failed!\n",
-                       __LINE__, i);
+            tst_error("Line %i, iter: %d: "
+                      "Adding rules to ACL context failed!",
+                      __LINE__, i);
             break;
         }
 
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
 
@@ -577,7 +587,7 @@ test_classify_avx512x32(void)
         cne_acl_reset_rules(acx);
         ret = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: %s failed!\n", __LINE__, i, __func__);
+            tst_error("Line %i, iter: %d: %s failed!", __LINE__, i, __func__);
             break;
         }
     }
@@ -679,9 +689,11 @@ test_build_ports_range(void)
     uint32_t results[CNE_DIM(test_data)];
     const uint8_t *data[CNE_DIM(test_data)];
 
+    tst_info("%s(%s)", __func__, "Test ports ACLs");
+
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -696,23 +708,23 @@ test_build_ports_range(void)
         cne_acl_reset(acx);
         ret = test_classify_buid(acx, test_rules, i + 1);
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: "
-                       "Adding rules to ACL context failed!\n",
-                       __LINE__, i);
+            tst_error("Line %i, iter: %d: "
+                      "Adding rules to ACL context failed!",
+                      __LINE__, i);
             break;
         }
         ret = cne_acl_classify(acx, data, results, CNE_DIM(data), 1);
         if (ret != 0) {
-            cne_printf("Line %i, iter: %d: classify failed!\n", __LINE__, i);
+            tst_error("Line %i, iter: %d: classify failed!", __LINE__, i);
             break;
         }
 
         /* check results */
         for (j = 0; j != CNE_DIM(results); j++) {
             if (results[j] != test_data[j].allow) {
-                cne_printf("Line %i: Error in allow results at %i "
-                           "(expected %" PRIu32 " got %" PRIu32 ")!\n",
-                           __LINE__, j, test_data[j].allow, results[j]);
+                tst_error("Line %i: Error in allow results at %i "
+                          "(expected %" PRIu32 " got %" PRIu32 ")!",
+                          __LINE__, j, test_data[j].allow, results[j]);
                 ret = -EINVAL;
             }
         }
@@ -902,9 +914,9 @@ convert_rules(struct cne_acl_ctx *acx,
         convert(rules + i, &r);
         rc = cne_acl_add_rules(acx, (struct cne_acl_rule *)&r, 1);
         if (rc != 0) {
-            cne_printf("Line %i: Adding rule %u to ACL context "
-                       "failed with error code: %d\n",
-                       __LINE__, i, rc);
+            tst_error("Line %i: Adding rule %u to ACL context "
+                      "failed with error code: %d",
+                      __LINE__, i, rc);
             return rc;
         }
     }
@@ -1015,29 +1027,29 @@ test_convert_rules(const char *desc, void (*config)(struct cne_acl_config *),
     uint32_t i;
     static const size_t mem_sizes[] = {0, -1};
 
-    cne_printf("running %s(%s)\n", __func__, desc);
+    tst_info("%s(%s)", __func__, desc);
 
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
     rc = convert_rules(acx, convert, acl_test_rules, CNE_DIM(acl_test_rules));
     if (rc != 0)
-        cne_printf("Line %i: Error converting ACL rules!\n", __LINE__);
+        tst_error("Line %i: Error converting ACL rules!", __LINE__);
 
     for (i = 0; rc == 0 && i != CNE_DIM(mem_sizes); i++) {
 
         rc = build_convert_rules(acx, config, mem_sizes[i]);
         if (rc != 0) {
-            cne_printf("Line %i: Error @ build_convert_rules(%zu)!\n", __LINE__, mem_sizes[i]);
+            tst_error("Line %i: Error @ build_convert_rules(%zu)!", __LINE__, mem_sizes[i]);
             break;
         }
 
         rc = test_classify_run(acx, acl_test_data, CNE_DIM(acl_test_data));
         if (rc != 0)
-            cne_printf("%s failed at line %i, max_size=%zu\n", __func__, __LINE__, mem_sizes[i]);
+            tst_error("%s failed at line %i, max_size=%zu", __func__, __LINE__, mem_sizes[i]);
     }
 
     cne_acl_free(acx);
@@ -1084,12 +1096,14 @@ test_convert(void)
     uint32_t i;
     int32_t rc;
 
+    tst_info("%s(%s)", __func__, "Test convert rules");
+
     for (i = 0; i != CNE_DIM(convert_param); i++) {
         rc = test_convert_rules(convert_param[i].desc, convert_param[i].config,
                                 convert_param[i].convert);
         if (rc != 0) {
-            cne_printf("%s for test-case: %s failed, error code: %d;\n", __func__,
-                       convert_param[i].desc, rc);
+            tst_error("%s for test-case: %s failed, error code: %d;", __func__,
+                      convert_param[i].desc, rc);
             return rc;
         }
     }
@@ -1131,9 +1145,11 @@ test_invalid_layout(void)
         offsetof(struct ipv4_7tuple, port_src),
     };
 
+    tst_info("%s(%s)", __func__, "Test wrong layout behavior");
+
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -1143,7 +1159,7 @@ test_invalid_layout(void)
         /* add rules to the context */
         ret = cne_acl_ipv4vlan_add_rules(acx, invalid_layout_rules, CNE_DIM(invalid_layout_rules));
         if (ret != 0) {
-            cne_printf("Line %i: Adding rules to ACL context failed!\n", __LINE__);
+            tst_error("Line %i: Adding rules to ACL context failed!", __LINE__);
             cne_acl_free(acx);
             return -1;
         }
@@ -1152,7 +1168,7 @@ test_invalid_layout(void)
     /* try building the context */
     ret = cne_acl_ipv4vlan_build(acx, layout, 1);
     if (ret != 0) {
-        cne_printf("Line %i: Building ACL context failed!\n", __LINE__);
+        tst_error("Line %i: Building ACL context failed!", __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1168,16 +1184,16 @@ test_invalid_layout(void)
     /* classify tuples */
     ret = cne_acl_classify_alg(acx, data, results, CNE_DIM(results), 1, CNE_ACL_CLASSIFY_SCALAR);
     if (ret != 0) {
-        cne_printf("Line %i: SSE classify failed!\n", __LINE__);
+        tst_error("Line %i: SSE classify failed!", __LINE__);
         cne_acl_free(acx);
         return -1;
     }
 
     for (i = 0; i < (int)CNE_DIM(results); i++) {
         if (results[i] != invalid_layout_data[i].allow) {
-            cne_printf("Line %i: Wrong results at %i "
-                       "(result=%u, should be %u)!\n",
-                       __LINE__, i, results[i], invalid_layout_data[i].allow);
+            tst_error("Line %i: Wrong results at %i "
+                      "(result=%u, should be %u)!",
+                      __LINE__, i, results[i], invalid_layout_data[i].allow);
             goto err;
         }
     }
@@ -1186,16 +1202,16 @@ test_invalid_layout(void)
     ret = cne_acl_classify_alg(acx, data, results, CNE_DIM(results), 1, CNE_ACL_CLASSIFY_SCALAR);
 
     if (ret != 0) {
-        cne_printf("Line %i: Scalar classify failed!\n", __LINE__);
+        tst_error("Line %i: Scalar classify failed!", __LINE__);
         cne_acl_free(acx);
         return -1;
     }
 
     for (i = 0; i < (int)CNE_DIM(results); i++) {
         if (results[i] != invalid_layout_data[i].allow) {
-            cne_printf("Line %i: Wrong results at %i "
-                       "(result=%u, should be %u)!\n",
-                       __LINE__, i, results[i], invalid_layout_data[i].allow);
+            tst_error("Line %i: Wrong results at %i "
+                      "(result=%u, should be %u)!",
+                      __LINE__, i, results[i], invalid_layout_data[i].allow);
             goto err;
         }
     }
@@ -1213,6 +1229,7 @@ err:
 
     cne_acl_free(acx);
 
+    tst_error("%s failed", __func__);
     return -1;
 }
 
@@ -1232,6 +1249,8 @@ test_create_find_add(void)
     const char *acx2_name = "acx2";
     int i, ret;
 
+    tst_info("%s(%s)", __func__, "Test creating and finding ACL contexts");
+
     /* create two contexts */
     memcpy(&param, &acl_param, sizeof(param));
     param.max_rule_num = 2;
@@ -1239,14 +1258,14 @@ test_create_find_add(void)
     param.name = acx_name;
     acx        = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating %s!\n", __LINE__, acx_name);
+        tst_error("Line %i: Error creating %s!", __LINE__, acx_name);
         return -1;
     }
 
     param.name = acx2_name;
     acx2       = cne_acl_create(&param);
     if (acx2 == NULL || acx2 == acx) {
-        cne_printf("Line %i: Error creating %s!\n", __LINE__, acx2_name);
+        tst_error("Line %i: Error creating %s!", __LINE__, acx2_name);
         cne_acl_free(acx);
         return -1;
     }
@@ -1260,7 +1279,7 @@ test_create_find_add(void)
 
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating %s!\n", __LINE__, param.name);
+        tst_error("Line %i: Error creating %s!", __LINE__, param.name);
         goto err;
     }
 
@@ -1276,23 +1295,23 @@ test_create_find_add(void)
     /* try filling up the context */
     ret = cne_acl_ipv4vlan_add_rules(acx, rules, LEN);
     if (ret != 0) {
-        cne_printf("Line %i: Adding %i rules to ACL context failed!\n", __LINE__, LEN);
+        tst_error("Line %i: Adding %i rules to ACL context failed!", __LINE__, LEN);
         goto err;
     }
 
     /* try adding to a (supposedly) full context */
     ret = cne_acl_ipv4vlan_add_rules(acx, rules, 1);
     if (ret == 0) {
-        cne_printf("Line %i: Adding rules to full ACL context should"
-                   "have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules to full ACL context should"
+                  "have failed!",
+                  __LINE__);
         goto err;
     }
 
     /* try building the context */
     ret = cne_acl_ipv4vlan_build(acx, layout, CNE_ACL_MAX_CATEGORIES);
     if (ret != 0) {
-        cne_printf("Line %i: Building ACL context failed!\n", __LINE__);
+        tst_error("Line %i: Building ACL context failed!", __LINE__);
         goto err;
     }
 
@@ -1303,6 +1322,7 @@ test_create_find_add(void)
 err:
     cne_acl_free(acx);
     cne_acl_free(acx2);
+    tst_error("%s failed", __func__);
     return -1;
 }
 
@@ -1317,9 +1337,11 @@ test_invalid_rules(void)
 
     struct cne_acl_ipv4vlan_rule rule;
 
+    tst_info("%s(%s)", __func__, "test various invalid rules");
+
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -1336,9 +1358,9 @@ test_invalid_rules(void)
     /* add rules to context and try to build it */
     ret = cne_acl_ipv4vlan_add_rules(acx, &rule, 1);
     if (ret == 0) {
-        cne_printf("Line %i: Adding rules to ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules to ACL context "
+                  "should have failed!",
+                  __LINE__);
         goto err;
     }
 
@@ -1350,9 +1372,9 @@ test_invalid_rules(void)
     /* add rules to context and try to build it */
     ret = cne_acl_ipv4vlan_add_rules(acx, &rule, 1);
     if (ret == 0) {
-        cne_printf("Line %i: Adding rules to ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules to ACL context "
+                  "should have failed!",
+                  __LINE__);
         goto err;
     }
 
@@ -1366,9 +1388,9 @@ test_invalid_rules(void)
     /* add rules to context and try to build it */
     ret = cne_acl_ipv4vlan_add_rules(acx, &rule, 1);
     if (ret == 0) {
-        cne_printf("Line %i: Adding rules to ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules to ACL context "
+                  "should have failed!",
+                  __LINE__);
         goto err;
     }
 
@@ -1378,9 +1400,9 @@ test_invalid_rules(void)
     /* add rules to context and try to build it */
     ret = cne_acl_ipv4vlan_add_rules(acx, &rule, 1);
     if (ret == 0) {
-        cne_printf("Line %i: Adding rules to ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules to ACL context "
+                  "should have failed!",
+                  __LINE__);
         goto err;
     }
 
@@ -1390,7 +1412,7 @@ test_invalid_rules(void)
 
 err:
     cne_acl_free(acx);
-
+    tst_error("%s failed", __func__);
     return -1;
 }
 
@@ -1412,6 +1434,8 @@ test_invalid_parameters(void)
 
     uint32_t layout[CNE_ACL_IPV4VLAN_NUM] = {0};
 
+    tst_info("%s(%s)", __func__, "test functions by passing invalid params");
+
     /**
      * cne_ac_create()
      */
@@ -1419,9 +1443,9 @@ test_invalid_parameters(void)
     /* NULL param */
     acx = cne_acl_create(NULL);
     if (acx != NULL) {
-        cne_printf("Line %i: ACL context creation with NULL param "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: ACL context creation with NULL param "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1432,9 +1456,9 @@ test_invalid_parameters(void)
 
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: ACL context creation with zero rule len "
-                   "failed!\n",
-                   __LINE__);
+        tst_error("Line %i: ACL context creation with zero rule len "
+                  "failed!",
+                  __LINE__);
         return -1;
     } else
         cne_acl_free(acx);
@@ -1445,9 +1469,9 @@ test_invalid_parameters(void)
 
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: ACL context creation with zero rule num "
-                   "failed!\n",
-                   __LINE__);
+        tst_error("Line %i: ACL context creation with zero rule num "
+                  "failed!",
+                  __LINE__);
         return -1;
     } else
         cne_acl_free(acx);
@@ -1458,9 +1482,9 @@ test_invalid_parameters(void)
 
     acx = cne_acl_create(&param);
     if (acx != NULL) {
-        cne_printf("Line %i: ACL context creation with NULL name "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: ACL context creation with NULL name "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1473,7 +1497,7 @@ test_invalid_parameters(void)
     memcpy(&param, &acl_param, sizeof(param));
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: ACL context creation failed!\n", __LINE__);
+        tst_error("Line %i: ACL context creation failed!", __LINE__);
         return -1;
     }
 
@@ -1482,9 +1506,9 @@ test_invalid_parameters(void)
     /* NULL context */
     result = cne_acl_ipv4vlan_add_rules(NULL, &rule, 1);
     if (result == 0) {
-        cne_printf("Line %i: Adding rules with NULL ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding rules with NULL ACL context "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1492,9 +1516,9 @@ test_invalid_parameters(void)
     /* NULL rule */
     result = cne_acl_ipv4vlan_add_rules(acx, NULL, 1);
     if (result == 0) {
-        cne_printf("Line %i: Adding NULL rule to ACL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Adding NULL rule to ACL context "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1502,7 +1526,7 @@ test_invalid_parameters(void)
     /* zero count (should succeed) */
     result = cne_acl_ipv4vlan_add_rules(acx, &rule, 0);
     if (result != 0) {
-        cne_printf("Line %i: Adding 0 rules to ACL context failed!\n", __LINE__);
+        tst_error("Line %i: Adding 0 rules to ACL context failed!", __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1518,16 +1542,16 @@ test_invalid_parameters(void)
     memcpy(&param, &acl_param, sizeof(param));
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: ACL context creation failed!\n", __LINE__);
+        tst_error("Line %i: ACL context creation failed!", __LINE__);
         return -1;
     }
 
     /* NULL context */
     result = cne_acl_ipv4vlan_build(NULL, layout, 1);
     if (result == 0) {
-        cne_printf("Line %i: Building with NULL context "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Building with NULL context "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1535,9 +1559,9 @@ test_invalid_parameters(void)
     /* NULL layout */
     result = cne_acl_ipv4vlan_build(acx, NULL, 1);
     if (result == 0) {
-        cne_printf("Line %i: Building with NULL layout "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Building with NULL layout "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1545,7 +1569,7 @@ test_invalid_parameters(void)
     /* zero categories (should not fail) */
     result = cne_acl_ipv4vlan_build(acx, layout, 0);
     if (result == 0) {
-        cne_printf("Line %i: Building with 0 categories should fail!\n", __LINE__);
+        tst_error("Line %i: Building with 0 categories should fail!", __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1555,9 +1579,9 @@ test_invalid_parameters(void)
     /* cover zero categories in classify (should not fail) */
     result = cne_acl_classify(acx, NULL, NULL, 0, 0);
     if (result != 0) {
-        cne_printf("Line %i: SSE classify with zero categories "
-                   "failed!\n",
-                   __LINE__);
+        tst_error("Line %i: SSE classify with zero categories "
+                  "failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1565,9 +1589,9 @@ test_invalid_parameters(void)
     /* cover invalid but positive categories in classify */
     result = cne_acl_classify(acx, NULL, NULL, 0, 3);
     if (result == 0) {
-        cne_printf("Line %i: SSE classify with 3 categories "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: SSE classify with 3 categories "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1577,9 +1601,9 @@ test_invalid_parameters(void)
     /* cover zero categories in classify (should not fail) */
     result = cne_acl_classify_alg(acx, NULL, NULL, 0, 0, CNE_ACL_CLASSIFY_SCALAR);
     if (result != 0) {
-        cne_printf("Line %i: Scalar classify with zero categories "
-                   "failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Scalar classify with zero categories "
+                  "failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1587,9 +1611,9 @@ test_invalid_parameters(void)
     /* cover invalid but positive categories in classify */
     result = cne_acl_classify(acx, NULL, NULL, 0, 3);
     if (result == 0) {
-        cne_printf("Line %i: Scalar classify with 3 categories "
-                   "should have failed!\n",
-                   __LINE__);
+        tst_error("Line %i: Scalar classify with 3 categories "
+                  "should have failed!",
+                  __LINE__);
         cne_acl_free(acx);
         return -1;
     }
@@ -1617,12 +1641,14 @@ test_misc(void)
     struct cne_acl_param param;
     struct cne_acl_ctx *acx;
 
+    tst_info("%s(%s)", __func__, "Various tests to improve coverage.");
+
     /* create context */
     memcpy(&param, &acl_param, sizeof(param));
 
     acx = cne_acl_create(&param);
     if (acx == NULL) {
-        cne_printf("Line %i: Error creating ACL context!\n", __LINE__);
+        tst_error("Line %i: Error creating ACL context!", __LINE__);
         return -1;
     }
 
@@ -1693,7 +1719,7 @@ test_u32_range(void)
 
     acx = cne_acl_create(&acl_param);
     if (acx == NULL) {
-        cne_printf("%s#%i: Error creating ACL context!\n", __func__, __LINE__);
+        tst_error("%s#%i: Error creating ACL context!", __func__, __LINE__);
         return -1;
     }
 
@@ -1701,9 +1727,9 @@ test_u32_range(void)
         convert_rule(&acl_u32_range_test_rules[i], &r);
         rc = cne_acl_add_rules(acx, (struct cne_acl_rule *)&r, 1);
         if (rc != 0) {
-            cne_printf("%s#%i: Adding rule to ACL context "
-                       "failed with error code: %d\n",
-                       __func__, __LINE__, rc);
+            tst_error("%s#%i: Adding rule to ACL context "
+                      "failed with error code: %d",
+                      __func__, __LINE__, rc);
             cne_acl_free(acx);
             return rc;
         }
@@ -1711,7 +1737,7 @@ test_u32_range(void)
 
     rc = build_convert_rules(acx, convert_config_2, 0);
     if (rc != 0) {
-        cne_printf("%s#%i Error @ build_convert_rules!\n", __func__, __LINE__);
+        tst_error("%s#%i Error @ build_convert_rules!", __func__, __LINE__);
         cne_acl_free(acx);
         return rc;
     }
@@ -1722,7 +1748,7 @@ test_u32_range(void)
     max = CNE_MAX(max, max + 1);
     min = CNE_MIN(min, min - 1);
 
-    cne_printf("%s#%d starting range test from %u to %u\n", __func__, __LINE__, min, max);
+    tst_info("%s(starting range test from %u to %u)", __func__, __LINE__, min, max);
 
     for (i = min; i <= max; i += k) {
 
@@ -1733,7 +1759,7 @@ test_u32_range(void)
 
         rc = test_classify_run(acx, test_data, k);
         if (rc != 0) {
-            cne_printf("%s#%d failed at [%u, %u) interval\n", __func__, __LINE__, i, i + k);
+            tst_error("%s#%d failed at [%u, %u) interval", __func__, __LINE__, i, i + k);
             break;
         }
     }
@@ -1791,9 +1817,11 @@ acl_main(int argc, char **argv)
     if (test_u32_range() < 0)
         goto err;
 
+    tst_ok("All ACL tests passed");
     tst_end(tst, TST_PASSED);
     return 0;
 err:
+    tst_error("Current test failed causing early return");
     tst_end(tst, TST_FAILED);
     return -1;
 }
