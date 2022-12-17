@@ -109,7 +109,7 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     struct fwd_port *pd                          = lport->priv_;
     struct create_txbuff_thd_priv_t *thd_private = pd->thd->priv_;
     txbuff_t **txbuff;
-    int i, n_pkts;
+    int n_pkts;
 
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
@@ -120,7 +120,7 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
         return -1;
 
-    for (i = 0; i < n_pkts; i++) {
+    for (int i = 0; i < n_pkts; i++) {
         uint8_t dst_lport = get_dst_lport(pktmbuf_mtod(pd->rx_mbufs[i], void *));
         jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, dst_lport);
 
@@ -129,6 +129,62 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             dst = lport;
 
         MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], void *));
+        (void)txbuff_add(txbuff[dst->lpid], pd->rx_mbufs[i]);
+    }
+
+    int nb_lports = jcfg_num_lports(fwd->jinfo);
+    for (int i = 0; i < nb_lports; i++) {
+        jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, i);
+
+        if (!dst)
+            continue;
+
+        /* Could hang here if we can never flush the TX packets */
+        while (txbuff_count(txbuff[dst->lpid]) > 0)
+            txbuff_flush(txbuff[dst->lpid]);
+    }
+
+    return n_pkts;
+}
+
+static int
+_l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
+{
+    struct fwd_port *pd                          = lport->priv_;
+    struct create_txbuff_thd_priv_t *thd_private = pd->thd->priv_;
+    txbuff_t **txbuff;
+    int n_pkts;
+    struct ether_addr eaddr;
+    uint16_t tx_port;
+
+    if (!pd)
+        CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
+
+    txbuff = thd_private->txbuffs;
+
+    n_pkts = __rx_burst(fwd->pkt_api, pd, pd->rx_mbufs, fwd->burst);
+    if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
+        return -1;
+
+    for (int i = 0; i < n_pkts; i++) {
+
+        struct cne_ipv4_hdr *rx_ip_hdr =
+            pktmbuf_mtod_offset(pd->rx_mbufs[i], struct cne_ipv4_hdr *, ETHER_HDR_LEN);
+        rx_ip_hdr->time_to_live--;
+        rx_ip_hdr->hdr_checksum = htons(ntohs(rx_ip_hdr->hdr_checksum) + 1);
+        uint32_t ip_addr        = ntohl(rx_ip_hdr->dst_addr);
+
+        l3fwd_fib_lookup(&ip_addr, &eaddr, &tx_port);
+
+        jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, tx_port);
+
+        if (!dst) {
+            /* Cannot forward to non-existing port, so echo back on incoming interface */
+            dst = lport;
+            MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], void *));
+        } else
+            MAC_REWRITE(pktmbuf_mtod(pd->rx_mbufs[i], void *), &eaddr);
+
         (void)txbuff_add(txbuff[dst->lpid], pd->rx_mbufs[i]);
     }
 
@@ -398,6 +454,7 @@ thread_func(void *arg)
         {_loopback_test},
         {_txonly_test},
         {_fwd_test},
+        {_l3fwd_test},
         {acl_fwd_test},
         {acl_fwd_test},
         {_txonly_rx_test},
@@ -416,7 +473,8 @@ thread_func(void *arg)
     if (!thd->lport_cnt)
         goto leave_no_lport;
 
-    if (fwd->test == FWD_TEST || fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST) {
+    if (fwd->test == FWD_TEST || fwd->test == L3_FWD_TEST || fwd->test == ACL_STRICT_TEST ||
+        fwd->test == ACL_PERMISSIVE_TEST) {
         if (create_per_thread_txbuff(thd, fwd))
             cne_exit("Failed to create txbuff(s) for \"%s\" thread\n", thd->name);
     }
@@ -481,7 +539,8 @@ thread_func(void *arg)
     }
 
 leave:
-    if (fwd->test == FWD_TEST || fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST)
+    if (fwd->test == FWD_TEST || fwd->test == L3_FWD_TEST || fwd->test == ACL_STRICT_TEST ||
+        fwd->test == ACL_PERMISSIVE_TEST)
         destroy_per_thread_txbuff(thd, fwd);
 leave_no_lport:
     if (imgr)
@@ -641,6 +700,7 @@ main(int argc, char **argv)
         "Unknown", "Drop",
         "Loopback",
         "Tx Only",
+        "L3 Forward"
         "Forward",
         "ACL Strict",
         "ACL Permissive",
@@ -669,6 +729,9 @@ main(int argc, char **argv)
 
     /* if we're in ACL mode, initialize ACL context */
     if ((fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST) && acl_init(fwd) < 0)
+        goto err;
+
+    if (fwd->test == L3_FWD_TEST && l3fwd_fib_init(fwd) < 0)
         goto err;
 
     /* don't start any threads before we initialize ACL */
