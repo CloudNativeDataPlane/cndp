@@ -33,6 +33,8 @@ extern "C" {
 #include <jcfg.h>        // for jcfg_info_t, jcfg_thd_t
 #include <jcfg_process.h>
 
+#include <net/cne_ip.h>        // for CNE_IPV4
+
 #include "metrics.h"        // for metrics_info_t
 #include "pktmbuf.h"        // for pktmbuf_t
 
@@ -49,12 +51,13 @@ enum {
     FWD_ACL_STATS   = (1 << 4), /**< Enable printing ACL stats */
 };
 
-#define PKT_API_TAG    "pkt_api"    /**< Packet API json tag */
-#define NO_METRICS_TAG "no-metrics" /**< json tag for no-metrics */
-#define NO_RESTAPI_TAG "no-restapi" /**< json tag for no-restapi */
-#define ENABLE_CLI_TAG "cli"        /**< json tag to enable/disable CLI */
-#define MODE_TAG       "mode"       /**< json tag to set the mode flag */
-#define UDS_PATH_TAG   "uds_path"   /**< json tag for UDS to get xsk map fd */
+#define PKT_API_TAG    "pkt_api"         /**< Packet API json tag */
+#define NO_METRICS_TAG "no-metrics"      /**< json tag for no-metrics */
+#define NO_RESTAPI_TAG "no-restapi"      /**< json tag for no-restapi */
+#define ENABLE_CLI_TAG "cli"             /**< json tag to enable/disable CLI */
+#define MODE_TAG       "mode"            /**< json tag to set the mode flag */
+#define UDS_PATH_TAG   "uds_path"        /**< json tag for UDS to get xsk map fd */
+#define FIB_RULES_TAG  "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
 
 #define MODE_DROP           "drop"           /**< Drop the received packets */
 #define MODE_RX_ONLY        "rx-only"        /**< Alias for MODE_DROP */
@@ -62,6 +65,7 @@ enum {
 #define MODE_LOOPBACK       "loopback"       /**< Alias for MODE_LB */
 #define MODE_TX_ONLY        "tx-only"        /**< Transmit only */
 #define MODE_FWD            "fwd"            /**< L2 Forwarding mode */
+#define MODE_L3_FWD         "l3fwd"          /**< L3 Forwarding mode */
 #define MODE_ACL_STRICT     "acl-strict"     /**< ACL forwarding with permit list mode */
 #define MODE_ACL_PERMISSIVE "acl-permissive" /**< ACL forwarding with deny list mode */
 #define MODE_TX_ONLY_RX     "tx-only-rx"     /**< Transmit only plus RX enabled */
@@ -72,6 +76,7 @@ typedef enum {
     LOOPBACK_TEST,
     TXONLY_TEST,
     FWD_TEST,
+    L3_FWD_TEST,
     ACL_STRICT_TEST,
     ACL_PERMISSIVE_TEST,
     TXONLY_RX_TEST
@@ -130,6 +135,8 @@ struct fwd_info {
     pkt_api_t pkt_api;         /**< The packet API mode */
     uds_info_t *xdp_uds;       /**< UDS to get xsk map fd from */
     int burst;                 /**< Burst Size */
+    char **fib_rules;          /**< FIB entries */
+    uint16_t fib_size;         /**< Number of FIB entries */
 };
 
 struct thread_func_arg_t {
@@ -148,6 +155,8 @@ int fwd_acl_clear(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_add_rule(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_build(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_read(uds_client_t *c, const char *cmd, const char *params);
+int l3fwd_fib_init(struct fwd_info *fwd);
+int l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port);
 
 #define MAX_STRLEN_SIZE 16
 
@@ -173,6 +182,8 @@ get_app_mode(const char *type)
             return TXONLY_TEST;
         else if (!strncasecmp(type, MODE_FWD, nlen))
             return FWD_TEST;
+        else if (!strncasecmp(type, MODE_L3_FWD, nlen))
+            return L3_FWD_TEST;
         else if (!strncasecmp(type, MODE_ACL_STRICT, nlen))
             return ACL_STRICT_TEST;
         else if (!strncasecmp(type, MODE_ACL_PERMISSIVE, nlen))
@@ -239,6 +250,17 @@ get_dst_lport(void *data)
 
     return dst_addr->ether_addr_octet[DST_LPORT];
 }
+
+static inline void
+rewrite_dst_mac(void *data, struct ether_addr *dst_mac)
+{
+    struct ether_header *eth       = (struct ether_header *)data;
+    struct ether_addr *ether_dhost = (struct ether_addr *)&eth->ether_dhost;
+
+    memcpy(ether_dhost, dst_mac, ETHER_ADDR_LEN);
+}
+
+#define MAC_REWRITE rewrite_dst_mac
 
 #define PKTDEV_USE_NON_AVX 1
 #if PKTDEV_USE_NON_AVX

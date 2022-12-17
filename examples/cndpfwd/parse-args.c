@@ -76,6 +76,18 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 if (f->xdp_uds == NULL)
                     CNE_ERR_RET("UDS handshake failed\n");
             }
+        } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
+            uint16_t i;
+            if (obj.opt->val.type == ARRAY_OPT_TYPE) {
+                f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
+                if (!f->fib_rules)
+                    CNE_ERR_RET("Unable to allocate fib_rules array\n");
+
+                for (i = 0; i < obj.opt->val.array_sz; ++i)
+                    f->fib_rules[i] = obj.opt->val.arr[i]->str;
+
+                f->fib_size = i;
+            }
         }
         break;
 
