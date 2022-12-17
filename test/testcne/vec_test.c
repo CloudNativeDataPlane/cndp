@@ -140,15 +140,15 @@ result_print(tst_info_t *tst, int ret)
 {
     if (tst == NULL) {
         tst_error("test case struct was empty");
+        return;
     }
 
-    if (ret == TST_PASSED) {
+    if (ret == TST_PASSED)
         tst_ok("%s tests pass", tst->name);
-    } else if (ret == TST_SKIPPED) {
+    else if (ret == TST_SKIPPED)
         tst_skip("%s tests skipped", tst->name);
-    } else {
+    else
         tst_error("%s tests failed", tst->name);
-    }
 }
 
 int
