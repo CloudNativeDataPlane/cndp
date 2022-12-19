@@ -111,5 +111,5 @@ else
 ## Maintainers
 
 The CNDP maintainers are as follows:
- * Jeff Shaw
- * Keith Wiles
+* Jeff Shaw
+* Keith Wiles
