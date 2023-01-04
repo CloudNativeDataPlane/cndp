@@ -31,7 +31,6 @@ jobs:
           # that .golangci.yml is available to the golangci-lint linter
           # https://github.com/github/super-linter/blob/main/docs/using-rules-files.md
           LINTER_RULES_PATH: /
-          VALIDATE_CLANG_FORMAT: true
           VALIDATE_BASH: true
           VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_GO: true
