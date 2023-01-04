@@ -430,21 +430,18 @@ cndp_a_name = 'libcndp.a'
 cndp_so_name = 'libcndp.so'
 
 mklib = find_program('tools/mklib.sh')
+build_dir = meson.current_build_dir()
 
 if use_static_libs
-    run_command(mklib, cndp_a_name, libcndp_a, check: true)
     cndp_a = custom_target('libcndp_a_target',
-        output: cndp_a_name,
-        input: join_paths('/tmp', cndp_a_name),
-        command:[find_program('cp'), '@INPUT@', cndp_a_name],
+        output: 'libcndp.a',
+        command:[mklib, build_dir, '@OUTPUT@', libcndp_a],
         install_dir: join_paths('lib', 'x86_64-linux-gnu'),
         install: true)
 else
-    run_command(mklib, cndp_so_name, libcndp_so, check: true)
     cndp_so = custom_target('libcndp_so_target',
-        output: cndp_so_name,
-        input: join_paths('/tmp', cndp_so_name),
-        command:[find_program('cp'), '@INPUT@', cndp_so_name],
+        output: 'libcndp.so',
+        command:[mklib, build_dir, '@OUTPUT@', libcndp_so],
         install_dir: join_paths('lib', 'x86_64-linux-gnu'),
         install: true)
 endif
@@ -455,12 +452,9 @@ foreach lib:enabled_pmd_libs
     libcndp_pmds_a += 'lib' + lib + '.a '
 endforeach
 
-cndp_pmds_a_name = 'libcndp_pmds.a'
-run_command(mklib, cndp_pmds_a_name, libcndp_pmds_a, check: true)
 cndp_pmds_a = custom_target('libcndp_pmds_a_target',
-    output: cndp_pmds_a_name,
-    input: join_paths('/tmp', cndp_pmds_a_name),
-    command:[find_program('cp'), '@INPUT@', cndp_pmds_a_name],
+    output: 'libcndp_pmds.a',
+    command:[mklib, build_dir, '@OUTPUT@', libcndp_pmds_a],
     install_dir: join_paths('lib', 'x86_64-linux-gnu'),
     install: true)
 
