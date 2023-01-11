@@ -13,6 +13,9 @@
 
 struct mempool_cache;
 
+#define CACHE_FLUSHTHRESH_MULTIPLIER 1.5
+#define CALC_CACHE_FLUSHTHRESH(c)    ((typeof(c))((c)*CACHE_FLUSHTHRESH_MULTIPLIER))
+
 #ifndef _CNE_MEMPOOL_H_
 #define _CNE_MEMPOOL_H_
 

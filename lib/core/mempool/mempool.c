@@ -14,13 +14,11 @@
 #include <stdlib.h>                       // for calloc, free
 
 #include "mempool.h"
+#include "mempool_shared.h"         // for initialize_shared_mempool
 #include "mempool_private.h"        // for cne_mempool, mempool_cache, mempo...
 #include "mempool_ring.h"           // for mempool_ring_dequeue, mempool_rin...
 #include "cne.h"                    // for cne_max_threads, cne_id
 #include "cne_stdio.h"              // for cne_fprintf
-
-#define CACHE_FLUSHTHRESH_MULTIPLIER 1.5
-#define CALC_CACHE_FLUSHTHRESH(c)    ((typeof(c))((c)*CACHE_FLUSHTHRESH_MULTIPLIER))
 
 static void
 mempool_add_elem(struct cne_mempool *mp, __cne_unused void *opaque, void *obj __cne_unused)
