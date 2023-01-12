@@ -24,6 +24,8 @@
 #include <linux/sched.h>          // for sched_yield
 #include <netdev_funcs.h>         // for netdev_get_ring_params
 #include <cne_mutex_helper.h>
+#include <dirent.h>
+#include <limits.h>        // for PATH_MAX
 
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
@@ -339,6 +341,9 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     rx_bytes = 0;
     switch (rcvd) {
+    case 512:
+        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 512);
+        break;
     case 256:
         rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 256);
         break;
@@ -568,7 +573,7 @@ umem_create(lport_cfg_t *cfg)
     xu->fq_size = umem_cfg.fill_size;
 
     ret = netdev_get_ring_params(cfg->ifname, &hw_rx_nb_desc, NULL);
-    if (ret)
+    if (ret && ret != -EOPNOTSUPP)
         CNE_ERR("netdev_get_ring_params failure: %d\n", ret);
     else if (umem_cfg.fill_size < hw_rx_nb_desc + cfg->rx_nb_desc)
         CNE_INFO(
@@ -587,6 +592,35 @@ err:
     return NULL;
 }
 
+static void
+xskdev_get_channels_from_sysfs(const char *if_name, uint32_t *rxq, uint32_t *txq)
+{
+    char buf[PATH_MAX];
+    struct dirent *entry;
+    DIR *dir;
+    int ret;
+
+    *rxq = *txq = 0;
+
+    ret = snprintf(buf, PATH_MAX, "/sys/class/net/%s/queues/", if_name);
+    if (ret)
+        return;
+
+    dir = opendir(buf);
+    if (!dir)
+        return;
+
+    while ((entry = readdir(dir))) {
+        if (!strncmp("rx", entry->d_name, 2))
+            ++*rxq;
+
+        if (!strncmp("tx", entry->d_name, 2))
+            ++*txq;
+    }
+
+    closedir(dir);
+}
+
 static int
 xskdev_get_channel(const char *if_name, int *max_queues, int *combined_queues)
 {
@@ -600,33 +634,36 @@ xskdev_get_channel(const char *if_name, int *max_queues, int *combined_queues)
 
     channels.cmd = ETHTOOL_GCHANNELS;
     ifr.ifr_data = (void *)&channels;
+
     strlcpy(ifr.ifr_name, if_name, sizeof(ifr.ifr_name));
+
     ret = ioctl(fd, SIOCETHTOOL, &ifr);
     if (ret) {
-
-        if (errno == EOPNOTSUPP) {
-            ret = 0;
-        } else {
+        if (errno != EOPNOTSUPP) {
             ret = -errno;
             goto out;
         }
-    }
 
-    if (channels.max_combined == 0 || errno == EOPNOTSUPP) {
-        /* If the device says it has no channels, then all traffic
+        /* If the device says it has no channels,
+         * try to get channel info from sysfs, otherwise all traffic
          * is sent to a single stream, so max queues = 1.
          */
-        if (max_queues)
-            *max_queues = 1;
+        uint32_t rx_count, tx_count;
+        xskdev_get_channels_from_sysfs(if_name, &rx_count, &tx_count);
         if (combined_queues)
-            *combined_queues = 1;
+            *combined_queues = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
+        if (max_queues)
+            *max_queues = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
     } else {
+        /* Take the max of rx, tx, combined. Drivers return
+         * the number of channels in different ways.
+         */
         if (max_queues)
-            *max_queues = channels.max_combined;
+            *max_queues = CNE_MAX(CNE_MAX(channels.max_rx, channels.max_tx), channels.max_combined);
         if (combined_queues)
-            *combined_queues = channels.combined_count;
+            *combined_queues =
+                CNE_MAX(CNE_MAX(channels.max_rx, channels.max_tx), channels.combined_count);
     }
-
 out:
     close(fd);
     return ret;
