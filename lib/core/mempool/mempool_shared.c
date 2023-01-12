@@ -22,38 +22,37 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 	//Validate mempool_cfg
 	if(ci == NULL) {
 		cne_printf("Invalid mempool configurationg given\n");
-		return NULL;
+		goto BAD_CI;
 	}
 
 	//Determine whether the shared mempool will be large enough
 	if (mem_sz < (ci->objcnt * ci->objsz + sizeof(mempool_cfg_t))) {
 		cne_printf("Mempool Size is too large\n");
-		return NULL;
+		goto SMALL_MEMPOOL_SIZE;
     	}
 
 	//Allocate the mempool configuration struct
 	mp = (mempool_cfg_t *)calloc(1, sizeof(mempool_cfg_t));
 	if (mp == NULL) {
 		cne_printf("Failed to allocate mempool conf struct\n");
-		return NULL;
+		goto ALLOC_MEMPOOL_CFG;
 	}
 
 	//Allocate the struct for the shared mempool
 	smempool = calloc(1, sizeof(shared_mempool_cfg_t));
 	if (smempool == NULL) {
 		cne_printf("Failed to allocate shared mempool struct\n");
-		return NULL;
+		goto ALLOC_SMEMPOOL;
 	}
 
 	//Allocate the cne_mempool structure
 	cne_mp = mempool_create_empty(ci);
 	if (cne_mp == NULL) {
 		cne_printf("Failed to allocate cne mempool struct\n");
-		free(smempool);
-		return NULL;
+		goto ALLOC_CNE_MP;
 	}
 
-	// call the mempool private initializer 
+	//Call private mempool initializer function
 	if (ci->mp_init)
 		ci->mp_init(mp, ci->mp_init_arg);
 
@@ -70,14 +69,13 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 		mmap_fd = open(mmap_fname, O_RDWR | O_CREAT, S_IRWXU);
 		if (mmap_fd == -1) {
 			cne_printf("Failed to open the shared mempools\n");
-			return NULL;
+			goto OPEN_FAIL;
 		}
 		
 		//Resize to a huge page
 		if (ftruncate(mmap_fd, mem_sz) == -1) {
 			cne_printf("Failed to resize the shared mempool\n");
-			close(mmap_fd);
-			return NULL;
+			goto FTRUNCATE_FAIL;
 		}
 	}
 	
@@ -86,8 +84,7 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 	PROT_WRITE, MAP_SHARED | MAP_HUGETLB, mmap_fd, 0);
 	if (mempool_addr == (mempool_t *)-1) {
 		cne_printf("Failed to map the shared mempool\n");
-		close(mmap_fd);
-		return NULL;
+		goto MMAP_FAIL;
 	}
 	
 	//Save the address of the mempool in the mempool_cfg
@@ -100,10 +97,13 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 
 	//Populate the mempool
 	if (mempool_populate(cne_mp, mempool_addr, mp->objcnt * mp->objsz) < 0)
-		return NULL;
+		goto MP_POPULATE_FAIL;
 	
-	//Store the mempool in the shared_mempool_cfg
-	smempool->cfg = mp;
+	//Store the mempool cfg in the shared_mempool_cfg
+	smempool->mp_cfg = mp;
+
+	//Store the mempool ring in the shared_mempool_cfg
+	smempool->cne_mp = cne_mp;
 
 	//Attempt to get the global semaphore if it already exists
 	sem = sem_open("cndp_smem_sem", 0, 0644, 0);
@@ -112,11 +112,8 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 		//Semaphore doesn't exist, try to create it
 		sem = sem_open("cndp_smem_sem", O_CREAT, 0644, 0);
 		if (sem == SEM_FAILED) {
-			munmap(smempool, mem_sz);
-			smempool = NULL;
 			cne_printf("Failed to open the shared memory semaphore\n");
-			close(mmap_fd);
-			return NULL;
+			goto SEMAPHORE_FAIL;
 		}
 		
 		//Semaphore was created, so initialize it to a value of 1
@@ -134,5 +131,50 @@ initialize_shared_mempool(struct mempool_cfg *ci)
 	close(mmap_fd);
 
 	return smempool;
+
+SEMAPHORE_FAIL:
+MP_POPULATE_FAIL:
+	munmap(mempool_addr, mem_sz);
+	mempool_addr = NULL;
+
+MMAP_FAIL:
+FTRUNCATE_FAIL:
+	close(mmap_fd);
+	mmap_fd = 0;
+
+OPEN_FAIL:
+ALLOC_CNE_MP:
+	free(smempool);
+	smempool = NULL;
+
+ALLOC_SMEMPOOL:
+	free(mp);
+	mp = NULL;
+
+ALLOC_MEMPOOL_CFG:
+SMALL_MEMPOOL_SIZE:
+BAD_CI:
+
+	return smempool;
+}
+
+void teardown_shared_mempool(shared_mempool_cfg_t *mp)
+{
+	//Validate input
+	if (!mp) {goto BAD_MP;}
+
+	//First, close the semaphore
+	sem_close(mp->sem);
+	mp->sem = NULL;
+
+	//Clear out the mempool cfg
+	free(mp->mp_cfg);
+
+	//Clear out the mempool
+	mempool_destroy(mp->cne_mp);
+	mp->cne_mp = NULL;
+
+BAD_MP:
+
 }
 

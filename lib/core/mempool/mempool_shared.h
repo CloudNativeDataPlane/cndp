@@ -20,12 +20,19 @@ typedef struct shared_mempool
 	sem_t *sem;
 
 	//The mempool that is shared across the cndp instances
-	mempool_cfg_t *cfg;
+	mempool_cfg_t *mp_cfg;
+	
+	//The mempool ring struct
+	struct cne_mempool * cne_mp;
 
 } shared_mempool_cfg_t;
 
 shared_mempool_cfg_t *initialize_shared_mempool(struct mempool_cfg *ci);
 
+void teardown_shared_mempool(shared_mempool_cfg_t *mp);
+
 int populate_shared_mempool(mempool_t *_mp);
+
+
 
 #endif /* _CNE_MEMPOOL_SHARED_H_ */
