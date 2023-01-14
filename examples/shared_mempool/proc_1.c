@@ -39,14 +39,13 @@ int main(void)
 	}
 
 	//Map the huge page into our process address space
-	void *mempool_addr = mmap(NULL, mem_sz, PROT_READ | 
-	PROT_WRITE, MAP_SHARED | MAP_HUGETLB, mmap_fd, 0);
+	//TODO: Figure out how to avoid using a hardcoded address
+	void *mempool_addr = mmap((void *)0x7fff80000000, mem_sz, PROT_READ |
+	PROT_WRITE, MAP_SHARED | MAP_HUGETLB | MAP_FIXED, mmap_fd, 0);
 	if (mempool_addr == (mempool_t *)-1) {
 		cne_printf("Failed to map the shared mempool\n");
 		goto MMAP_FAIL;
 	}
-
-	//bzero(mempool_addr, HUGEPAGE_SZ);
 
 	shared_mempool_cfg_t *spool;
 	spool = (shared_mempool_cfg_t *)initialize_shared_mempool(mempool_addr,
@@ -78,7 +77,7 @@ int main(void)
 	sem_getvalue(spool->sem, &x);
 	printf("Semaphore value: %d\n", x);
 
-	//teardown_shared_mempool(spool);
+	//teardown_shared_mempool(spool, mem_sz);
 
 MMAP_FAIL:
 FTRUNCATE_FAIL:
