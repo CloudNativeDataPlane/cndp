@@ -132,11 +132,16 @@ CNDP_API mempool_t *mempool_create(struct mempool_cfg *cinfo);
  *
  * @param cinfo
  *   Pointer to the mempool_cfg structure
+ * @param vaddr
+ *   Pointer to the mempool_cfg structure
+ * @param vaddr
+ *   Pointer to the mempool_cfg structure
  * @return
  *   The pointer to the new allocated mempool, on success. NULL on error
  *   with errno set appropriately. See mempool_create() for details.
  */
-CNDP_API mempool_t *mempool_create_empty(struct mempool_cfg *cinfo);
+CNDP_API mempool_t *mempool_create_empty(struct mempool_cfg *cinfo, void *mempool_addr,
+	void *cache_addr, void*stats_addr);
 
 /**
  * Free a mempool

@@ -12,6 +12,7 @@ dirs = [
     'l3fwd-graph',
     'timer',
     'phil',
+    'shared_mempool',
 ]
 
 if cne_conf.get('HAS_UINTR_SUPPORT')
