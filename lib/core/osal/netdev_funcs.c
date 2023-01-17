@@ -249,7 +249,7 @@ netdev_get_channels_from_sysfs(const char *if_name, uint32_t *rxq, uint32_t *txq
     *rxq = *txq = 0;
 
     ret = snprintf(buf, PATH_MAX, "/sys/class/net/%s/queues/", if_name);
-    if (ret)
+    if (ret < 0)
         return;
 
     dir = opendir(buf);
@@ -272,7 +272,7 @@ netdev_get_channels(const char *ifname)
 {
     struct ifreq ifr;
     int fd, ret;
-    uint32_t ch;
+    uint32_t ch = 0;
     struct ethtool_channels eth_channels;
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -294,7 +294,7 @@ netdev_get_channels(const char *ifname)
          * try to get rx tx from sysfs, otherwise all traffic
          * is sent to a single stream, so max queues = 1.
          */
-        uint32_t rx_count, tx_count;
+        uint32_t rx_count = 0, tx_count = 0;
         netdev_get_channels_from_sysfs(ifr.ifr_name, &rx_count, &tx_count);
         ch = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
     } else {

@@ -592,83 +592,6 @@ err:
     return NULL;
 }
 
-static void
-xskdev_get_channels_from_sysfs(const char *if_name, uint32_t *rxq, uint32_t *txq)
-{
-    char buf[PATH_MAX];
-    struct dirent *entry;
-    DIR *dir;
-    int ret;
-
-    *rxq = *txq = 0;
-
-    ret = snprintf(buf, PATH_MAX, "/sys/class/net/%s/queues/", if_name);
-    if (ret)
-        return;
-
-    dir = opendir(buf);
-    if (!dir)
-        return;
-
-    while ((entry = readdir(dir))) {
-        if (!strncmp("rx", entry->d_name, 2))
-            ++*rxq;
-
-        if (!strncmp("tx", entry->d_name, 2))
-            ++*txq;
-    }
-
-    closedir(dir);
-}
-
-static int
-xskdev_get_channel(const char *if_name, int *max_queues, int *combined_queues)
-{
-    struct ethtool_channels channels;
-    struct ifreq ifr;
-    int fd, ret;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-        return -1;
-
-    channels.cmd = ETHTOOL_GCHANNELS;
-    ifr.ifr_data = (void *)&channels;
-
-    strlcpy(ifr.ifr_name, if_name, sizeof(ifr.ifr_name));
-
-    ret = ioctl(fd, SIOCETHTOOL, &ifr);
-    if (ret) {
-        if (errno != EOPNOTSUPP) {
-            ret = -errno;
-            goto out;
-        }
-
-        /* If the device says it has no channels,
-         * try to get channel info from sysfs, otherwise all traffic
-         * is sent to a single stream, so max queues = 1.
-         */
-        uint32_t rx_count, tx_count;
-        xskdev_get_channels_from_sysfs(if_name, &rx_count, &tx_count);
-        if (combined_queues)
-            *combined_queues = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
-        if (max_queues)
-            *max_queues = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
-    } else {
-        /* Take the max of rx, tx, combined. Drivers return
-         * the number of channels in different ways.
-         */
-        if (max_queues)
-            *max_queues = CNE_MAX(CNE_MAX(channels.max_rx, channels.max_tx), channels.max_combined);
-        if (combined_queues)
-            *combined_queues =
-                CNE_MAX(CNE_MAX(channels.max_rx, channels.max_tx), channels.combined_count);
-    }
-out:
-    close(fd);
-    return ret;
-}
-
 static int
 xskdev_recv_xsk_fd(xskdev_info_t *xi)
 {
@@ -835,7 +758,8 @@ xskdev_socket_create(struct lport_cfg *c)
 
     xi->if_index = if_index;
 
-    if (xskdev_get_channel(xi->ifname, NULL, &combined_queue_cnt))
+    combined_queue_cnt = netdev_get_channels(xi->ifname);
+    if (combined_queue_cnt <= 0)
         CNE_ERR_GOTO(err, "Failed to get channel info of interface: %s\n", xi->ifname);
 
     if (c->qid >= combined_queue_cnt)
