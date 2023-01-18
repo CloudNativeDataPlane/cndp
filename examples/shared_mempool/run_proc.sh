@@ -4,7 +4,7 @@
 sudo echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
 
 #Run the proc
-sudo ./proc_1
+sudo ./proc
 
 #Turn ASLR back on to ensure security
 sudo echo 2 | sudo tee /proc/sys/kernel/randomize_va_space

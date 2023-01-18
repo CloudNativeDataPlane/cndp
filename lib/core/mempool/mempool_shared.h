@@ -1,7 +1,5 @@
 #include <fcntl.h>
 
-
-
 #include <semaphore.h>
 
 #include "mempool.h"                // for mempool_t
@@ -10,6 +8,7 @@
 
 #include "cne_ring.h"
 #include "cne_ring_generic.h"             // for __cne_ring_do_dequeue, __cne_ring...
+
 #ifndef _CNE_MEMPOOL_SHARED_H_
 #define _CNE_MEMPOOL_SHARED_H_
 
@@ -35,7 +34,7 @@ typedef struct shared_mempool
 
 } shared_mempool_cfg_t;
 
-//Layout of a sharable mempool
+//Layout of a shareable mempool
 
 // OFFSET    | struct type
 // 0x0000    | struct shared_mempool
@@ -61,11 +60,8 @@ typedef struct shared_mempool
 **/
 shared_mempool_cfg_t *initialize_shared_mempool(void *vaddr, int sm_sz, struct mempool_cfg *ci);
 
-
 void teardown_shared_mempool(shared_mempool_cfg_t *mp, size_t size);
 
 int populate_shared_mempool(mempool_t *_mp);
-
-
 
 #endif /* _CNE_MEMPOOL_SHARED_H_ */

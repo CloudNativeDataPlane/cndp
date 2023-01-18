@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2017-2022 Intel Corporation
 
-proc_1_target = files('proc_1.c')
+proc_target = files('proc.c')
 
 deps += [
     acl,
@@ -20,8 +20,8 @@ deps += [
     udsc,
     xskdev,
 ]
-executable('proc_1',
-    proc_1_target,
+executable('proc',
+    proc_target,
     c_args: cflags,
     install: true,
     dependencies: deps)

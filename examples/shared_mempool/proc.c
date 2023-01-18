@@ -1,4 +1,4 @@
-#include "proc_1.h"
+#include "proc.h"
 
 int main(void)
 {
@@ -17,7 +17,6 @@ int main(void)
 
 	//TODO: Figure out how to map the memory region at the same
 	// virtual address for each run
-
 
 	/*Attempt to open a hugepage that is shared across multiple cndp 
 	processes*/
@@ -39,7 +38,8 @@ int main(void)
 	}
 
 	//Map the huge page into our process address space
-	//TODO: Figure out how to avoid using a hardcoded address
+	//TODO: Add coordination code so we can map at the same address
+	//across multiple processes
 	void *mempool_addr = mmap((void *)0x7fff80000000, mem_sz, PROT_READ |
 	PROT_WRITE, MAP_SHARED | MAP_HUGETLB | MAP_FIXED, mmap_fd, 0);
 	if (mempool_addr == (mempool_t *)-1) {
@@ -55,22 +55,22 @@ int main(void)
 
 	struct cne_mempool *cne_mp = spool->cne_mp;
 
-	printf("spool: %p\n", spool);
+	cne_printf("spool: %p\n", spool);
 
-	printf("semloc: %p\n", spool->sem);
-	printf("mempool_cfgloc: %p\n", mp);
-	printf("cne_mempoolloc: %p\n", cne_mp);
-	printf("cne_ring: %p\n", spool->cne_ring);
-	printf("mempool_cacheloc: %p\n", spool->mem_cache);
-	printf("mempool_statsloc: %p\n\n", spool->mem_stats);
+	cne_printf("semloc: %p\n", spool->sem);
+	cne_printf("mempool_cfgloc: %p\n", mp);
+	cne_printf("cne_mempoolloc: %p\n", cne_mp);
+	cne_printf("cne_ring: %p\n", spool->cne_ring);
+	cne_printf("mempool_cacheloc: %p\n", spool->mem_cache);
+	cne_printf("mempool_statsloc: %p\n\n", spool->mem_stats);
 	
-	printf("objcnt: %u\n", mp->objcnt);
-	printf("objsz: %u\n", mp->objsz);
-	printf("cache_sz: %u\n", mp->cache_sz);
-	printf("addr: %p\n\n", mp->addr);
+	cne_printf("objcnt: %u\n", mp->objcnt);
+	cne_printf("objsz: %u\n", mp->objsz);
+	cne_printf("cache_sz: %u\n", mp->cache_sz);
+	cne_printf("addr: %p\n\n", mp->addr);
 	
-	printf("objring: %p\n", cne_mp->objring);
-	printf("objmem: %p\n", cne_mp->objmem);
+	cne_printf("objring: %p\n", cne_mp->objring);
+	cne_printf("objmem: %p\n", cne_mp->objmem);
 
 
 	int x = -1;
