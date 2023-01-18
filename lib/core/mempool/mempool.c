@@ -126,13 +126,12 @@ mempool_cache_init(struct mempool_cache *cache, uint32_t size)
 
 /* create an empty mempool */
 mempool_t *
-mempool_create_empty(struct mempool_cfg *ci, void *mempool_addr,
-	void *cache_addr, void *stats_addr)
+mempool_create_empty(struct mempool_cfg *ci, void *mempool_addr, void *cache_addr, void *stats_addr)
 {
     struct cne_mempool *mp = NULL;
     int thds               = cne_max_threads();
 
-    //Determine whether or not we need to allocate
+    // Determine whether or not we need to allocate
     int is_static = (mempool_addr != NULL);
 
     if (thds < 0) {
@@ -152,9 +151,9 @@ mempool_create_empty(struct mempool_cfg *ci, void *mempool_addr,
     }
 
     if (!is_static)
-	    mp = calloc(1, sizeof(struct cne_mempool));
+        mp = calloc(1, sizeof(struct cne_mempool));
     else
-	    mp = mempool_addr;
+        mp = mempool_addr;
 
     if (mp == NULL)
         CNE_ERR_GOTO(exit_mempool_destroy, "calloc(%ld): failed\n", sizeof(struct cne_mempool));
@@ -191,7 +190,6 @@ exit_mempool_destroy:
     mempool_destroy(mp);
     return NULL;
 }
-
 
 /* create the mempool */
 mempool_t *

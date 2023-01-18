@@ -16,7 +16,7 @@
 #include "mempool_shared.h"
 
 #include "cne_ring.h"
-#include "cne_ring_generic.h"             // for __cne_ring_do_dequeue, __cne_ring...
+#include "cne_ring_generic.h"        // for __cne_ring_do_dequeue, __cne_ring...
 
 #include "cne_common.h"        // for __cne_unused
 #include "cne_stdio.h"         // for cne_printf

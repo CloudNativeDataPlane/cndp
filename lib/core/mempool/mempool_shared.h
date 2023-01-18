@@ -7,34 +7,34 @@
 #include "mempool_ring.h"           // for mempool_ring_dequeue, mempool_rin...
 
 #include "cne_ring.h"
-#include "cne_ring_generic.h"             // for __cne_ring_do_dequeue, __cne_ring...
+#include "cne_ring_generic.h"        // for __cne_ring_do_dequeue, __cne_ring...
 
 #ifndef _CNE_MEMPOOL_SHARED_H_
 #define _CNE_MEMPOOL_SHARED_H_
 
 #define HUGEPAGE_SZ 1073741824
 
-typedef struct shared_mempool
-{
-	//The semaphore for managing the smempool
-	sem_t *sem;
+typedef struct shared_mempool {
 
-	//The mempool configuration
-	mempool_cfg_t *mp_cfg;
-	
-	//The mempool ring struct
-	struct cne_mempool *cne_mp;
-	
-	struct cne_ring *cne_ring;
+    // The semaphore for managing the smempool
+    sem_t *sem;
 
-	//The mempool cache struct
-	struct mempool_cache *mem_cache;
-	
-	struct mempool_stats *mem_stats;
+    // The mempool configuration
+    mempool_cfg_t *mp_cfg;
+
+    // The mempool ring struct
+    struct cne_mempool *cne_mp;
+
+    struct cne_ring *cne_ring;
+
+    // The mempool cache struct
+    struct mempool_cache *mem_cache;
+
+    struct mempool_stats *mem_stats;
 
 } shared_mempool_cfg_t;
 
-//Layout of a shareable mempool
+// Layout of a shareable mempool
 
 // OFFSET    | struct type
 // 0x0000    | struct shared_mempool
