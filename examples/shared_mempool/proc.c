@@ -75,7 +75,7 @@ main(void)
     sem_getvalue(spool->sem, &x);
     printf("Semaphore value: %d\n", x);
 
-    // teardown_shared_mempool(spool, mem_sz);
+    teardown_shared_mempool(spool, mem_sz);
 
 MMAP_FAIL:
 FTRUNCATE_FAIL:

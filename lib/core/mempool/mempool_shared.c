@@ -1,5 +1,7 @@
 #include "mempool_shared.h"
 
+#define SEM_NAME "cndp_smem_sem"
+
 /**
 
  * Creates a shareable mempool at the address of vaddr with the size of sm_sz
@@ -57,11 +59,11 @@ initialize_shared_mempool(void *vaddr, int sm_sz, struct mempool_cfg *ci)
     smempool->mem_stats = mem_stats;
 
     // Attempt to get the global semaphore if it already exists
-    sem_t *sem = sem_open("cndp_smem_sem", 0, 0644, 0);
+    sem_t *sem = sem_open(SEM_NAME, 0, 0644, 0);
     if (sem == SEM_FAILED) {
 
         // Semaphore doesn't exist, try to create it
-        sem = sem_open("cndp_smem_sem", O_CREAT, 0644, 0);
+        sem = sem_open(SEM_NAME, O_CREAT, 0644, 0);
         if (sem == SEM_FAILED) {
             cne_printf("Failed to open the shared memory semaphore\n");
             goto ERR;
@@ -145,6 +147,7 @@ BAD_VADDR:
     return smempool;
 }
 
+// This should not be used if other processes are using the shared mempool
 void
 teardown_shared_mempool(shared_mempool_cfg_t *mp, size_t size)
 {
@@ -159,6 +162,9 @@ teardown_shared_mempool(shared_mempool_cfg_t *mp, size_t size)
 
     // Because we mmap'd the memory, we can just bzero the whole thing
     bzero(mp, size);
+
+    // Finally, unlink the semaphore since we are done using it
+    sem_unlink(SEM_NAME);
 
 BAD_MP:
 }
