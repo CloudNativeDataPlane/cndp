@@ -17,6 +17,8 @@
 #include <net/ethernet.h>
 #include <linux/ethtool.h>        // for ethtool_link_settings, ethtool_cmd, ETHT...
 #include <linux/sockios.h>        // for SIOCETHTOOL, SIOCGIFFLAGS, SIOCGIFHWADDR
+#include <dirent.h>
+#include <stdio.h>
 
 #include "netdev_funcs.h"
 
@@ -236,11 +238,41 @@ netdev_get_offloads(const char *ifname, struct offloads *off)
     return ret;
 }
 
+static void
+netdev_get_channels_from_sysfs(const char *if_name, uint32_t *rxq, uint32_t *txq)
+{
+    char buf[PATH_MAX];
+    struct dirent *entry;
+    DIR *dir;
+    int ret;
+
+    *rxq = *txq = 0;
+
+    ret = snprintf(buf, PATH_MAX, "/sys/class/net/%s/queues/", if_name);
+    if (ret < 0)
+        return;
+
+    dir = opendir(buf);
+    if (!dir)
+        return;
+
+    while ((entry = readdir(dir))) {
+        if (!strncmp(entry->d_name, "rx", 2))
+            ++*rxq;
+
+        if (!strncmp(entry->d_name, "tx", 2))
+            ++*txq;
+    }
+
+    closedir(dir);
+}
+
 int
 netdev_get_channels(const char *ifname)
 {
     struct ifreq ifr;
-    int fd;
+    int fd, ret;
+    uint32_t ch = 0;
     struct ethtool_channels eth_channels;
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -252,11 +284,28 @@ netdev_get_channels(const char *ifname)
 
     eth_channels.cmd = ETHTOOL_GCHANNELS;
     ifr.ifr_data     = (void *)&eth_channels;
-    if (ioctl(fd, SIOCETHTOOL, &ifr) < 0)
-        goto err;
+    ret              = ioctl(fd, SIOCETHTOOL, &ifr);
+    if (ret) {
+        if (errno != EOPNOTSUPP) {
+            ret = -errno;
+            goto err;
+        }
+        /* If the device says it has no channels,
+         * try to get rx tx from sysfs, otherwise all traffic
+         * is sent to a single stream, so max queues = 1.
+         */
+        uint32_t rx_count = 0, tx_count = 0;
+        netdev_get_channels_from_sysfs(ifr.ifr_name, &rx_count, &tx_count);
+        ch = CNE_MAX(CNE_MAX(rx_count, tx_count), (uint32_t)1);
+    } else {
+        /* Take the max of rx, tx, combined. Drivers return
+         * the number of eth_channels in different ways.
+         */
+        ch = CNE_MAX(CNE_MAX(eth_channels.max_rx, eth_channels.max_tx), eth_channels.max_combined);
+    }
 
     close(fd);
-    return eth_channels.combined_count;
+    return ch;
 
 err:
     close(fd);

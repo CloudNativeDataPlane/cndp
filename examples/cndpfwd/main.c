@@ -700,8 +700,8 @@ main(int argc, char **argv)
         "Unknown", "Drop",
         "Loopback",
         "Tx Only",
-        "L3 Forward"
-        "Forward",
+		"Forward",
+        "L3 Forward",
         "ACL Strict",
         "ACL Permissive",
         "Tx Only+RX",
