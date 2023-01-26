@@ -24,6 +24,8 @@
 #include <linux/sched.h>          // for sched_yield
 #include <netdev_funcs.h>         // for netdev_get_ring_params
 #include <cne_mutex_helper.h>
+#include <dirent.h>
+#include <limits.h>        // for PATH_MAX
 
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
@@ -339,6 +341,9 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     rx_bytes = 0;
     switch (rcvd) {
+    case 512:
+        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 512);
+        break;
     case 256:
         rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 256);
         break;
@@ -568,7 +573,7 @@ umem_create(lport_cfg_t *cfg)
     xu->fq_size = umem_cfg.fill_size;
 
     ret = netdev_get_ring_params(cfg->ifname, &hw_rx_nb_desc, NULL);
-    if (ret)
+    if (ret && ret != -EOPNOTSUPP)
         CNE_ERR("netdev_get_ring_params failure: %d\n", ret);
     else if (umem_cfg.fill_size < hw_rx_nb_desc + cfg->rx_nb_desc)
         CNE_INFO(
@@ -585,51 +590,6 @@ umem_create(lport_cfg_t *cfg)
 err:
     free(xu);
     return NULL;
-}
-
-static int
-xskdev_get_channel(const char *if_name, int *max_queues, int *combined_queues)
-{
-    struct ethtool_channels channels;
-    struct ifreq ifr;
-    int fd, ret;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-        return -1;
-
-    channels.cmd = ETHTOOL_GCHANNELS;
-    ifr.ifr_data = (void *)&channels;
-    strlcpy(ifr.ifr_name, if_name, sizeof(ifr.ifr_name));
-    ret = ioctl(fd, SIOCETHTOOL, &ifr);
-    if (ret) {
-
-        if (errno == EOPNOTSUPP) {
-            ret = 0;
-        } else {
-            ret = -errno;
-            goto out;
-        }
-    }
-
-    if (channels.max_combined == 0 || errno == EOPNOTSUPP) {
-        /* If the device says it has no channels, then all traffic
-         * is sent to a single stream, so max queues = 1.
-         */
-        if (max_queues)
-            *max_queues = 1;
-        if (combined_queues)
-            *combined_queues = 1;
-    } else {
-        if (max_queues)
-            *max_queues = channels.max_combined;
-        if (combined_queues)
-            *combined_queues = channels.combined_count;
-    }
-
-out:
-    close(fd);
-    return ret;
 }
 
 static int
@@ -798,7 +758,8 @@ xskdev_socket_create(struct lport_cfg *c)
 
     xi->if_index = if_index;
 
-    if (xskdev_get_channel(xi->ifname, NULL, &combined_queue_cnt))
+    combined_queue_cnt = netdev_get_channels(xi->ifname);
+    if (combined_queue_cnt <= 0)
         CNE_ERR_GOTO(err, "Failed to get channel info of interface: %s\n", xi->ifname);
 
     if (c->qid >= combined_queue_cnt)
