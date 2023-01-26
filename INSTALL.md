@@ -21,6 +21,18 @@ sudo apt-get update && sudo apt-get install -y \
     libpcap-dev meson pkg-config
 ```
 
+### Hyperscan support
+
+The cndpfwd example application supports a simple hyperscan forwarding type mode. The Hyperscan
+forwarding mode uses expressions in Hyperscan style in the jsonc file in options.hs_patterns array.
+The example can be expanded to be a DDOS or DPI or a load balancer using Hyperscan. If wanting to
+try Hyperscan you must install Hyperscan. Ubuntu has a package which can be installed to enable the
+build process to detect and use Hyperscan.
+
+```bash
+sudo apt-get install -y libhyperscan-dev # In Ubuntu 22.10 the Hyperscan version is 5.4.0
+```
+
 #### Optional packages needed to build documentation
 
 ```bash

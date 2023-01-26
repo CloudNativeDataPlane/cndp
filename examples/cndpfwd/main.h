@@ -29,6 +29,10 @@ extern "C" {
 #include <uds_connect.h>
 #include <pktdev.h>            // for pktdev_rx_burst, pktdev_tx_burst
 #include <pktdev_api.h>        // for pktdev_buf_alloc, pktdev_close
+#include <txbuff.h>
+#ifdef ENABLE_HYPERSCAN
+#include <hs/hs.h>
+#endif
 
 #include <jcfg.h>        // for jcfg_info_t, jcfg_thd_t
 #include <jcfg_process.h>
@@ -58,6 +62,7 @@ enum {
 #define MODE_TAG       "mode"            /**< json tag to set the mode flag */
 #define UDS_PATH_TAG   "uds_path"        /**< json tag for UDS to get xsk map fd */
 #define FIB_RULES_TAG  "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
+#define HS_PATTERN_TAG "hs-patterns"     /**< json tag for Hyperscan patterns */
 
 #define MODE_DROP           "drop"           /**< Drop the received packets */
 #define MODE_RX_ONLY        "rx-only"        /**< Alias for MODE_DROP */
@@ -69,6 +74,7 @@ enum {
 #define MODE_ACL_STRICT     "acl-strict"     /**< ACL forwarding with permit list mode */
 #define MODE_ACL_PERMISSIVE "acl-permissive" /**< ACL forwarding with deny list mode */
 #define MODE_TX_ONLY_RX     "tx-only-rx"     /**< Transmit only plus RX enabled */
+#define MODE_HYPERSCAN      "hyperscan"      /**< Enable Hyperscan forwarding mode */
 
 typedef enum {
     UNKNOWN_TEST,
@@ -79,7 +85,8 @@ typedef enum {
     L3_FWD_TEST,
     ACL_STRICT_TEST,
     ACL_PERMISSIVE_TEST,
-    TXONLY_RX_TEST
+    TXONLY_RX_TEST,
+    HYPERSCAN_TEST
 } test_t;
 
 #define XSKDEV_API_NAME "xskdev"
@@ -87,6 +94,14 @@ typedef enum {
 #define PKTDEV_API_NAME "pktdev"
 
 typedef enum { UNKNOWN_PKT_API, XSKDEV_PKT_API, PKTDEV_PKT_API } pkt_api_t;
+
+struct create_txbuff_thd_priv_t {
+    txbuff_t **txbuffs; /**< txbuff_t double pointer */
+    pkt_api_t pkt_api;  /**< The packet API mode */
+#ifdef ENABLE_HYPERSCAN
+    hs_scratch_t *scratch; /**< Scratch per thread for Hyperscan */
+#endif
+};
 
 /*
  * Statistics structure for ACL. Each such structure will be accessed by a
@@ -137,6 +152,15 @@ struct fwd_info {
     int burst;                 /**< Burst Size */
     char **fib_rules;          /**< FIB entries */
     uint16_t fib_size;         /**< Number of FIB entries */
+    char **hs_patterns;        /**< Hyperscan information */
+    uint16_t hs_pattern_count; /**< Number of Hyperscan information entries */
+    char **hs_expressions;     /**< List of parsed hyperscan regex expressions */
+    unsigned int *hs_flags;    /**< List of hyperscan flags */
+    unsigned int *hs_ids;      /**< List of hyperscan IDs */
+#ifdef ENABLE_HYPERSCAN
+    hs_database_t *hs_database; /**< Hyperscan database pointer */
+    hs_scratch_t *hs_scratch;   /**< Scratch per thread for Hyperscan */
+#endif
 };
 
 struct thread_func_arg_t {
@@ -157,6 +181,10 @@ int fwd_acl_build(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_read(uds_client_t *c, const char *cmd, const char *params);
 int l3fwd_fib_init(struct fwd_info *fwd);
 int l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port);
+
+int hsfwd_init(struct fwd_info *fwd);
+void hsfwd_finish(struct fwd_info *fwd);
+int hsfwd_test(jcfg_lport_t *lport, struct fwd_info *fwd);
 
 #define MAX_STRLEN_SIZE 16
 
@@ -190,13 +218,15 @@ get_app_mode(const char *type)
             return ACL_PERMISSIVE_TEST;
         else if (!strncasecmp(type, MODE_TX_ONLY_RX, nlen))
             return TXONLY_RX_TEST;
+        else if (!strncasecmp(type, MODE_HYPERSCAN, nlen) || !strncasecmp(type, "hs", nlen))
+            return HYPERSCAN_TEST;
         else {
             cne_printf("[yellow]*** [magenta]Unknown mode[]: '[red]%s[]'\n", type);
             cne_printf("    [magenta]Known modes default[] '[cyan]%s[magenta]'[]:\n", MODE_DROP);
             cne_printf("      '[cyan]%s|%s[]', '[cyan]%s|%s[]', '[cyan]%s[]', ", MODE_DROP,
                        MODE_RX_ONLY, MODE_LB, MODE_LOOPBACK, MODE_TX_ONLY);
-            cne_printf("'[cyan]%s[]', '[cyan]%s[]', '[cyan]%s[]'\n", MODE_FWD, MODE_ACL_STRICT,
-                       MODE_ACL_PERMISSIVE);
+            cne_printf("'[cyan]%s[]', '[cyan]%s[]', '[cyan]%s[]', '[cyan]%s[]'\n", MODE_FWD,
+                       MODE_ACL_STRICT, MODE_ACL_PERMISSIVE, MODE_HYPERSCAN);
         }
     }
 

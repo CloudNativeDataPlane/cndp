@@ -145,6 +145,14 @@ if pcap_dep.found()
     extra_ldflags += '-lpcap'
 endif
 
+# Check for libhs (hyperscan) for cndpfwd
+hs_dep = dependency('libhs', required: false, static: use_static_libs)
+if hs_dep.found()
+    add_project_link_arguments('-lhs', language: 'c')
+    extra_ldflags += '-lhs'
+    cne_conf.set('ENABLE_HYPERSCAN', 1)
+endif
+
 add_project_arguments('-I/usr/include/libnl3', language: 'c')
 
 nl_dep = dependency('libnl-3.0', required: true, method: 'pkg-config', static: use_static_libs)
