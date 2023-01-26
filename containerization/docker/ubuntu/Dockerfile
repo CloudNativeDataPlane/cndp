@@ -31,6 +31,12 @@ RUN set -o pipefail \
     | tar -xzC / \
     && make -j -C /libbpf-0.5.0/src install
 
+# Install Rust and Cargo.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Set Cargo path.
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp
 WORKDIR /cndp
@@ -48,12 +54,6 @@ RUN make && make install
 # Build the prometheus-metrics app
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
-
-# Install Rust and Cargo.
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-# Set Cargo path.
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Build and install Rust packet fwd example application.
 WORKDIR /cndp/lang/rs
