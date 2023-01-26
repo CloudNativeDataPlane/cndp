@@ -311,8 +311,9 @@ int
 acl_fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 {
     /* do we forward non-matching packets? */
-    const bool fwd_non_matching = fwd->test == ACL_PERMISSIVE_TEST;
-    struct fwd_port *pd         = lport->priv_;
+    const bool fwd_non_matching                  = fwd->test == ACL_PERMISSIVE_TEST;
+    struct fwd_port *pd                          = lport->priv_;
+    struct create_txbuff_thd_priv_t *thd_private = pd->thd->priv_;
     struct acl_classify_t acl_classify_ctx;
     struct acl_fwd_stats *stats = &pd->acl_stats;
     uint16_t n_pkts, n_filtered, n_permit, n_deny;
@@ -322,7 +323,7 @@ acl_fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (!pd)
         return 0;
 
-    txbuff = pd->thd->priv_;
+    txbuff = thd_private->txbuffs;
 
     /* receive buffers from the network */
     switch (fwd->pkt_api) {
@@ -389,7 +390,7 @@ acl_fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         if (!dst)
             continue;
 
-        /* Could hang here is we can never flush the TX packets */
+        /* Could hang here if we can never flush the TX packets */
         while (txbuff_count(txbuff[dst->lpid]) > 0)
             txbuff_flush(txbuff[dst->lpid]);
     }
