@@ -142,14 +142,44 @@ executable that produces the output you are currently reading.
 to your terminal.
 ```
 
-## Step 5: Build the cndp docker container
+## Step 5: Build the cndp container
 
 > **Note:** Follow INSTALL.md in the CNDP top level directory if CNDP dependencies are not installed
 
-From the top level CNDP directory call:
+To build the container image using `docker` from the top level CNDP directory call:
 
 ```cmd
-make docker-image
+make oci-image
+```
+
+To build the container image using `buildah` from the top level CNDP directory call:
+
+```cmd
+make Builder=buildah oci-image
+```
+
+To run the container Ubuntu image using `docker` from the top level CNDP directory call:
+
+```cmd
+make ce-run
+```
+
+To run the container Ubuntu image using `podman` from the top level CNDP directory call:
+
+```cmd
+make CE=podman ce-run
+```
+
+To run the container Fedora image using `docker` from the top level CNDP directory call:
+
+```cmd
+make ce-fed-run
+```
+
+To run the container Fedora image using `podman` from the top level CNDP directory call:
+
+```cmd
+make CE=podman ce-fed-run
 ```
 
 ## Step 6: Run the cndp docker container
