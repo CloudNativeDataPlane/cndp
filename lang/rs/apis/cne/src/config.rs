@@ -191,14 +191,15 @@ impl Config {
     pub(crate) fn get_port_by_index(&self, port_index: u16) -> Result<Port, CneError> {
         self.validate_port_index(port_index)?;
 
-        let (_, lport) = self.lports.get_index(port_index as usize).ok_or_else(|| {
-            CneError::ConfigError(format!("Port {} is not configured", port_index))
-        })?;
+        let (_, lport) = self
+            .lports
+            .get_index(port_index as usize)
+            .ok_or_else(|| CneError::ConfigError(format!("Port {port_index} is not configured")))?;
 
         match lport.pkt_api {
             Some(pkt_api) => Ok(Port::new(port_index, pkt_api)),
             None => {
-                let err_msg = format!("Port {} is not configured", port_index);
+                let err_msg = format!("Port {port_index} is not configured");
                 Err(CneError::PortError(err_msg))
             }
         }
@@ -214,7 +215,7 @@ impl Config {
 
     pub(crate) fn get_port_index_from_name(&self, port_name: &str) -> Result<u16, CneError> {
         let port_index = self.lports.get_index_of(port_name).ok_or_else(|| {
-            CneError::ConfigError(format!("Port name {} is not present in config", port_name))
+            CneError::ConfigError(format!("Port name {port_name} is not present in config"))
         })?;
 
         Ok(port_index as u16)
@@ -223,9 +224,10 @@ impl Config {
     pub(crate) fn get_port_details(&self, port_index: u16) -> Result<PortDetails, CneError> {
         self.validate_port_index(port_index)?;
 
-        let (name, lport) = self.lports.get_index(port_index as usize).ok_or_else(|| {
-            CneError::ConfigError(format!("Port {} is not configured", port_index))
-        })?;
+        let (name, lport) = self
+            .lports
+            .get_index(port_index as usize)
+            .ok_or_else(|| CneError::ConfigError(format!("Port {port_index} is not configured")))?;
 
         let port_info = PortDetails {
             name: Some(name.to_owned()),
@@ -242,9 +244,10 @@ impl Config {
     ) -> Result<*mut pktmbuf_info_t, CneError> {
         self.validate_port_index(port_index)?;
 
-        let (_, lport) = self.lports.get_index(port_index as usize).ok_or_else(|| {
-            CneError::ConfigError(format!("Port {} is not configured", port_index))
-        })?;
+        let (_, lport) = self
+            .lports
+            .get_index(port_index as usize)
+            .ok_or_else(|| CneError::ConfigError(format!("Port {port_index} is not configured")))?;
         let lport_umem = match self.umems.get(&lport.umem) {
             Some(umem) => umem,
             None => {
@@ -270,7 +273,7 @@ impl Config {
 
     pub(crate) fn set_current_thread_affinity(&self, group: &str) -> Result<(), CneError> {
         let cpu_set = self.cpu_sets.get(group).ok_or_else(|| {
-            CneError::ConfigError(format!("{} is not present in lcore-groups", group))
+            CneError::ConfigError(format!("{group} is not present in lcore-groups"))
         })?;
 
         // Set current thread's CPU affinity. Pid 0 corresponds to calling thread.
@@ -282,7 +285,7 @@ impl Config {
 
     fn validate_port_index(&self, port_index: u16) -> Result<(), CneError> {
         if port_index >= self.lports.len() as u16 {
-            let err_msg = format!("Invalid port index {}", port_index);
+            let err_msg = format!("Invalid port index {port_index}");
             Err(CneError::PortError(err_msg))
         } else {
             Ok(())
@@ -463,7 +466,7 @@ impl Config {
 
                                 if xsk_uds.is_null() {
                                     let err_msg =
-                                        format!("UDS handshake failed for lport {}", lport_name);
+                                        format!("UDS handshake failed for lport {lport_name}");
                                     return Err(CneError::ConfigError(err_msg));
                                 }
                                 pcfg.xsk_uds = xsk_uds as *mut c_void;
@@ -475,7 +478,7 @@ impl Config {
 
                 lport.netdev = lport_name.split(':').next().map(String::from);
                 if lport.netdev.is_none() {
-                    let err_msg = format!("Netdev is not present for lport {}", lport_name);
+                    let err_msg = format!("Netdev is not present for lport {lport_name}");
                     return Err(CneError::ConfigError(err_msg));
                 }
                 // Copy lport.netdev.
@@ -534,7 +537,7 @@ impl Config {
     fn setup_pktdev(pcfg: &mut lport_cfg_t, lport_name: &String) -> Result<u16, CneError> {
         let lport_id = unsafe { pktdev_port_setup(pcfg) };
         if lport_id < 0 {
-            let err_msg = format!("pktdev_port_setup() failed for lport {}", lport_name);
+            let err_msg = format!("pktdev_port_setup() failed for lport {lport_name}");
             Err(CneError::ConfigError(err_msg))
         } else {
             Ok(lport_id as u16)
@@ -547,7 +550,7 @@ impl Config {
     ) -> Result<*mut xskdev_info_t, CneError> {
         let xsk_dev = unsafe { xskdev_socket_create(pcfg) };
         if xsk_dev.is_null() {
-            let err_msg = format!("xskdev_socket_create() failed for lport {}", lport_name);
+            let err_msg = format!("xskdev_socket_create() failed for lport {lport_name}");
             Err(CneError::ConfigError(err_msg))
         } else {
             Ok(xsk_dev)
@@ -568,7 +571,7 @@ impl Config {
 
             let ret = unsafe { mmap_free(mm) };
             if ret < 0 {
-                let err_msg = format!("mmap_free() failed for umem {}", umem_name);
+                let err_msg = format!("mmap_free() failed for umem {umem_name}");
                 return Err(CneError::ConfigError(err_msg));
             }
         }
@@ -582,7 +585,7 @@ impl Config {
                 if !xdp_uds.is_null() {
                     let ret = unsafe { udsc_close(xdp_uds) };
                     if ret < 0 {
-                        let err_msg = format!("udsc_close() failed for lport {}", lport_name);
+                        let err_msg = format!("udsc_close() failed for lport {lport_name}");
                         return Err(CneError::ConfigError(err_msg));
                     }
                 }
@@ -593,7 +596,7 @@ impl Config {
                     PktApi::PktDev(lport_id) => {
                         let ret = unsafe { pktdev_close(lport_id) };
                         if ret < 0 {
-                            let err_msg = format!("pktdev_close() failed for lport {}", lport_name);
+                            let err_msg = format!("pktdev_close() failed for lport {lport_name}");
                             return Err(CneError::ConfigError(err_msg));
                         }
                     }
@@ -645,7 +648,7 @@ impl Config {
 
                             for cpu_id in start..end + 1 {
                                 cpu_set
-                                    .set(cpu_id as usize)
+                                    .set(cpu_id)
                                     .map_err(|e| CneError::ConfigError(e.to_string()))?;
                             }
                         }
@@ -669,7 +672,7 @@ impl Config {
 
     fn validate_cpu_id(cpu_id: usize, num_cores: usize) -> Result<usize, CneError> {
         if cpu_id >= num_cores {
-            let err_msg = format!("Invalid CPU ID {} in lcore-groups", cpu_id);
+            let err_msg = format!("Invalid CPU ID {cpu_id} in lcore-groups");
             Err(CneError::ConfigError(err_msg))
         } else {
             Ok(cpu_id)

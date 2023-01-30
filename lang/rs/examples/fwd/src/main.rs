@@ -14,6 +14,7 @@ use etherparse::Ethernet2Header;
 use etherparse::Ethernet2HeaderSlice;
 use prettytable::{Cell, Row, Table};
 use std::fmt;
+use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -130,7 +131,9 @@ fn main() {
                     for (i,port) in ports.iter().enumerate() {
                         port_stats[i] = port.get_port_stats().unwrap();
                     }
-                    print_port_stats(num_ports, &port_stats, &mut prev_port_stats, &mut table_height);
+                    if let Err(e) = print_port_stats(num_ports, &port_stats, &mut prev_port_stats, &mut table_height) {
+                        log::warn!("Error printing port stats: {}", e.to_string());
+                    }
                 }
             }
             recv(ctrl_c_events) -> _ => {
@@ -317,8 +320,7 @@ fn loopback(port: &Port, pkts: &mut [Packet]) -> Result<(), CneError> {
 
     if pkts_read > 0 {
         log::debug!("Number of packets read = {}", pkts_read);
-        for i in 0..pkts_read {
-            let pkt = &mut pkts[i as usize];
+        for pkt in pkts.iter_mut().take(pkts_read) {
             let data = pkt.get_data_mut()?;
             // Swap mac address.
             let mut eth_hdr = Ethernet2HeaderSlice::from_slice(data)
@@ -356,8 +358,7 @@ fn forward(
 
     if pkts_read > 0 {
         log::debug!("Number of packets read = {}", pkts_read);
-        for i in 0..pkts_read {
-            let pkt = &mut pkts[i as usize];
+        for pkt in pkts.iter_mut().take(pkts_read) {
             let data = pkt.get_data_mut()?;
             // Get destination port.
             // Look at the lowest byte of the destination mac address to determine
@@ -460,12 +461,12 @@ fn print_port_stats(
     port_stats: &[PortStats],
     prev_port_stats: &mut [PortStats],
     height: &mut usize,
-) {
+) -> Result<(), io::Error> {
     let mut table = Table::new();
     let mut row = Row::empty();
     row.add_cell(Cell::new("Stats"));
     for i in 0..num_ports {
-        let port_str = format!("Port {}", i).to_string();
+        let port_str = format!("Port {i}").to_string();
         row.add_cell(Cell::new(&port_str));
     }
     table.add_row(row);
@@ -514,10 +515,12 @@ fn print_port_stats(
     // Clear the terminal by deleting the printed lines in previous table.
     let mut terminal = term::stdout().unwrap();
     for _ in 0..*height {
-        terminal.cursor_up().unwrap();
-        terminal.delete_line().unwrap();
+        terminal.cursor_up()?;
+        terminal.delete_line()?;
     }
 
     // Print updated table and update height (number of lines) of table.
-    *height = table.print_tty(false);
+    *height = table.print_tty(false)?;
+
+    Ok(())
 }

@@ -328,7 +328,7 @@ impl CneInstance {
         match ports.get(&port_index) {
             Some(port) => Ok(port.clone()),
             None => {
-                let err_msg = format!("Port {} is not configured", port_index);
+                let err_msg = format!("Port {port_index} is not configured");
                 Err(CneError::PortError(err_msg))
             }
         }

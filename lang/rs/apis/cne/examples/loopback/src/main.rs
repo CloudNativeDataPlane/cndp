@@ -183,8 +183,7 @@ fn loopback(port: &Port) -> Result<(), CneError> {
     log::debug!("Number of packets read = {}", pkts_read);
 
     if pkts_read > 0 {
-        for i in 0..pkts_read {
-            let pkt = &mut rx_pkts[i as usize];
+        for pkt in rx_pkts.iter_mut().take(pkts_read) {
             let data = pkt.get_data_mut()?;
             // Swap mac address.
             swap_mac_address(data);
