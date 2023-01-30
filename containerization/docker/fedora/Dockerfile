@@ -21,7 +21,8 @@ RUN dnf -y upgrade && dnf -y install \
     golang \
 	clang \
 	llvm \
-	m4
+	m4 \
+	bpftool
 
 # Install libxdp
 RUN git clone https://github.com/xdp-project/xdp-tools.git
