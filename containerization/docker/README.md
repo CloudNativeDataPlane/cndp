@@ -68,7 +68,7 @@ sudo mkdir -p /etc/systemd/system/docker.service.d
 Environment="HTTP_PROXY=http://proxy.example.com:80/"
 ```
 
-Or, if you are behind an HTTPS proxy server, create a file called 
+Or, if you are behind an HTTPS proxy server, create a file called
 /etc/systemd/system/docker.service.d/https-proxy.conf that adds the HTTPS_PROXY
 environment variable:
 
