@@ -22,14 +22,23 @@ RUN apt-get update && apt-get install -y \
     libclang-dev \
     clang \
     curl \
+    git \
+    gcc-multilib \
+    llvm \
+    lld \
+    m4 \
+    linux-tools-common \
+    libbpf-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Build and install libbpf version >=0.3.0 and <=0.6.1
-SHELL ["/bin/bash", "-c"]
-RUN set -o pipefail \
-    && wget -q -O - https://github.com/libbpf/libbpf/archive/refs/tags/v0.5.0.tar.gz \
-    | tar -xzC / \
-    && make -j -C /libbpf-0.5.0/src install
+# Install libxdp
+RUN git clone https://github.com/xdp-project/xdp-tools.git
+WORKDIR /xdp-tools/
+RUN git checkout v1.2.2
+RUN ./configure
+WORKDIR /xdp-tools/
+RUN make -j; PREFIX=/usr make -j install
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
 # Install Rust and Cargo.
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -82,7 +91,7 @@ COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
 COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
-COPY --from=build /usr/lib64/libbpf.so.0 /usr/lib/
+COPY --from=build /lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
 
 # Copy configurations from the host
 WORKDIR /root

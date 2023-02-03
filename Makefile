@@ -12,6 +12,10 @@
 mkfile_path=$(abspath $(lastword $(MAKEFILE_LIST)))
 source_dir=$(shell dirname "$(mkfile_path)")
 Build="${source_dir}/tools/cne-build.sh"
+Builder?=docker #OCI Image Builder
+CE?=docker #Container Engine
+OCI-Builder=$(shell echo $(Builder) | tr A-Z a-z)
+ContainerEngine=$(shell echo $(CE) | tr A-Z a-z)
 
 # Use V=1 on the make line to enable verbose output
 ifeq ($V,1)
@@ -96,12 +100,28 @@ snyk: FORCE
 		snyk monitor --file=$${d} ; \
 	done
 
-docker-image: FORCE
-	docker build -t cndp --build-arg http_proxy=${http_proxy} \
+oci-image: FORCE
+ifeq ($(OCI-Builder), docker)
+	@echo "docker selected"
+else ifeq ($(OCI-Builder), buildah)
+	@echo "buildah selected"
+else
+	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	exit 1
+endif
+	${OCI-Builder} build -t cndp --build-arg http_proxy=${http_proxy} \
   --build-arg https_proxy=${http_proxy} -f containerization/docker/ubuntu/Dockerfile .
 
-docker-fed-image: FORCE
-	docker build -t cndp-fedora --build-arg http_proxy=${http_proxy} \
+oci-fed-image: FORCE
+ifeq ($(OCI-Builder), docker)
+	@echo "docker selected"
+else ifeq ($(OCI-Builder), buildah)
+	@echo "buildah selected"
+else
+	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	exit 1
+endif
+	$(OCI-Builder) build -t cndp-fedora --build-arg http_proxy=${http_proxy} \
   --build-arg https_proxy=${http_proxy} -f containerization/docker/fedora/Dockerfile .
 
 rust-app: FORCE
@@ -110,10 +130,26 @@ rust-app: FORCE
 rust-app-clean: FORCE
 	${Build} rust-app-clean
 
-docker-run: FORCE
-	docker run --privileged --network=host -it cndp bash
+ce-run: FORCE
+ifeq ($(ContainerEngine), docker)
+	@echo "docker selected"
+else ifeq ($(ContainerEngine), podman)
+	@echo "podman selected"
+else
+	@echo "UNKOWN Container Engine $(ContainerEngine)"
+	exit 1
+endif
+	$(ContainerEngine) run --privileged --network=host -it cndp bash
 
-docker-fed-run: FORCE
-	docker run --privileged --network=host -it cndp-fedora bash
+ce-fed-run: FORCE
+ifeq ($(ContainerEngine), docker)
+	@echo "docker selected"
+else ifeq ($(ContainerEngine), podman)
+	@echo "podman selected"
+else
+	@echo "UNKOWN Container Engine $(ContainerEngine)"
+	exit 1
+endif
+	$(ContainerEngine) run --privileged --network=host -it cndp-fedora bash
 
 FORCE:
