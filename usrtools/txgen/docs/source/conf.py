@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2010-2022 Intel Corporation.
+# Copyright (c) 2010-2023 Intel Corporation.
 
 from sphinx.highlighting import PygmentsBridge
 from pygments.formatters.latex import LatexFormatter
