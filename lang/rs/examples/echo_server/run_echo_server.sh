@@ -1,13 +1,13 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2022 Intel Corporation
+# Copyright (c) 2019-2023 Intel Corporation
 
 # Usage: ./run_echo_server.sh <mode> <args>
 # if mode is pnet then
 # ./run_echo_server.sh pnet <interface name>
 # eg 1: ./run_echo_server.sh pnet enp134s0
 
-# if mode is cne then 
+# if mode is cne then
 # ./run_echo_server.sh cne <json config file (optional)> <port id (optional)> <burst (optional)>
 # eg 1: ./run_echo_server.sh cne -> Run using default values
 # eg 2:./run_echo_server.sh cne ./fwd.jsonc 0 64 -> Run using user specified values.

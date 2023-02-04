@@ -1,10 +1,10 @@
 ..  SPDX-License-Identifier: BSD-3-Clause
-    Copyright (c) 2019-2022 Intel Corporation.
+    Copyright (c) 2019-2023 Intel Corporation.
 
 .. _commands:
 
 ``*** TXGen ***``
-Copyright &copy 2019-2022 Intel Corporation.
+Copyright &copy 2019-2023 Intel Corporation.
 
 The txgen output display needs 132 columns and about 42 lines to display
 currentlyt. I am using an xterm of 132x42, but you can have a larger display

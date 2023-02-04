@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2010-2022 Intel Corporation
+ * Copyright (c) 2010-2023 Intel Corporation
  */
 
 #ifndef _ACL_TEST_H_

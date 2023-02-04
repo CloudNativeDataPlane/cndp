@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2018 Vladimir Medvedkin <medvedkinv@gmail.com>
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 #include <stdbool.h>           // for bool

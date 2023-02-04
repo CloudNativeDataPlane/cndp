@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2020-2022 Intel Corporation
+# Copyright (c) 2020-2023 Intel Corporation
 
 linux_source_dir = get_option('linux_source_dir')
 
