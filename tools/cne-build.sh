@@ -10,7 +10,7 @@
 # using 'cne-build.sh help' or 'cne-build.sh -h' or 'cne-build.sh --help' to see help information.
 #
 
-currdir=`pwd`
+currdir=$(pwd)
 script_dir=$(cd "${BASH_SOURCE[0]%/*}" && pwd -P)
 sdk_dir="${CNE_SDK_DIR:-${script_dir%/*}}"
 target_dir="${CNE_TARGET_DIR:-usr/local}"
@@ -46,22 +46,22 @@ fi
 target_path=${install_path%/}/${target_dir%/}
 
 echo "Build environment variables and paths:"
-echo "  CNE_SDK_DIR     : "$sdk_dir
-echo "  CNE_TARGET_DIR  : "$target_dir
-echo "  CNE_BUILD_DIR   : "$build_dir
-echo "  CNE_DEST_DIR    : "$install_path
-echo "  PKG_CONFIG_PATH : "$PKG_CONFIG_PATH
-echo "  build_path      : "$build_path
-echo "  target_path     : "$target_path
+echo "  CNE_SDK_DIR     : $sdk_dir"
+echo "  CNE_TARGET_DIR  : $target_dir"
+echo "  CNE_BUILD_DIR   : $build_dir"
+echo "  CNE_DEST_DIR    : $install_path"
+echo "  PKG_CONFIG_PATH : $PKG_CONFIG_PATH"
+echo "  build_path      : $build_path"
+echo "  target_path     : $target_path"
 echo ""
 
 function run_meson() {
-    btype="-Dbuildtype="$buildtype
+    btype="-Dbuildtype=$buildtype"
     meson $configure $static $coverity $btype --prefix="/$target_dir" "$build_path" "$sdk_dir"
 }
 
 function ninja_build() {
-    echo ">>> Ninja build in '"$build_path"' buildtype='"$buildtype"'"
+    echo ">>> Ninja build in $build_path buildtype= $buildtype"
 
     if [[ -d $build_path ]] || [[ -f $build_path/build.ninja ]]; then
         # add reconfigure command if meson dir already exists
@@ -71,24 +71,21 @@ function ninja_build() {
     fi
     run_meson
 
-    ninja -C "$build_path"
-
-    if [[ $? -ne 0 ]]; then
-        return 1;
+    if ! ninja -C "$build_path"; then
+        return 1
     fi
+
     return 0
 }
 
 function ninja_build_docs() {
-    echo ">>> Ninja build documents in '"$build_path"'"
+    echo ">>> Ninja build documents in $build_path"
 
     if [[ ! -d $build_path ]] || [[ ! -f $build_path/build.ninja ]]; then
         run_meson
     fi
 
-    ninja -C $build_path doc
-
-    if [[ $? -ne 0 ]]; then
+    if ! ninja -C "$build_path" doc; then
         return 1;
     fi
     return 0
@@ -97,49 +94,49 @@ function ninja_build_docs() {
 function build_rust_apps() {
     echo ">>> Build rust applications"
     # Check if Cargo is installed.
-    command -v cargo &> /dev/null
-    if [[ $? -ne 0 ]]; then
+    if ! command -v cargo &> /dev/null; then
         echo "Cargo not found.Install Cargo"
         return 1
     fi
     # Build rust applications
     if [[ -d ${currdir}/lang/rs ]]; then
-        cd ${currdir}/lang/rs
+        cd "${currdir}/lang/rs" || return 1
         cargo_build_rust_app
     fi
 }
 
 function cargo_build_rust_app() {
     if [ "$buildtype" == "release" ]; then
-        cargo build --release
+        if ! cargo build --release; then
+            echo "Cargo builld rust app failed"
+            return 1
+        fi
     else
-        cargo build
+        if ! cargo build; then
+            echo "Cargo builld rust app failed"
+            return 1
+        fi
     fi
 
-    if [[ $? -ne 0 ]]; then
-        return 1;
-    fi
     return 0
 }
 
 function clean_rust_apps() {
     echo ">>> Clean rust applications"
     # Check if Cargo is installed.
-    command -v cargo &> /dev/null
-    if [[ $? -ne 0 ]]; then
+    if ! command -v cargo &> /dev/null; then
         echo "Cargo not found.Install Cargo"
         return 1
     fi
     # Clean rust applications.
     if [[ -d ${currdir}/lang/rs ]]; then
-        cd ${currdir}/lang/rs
+        cd "${currdir}/lang/rs" || return 1
         cargo_clean_rust_app
     fi
 }
 
 function cargo_clean_rust_app() {
-    cargo clean -v
-    if [[ $? -ne 0 ]]; then
+    if ! cargo clean -v; then
         return 1;
     fi
     return 0
@@ -147,34 +144,38 @@ function cargo_clean_rust_app() {
 
 
 ninja_install() {
-    echo ">>> Ninja install to '"$target_path"'"
+    echo ">>> Ninja install to $target_path"
 
     if [[ $verbose = true ]]; then
-        DESTDIR=$install_path ninja -C $build_path install
+        if ! DESTDIR=$install_path ninja -C "$build_path" install; then
+            echo "*** Install failed!!"
+            return 1
+        fi
     else
-        DESTDIR=$install_path ninja -C $build_path install > /dev/null
+        if ! DESTDIR=$install_path ninja -C "$build_path" install > /dev/null; then
+            echo "*** Install failed!!"
+            return 1
+        fi
     fi
 
-    if [[ $? -ne 0 ]]; then
-        echo "*** Install failed!!"
-        return 1;
-    fi
     return 0
 }
 
 ninja_uninstall() {
-    echo ">>> Ninja uninstall to '"$target_path"'"
+    echo ">>> Ninja uninstall to $target_path"
 
     if [[ $verbose = true ]]; then
-        DESTDIR=$install_path ninja -C $build_path uninstall
+        if ! DESTDIR=$install_path ninja -C "$build_path" uninstall; then
+            echo "*** Uninstall failed!!"
+            return 1;
+        fi
     else
-        DESTDIR=$install_path ninja -C $build_path uninstall > /dev/null
+        if ! DESTDIR=$install_path ninja -C "$build_path" uninstall > /dev/null; then
+            echo "*** Uninstall failed!!"
+            return 1;
+        fi
     fi
 
-    if [[ $? -ne 0 ]]; then
-        echo "*** Uninstall failed!!"
-        return 1;
-    fi
     return 0
 }
 
@@ -210,7 +211,7 @@ usage() {
 
 verbose=false
 
-for cmd in $@
+for cmd in "$@"
 do
     case "$cmd" in
     'help' | '-h' | '--help')
@@ -222,51 +223,51 @@ do
         ;;
 
     'static')
-        echo ">>> Static  build in '"$build_path"'"
+        echo ">>> Static  build in $build_path"
         static="-Ddefault_library=static"
         ;;
 
     'build')
-        echo ">>> Release build in '"$build_path"'"
+        echo ">>> Release build in $build_path"
         ninja_build
         ;;
 
     'coverity')
-        echo ">>> Build for Coverity in '"$build_path"'"
+        echo ">>> Build for Coverity in $build_path"
         coverity="-Dcoverity=true"
         ninja_build
         ;;
 
     'debug')
-        echo ">>> Debug build in '"$build_path"'"
+        echo ">>> Debug build in $build_path"
         buildtype="debug"
         ninja_build
         ;;
 
     'debugopt')
-        echo ">>> Debug Optimized build in '"$build_path"'"
+        echo ">>> Debug Optimized build in $build_path"
         buildtype="debugoptimized"
         ninja_build
         ;;
 
     'clean')
-        echo "*** Removing '"$build_path"' directory"
-        rm -fr $build_path
+    echo "*** Removing $build_path directory"
+        rm -fr "$build_path"
         ;;
 
     'uninstall')
-        echo "*** Uninstalling '"$target_path"' directory"
+        echo "*** Uninstalling $target_path directory"
         ninja_uninstall
         exit
         ;;
 
     'install')
-        echo ">>> Install the includes/libraries into '"$target_path"' directory"
+        echo ">>> Install the includes/libraries into $target_path directory"
         ninja_install
         ;;
 
     'docs')
-        echo ">>> Create the documents in '"$build_path"' directory"
+        echo ">>> Create the documents in $build_path directory"
         ninja_build_docs
         ;;
 
