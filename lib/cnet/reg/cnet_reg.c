@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <cne_per_thread.h>        // for CNE_DEFINE_PER_THREAD

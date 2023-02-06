@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2017-2022 Intel Corporation
+# Copyright (c) 2017-2023 Intel Corporation
 
 sources = files('acl_bld.c', 'acl_gen.c', 'acl_run_scalar.c',
 		'cne_acl.c', 'tb_mem.c')

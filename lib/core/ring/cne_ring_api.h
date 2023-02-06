@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  * Copyright (c) 2007-2009 Kip Macy kmacy@freebsd.org
  * All rights reserved.
  * Derived from FreeBSD's bufring.h

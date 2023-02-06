@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2022 Intel Corporation
+# Copyright (c) 2019-2023 Intel Corporation
 
 # A simple script to build requirements.txt for all python files in CNDP
 
