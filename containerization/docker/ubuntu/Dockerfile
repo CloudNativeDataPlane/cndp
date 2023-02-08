@@ -92,6 +92,7 @@ COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
 COPY --from=build /lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
+COPY --from=build /lib/libxdp.so.1 /usr/lib/
 
 # Copy configurations from the host
 WORKDIR /root
