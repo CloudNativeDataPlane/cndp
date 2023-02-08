@@ -760,7 +760,7 @@ main(int argc, char **argv)
     if (pthread_barrier_destroy(&fwd->barrier))
         CNE_ERR_RET("Failed to destroy barrier\n");
 
-    cne_printf(">>> [cyan]Application Exiting[]: [green]Bye![]\n");
+    cne_printf_pos(99, 1, ">>> [cyan]Application Exiting[]: [green]Bye![]\n");
     return 0;
 
 err:
@@ -770,8 +770,10 @@ err:
     if (fwd->test == HYPERSCAN_TEST)
         hsfwd_finish(fwd);
 
-    cne_printf("\n*** [cyan]CNDPFWD Forward Application[], [green]API[]: [magenta]%s [green]PID[]: "
-               "[magenta]%d[] failed\n",
-               apis[fwd->pkt_api], getpid());
+    cne_printf_pos(
+        99, 1,
+        "\n*** [cyan]CNDPFWD Forward Application[], [green]API[]: [magenta]%s [green]PID[]: "
+        "[magenta]%d[] failed\n",
+        apis[fwd->pkt_api], getpid());
     return -1;
 }
