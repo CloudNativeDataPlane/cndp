@@ -17,7 +17,7 @@ require (
 	github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/ttylog v0.0.0-20220730140151-855a3ef0ebc1
 	github.com/gdamore/tcell/v2 v2.5.2
 	github.com/rivo/tview v0.0.0-20220731115447-9d32d269593e
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 )
 
 require (
