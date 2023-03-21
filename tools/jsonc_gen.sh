@@ -5,19 +5,31 @@
 
 # Bash script to generate jsonc file to be used with cndpfwd app
 # This script is dependent on these environment variables being set:
-# CNDP_DEVICES and LIST_OF_QIDS
-# CNDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
+# AFXDP_DEVICES and LIST_OF_QIDS
+# AFXDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
 # When this script is used as part of a K8s deployment, the K8s device plugin
-# would populate the CNDP_DEVICES environment variable.
+# would populate the AFXDP_DEVICES environment variable.
 # LIST_OF_QIDS is the list of queue IDs that are used to program ethtool filters.
 # The available cores to the application are determined by
 # the 'lscpu' command.
-
+KIND=false
 config_file=config.jsonc
+AFXDP_DEVICES=${AFXDP_DEVICES:-net1}
+AFXDP_COPY_MODE=${AFXDP_COPY_MODE:-false}
 
-CNDP_DEVICES=${CNDP_DEVICES:-net1}
-CNDP_COPY_MODE=${CNDP_COPY_MODE:-false}
+while getopts "k" flag; do
+  case $flag in
+    k) KIND=true      ;;
+    *) echo 'error unkown flag' >&2
+       exit 1
+  esac
+done
+
+if [ ${KIND} = false ]  ; then
 LIST_OF_QIDS=${LIST_OF_QIDS:-4}
+else
+LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+fi
 
 num_of_interfaces=0
 num_of_qids=0
@@ -30,7 +42,7 @@ declare -a num_of_cores_in_each_numa_node
 declare -a LCORE
 
 # get list of interfaces
-for net in $CNDP_DEVICES
+for net in $AFXDP_DEVICES
 do
     NET[num_of_interfaces++]=$net
 done
@@ -100,7 +112,7 @@ EOF
             "umem": "umem0",
             "region": ${i},
             "unprivileged": true,
-            "skb_mode": ${CNDP_COPY_MODE},
+            "skb_mode": ${AFXDP_COPY_MODE},
             "description": "LAN ${i} port"
         }
 EOF
@@ -117,10 +129,12 @@ EOF
         }
 EOF
     )
-
+if [ $KIND = false ]  ; then
     nic_numa_node=$(cat /sys/class/net/${NET[i]}/device/numa_node || echo 0)
-    lcore=$(get_lcore $nic_numa_node $i)
-
+	lcore=$(get_lcore $nic_numa_node $i)
+else
+    lcore=0 # For kind you can't really retrieve the numa node as shown above
+fi
     # create list of lcore groups
     lcore_groups[i]=$(
         cat <<-EOF
@@ -228,7 +242,8 @@ cat <<-EOF > ${config_file}
     // The initial group is for the main thread of the application.
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
-        "initial": ["${LCORE[i]}"],${lcore_groups[*]},
+        "initial": ["${LCORE[i]}"],
+		${lcore_groups[*]},
         "default": ["${LCORE[i+1]}"]
     },
 
@@ -247,7 +262,7 @@ cat <<-EOF > ${config_file}
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        "uds_path": "/tmp/cndp.sock",
+        "uds_path": "/tmp/afxdp.sock",
         "mode": "drop"
     },
 
