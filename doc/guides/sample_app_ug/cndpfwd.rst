@@ -201,6 +201,7 @@ The configuration json file is located in the ``cndpfwd`` example sub-directory
         //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx
         //                    acl-strict, acl-permissive
         //   uds_path   - (0) Path to unix domain socket to get xsk map fd
+        //   xsk_pin_path - (O) Path to pinned bpf map
         "options": {
             "pkt_api": "xskdev",
             "no-metrics": false,

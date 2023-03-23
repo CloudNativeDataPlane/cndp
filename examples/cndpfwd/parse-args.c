@@ -76,6 +76,10 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 if (f->xdp_uds == NULL)
                     CNE_ERR_RET("UDS handshake failed\n");
             }
+        } else if (!strncmp(obj.opt->name, XSK_MAP_PIN_PATH_TAG, nlen)) {
+            if (obj.opt->val.type == STRING_OPT_TYPE) {
+                f->xsk_map_path = obj.opt->val.str;
+            }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
@@ -199,6 +203,8 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (lport->flags & LPORT_UNPRIVILEGED) {
                 if (f->xdp_uds)
                     pcfg.xsk_uds = f->xdp_uds;
+                else if (f->xsk_map_path)
+                    pcfg.xsk_map_path = f->xsk_map_path;
                 else
                     CNE_ERR_RET("UDS info struct is null\n");
             }
