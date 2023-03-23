@@ -3,7 +3,7 @@
 # Copyright (c) 2021-2023 Intel Corporation
 
 
-# Bash script to generate jsonc file to be used with cndpfwd app
+# Bash script to generate jsonc UDS_OR_MAP to be used with cndpfwd app
 # This script is dependent on these environment variables being set:
 # AFXDP_DEVICES and LIST_OF_QIDS
 # AFXDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
@@ -13,13 +13,15 @@
 # The available cores to the application are determined by
 # the 'lscpu' command.
 KIND=false
+PINNED_BPF_MAP=false
 config_file=config.jsonc
 AFXDP_DEVICES=${AFXDP_DEVICES:-net1}
 AFXDP_COPY_MODE=${AFXDP_COPY_MODE:-false}
 
-while getopts "k" flag; do
+while getopts "kp" flag; do
   case $flag in
     k) KIND=true      ;;
+    p) PINNED_BPF_MAP=true ;;
     *) echo 'error unkown flag' >&2
        exit 1
   esac
@@ -29,6 +31,14 @@ if [ ${KIND} = false ]  ; then
 LIST_OF_QIDS=${LIST_OF_QIDS:-4}
 else
 LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+fi
+
+if [ ${PINNED_BPF_MAP} = false ]  ; then
+UDS_OR_MAP_PATH="uds_path"
+UDS_OR_MAP="/tmp/afxdp.sock"
+else
+UDS_OR_MAP_PATH="xsk_pin_path"
+UDS_OR_MAP="/tmp/xsks_map"
 fi
 
 num_of_interfaces=0
@@ -132,7 +142,7 @@ if [ $KIND = false ]  ; then
     nic_numa_node=$(cat /sys/class/net/"${NET[i]}"/device/numa_node || echo 0)
 	lcore=$(get_lcore "$nic_numa_node" $i)
 else
-    lcore=0 # For kind you can't really retrieve the numa node as shown above
+    lcore=$(grep -c ^processor /proc/cpuinfo) # For kind you can't really retrieve the nic_numa_node as shown above
 fi
     # create list of lcore groups
     lcore_groups[i]=$(
@@ -146,13 +156,13 @@ EOF
 done
 
 IFS=$',\n';
-# generate the config file:
+# generate the config UDS_OR_MAP:
 cat <<-EOF > ${config_file}
 {
     // (R) - Required entry
     // (O) - Optional entry
     // All descriptions are optional and short form is 'desc'
-    // The order of the entries in this file are handled when it is parsed and the
+    // The order of the entries in this UDS_OR_MAP are handled when it is parsed and the
     // entries can be in any order.
 
     // (R) Application information
@@ -242,7 +252,7 @@ cat <<-EOF > ${config_file}
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
         "initial": ["${LCORE[i]}"],
-		${lcore_groups[*]},
+        ${lcore_groups[*]},
         "default": ["${LCORE[i+1]}"]
     },
 
@@ -256,17 +266,18 @@ cat <<-EOF > ${config_file}
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
+    //   xsk_pin_path - (O) Path to pinned bpf map
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        "uds_path": "/tmp/afxdp.sock",
+        "${UDS_OR_MAP_PATH}": "${UDS_OR_MAP}",
         "mode": "drop"
     },
 
     // List of threads to start and information for that thread. Application can start
-    // it's own threads for any reason and are not required to be configured by this file.
+    // it's own threads for any reason and are not required to be configured by this UDS_OR_MAP.
     //
     //   Key/Val   - (R) A unique thread name.
     //                   The format is <type-string>[:<identifier>] the ':' and identifier
