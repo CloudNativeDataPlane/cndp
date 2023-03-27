@@ -287,7 +287,7 @@ cat <<-EOF > ${config_file}
     },
 
     // List of threads to start and information for that thread. Application can start
-    // it's own threads for any reason and are not required to be configured by this UDS_OR_MAP.
+    // it's own threads for any reason and are not required to be configured by this file.
     //
     //   Key/Val   - (R) A unique thread name.
     //                   The format is <type-string>[:<identifier>] the ':' and identifier
