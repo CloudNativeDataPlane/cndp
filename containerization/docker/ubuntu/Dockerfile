@@ -88,6 +88,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
+COPY --from=build /cndp/usr/local/bin/cnet-graph /usr/bin/
 COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/

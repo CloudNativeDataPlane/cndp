@@ -254,16 +254,17 @@ index 8465a21..774c6ca 100644
  data:
    config.json: |
      {
-         "mode": "cndp",
-         "logLevel": "debug",
-         "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
-         "pools" : [
-             {
--                "name" : "e2e",
-+                "name" : "pool1",
-                 "drivers" : ["i40e"]
-             }
-         ]
+		"clusterType":"physical",
+        "mode": "primary",
+        "logLevel": "debug",
+        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
+        "pools" : [
+            {
+-              "name" : "e2e",
++              "name" : "pool1",
+               "drivers" : ["i40e"]
+            }
+        ]
 
 ```
 
@@ -340,6 +341,10 @@ First make optional changes to the containerization/k8s/cndp-pods/cndp-0-0.yaml
 file to define LIST_OF_QIDS or CNDP_COPY_MODE environment variables. These
 variables are read by `tools/jsonc_gen.sh` when the container starts to
 generate the configuration for the CNDP application.
+
+> **_NOTE:_** the `tools/jsonc_gen.sh` supports BPF map pinning configuration by
+running it with the `-p` flag. If you wish to use it in a kind cluster then run
+the script with a `-k` flag in the pod YAML.
 
 An example to force copy-mode for all AF_XDP sockets:
 

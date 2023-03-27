@@ -756,7 +756,7 @@ xskdev_socket_create(struct lport_cfg *c)
             /* Try to retrieve the xsk_map_fd from a pinned bpf map*/
             xi->xsk_map_fd = bpf_obj_get(c->xsk_map_path);
             if (xi->xsk_map_fd < 0)
-                CNE_ERR_GOTO(err, "Failed to receive xsk map fd\n");
+                CNE_ERR_GOTO(err, "Failed to get xsk map fd from bpf object\n");
         }
 
         CNE_INFO("xi->xsk_map_fd = %d\n", xi->xsk_map_fd);

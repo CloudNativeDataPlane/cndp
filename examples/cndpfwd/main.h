@@ -61,7 +61,7 @@ enum {
 #define ENABLE_CLI_TAG       "cli"             /**< json tag to enable/disable CLI */
 #define MODE_TAG             "mode"            /**< json tag to set the mode flag */
 #define UDS_PATH_TAG         "uds_path"        /**< json tag for UDS to get xsk map fd */
-#define XSK_MAP_PIN_PATH_TAG "xsk_pin_path"    /**< json tag for pinned BPF map to get xsk map fd */
+#define XSK_MAP_PIN_PATH_TAG "xsk-pin-path"    /**< json tag for pinned BPF map to get xsk map fd */
 #define FIB_RULES_TAG        "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
 #define HS_PATTERN_TAG       "hs-patterns"     /**< json tag for Hyperscan patterns */
 
