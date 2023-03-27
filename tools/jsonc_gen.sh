@@ -33,6 +33,7 @@ fi
 
 num_of_interfaces=0
 num_of_qids=0
+num_of_lcores=0
 numa_node=0
 i=0
 l=0
@@ -63,14 +64,14 @@ function get_lcore()
     else
         nic_numa_node=${1}
     fi
-    while [ $l -lt "$nic_numa_node" ]
+    while [ $l -lt $nic_numa_node ]
     do
-       ((offset+=num_of_cores_in_each_numa_node[l]))
+       ((offset+=${num_of_cores_in_each_numa_node[l]}))
        ((l++))
     done
 
     index=$((offset+i%num_of_cores_in_each_numa_node[nic_numa_node]))
-    echo """${LCORE[index]}"""
+    echo ${LCORE[index]}
 
 }
 output=$(lscpu | grep "NUMA node[0-9] CPU")
@@ -84,10 +85,10 @@ do
       ((num_of_numa_nodes++))
    else
       # split the comma separated value of cores into an array
-      IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
+      IFS=', ' read -a list_of_numa_lcores <<< "$each_output"
 
       num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
-      LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
+      LCORE=(${LCORE[@]} ${list_of_numa_lcores[@]})
    fi
    ((l++))
 done
@@ -129,8 +130,8 @@ EOF
 EOF
     )
 if [ $KIND = false ]  ; then
-    nic_numa_node=$(cat /sys/class/net/"${NET[i]}"/device/numa_node || echo 0)
-	lcore=$(get_lcore "$nic_numa_node" $i)
+    nic_numa_node=$(cat /sys/class/net/${NET[i]}/device/numa_node || echo 0)
+	lcore=$(get_lcore $nic_numa_node $i)
 else
     lcore=0 # For kind you can't really retrieve the numa node as shown above
 fi
@@ -197,7 +198,7 @@ cat <<-EOF > ${config_file}
     //    description | desc - (O) Description of the umem space.
     "umems": {
         "umem0": {
-            "bufcnt": (16*$num_of_interfaces),
+            "bufcnt": $((16*$num_of_interfaces)),
             "bufsz": 2,
             "mtype": "2MB",
             "regions": [${regions[*]}
