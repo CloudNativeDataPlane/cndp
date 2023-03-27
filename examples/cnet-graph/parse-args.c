@@ -159,6 +159,13 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
+            if (lport->flags & LPORT_UNPRIVILEGED) {
+                if (ci->xsk_map_path)
+                    pcfg.xsk_map_path = ci->xsk_map_path;
+                else
+                    CNE_ERR_RET("BPF MAP path is not configured\n");
+            }
+
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));
             strlcpy(pcfg.ifname, lport->netdev, sizeof(pcfg.ifname));

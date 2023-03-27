@@ -759,7 +759,7 @@ xskdev_socket_create(struct lport_cfg *c)
                 CNE_ERR_GOTO(err, "Failed to get xsk map fd from bpf object\n");
         }
 
-        CNE_INFO("xi->xsk_map_fd = %d\n", xi->xsk_map_fd);
+        CNE_DEBUG("xi->xsk_map_fd = %d\n", xi->xsk_map_fd);
     }
 
     if (xskdev_use_tx_lock) {
