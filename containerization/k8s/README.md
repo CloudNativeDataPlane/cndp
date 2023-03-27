@@ -1,4 +1,4 @@
-### CNDP Pod
+# CNDP Pod
 
 The provided configuration creates a CNDP pod with two containers. One that runs
 the CNDP cndpfwd example and another which runs the prometheus go agent to collect
@@ -7,7 +7,7 @@ a unix domain socket.
 
 This guide will walk you through the setup of the CNDP pods.
 
-### Setup K8s Env
+## Setup K8s Env
 
 This guide will walk you through how to setup a single node cluster where you
 can launch a CNDP container. The example uses kubeadm to bootstrap the cluster.
@@ -218,7 +218,7 @@ container image used by the CNDP pod.
 
 ### Build and deploy AF_XDP plugins for K8s
 
-The source code is available at: https://github.com/intel/afxdp-plugins-for-kubernetes
+The source code is available [here](https://github.com/intel/afxdp-plugins-for-kubernetes).
 
 For detailed install instructions please refer to README.md in the device plugin repo.
 This section will provide a quick start for deploying the device plugin and CNI.
@@ -254,7 +254,7 @@ index 8465a21..774c6ca 100644
  data:
    config.json: |
      {
-		"clusterType":"physical",
+        "clusterType": "physical",
         "mode": "primary",
         "logLevel": "debug",
         "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
@@ -303,7 +303,7 @@ ctr -n=k8s.io images import afxdp-device-plugin.tar
 
 ### Verify that the image is now available to the container run-time
 
-For information on how to install crictl : https://kubernetes.io/docs/tasks/debug-application-cluster/crictl/
+More information on how to install crictl can be found [here](https://kubernetes.io/docs/tasks/debug-application-cluster/crictl/).
 
 ```bash
 sudo crictl images
