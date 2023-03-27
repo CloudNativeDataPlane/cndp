@@ -37,7 +37,7 @@ if [ ${PINNED_BPF_MAP} = false ]  ; then
 UDS_OR_MAP_PATH="uds_path"
 UDS_OR_MAP="/tmp/afxdp.sock"
 else
-UDS_OR_MAP_PATH="xsk_pin_path"
+UDS_OR_MAP_PATH="xsk-pin-path"
 UDS_OR_MAP="/tmp/xsks_map"
 fi
 
@@ -83,25 +83,35 @@ function get_lcore()
     echo """${LCORE[index]}"""
 
 }
-output=$(lscpu | grep "NUMA node[0-9] CPU")
 
-# Parse the list of cores for each numa node and store it in an array
-IFS=$':\n';
-for each_output in $output
-do
-   if [ $((l%2)) -eq 0 ]
-   then
-      ((num_of_numa_nodes++))
-   else
-      # split the comma separated value of cores into an array
-      IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
+if [ $KIND = false ]  ; then
+    output=$(lscpu | grep "NUMA node[0-9] CPU")
+    # Parse the list of cores for each numa node and store it in an array
+    IFS=$':\n';
+    for each_output in $output
+    do
+    if [ $((l%2)) -eq 0 ]
+    then
+        ((num_of_numa_nodes++))
+    else
+        # split the comma separated value of cores into an array
+        IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
 
-      num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
-      LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
-   fi
-   ((l++))
-done
-unset IFS
+        num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
+        LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
+    fi
+    ((l++))
+    done
+    unset IFS
+else
+    output=$(lscpu -b -p=Core | grep -v '^#')
+    IFS=$'\n';
+    for each_output in $output
+    do
+        LCORE=("${LCORE[@]}" "$each_output")
+    done
+    unset IFS
+fi
 
 while [ $i -lt $num_of_interfaces ]
 do
@@ -140,9 +150,9 @@ EOF
     )
 if [ $KIND = false ]  ; then
     nic_numa_node=$(cat /sys/class/net/"${NET[i]}"/device/numa_node || echo 0)
-	lcore=$(get_lcore "$nic_numa_node" $i)
+    lcore=$(get_lcore "$nic_numa_node" $i)
 else
-    lcore=$(grep -c ^processor /proc/cpuinfo) # For kind you can't really retrieve the nic_numa_node as shown above
+    lcore=0 # For kind you can't really retrieve the nic_numa_node as shown above
 fi
     # create list of lcore groups
     lcore_groups[i]=$(
@@ -207,7 +217,7 @@ cat <<-EOF > ${config_file}
     //    description | desc - (O) Description of the umem space.
     "umems": {
         "umem0": {
-            "bufcnt": (16*$num_of_interfaces),
+            "bufcnt": $((num_of_interfaces * 16)),
             "bufsz": 2,
             "mtype": "2MB",
             "regions": [${regions[*]}
@@ -266,7 +276,7 @@ cat <<-EOF > ${config_file}
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
-    //   xsk_pin_path - (O) Path to pinned bpf map
+    //   xsk-pin-path - (O) Path to pinned bpf map
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,

@@ -67,6 +67,10 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
         } else if (!strncmp(obj.opt->name, ENABLE_CLI_TAG, nlen)) {
             if (obj.opt->val.type == BOOLEAN_OPT_TYPE)
                 ci->opts.cli = obj.opt->val.boolean;
+        } else if (!strncmp(obj.opt->name, XSK_MAP_PIN_PATH_TAG, nlen)) {
+            if (obj.opt->val.type == STRING_OPT_TYPE) {
+                ci->xsk_map_path = obj.opt->val.str;
+            }
         }
         break;
 
