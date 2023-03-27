@@ -28,17 +28,17 @@ while getopts "kp" flag; do
 done
 
 if [ ${KIND} = false ]  ; then
-LIST_OF_QIDS=${LIST_OF_QIDS:-4}
+    LIST_OF_QIDS=${LIST_OF_QIDS:-4}
 else
-LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+    LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
 fi
 
 if [ ${PINNED_BPF_MAP} = false ]  ; then
-UDS_OR_MAP_PATH="uds_path"
-UDS_OR_MAP="/tmp/afxdp.sock"
+    UDS_OR_MAP_PATH="uds_path"
+    UDS_OR_MAP="/tmp/afxdp.sock"
 else
-UDS_OR_MAP_PATH="xsk-pin-path"
-UDS_OR_MAP="/tmp/xsks_map"
+    UDS_OR_MAP_PATH="xsk-pin-path"
+    UDS_OR_MAP="/tmp/xsks_map"
 fi
 
 num_of_interfaces=0
@@ -90,16 +90,16 @@ if [ $KIND = false ]  ; then
     IFS=$':\n';
     for each_output in $output
     do
-    if [ $((l%2)) -eq 0 ]
-    then
-        ((num_of_numa_nodes++))
-    else
-        # split the comma separated value of cores into an array
-        IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
+        if [ $((l%2)) -eq 0 ]
+        then
+            ((num_of_numa_nodes++))
+        else
+            # split the comma separated value of cores into an array
+            IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
 
-        num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
-        LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
-    fi
+            num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
+            LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
+        fi
     ((l++))
     done
     unset IFS
