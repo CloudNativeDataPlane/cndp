@@ -20,7 +20,7 @@ of these devices.
    Refer to the :ref:`xskdev buffer management <xsk_buf_mgmt>` guide for
    details.
 
-.. image:: APIs.*
+.. image:: APIs.svg
 
 There are more differences between drivers regarding some internal properties,
 portability or even documentation availability.
