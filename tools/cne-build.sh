@@ -24,6 +24,7 @@ static=""
 coverity=""
 configure=""
 tcp=""
+ipv6=""
 
 if [[ "${build_dir}" = /* ]]; then
     # absolute path to build dir. Don't prepend workdir.
@@ -58,7 +59,8 @@ echo ""
 
 function run_meson() {
     btype="-Dbuildtype=$buildtype"
-    meson $configure $static $coverity $btype $tcp --prefix="/$target_dir" "$build_path" "$sdk_dir"
+    meson $configure $static $coverity $btype $tcp $ipv6 --prefix="/$target_dir" "$build_path" "$sdk_dir"
+    configure=""
 }
 
 function ninja_build() {
@@ -69,6 +71,8 @@ function ninja_build() {
         configure="configure"
         # sdk_dir must be empty if we're reconfiguring
         sdk_dir=""
+    else
+        configure="setup"
     fi
     run_meson
 
@@ -197,6 +201,7 @@ usage() {
     echo "    -v | --verbose - Enable verbose output"
     echo "    build          - build CNDP using the 'build_dir' directory"
     echo "    tcp            - build CNDP with TCP support enabled"
+    echo "    ipv6           - build CNDP with IPv6 support enabled"
     echo "    static         - build CNDP static using the 'build_dir' directory, 'make static build'"
     echo "    debug          - turn off optimization, may need to do 'clean' then 'debug' the first time"
     echo "    debugopt       - turn optimization on with -O2, may need to do 'clean' then 'debugopt'"
@@ -227,6 +232,11 @@ do
     'tcp')
         echo ">>> Enable TCP builds"
         tcp=-Denable_tcp=true
+        ;;
+
+    'ipv6')
+        echo ">>> Enable IPv6 builds"
+        ipv6=-Denable_ip6=true
         ;;
 
     'static')

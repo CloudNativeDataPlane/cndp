@@ -10,6 +10,7 @@
 #include <cnet_pcb.h>          // for pcb_entry, pcb_key, cnet_pcb_delete, pcb_hd
 #include <cnet_udp.h>          // for udp_entry
 #include <cnet_tcp.h>          // for tcp_entry
+#include <cnet_icmp6.h>        // for icmp6_entry
 #include <cnet_netif.h>        // for cnet_netif_match_subnet
 #include "chnl_priv.h"
 #include <cnet_chnl.h>
@@ -207,6 +208,8 @@ chnl_cleanup(struct chnl *ch)
                 cnet_pcb_delete(&this_stk->udp->udp_hd, pcb);
             else if (ch->ch_proto->proto == IPPROTO_TCP)
                 cnet_pcb_delete(&this_stk->tcp->tcp_hd, pcb);
+            else if (ch->ch_proto->proto == IPPROTO_ICMPV6)
+                cnet_pcb_delete(&this_stk->icmp6->icmp6_hd, pcb);
             else
                 CNE_WARN("Failed to determine pcb type %d\n", ch->ch_proto->proto);
         }
@@ -226,7 +229,15 @@ initialize_chnl(struct chnl *ch, int typ)
     rb = &ch->ch_rcv;
     sb = &ch->ch_snd;
 
-    if (typ == SOCK_DGRAM) {
+    if (ch->ch_proto->proto == IPPROTO_ICMPV6) {
+        rb->cb_size = rb->cb_hiwat = stk->icmp6->rcv_size;
+        sb->cb_size = sb->cb_hiwat = stk->icmp6->snd_size;
+        rb->cb_lowat = sb->cb_lowat = 1;
+
+        if ((pcb = cnet_pcb_alloc(&stk->icmp6->icmp6_hd, IPPROTO_ICMPV6)) == NULL)
+            return __errno_set(ENOBUFS);
+
+    } else if (typ == SOCK_DGRAM) {
         rb->cb_size = rb->cb_hiwat = stk->udp->rcv_size;
         sb->cb_size = sb->cb_hiwat = stk->udp->snd_size;
         rb->cb_lowat = sb->cb_lowat = 1;
@@ -437,7 +448,7 @@ chnl_bind(int cd, struct sockaddr *sa, int namelen)
          * One special case is allowed: a NULL name with a namelen of 0.
          */
         if (((name == NULL) && (namelen != 0)) ||
-            ((name != NULL) && (namelen > (int)sizeof(struct sockaddr)))) {
+            ((name != NULL) && (namelen > (int)sizeof(struct in_caddr)))) {
             __errno_set(EINVAL);
             CNE_ERR_GOTO(leave, "Name Invalid name %p, namelen %d > %ld\n", name, namelen,
                          sizeof(struct in_caddr));
@@ -487,6 +498,15 @@ chnl_connect(int cd, struct sockaddr *sa, int namelen)
         }
 
         if ((CIN_FAMILY(name) == AF_INET) && (CIN_CADDR(name) == INADDR_ANY)) {
+            __errno_set(EADDRNOTAVAIL);
+            CNE_ERR_GOTO(leave, "Channel family does not match %d != %d\n", CIN_FAMILY(name),
+                         ch->ch_proto->domain);
+        }
+
+        if (!CNET_ENABLE_IP6 && (CIN_FAMILY(name) == AF_INET6))
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+
+        if ((CIN_FAMILY(name) == AF_INET6) && inet6_addr_is_any(&(CIN6_ADDR(name)))) {
             __errno_set(EADDRNOTAVAIL);
             CNE_ERR_GOTO(leave, "Channel family does not match %d != %d\n", CIN_FAMILY(name),
                          ch->ch_proto->domain);
@@ -713,7 +733,6 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
     if (sa) {
         for (int i = 0; i < nb_mbufs; i++) {
             struct cnet_metadata *md;
-            struct sockaddr_in *addr;
 
             if (!mbufs[i])
                 CNE_ERR_RET_VAL(__errno_set(EFAULT), "pktmbuf entry is NULL\n");
@@ -722,13 +741,31 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
             if (!md)
                 CNE_ERR_RET_VAL(__errno_set(EFAULT), "pktmbuf metadata is NULL\n");
 
-            addr = (struct sockaddr_in *)&sa[i];
-            if (addr->sin_family == AF_INET) {
-                md->faddr.cin_family      = addr->sin_family;
-                md->faddr.cin_port        = addr->sin_port;
-                md->faddr.cin_len         = sizeof(struct in_addr);
-                md->faddr.cin_addr.s_addr = addr->sin_addr.s_addr;
+#if CNET_ENABLE_IP6
+            if (is_ch_dom_inet6(ch)) {
+                struct sockaddr_in6 *addr;
+
+                addr = (struct sockaddr_in6 *)&sa[i];
+                if (addr->sin6_family == AF_INET6) {
+                    md->faddr.cin_family = addr->sin6_family;
+                    md->faddr.cin_port   = addr->sin6_port;
+                    md->faddr.cin_len    = sizeof(struct in6_addr);
+                    inet6_addr_copy(&md->faddr.cin6_addr, &addr->sin6_addr);
+                }
+            } else {
+#endif
+                struct sockaddr_in *addr;
+
+                addr = (struct sockaddr_in *)&sa[i];
+                if (addr->sin_family == AF_INET) {
+                    md->faddr.cin_family      = addr->sin_family;
+                    md->faddr.cin_port        = addr->sin_port;
+                    md->faddr.cin_len         = sizeof(struct in_addr);
+                    md->faddr.cin_addr.s_addr = addr->sin_addr.s_addr;
+                }
+#if CNET_ENABLE_IP6
             }
+#endif
         }
     }
 
@@ -820,7 +857,18 @@ chnl_bind_common(struct chnl *ch, struct in_caddr *addr, int32_t len, struct pcb
     /* Get a local copy of the user struct in_caddr data, as his may be dirty */
     in_caddr_copy(&laddr, addr);
 
-    if (CIN_FAMILY(&laddr) == AF_INET) {
+    if (CIN_FAMILY(&laddr) == AF_INET6) {
+        if (!CNET_ENABLE_IP6)
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+
+        /* does the requested local address exist? If so get interface */
+        if (inet6_addr_is_non_zero(&laddr.cin6_addr)) {
+            netif = cnet6_netif_match_subnet((struct in6_addr *)&laddr.cin6_addr);
+            if (!netif)
+                return __errno_set(EADDRNOTAVAIL);
+            ch->ch_pcb->netif = netif;
+        }
+    } else if (CIN_FAMILY(&laddr) == AF_INET) {
         /* does the requested local address exist? If so get interface */
         if (laddr.cin_addr.s_addr) {
             netif = cnet_netif_match_subnet((struct in_addr *)&laddr.cin_addr);
@@ -903,8 +951,14 @@ chnl_connect_common(struct chnl *ch, struct in_caddr *to, int32_t tolen __cne_un
         return __errno_set(EFAULT);
     chnl_state_set(ch, _ISCONNECTED);
 
-    if (!ch->ch_pcb->netif)
-        ch->ch_pcb->netif = cnet_netif_match_subnet(&to->cin_addr);
+    if (!ch->ch_pcb->netif) {
+#if CNET_ENABLE_IP6
+        if (is_ch_dom_inet6(ch))
+            ch->ch_pcb->netif = cnet6_netif_match_subnet(&to->cin6_addr);
+        else /* if AF_INET */
+#endif
+            ch->ch_pcb->netif = cnet_netif_match_subnet(&to->cin_addr);
+    }
 
     return 0;
 }

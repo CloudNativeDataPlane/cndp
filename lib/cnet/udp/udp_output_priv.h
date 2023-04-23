@@ -13,6 +13,9 @@ extern "C" {
 enum udp_output_next_nodes {
     UDP_OUTPUT_NEXT_PKT_DROP,
     UDP_OUTPUT_NEXT_IP4_OUTPUT,
+#if CNET_ENABLE_IP6
+    UDP_OUTPUT_NEXT_IP6_OUTPUT,
+#endif
     UDP_OUTPUT_NEXT_MAX,
 };
 

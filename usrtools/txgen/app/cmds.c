@@ -21,6 +21,7 @@
 #include "cmds.h"
 #include "display.h"              // for display_resume, display_pause, ...
 #include "cne_inet.h"             // for inet_ntop4
+#include "net/cne_inet6.h"        // for inet_ntop6
 #include "_pcap.h"                // for pcap_info_t
 #include "capture.h"              // for txgen_set_capture
 #include "cli.h"                  // for cli_quit
@@ -46,7 +47,6 @@ _dump_lport(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unu
     char buff[64], *b;
     FILE *fd = arg;
     uint32_t flags;
-    struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
     int pid;
 
     info = &txgen.info[lport->lpid];
@@ -79,15 +79,39 @@ _dump_lport(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unu
     fprintf(fd, "set %d sport %d\n", pid, pkt->sport);
     fprintf(fd, "set %d dport %d\n", pid, pkt->dport);
     fprintf(fd, "set %d type %s\n", lport->lpid,
-            (pkt->ethType == CNE_ETHER_TYPE_IPV4) ? "ipv4" : "unknown");
+            (pkt->ethType == CNE_ETHER_TYPE_IPV4) ? "ipv4"
+#if CNET_ENABLE_IP6
+            : (pkt->ethType == CNE_ETHER_TYPE_IPV6) ? "ipv6"
+#endif
+                                                    : "unknown");
     fprintf(fd, "set %d proto %s\n", lport->lpid, (pkt->ipProto == IPPROTO_TCP) ? "tcp" : "udp");
 
-    ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
-    b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
-    fprintf(fd, "set %d dst ip %s\n", pid, (b) ? b : "InvalidIP");
-    ip_dst.s_addr = be32toh(pkt->ip_src_addr.s_addr);
-    b             = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
-    fprintf(fd, "set %d src ip %s\n", pid, (b) ? b : "InvalidIP");
+#if CNET_ENABLE_IP6
+    if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+        struct in6_addr mask6, ip6_dst, ip6_src;
+
+        __size_to_mask6(128, &mask6);
+
+        inet6_addr_ntoh(&ip6_dst, &pkt->ip6_dst_addr);
+        b = inet_ntop6(buff, sizeof(buff), &ip6_dst, &mask6);
+        fprintf(fd, "set %d dst ip %s\n", pid, (b) ? b : "InvalidIP");
+        inet6_addr_ntoh(&ip6_src, &pkt->ip6_src_addr);
+        b = inet_ntop6(buff, sizeof(buff), &ip6_src, (struct in6_addr *)&pkt->ip6_mask);
+        fprintf(fd, "set %d src ip %s\n", pid, (b) ? b : "InvalidIP");
+
+    } else /* IPv4 */ {
+#endif
+        struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
+
+        ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
+        b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
+        fprintf(fd, "set %d dst ip %s\n", pid, (b) ? b : "InvalidIP");
+        ip_src.s_addr = be32toh(pkt->ip_src_addr.s_addr);
+        b             = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
+        fprintf(fd, "set %d src ip %s\n", pid, (b) ? b : "InvalidIP");
+#if CNET_ENABLE_IP6
+    }
+#endif
     fprintf(fd, "set %d dst mac %s\n", pid, inet_mtoa(buff, sizeof(buff), &pkt->eth_dst_addr));
     fprintf(fd, "set %d src mac %s\n", pid, inet_mtoa(buff, sizeof(buff), &pkt->eth_src_addr));
 
@@ -768,6 +792,29 @@ single_set_ipaddr(port_info_t *info, char type, struct in_addr *ip, int prefixle
         info->pkt.ip_src_addr.s_addr = ntohl(ip->s_addr);
     } else
         info->pkt.ip_dst_addr.s_addr = ntohl(ip->s_addr);
+
+    txgen_packet_ctor(info);
+}
+
+/**
+ *
+ * single_set_ipaddr6 - Set the IPv6 address for all lports listed
+ *
+ * DESCRIPTION
+ * Set an IPv6 address for all lports listed in the call.
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+void
+single_set_ipaddr6(port_info_t *info, char type, struct in6_addr *ip, int prefixlen)
+{
+    if (type == 's') {
+        __size_to_mask6(prefixlen, &info->pkt.ip6_mask);
+        inet6_addr_ntoh(&info->pkt.ip6_src_addr, ip);
+    } else
+        inet6_addr_ntoh(&info->pkt.ip6_dst_addr, ip);
 
     txgen_packet_ctor(info);
 }

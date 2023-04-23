@@ -20,6 +20,7 @@ extern "C" {
  * node files.
  */
 #define ARP_REQUEST_NODE_NAME   "arp_request"
+#define ND6_REQUEST_NODE_NAME   "nd6_request"
 #define CHNL_CALLBACK_NODE_NAME "chnl_callback"
 #define CHNL_RECV_NODE_NAME     "chnl_recv"
 #define CHNL_SEND_NODE_NAME     "chnl_send"
@@ -30,6 +31,10 @@ extern "C" {
 #define IP4_INPUT_NODE_NAME     "ip4_input"
 #define IP4_OUTPUT_NODE_NAME    "ip4_output"
 #define IP4_PROTO_NODE_NAME     "ip4_proto"
+#define IP6_FORWARD_NODE_NAME   "ip6_forward"
+#define IP6_INPUT_NODE_NAME     "ip6_input"
+#define IP6_OUTPUT_NODE_NAME    "ip6_output"
+#define IP6_PROTO_NODE_NAME     "ip6_proto"
 #define KERNEL_RECV_NODE_NAME   "kernel_recv"
 #define NULL_NODE_NAME          "null"
 #define PKT_DROP_NODE_NAME      "pkt_drop"
@@ -39,6 +44,8 @@ extern "C" {
 #define TCP_OUTPUT_NODE_NAME    "tcp_output"
 #define UDP_INPUT_NODE_NAME     "udp_input"
 #define UDP_OUTPUT_NODE_NAME    "udp_output"
+#define ICMP6_INPUT_NODE_NAME   "icmp6_input"
+#define ICMP6_OUTPUT_NODE_NAME  "icmp6_output"
 
 #ifdef __cplusplus
 }

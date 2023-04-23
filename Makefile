@@ -30,6 +30,12 @@ else
     tcp_build=
 endif
 
+ifeq (${ipv6},1)
+    ipv6_build=ipv6
+else
+    ipv6_build=
+endif
+
 ifeq (${static_build},1)
     build_static=static
 else
@@ -47,25 +53,27 @@ help: FORCE
 	@echo "    eg: 'make static_build=1 rebuild install' for static executables"
 	@echo " Adding 'tcp=1' to enable TCP building"
 	@echo "    eg: 'make tcp=1 rebuild-install' to enable TCP support"
+	@echo " Adding 'ipv6=1' to enable IPv6 building"
+	@echo "    eg: 'make ipv6=1 rebuild-install' to enable IPv6 support"
 	@echo " Adding 'V=1' to enable verbose build messages"
 
 build: FORCE
-	${Build} ${verbose} ${tcp_build} ${build_static} build
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} ${build_static} build
 
 rebuild: FORCE
-	${Build} ${verbose} ${tcp_build} clean ${build_static} build
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} clean ${build_static} build
 
 rebuild-install: FORCE
-	${Build} ${verbose} ${tcp_build} clean ${build_static} build install
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} clean ${build_static} build install
 
 coverity: FORCE
 	${Build} ${verbose} clean coverity
 
 debug: FORCE
-	${Build} ${verbose} ${tcp_build} ${build_static} debug
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} ${build_static} debug
 
 debugopt: FORCE
-	${Build} ${verbose} ${tcp_build} ${build_static} debugopt
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} ${build_static} debugopt
 
 clean: FORCE
 	${Build} ${verbose} clean

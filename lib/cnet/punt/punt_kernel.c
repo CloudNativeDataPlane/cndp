@@ -39,6 +39,7 @@
 #include <net/cne_udp.h>
 #include <hexdump.h>
 #include <cnet_tcp.h>
+#include <cnet_pcb.h>
 
 #include <cnet_node_names.h>
 #include "punt_kernel_priv.h"
@@ -50,23 +51,45 @@ punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
 {
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
 
-    if (ctx->sock >= 0) {
-        struct cne_ipv4_hdr *ip4;
-        struct sockaddr_in sin = {0};
+    if (ctx->sock >= 0 && ctx->sock6 >= 0) {
         size_t len;
         char *buf;
 
         for (int i = 0; i < cnt; i++) {
-            ip4 = pktmbuf_mtod(mbufs[i], struct cne_ipv4_hdr *);
             len = pktmbuf_data_len(mbufs[i]);
-            buf = (char *)ip4;
+#if CNET_ENABLE_IP6
+            struct pcb_entry *pcb;
 
-            sin.sin_family      = AF_INET;
-            sin.sin_port        = 0;
-            sin.sin_addr.s_addr = ip4->dst_addr;
+            pcb = mbufs[i]->userptr;
+            if (is_pcb_dom_inet6(pcb)) {
+                struct cne_ipv6_hdr *ip6;
+                struct sockaddr_in6 sin6 = {0};
 
-            if (sendto(ctx->sock, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
-                CNE_WARN("Failed to send packets: %s\n", strerror(errno));
+                ip6 = pktmbuf_mtod(mbufs[i], struct cne_ipv6_hdr *);
+                buf = (char *)ip6;
+
+                sin6.sin6_family = AF_INET6;
+                sin6.sin6_port   = 0;
+                inet6_addr_copy_from_octs(&sin6.sin6_addr, ip6->dst_addr);
+                if (sendto(ctx->sock6, buf, len, 0, (struct sockaddr *)&sin6, sizeof(sin6)) < 0)
+                    CNE_WARN("Unable to send ip6 packets: %s\n", strerror(errno));
+
+            } else {
+#endif
+                struct cne_ipv4_hdr *ip4;
+                struct sockaddr_in sin = {0};
+
+                ip4 = pktmbuf_mtod(mbufs[i], struct cne_ipv4_hdr *);
+                buf = (char *)ip4;
+
+                sin.sin_family      = AF_INET;
+                sin.sin_port        = 0;
+                sin.sin_addr.s_addr = ip4->dst_addr;
+                if (sendto(ctx->sock, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+                    CNE_WARN("Unable to send ip4 packets: %s\n", strerror(errno));
+#if CNET_ENABLE_IP6
+            }
+#endif
         }
 
         if (cnt)
@@ -136,8 +159,15 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
     punt_kernel_node_ctx_t *ctx = (punt_kernel_node_ctx_t *)node->ctx;
 
     ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-    if (ctx->sock < 0)
-        CNE_ERR_RET("Failed to open RAW socket\n");
+#if CNET_ENABLE_IP6
+    ctx->sock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
+#endif
+    if (ctx->sock < 0
+#if CNET_ENABLE_IP6
+        || ctx->sock6 < 0
+#endif
+    )
+        CNE_ERR_RET("Unable to open RAW socket\n");
 
     return 0;
 }
@@ -150,6 +180,11 @@ punt_kernel_node_fini(const struct cne_graph *graph __cne_unused, struct cne_nod
     if (ctx->sock >= 0) {
         close(ctx->sock);
         ctx->sock = -1;
+    }
+
+    if (ctx->sock6 >= 0) {
+        close(ctx->sock6);
+        ctx->sock6 = -1;
     }
 }
 

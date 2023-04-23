@@ -8,6 +8,7 @@
 #include <cnet_route.h>         // for
 #include <cnet_route4.h>        // for cnet_route4_show
 #include <cnet_ipv4.h>          // for cnet_ipv4_stats_dump
+#include <cnet_ipv6.h>          // for cnet_ipv6_stats_dump
 #include <stdint.h>             // for int32_t
 #include <stdio.h>              // for printf
 #include <getopt.h>
@@ -55,17 +56,32 @@ cnet_rtshow(stk_t *stk, int argc, char **argv)
     if (optind < argc)
         iface = argv[optind];
 
-    if (iface == NULL) {
-        if (!ip_stats)
-            cnet_route4_show();
-        else
-            cnet_ipv4_stats_dump(stk);
-        return 0;
+    if (stk->ipv6) {
+        if (iface == NULL) {
+            if (!ip_stats)
+                cnet_route6_show();
+            else
+                cnet_ipv6_stats_dump(stk);
+            return 0;
+        } else {
+            if (!ip_stats)
+                cnet_route6_show();
+            else
+                cnet_ipv6_stats_dump(stk);
+        }
     } else {
-        if (!ip_stats)
-            cnet_route4_show();
-        else
-            cnet_ipv4_stats_dump(stk);
+        if (iface == NULL) {
+            if (!ip_stats)
+                cnet_route4_show();
+            else
+                cnet_ipv4_stats_dump(stk);
+            return 0;
+        } else {
+            if (!ip_stats)
+                cnet_route4_show();
+            else
+                cnet_ipv4_stats_dump(stk);
+        }
     }
 
     return 0;

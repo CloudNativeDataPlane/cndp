@@ -180,6 +180,9 @@ struct cne_node_register gtpu_node = {
             /* Pkt drop node starts at '0' */
             [GTPU_NEXT_PKT_DROP]  = PKT_DROP_NODE_NAME,
             [GTPU_NEXT_IP4_INPUT] = IP4_INPUT_NODE_NAME,
+#if CNET_ENABLE_IP6
+            [GTPU_NEXT_IP6_INPUT] = IP6_INPUT_NODE_NAME,
+#endif
         },
 };
 CNE_NODE_REGISTER(gtpu_node);

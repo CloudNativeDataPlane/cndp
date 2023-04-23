@@ -11,6 +11,7 @@
 
 #include "cnet_pcb.h"
 #include "cne_inet.h"        // for CIN_PORT, CIN_CADDR, CIN_F...
+#include "net/cne_inet6.h"        // for inet6_addr_is_any, inet6_addr_cmp etc.
 
 /*
  * Lookup a PCB in the given list to locate the matching PCB or near matching
@@ -94,19 +95,65 @@ pcb_v4_lookup(struct pcb_entry **vec, struct pcb_key *key, int32_t flag)
 static inline struct pcb_entry *
 pcb_v6_lookup(struct pcb_entry **vec, struct pcb_key *key, int32_t flag)
 {
-    CNE_SET_USED(vec);
-    CNE_SET_USED(key);
-    CNE_SET_USED(flag);
+    struct pcb_entry *match = NULL;
+    struct pcb_entry *pcb;
+    int wildcard, matchwild = 3;
+    struct in6_addr laddr, faddr;
+    uint16_t lport, fport;
 
-    return NULL;
+    lport = CIN_PORT(&key->laddr);
+    fport = CIN_PORT(&key->faddr);
+    inet6_addr_copy(&laddr, &CIN6_ADDR(&key->laddr));
+    inet6_addr_copy(&faddr, &CIN6_ADDR(&key->faddr));
+
+    vec_foreach_ptr (pcb, vec) {
+        if (CIN_PORT(&pcb->key.laddr) != lport)
+            continue;
+
+        wildcard = 0;
+
+        if (!inet6_addr_is_any(&CIN6_ADDR(&pcb->key.laddr))) {
+            if (inet6_addr_is_any(&laddr))
+                wildcard++;
+            else if (!inet6_addr_cmp(&CIN6_ADDR(&pcb->key.laddr), &laddr))
+                continue;
+        } else {
+            if (!inet6_addr_is_any(&laddr))
+                wildcard++;
+        }
+
+        if (!inet6_addr_is_any(&CIN6_ADDR(&pcb->key.faddr))) {
+            if (inet6_addr_is_any(&faddr))
+                wildcard++;
+            else if (!inet6_addr_cmp(&CIN6_ADDR(&pcb->key.faddr), &faddr) ||
+                     CIN_PORT(&pcb->key.faddr) != fport)
+                continue;
+        } else {
+            if (!inet6_addr_is_any(&faddr))
+                wildcard++;
+        }
+
+        if (wildcard && (flag & EXACT_MATCH))
+            continue;
+
+        if (wildcard < matchwild) {
+            match     = pcb;
+            matchwild = wildcard;
+            if (matchwild == 0)
+                break; /* Exact match */
+        }
+    }
+    return match;
 }
 
 struct pcb_entry *
 cnet_pcb_lookup(struct pcb_hd *hd, struct pcb_key *key, int32_t flag)
 {
+#if CNET_ENABLE_IP6
     if (flag & IPV6_TYPE)
         return pcb_v6_lookup(hd->vec, key, flag);
     else
+#endif
         return pcb_v4_lookup(hd->vec, key, flag);
 }
 
@@ -159,9 +206,9 @@ CNE_INIT_PRIO(cnet_pcb_constructor, STACK)
 static void
 pcb_show(struct pcb_entry *pcb)
 {
-    char fbuf[128], lbuf[128], *ret = NULL;
-    char ip1[IP4_ADDR_STRLEN] = {0};
-    char ip2[IP4_ADDR_STRLEN] = {0};
+    char fbuf[176], lbuf[176], *ret = NULL;
+    char ip1[IP6_ADDR_STRLEN] = {0};
+    char ip2[IP6_ADDR_STRLEN] = {0};
 
     if (pcb->closed)
         return;
@@ -169,14 +216,24 @@ pcb_show(struct pcb_entry *pcb)
     cne_printf("       [green]%-6s [orange] %04x [red]%6s[]", pcb->closed ? "Closed" : "Open",
                pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
 
-    ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
+#if CNET_ENABLE_IP6
+    if (is_pcb_dom_inet6(pcb)) {
+        ret = inet_ntop6(ip1, sizeof(ip1), &pcb->key.faddr.cin6_addr, NULL);
+        ret = inet_ntop6(ip2, sizeof(ip2), &pcb->key.laddr.cin6_addr, NULL);
+    } else {
+#endif
+        ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
+        ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
+#if CNET_ENABLE_IP6
+    }
+#endif
+
     if (snprintf(fbuf, sizeof(fbuf), "%s:%d", ret ? ret : "Invalid IP",
                  ntohs(CIN_PORT(&pcb->key.faddr))) < 0)
         CNE_RET("Truncated buffer data\n");
 
     cne_printf(" [orange]%20s[]", fbuf);
 
-    ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
     if (snprintf(lbuf, sizeof(lbuf), "%s:%d", ret ? ret : "Invalid IP",
                  ntohs(CIN_PORT(&pcb->key.laddr))) < 0)
         CNE_RET("Truncated buffer data\n");
@@ -215,7 +272,49 @@ cnet_pcb_show(struct pcb_entry *pcb)
 {
     if (!pcb)
         return;
-    cne_printf("       [magenta]%-6s %5s %6s %20s %20s %4s[]\n", "State", "Flags", "Proto",
-               "Foreign", "Local", "TTL");
+    if (is_pcb_dom_inet6(pcb))
+        cne_printf("       [magenta]%-6s %5s %6s %20s %20s %4s[]\n", "State", "Flags", "Proto",
+                   "Foreign", "Local", "Hop Limit");
+    else
+        cne_printf("       [magenta]%-6s %5s %6s %20s %20s %4s[]\n", "State", "Flags", "Proto",
+                   "Foreign", "Local", "TTL");
     pcb_show(pcb);
+}
+
+bool
+is_tcb_dom_inet4(struct tcb_entry *tcb)
+{
+    return (tcb && tcb->pcb && tcb->pcb->ch && tcb->pcb->ch->ch_proto &&
+            (tcb->pcb->ch->ch_proto->domain == AF_INET));
+}
+
+bool
+is_pcb_dom_inet4(struct pcb_entry *pcb)
+{
+    return (pcb && pcb->ch && pcb->ch->ch_proto && (pcb->ch->ch_proto->domain == AF_INET));
+}
+
+bool
+is_ch_dom_inet4(struct chnl *ch)
+{
+    return (ch && ch->ch_proto && (ch->ch_proto->domain == AF_INET));
+}
+
+bool
+is_tcb_dom_inet6(struct tcb_entry *tcb)
+{
+    return (tcb && tcb->pcb && tcb->pcb->ch && tcb->pcb->ch->ch_proto &&
+            (tcb->pcb->ch->ch_proto->domain == AF_INET6));
+}
+
+bool
+is_pcb_dom_inet6(struct pcb_entry *pcb)
+{
+    return (pcb && pcb->ch && pcb->ch->ch_proto && (pcb->ch->ch_proto->domain == AF_INET6));
+}
+
+bool
+is_ch_dom_inet6(struct chnl *ch)
+{
+    return (ch && ch->ch_proto && (ch->ch_proto->domain == AF_INET6));
 }

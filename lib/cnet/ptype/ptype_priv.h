@@ -18,6 +18,9 @@ struct ptype_node_ctx {
 enum ptype_next_nodes {
     PTYPE_NEXT_PKT_DROP,
     PTYPE_NEXT_IP4_INPUT,
+#if CNET_ENABLE_IP6
+    PTYPE_NEXT_IP6_INPUT,
+#endif
     PTYPE_NEXT_GTPU_INPUT,
     PTYPE_NEXT_MAX,
 };

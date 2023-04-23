@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 
 #include <cne_byteorder.h>
 #include <pktmbuf.h>
@@ -454,6 +455,30 @@ cne_ipv6_udptcp_cksum(const struct cne_ipv6_hdr *ipv6_hdr, const void *l4_hdr)
     return (uint16_t)cksum;
 }
 
+/**
+ * Validate the IPv6 UDP or TCP checksum.
+ *
+ * In case of UDP, the caller must first check if udp_hdr->dgram_cksum is 0
+ * (i.e. no checksum).
+ *
+ * @param ipv6_hdr
+ *   The pointer to the contiguous IPv6 header.
+ * @param l4_hdr
+ *   The pointer to the beginning of the L4 header.
+ * @return
+ *   Return 0 if the checksum is correct, else -1.
+ */
+static inline int
+cne_ipv6_udptcp_cksum_verify(const struct cne_ipv6_hdr *ipv6_hdr, const void *l4_hdr)
+{
+    uint16_t cksum = cne_ipv6_udptcp_cksum(ipv6_hdr, l4_hdr);
+
+    if (cksum != 0xffff)
+        return -1;
+
+    return 0;
+}
+
 /** IPv6 fragment extension header. */
 #define CNE_IPV6_EHDR_MF_SHIFT 0
 #define CNE_IPV6_EHDR_MF_MASK  1
@@ -523,6 +548,20 @@ cne_ipv6_get_next_ext(const uint8_t *p, int proto, size_t *ext_len)
     }
 
     return next_proto;
+}
+
+static inline int
+cne_addr_family(const char *addr)
+{
+    char buf[32];
+
+    if (inet_pton(AF_INET, addr, buf)) {
+        return AF_INET;
+    } else if (inet_pton(AF_INET6, addr, buf)) {
+        return AF_INET6;
+    }
+
+    return -1;
 }
 
 #ifdef __cplusplus

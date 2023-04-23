@@ -43,9 +43,9 @@
  */
 
 #include "cnet_const.h"        // for bool_t
-#include "cnet_pcb.h"          // for pcb_hd
 
 #include <net/cne_tcp.h>
+#include <netinet/in.h>        // for in6_addr
 #include <stdint.h>        // for uint32_t, uint16_t, int32_t, int16_t, uint8_t
 #include <stdio.h>         // for NULL
 #include <stdbool.h>
@@ -55,9 +55,9 @@
 #include "cnet_const.h"        // for bool_t
 #include "cnet_pcb.h"          // for pcb_entry (ptr only), pcb_hd
 #include "cnet_stk.h"          // for per_thread_stk, stk_entry, this_stk
-#include "cnet_tcp.h"          // for tcb_entry (ptr only)
 #include "mempool.h"           // for mempool_get, mempool_put
 #include "pktmbuf.h"           // for pktmbuf_t
+#include <net/cne_inet6.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -91,6 +91,7 @@ extern "C" {
  *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 
+// struct pcb_hd;
 struct cne_tcp_hdr;
 struct cne_vec;
 
@@ -483,6 +484,15 @@ enum {
 extern const char *tcb_in_states[];
 
 struct chnl;
+
+#ifndef __CNET_PCB_HD_STRUCT_
+#define __CNET_PCB_HD_STRUCT_
+struct pcb_entry;
+struct pcb_hd {
+    struct pcb_entry **vec; /**< PCB entries */
+    uint16_t local_port;    /**< Local port number i.e. IP local port ID */
+};
+#endif
 
 struct tcp_entry {
     TAILQ_ENTRY(tcb_entry) entry;

@@ -18,6 +18,9 @@ struct gtpu_node_ctx {
 enum gtpu_next_nodes {
     GTPU_NEXT_PKT_DROP,
     GTPU_NEXT_IP4_INPUT,
+#if CNET_ENABLE_IP6
+    GTPU_NEXT_IP6_INPUT,
+#endif
     GTPU_NEXT_MAX,
 };
 

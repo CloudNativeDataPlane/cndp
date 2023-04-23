@@ -18,6 +18,12 @@ option('enable_docs', type: 'boolean', value: false,
 option('enable_ip4_dump', type: 'boolean', value: 'false',
     description: 'enable IPv4 dump header')
 
+option('enable_ip6', type: 'boolean', value: 'false',
+    description: 'enable IPv6 in CNET (experimental)')
+
+option('enable_ip6_dump', type: 'boolean', value: 'false',
+    description: 'enable IPv6 dump header')
+
 option('enable_tcp', type: 'boolean', value: 'false',
     description: 'enable TCP in CNET (experimental)')
 
@@ -35,6 +41,10 @@ option('cnet_num_channels', type: 'integer', value: '512',
 
 option('cnet_num_routes', type: 'integer', value: '512',
     description: 'Max number of Routes')
+
+option('cnet_num_segs', type: 'integer', value: '8192',
+    description: 'Max number of TCB segments')
+
 # ------
 
 option('json_test_dir', type: 'string',

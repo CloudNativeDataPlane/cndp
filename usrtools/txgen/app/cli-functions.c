@@ -15,6 +15,7 @@
 #include <stdint.h>               // for uint16_t, uint32_t
 #include <stdlib.h>               // for atoi, strtoul
 
+#include "net/cne_ip.h"
 #include "txgen.h"          // for foreach_port, estate, txgen, txgen_t, MIN_...
 #include "cmds.h"           // for txgen_clear_display, txgen_update_display
 #include "display.h"        // for display_set_color, txgen_set_theme_item
@@ -186,6 +187,9 @@ set_cmd(int argc, char **argv)
     int value, n;
     struct cli_map *m;
     struct in_addr ip;
+#if CNET_ENABLE_IP6
+    struct in6_addr ip6;
+#endif
     int prefixlen;
     uint32_t u1, u2;
 
@@ -258,10 +262,23 @@ set_cmd(int argc, char **argv)
             prefixlen = strtol(p, NULL, 10);
             if (errno)
                 CNE_ERR_RET("IP address prefix length: %s\n", strerror(errno));
-            if (!inet_aton(argv[4], &ip))
-                CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
-            foreach_port(portlist,
-                single_set_ipaddr(info, 's', &ip, prefixlen));
+
+#if CNET_ENABLE_IP6
+            if (cne_addr_family(argv[4]) == AF_INET6) {
+                if (!inet_net_pton(AF_INET6, argv[4], &ip6, sizeof(struct in6_addr)))
+                    CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+                foreach_port(portlist,
+                    single_set_ipaddr6(info, 's', &ip6, prefixlen));
+
+            } else /* IPv4 */ {
+#endif
+                if (!inet_aton(argv[4], &ip))
+                    CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+                foreach_port(portlist,
+                    single_set_ipaddr(info, 's', &ip, prefixlen));
+#if CNET_ENABLE_IP6
+            }
+#endif
             break;
         case 31:
             /* Remove the /XX mask value if supplied */
@@ -270,10 +287,22 @@ set_cmd(int argc, char **argv)
                 CNE_WARN("Subnet mask not required, removing subnet mask value\n");
                 *p = '\0';
             }
-            if (!inet_aton(argv[4], &ip))
-                CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
-            foreach_port(portlist,
-                single_set_ipaddr(info, 'd', &ip, 0));
+#if CNET_ENABLE_IP6
+            if (cne_addr_family(argv[4]) == AF_INET6) {
+                if (!inet_net_pton(AF_INET6, argv[4], &ip6, sizeof(struct in6_addr)))
+                    CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+                foreach_port(portlist,
+                    single_set_ipaddr6(info, 'd', &ip6, 0));
+
+            } else /* IPv4 */ {
+#endif
+                if (!inet_aton(argv[4], &ip))
+                    CNE_ERR_RET("Invalid IP address: %s\n", strerror(errno));
+                foreach_port(portlist,
+                    single_set_ipaddr(info, 'd', &ip, 0));
+#if CNET_ENABLE_IP6
+            }
+#endif
             break;
         case 100:
             u1 = strtol(argv[4], NULL, 0);

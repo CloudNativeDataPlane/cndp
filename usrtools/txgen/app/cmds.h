@@ -54,6 +54,7 @@ void txgen_port_defaults(uint32_t pid);
 
 /* Single */
 void single_set_ipaddr(port_info_t *info, char type, struct in_addr *ip, int prefixlen);
+void single_set_ipaddr6(port_info_t *info, char type, struct in6_addr *ip, int prefixlen);
 void single_set_proto(port_info_t *info, char *type);
 void single_set_mac(port_info_t *info, const char *which, struct ether_addr *mac);
 void single_set_dst_mac(port_info_t *info, struct ether_addr *mac);
