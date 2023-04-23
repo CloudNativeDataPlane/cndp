@@ -20,6 +20,7 @@ sources = files(
 	'txgen.c',
 	'udp.c',
 	'cne_net_crc.c',
+	'ipv6.c',
 )
 
 deps += [

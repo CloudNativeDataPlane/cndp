@@ -17,14 +17,20 @@
 
 #include <cne_rwlock.h>
 #include <cne_fib.h>
+#include <cne_fib6.h>
 
 struct rt4_entry;
+struct rt6_entry;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct fib_info {
-    struct cne_fib *fib;  /**< fib structure */
+    union {
+        struct cne_fib *fib;   /**< fib structure */
+        struct cne_fib6 *fib6; /**< fib6 structure for IPv6 */
+    };
     void **idx2obj;       /**< Index to object array */
     cne_rwlock_t lock;    /**< lock to protect idx2obj */
     uint32_t objcnt;      /**< Maximum number of objects (pow2) */
@@ -164,6 +170,47 @@ fib_info_create(struct cne_fib *fib, uint32_t objcnt, uint32_t index_shift)
     fi = calloc(1, sizeof(fib_info_t));
     if (fi) {
         fi->fib         = fib;
+        fi->objcnt      = cne_align32pow2(objcnt);
+        fi->mask        = fi->objcnt - 1;
+        fi->index_shift = index_shift;
+        cne_rwlock_init(&fi->lock);
+
+        fi->idx2obj = calloc(fi->objcnt, sizeof(void *));
+        if (!fi->idx2obj) {
+            fib_info_destroy(fi);
+            return NULL;
+        }
+    }
+
+    return fi;
+}
+
+/**
+ * Create the FIB6 information structure.
+ *
+ * @param fib6
+ *   The FIB table to add to the FIB6 information structure
+ * @param objcnt
+ *   The number of objects to support in the idx2obj table. The value will be aligned
+ *   to the power of 2 value.
+ * @param index_shift
+ *   The index value used to shift the value to the index value in the object being stored.
+ *   This allows for the object pointer, which could be a real pointer or a uint64_t value
+ *   with a upper value and lower value encoded into the object pointer.
+ * @return
+ *   NULL on error or pointer to the FIB information structure
+ */
+static inline fib_info_t *
+fib6_info_create(struct cne_fib6 *fib, uint32_t objcnt, uint32_t index_shift)
+{
+    fib_info_t *fi;
+
+    if (!fib || objcnt == 0 || index_shift == 0)
+        return NULL;
+
+    fi = calloc(1, sizeof(fib_info_t));
+    if (fi) {
+        fi->fib6        = fib;
         fi->objcnt      = cne_align32pow2(objcnt);
         fi->mask        = fi->objcnt - 1;
         fi->index_shift = index_shift;
@@ -330,6 +377,32 @@ fib_info_lookup(fib_info_t *fi, uint32_t *ip, void **objs, int n)
 }
 
 /**
+ * Do a lookup in the FIB table and return the objects
+ *
+ * @param fi
+ *   The FIB information structure pointer.
+ * @param ip
+ *   The array of IPv6 addresses to lookup in the FIB table.
+ * @param objs
+ *   The array of returning objects.
+ * @param n
+ *   The number of IPv6 addresses and the size of the object array
+ * @return
+ *   -1 on error or number of objects returned
+ */
+static inline int
+fib6_info_lookup(fib_info_t *fi, uint8_t ip[][CNE_FIB6_IPV6_ADDR_SIZE], void **objs, int n)
+{
+    if (fi && ip) {
+        uint64_t nh[n];
+
+        if (cne_fib6_lookup_bulk(fi->fib6, ip, nh, n) == 0)
+            return fib_info_get(fi, nh, objs, n);
+    }
+    return 0;
+}
+
+/**
  * Bulk lookup of IPv4 addresses and return the index values of the objects
  *
  * @param fi
@@ -349,6 +422,28 @@ fib_info_lookup_index(fib_info_t *fi, uint32_t *ip, uint64_t *idxs, int n)
     if (!fi || !ip || !idxs)
         return -1;
     return cne_fib_lookup_bulk(fi->fib, ip, idxs, n) == 0;
+}
+
+/**
+ * Bulk lookup of IPv6 addresses and return the index values of the objects
+ *
+ * @param fi
+ *   The FIB information structure pointer.
+ * @param ip
+ *   The array of IPv6 addresses to lookup in the FIB table.
+ * @param idxs
+ *   The array of index values to return
+ * @param n
+ *   The number of IPv6 addresses and the size of the object array
+ * @return
+ *   -1 on error or number of objects returned
+ */
+static inline int
+fib6_info_lookup_index(fib_info_t *fi, uint8_t ip[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *idxs, int n)
+{
+    if (!fi || !ip || !idxs)
+        return -1;
+    return cne_fib6_lookup_bulk(fi->fib6, ip, idxs, n) == 0;
 }
 
 #ifdef __cplusplus

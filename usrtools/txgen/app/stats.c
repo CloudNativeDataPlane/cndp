@@ -26,6 +26,7 @@
 #include "port-cfg.h"            // for port_info_t, port_sizes_t, ABC_FILL_PATTERN
 #include "seq.h"                 // for pkt_seq_t
 #include "stats.h"               // for pkt_stats_t, txgen_get_link_status, txgen_...
+#include "net/cne_inet6.h"
 
 /**
  *
@@ -46,7 +47,6 @@ txgen_print_static_data(void)
     char buff[32], *b;
     uint32_t pid, ip_row;
     uint32_t col, row;
-    struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
 
     display_set_color("default");
     display_set_color("top.page");
@@ -144,13 +144,33 @@ txgen_print_static_data(void)
 
         display_set_color("stats.ip");
         memset(buff, 0, sizeof(buff));
-        ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
-        b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
-        cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
-        memset(buff, 0, sizeof(buff));
-        ip_src.s_addr = be32toh(pkt->ip_src_addr.s_addr);
-        b             = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
-        cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+#if CNET_ENABLE_IP6
+        if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+            struct in6_addr mask6, ip6_dst, ip6_src;
+
+            __size_to_mask6(128, &mask6);
+            inet6_addr_ntoh(&ip6_dst, &pkt->ip6_dst_addr);
+            b = inet_ntop6(buff, sizeof(buff), &ip6_dst, &mask6);
+            cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+            memset(buff, 0, sizeof(buff));
+            inet6_addr_ntoh(&ip6_src, &pkt->ip6_src_addr);
+            b = inet_ntop6(buff, sizeof(buff), &ip6_src, (struct in6_addr *)&pkt->ip6_mask);
+            cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+
+        } else /* IPv4 */ {
+#endif
+            struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
+
+            ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
+            b             = inet_ntop4(buff, sizeof(buff), &ip_dst, &mask);
+            cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+            memset(buff, 0, sizeof(buff));
+            ip_src.s_addr = be32toh(pkt->ip_src_addr.s_addr);
+            b = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
+            cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+#if CNET_ENABLE_IP6
+        }
+#endif
         display_set_color("stats.mac");
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1,
                        inet_mtoa(buff, sizeof(buff), &pkt->eth_dst_addr));

@@ -43,6 +43,7 @@ net_hdrs = files(
     'net/cne_sctp.h',
     'net/cne_tcp.h',
     'net/cne_udp.h',
+    'net/cne_inet6.h',
     )
 
 include = declare_dependency(include_directories: include_directories('.'))

@@ -381,6 +381,21 @@ else
     message('*** IPv4 dump output disabled')
 endif
 
+cne_conf.set10('CNET_ENABLE_IP6', get_option('enable_ip6'))
+if get_option('enable_ip6')
+    message('*** IPv6 support enabled (experimental)')
+else
+    message('*** IPv6 support disabled')
+endif
+
+
+cne_conf.set10('CNET_IP6_DUMP_ENABLED', get_option('enable_ip6_dump'))
+if get_option('enable_ip6_dump')
+    message('*** IPv6 dump output enabled')
+else
+    message('*** IPv6 dump output disabled')
+endif
+
 cne_conf.set10('CNET_ENABLE_TCP', get_option('enable_tcp'))
 if get_option('enable_tcp')
     message('*** TCP support enabled (experimental)')
@@ -405,6 +420,7 @@ endif
 cne_conf.set('CNET_NUM_TCBS', get_option('cnet_num_tcbs'))
 cne_conf.set('CNET_NUM_CHANNELS', get_option('cnet_num_channels'))
 cne_conf.set('CNET_NUM_ROUTES', get_option('cnet_num_routes'))
+cne_conf.set('CNET_NUM_SEGMENTS', get_option('cnet_num_segs'))
 
 # ----
 

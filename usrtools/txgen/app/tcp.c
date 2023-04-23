@@ -11,6 +11,24 @@
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_tcp.h"        // for cne_tcp_hdr
+#include "net/cne_inet6.h"
+
+static inline struct cne_tcp_hdr *
+txgen_init_tcp_hdr(struct cne_tcp_hdr *tcp, pkt_seq_t *pkt)
+{
+    tcp->src_port  = htons(pkt->sport);
+    tcp->dst_port  = htons(pkt->dport);
+    tcp->sent_seq  = htonl(DEFAULT_PKT_NUMBER);
+    tcp->recv_ack  = htonl(DEFAULT_ACK_NUMBER);
+    tcp->data_off  = ((sizeof(struct cne_tcp_hdr) / sizeof(uint32_t)) << 4); /* Offset in words */
+    tcp->tcp_flags = TCP_ACK_FLAG;                                           /* ACK */
+    tcp->rx_win    = htons(DEFAULT_WND_SIZE);
+    tcp->tcp_urp   = 0;
+
+    tcp->cksum = 0;
+
+    return tcp;
+}
 
 /**
  *
@@ -27,29 +45,43 @@ void *
 txgen_tcp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
 {
     uint16_t tlen;
+    struct cne_tcp_hdr *tcp;
 
-    struct cne_ipv4_hdr *ipv4 = (struct cne_ipv4_hdr *)hdr;
-    struct cne_tcp_hdr *tcp   = (struct cne_tcp_hdr *)&ipv4[1];
+    tlen = pkt->pktSize - pkt->ether_hdr_size;
+    if (likely(pkt->ethType == CNE_ETHER_TYPE_IPV4)) {
+        struct cne_ipv4_hdr *ipv4 = (struct cne_ipv4_hdr *)hdr;
+        tcp                       = (struct cne_tcp_hdr *)&ipv4[1];
 
-    /* Create the TCP header */
-    ipv4->src_addr = htonl(pkt->ip_src_addr.s_addr);
-    ipv4->dst_addr = htonl(pkt->ip_dst_addr.s_addr);
+        /* Create the TCP header */
+        ipv4->src_addr = htonl(pkt->ip_src_addr.s_addr);
+        ipv4->dst_addr = htonl(pkt->ip_dst_addr.s_addr);
 
-    tlen                = pkt->pktSize - pkt->ether_hdr_size;
-    ipv4->total_length  = htons(tlen);
-    ipv4->next_proto_id = pkt->ipProto;
+        ipv4->total_length  = htons(tlen);
+        ipv4->next_proto_id = pkt->ipProto;
 
-    tcp->src_port  = htons(pkt->sport);
-    tcp->dst_port  = htons(pkt->dport);
-    tcp->sent_seq  = htonl(DEFAULT_PKT_NUMBER);
-    tcp->recv_ack  = htonl(DEFAULT_ACK_NUMBER);
-    tcp->data_off  = ((sizeof(struct cne_tcp_hdr) / sizeof(uint32_t)) << 4); /* Offset in words */
-    tcp->tcp_flags = TCP_ACK_FLAG;                                           /* ACK */
-    tcp->rx_win    = htons(DEFAULT_WND_SIZE);
-    tcp->tcp_urp   = 0;
+        tcp = txgen_init_tcp_hdr(tcp, pkt);
 
-    tcp->cksum = 0;
-    tcp->cksum = cne_ipv4_udptcp_cksum(ipv4, (const void *)tcp);
+        tcp->cksum = cne_ipv4_udptcp_cksum(ipv4, (const void *)tcp);
+
+    }
+#if CNET_ENABLE_IP6
+    else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+        struct cne_ipv6_hdr *ipv6 = (struct cne_ipv6_hdr *)hdr;
+        tcp                       = (struct cne_tcp_hdr *)&ipv6[1];
+
+        /* Create the TCP header */
+
+        inet6_addr_ntoh((struct in6_addr *)&ipv6->src_addr, &pkt->ip6_src_addr);
+        inet6_addr_ntoh((struct in6_addr *)&ipv6->dst_addr, &pkt->ip6_dst_addr);
+
+        ipv6->payload_len = htons(tlen);
+        ipv6->proto       = pkt->ipProto;
+
+        tcp = txgen_init_tcp_hdr(tcp, pkt);
+
+        tcp->cksum = cne_ipv6_udptcp_cksum(ipv6, (const void *)tcp);
+    }
+#endif
 
     /* In this case we return the original value to allow IP ctor to work */
     return hdr;

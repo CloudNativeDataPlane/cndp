@@ -21,6 +21,7 @@
 #include <cne_inet.h>
 #include <cnet_netif.h>
 #include <cnet_arp.h>
+#include <cnet_nd6.h>
 
 #include <netlink/route/neighbour.h>
 
@@ -41,6 +42,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
     struct rtnl_neigh *neigh = nl_object_priv(obj);
     struct nl_addr *dst = NULL, *lladdr = NULL;
     struct in_addr in = {0};
+    struct in6_addr in6 = {0};
     struct netif *netif;
     struct ether_addr mac = {0};
     int ifindex, state;
@@ -83,36 +85,55 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         return;
     }
 
-    memcpy(&in.s_addr, nl_addr_get_binary_addr(dst), nl_addr_get_len(dst));
+    if (nl_addr_get_family(dst) == AF_INET6) {
+        memcpy(&in6.s6_addr, nl_addr_get_binary_addr(dst), nl_addr_get_len(dst));
+        inet6_addr_ntoh(&in6, &in6);
+    } else /* IPv4 */ {
+        memcpy(&in.s_addr, nl_addr_get_binary_addr(dst), nl_addr_get_len(dst));
+        in.s_addr = be32toh(in.s_addr);
+    }
 
     if (lladdr)
         memcpy(&mac, nl_addr_get_binary_addr(lladdr), nl_addr_get_len(lladdr));
-
-    in.s_addr = be32toh(in.s_addr);
 
     switch (action) {
     case NL_ACT_NEW:
         NL_DEBUG("New:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
-            CNE_RET("Failed to add ARP address\n");
+        if (nl_addr_get_family(dst) == AF_INET6) {
+            if (cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
+                CNE_RET("Unable to add ND6 entry\n");
+        } else /* IPv4 */ {
+            if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
+                CNE_RET("Unable to add ARP address\n");
+        }
         break;
 
     case NL_ACT_CHANGE:
         NL_DEBUG("Change:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
-            CNE_RET("Failed to add ARP address\n");
+        if (nl_addr_get_family(dst) == AF_INET6) {
+            if (cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
+                CNE_RET("Unable to add ND6 entry\n");
+        } else /* IPv4 */ {
+            if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
+                CNE_RET("Unable to add ARP address\n");
+        }
         break;
 
     case NL_ACT_DEL:
         NL_DEBUG("Delete:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_arp_delete(&in) < 0)
-            CNE_RET("Failed to delete ARP address\n");
+        if (nl_addr_get_family(dst) == AF_INET6) {
+            if (cnet_nd6_delete(&in6) < 0)
+                CNE_RET("Unable to delete ND6 entry\n");
+        } else /* IPv4 */ {
+            if (cnet_arp_delete(&in) < 0)
+                CNE_RET("Unable to delete ARP address\n");
+        }
         break;
     default:
         CNE_WARN("Unknown action %d\n", action);

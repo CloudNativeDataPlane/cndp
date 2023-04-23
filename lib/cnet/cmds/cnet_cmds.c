@@ -319,6 +319,7 @@ _node_style(char *name, int src)
     } styles[] = {
         // clang-format off
         { 0,                    "ip4_*",                 "[fillcolor=mediumspringgreen]" },
+        { 0,                    "ip6_*",                 "[fillcolor=mediumspringgreen]" },
         { 0,                    "udp_*",                 "[fillcolor=cornsilk]" },
         { 0,                    PKT_DROP_NODE_NAME,      "[fillcolor=lightgrey]" },
         { 0,                    CHNL_CALLBACK_NODE_NAME, "[fillcolor=lightgrey]" },
@@ -575,6 +576,7 @@ cmd_ip(int argc, char **argv)
     struct cli_map *m;
     stk_t *stk   = NULL;
     uint32_t idx = 0;
+    int ret;
 
     m = cli_mapping(ip_map, argc, argv);
     if (!m)
@@ -598,7 +600,11 @@ cmd_ip(int argc, char **argv)
             return -1;
         return 0;
     case 40:
-        if (cnet_ipv4_stats_dump(stk) < 0)
+        if (stk->ipv6)
+            ret = cnet_ipv6_stats_dump(stk);
+        else
+            ret = cnet_ipv4_stats_dump(stk);
+        if (ret < 0)
             return -1;
         break;
     case 41:
@@ -609,7 +615,11 @@ cmd_ip(int argc, char **argv)
         else
             CNE_WARN("Unknown stack index showing all\n");
 
-        if (cnet_ipv4_stats_dump(stk) < 0)
+        if (stk->ipv6)
+            ret = cnet_ipv6_stats_dump(stk);
+        else
+            ret = cnet_ipv4_stats_dump(stk);
+        if (ret < 0)
             return -1;
         break;
     default:

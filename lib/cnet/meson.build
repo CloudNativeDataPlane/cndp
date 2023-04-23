@@ -41,14 +41,17 @@ dirs = [ # list is not sorted and must be in this order.
     'netlink',
     'chnl',
     'arp',
+    'nd6',
 
     'eth',          # CNET graph node and libs
     'ptype',
     'ipv4',
+    'ipv6',
     'punt',
     'gtpu',
     'tcp',
     'udp',
+    'icmp6',
     'nodes',
 
     'sbin',         # Misc tools and command libs

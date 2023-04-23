@@ -16,6 +16,7 @@
 #include "txgen.h"
 #include "tcp.h"             // for txgen_tcp_hdr_ctor
 #include "ipv4.h"            // for txgen_ipv4_ctor
+#include "ipv6.h"            // for txgen_ipv6_ctor
 #include "udp.h"             // for txgen_udp_hdr_ctor
 #include "display.h"         // for display_set_color
 #include "port-cfg.h"        // for port_info_t, port_sizes_t, mbuf_t...
@@ -185,10 +186,15 @@ txgen_tstamp_apply(port_info_t *info, pktmbuf_t **pkts, int cnt)
         tstamp->magic     = TSTAMP_MAGIC;
 
         /* Construct the UDP header */
-        txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV4);
-
-        /* IPv4 Header constructor */
-        txgen_ipv4_ctor(pkt, l3_hdr);
+        txgen_udp_hdr_ctor(pkt, l3_hdr, pkt->ethType);
+#if CNET_ENABLE_IP6
+        if (pkt->ethType == CNE_ETHER_TYPE_IPV6)
+            /* IPv6 Header constructor */
+            txgen_ipv6_ctor(pkt, l3_hdr);
+        else
+#endif
+            /* IPv4 Header constructor */
+            txgen_ipv4_ctor(pkt, l3_hdr);
     }
 }
 
@@ -291,8 +297,26 @@ txgen_packet_ctor(port_info_t *info)
             /* IPv4 Header constructor */
             txgen_ipv4_ctor(pkt, l3_hdr);
         }
+    }
+#if CNET_ENABLE_IP6
+    else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+        if (likely(pkt->ipProto == IPPROTO_TCP)) {
+            /* Construct the TCP header */
+            txgen_tcp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV6);
 
-    } else
+            /* IPv6 Header constructor */
+            txgen_ipv6_ctor(pkt, l3_hdr);
+        } else if (pkt->ipProto == IPPROTO_UDP) {
+            /* Construct the UDP header */
+            txgen_udp_hdr_ctor(pkt, l3_hdr, CNE_ETHER_TYPE_IPV6);
+
+            /* IPv6 Header constructor */
+            txgen_ipv6_ctor(pkt, l3_hdr);
+        }
+
+    }
+#endif
+    else
         cne_printf("Unknown EtherType 0x%04x", pkt->ethType);
 }
 

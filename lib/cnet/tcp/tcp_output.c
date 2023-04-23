@@ -89,6 +89,9 @@ static struct cne_node_register tcp_output_node_base = {
         {
             [TCP_OUTPUT_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
             [TCP_OUTPUT_NEXT_IP4_OUTPUT] = IP4_OUTPUT_NODE_NAME,
+#if CNET_ENABLE_IP6
+            [TCP_OUTPUT_NEXT_IP6_OUTPUT] = IP6_OUTPUT_NODE_NAME,
+#endif
         },
 };
 

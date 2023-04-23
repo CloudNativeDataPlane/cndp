@@ -20,6 +20,9 @@
 #include "cnet_const.h"        // for BEST_MATCH
 #include "cnet_stk.h"          // for per_thread_stk, stk_entry, this_stk
 #include "mempool.h"           // for mempool_put, mempool_get
+#include "cnet_tcp.h"
+#include "cnet_ipv6.h"
+#include "ip6_flowlabel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +36,7 @@ struct pcb_key {
 struct netif;
 struct chnl;
 struct tcb_entry;
+struct ip6_flowentry;
 
 struct pcb_entry {
     TAILQ_ENTRY(pcb_entry) next; /**< Pointer to the next pcb_entry in a list */
@@ -40,6 +44,7 @@ struct pcb_entry {
     struct netif *netif;         /**< Netif pointer */
     struct chnl *ch;             /**< Channel pointer */
     struct tcb_entry *tcb;       /**< TCB pointer */
+    struct ip6_flowentry *ip6_fl_entry; /**< IPv6 Flow Entry */
     uint16_t opt_flag;           /**< Option flags */
     uint8_t ttl;                 /**< Time to live */
     uint8_t tos;                 /**< TOS value */
@@ -47,10 +52,13 @@ struct pcb_entry {
     uint8_t ip_proto;            /**< IP protocol number */
 } __cne_cache_aligned;
 
+#ifndef __CNET_PCB_HD_STRUCT_
+#define __CNET_PCB_HD_STRUCT_
 struct pcb_hd {
     struct pcb_entry **vec; /**< PCB entries */
     uint16_t local_port;    /**< Local port number i.e. IP local port ID */
 };
+#endif
 
 static inline void
 cnet_pcb_free(struct pcb_entry *pcb)
@@ -59,6 +67,10 @@ cnet_pcb_free(struct pcb_entry *pcb)
         memset(pcb, 0, sizeof(struct pcb_entry));
         pcb->closed   = 1;
         pcb->ip_proto = -1;
+        if (pcb->ip6_fl_entry != NULL) {
+            free(pcb->ip6_fl_entry);
+            pcb->ip6_fl_entry = NULL;
+        }
         mempool_put(this_stk->pcb_objs, (void *)pcb);
     }
 }
@@ -73,6 +85,12 @@ cnet_pcb_alloc(struct pcb_hd *hd, uint16_t proto)
 
     pcb->closed   = 0;
     pcb->ip_proto = proto;
+    pcb->ip6_fl_entry = (struct ip6_flowentry *)malloc(sizeof(struct ip6_flowentry));
+    if (pcb->ip6_fl_entry != NULL) {
+        pcb->ip6_fl_entry->autoflowlabel_set = false;
+        pcb->ip6_fl_entry->autoflowlabel     = false;
+        pcb->ip6_fl_entry->flowlabel         = 0;
+    }
 
     vec_add(hd->vec, pcb);
 
@@ -169,6 +187,18 @@ cnet_pcb_locate(struct pcb_hd *hd, struct in_caddr *faddr, struct in_caddr *ladd
 
     return cnet_pcb_lookup(hd, &key, BEST_MATCH);
 }
+
+bool is_tcb_dom_inet4(struct tcb_entry *tcb);
+
+bool is_pcb_dom_inet4(struct pcb_entry *pcb);
+
+bool is_ch_dom_inet4(struct chnl *ch);
+
+bool is_tcb_dom_inet6(struct tcb_entry *tcb);
+
+bool is_pcb_dom_inet6(struct pcb_entry *pcb);
+
+bool is_ch_dom_inet6(struct chnl *ch);
 
 #ifdef __cplusplus
 }

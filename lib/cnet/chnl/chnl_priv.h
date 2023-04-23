@@ -31,6 +31,7 @@
 struct in_caddr;
 struct netif;
 struct stk_s;
+struct pcb_hd;
 
 #ifdef __cplusplus
 extern "C" {

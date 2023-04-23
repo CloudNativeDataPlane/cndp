@@ -29,7 +29,9 @@
 
 #include <cnet.h>
 #include <cnet_stk.h>
+#include <cnet_pcb.h>        // for pcb_entry (ptr only), pcb_hd
 #include <cnet_chnl.h>
+#include <chnl_priv.h>
 #include <cnet_chnl_opt.h>
 #include <cnet_ifshow.h>
 
@@ -180,8 +182,12 @@ tcp_accept(int cd)
     struct sockaddr addr = {0};
     socklen_t addr_len;
 
-    addr_len = sizeof(struct sockaddr_in);
-    ncd      = chnl_accept(cd, &addr, &addr_len);
+    if (is_ch_dom_inet6(ch_get(cd)))
+        addr_len = sizeof(struct sockaddr_in6);
+    else
+        addr_len = sizeof(struct sockaddr_in);
+
+    ncd = chnl_accept(cd, &addr, &addr_len);
     if (ncd < 0)
         CNE_ERR_RET("Accept returned an error from %d descriptor\n", cd);
     CNE_DEBUG("Accept new chnl %d\n", ncd);

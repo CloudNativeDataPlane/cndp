@@ -22,6 +22,7 @@ typedef struct punt_kernel_node_elem punt_kernel_node_elem_t;
  */
 typedef struct punt_kernel_node_ctx {
     int sock;
+    int sock6; /* IPv6 Socket */
 } punt_kernel_node_ctx_t;
 
 /**

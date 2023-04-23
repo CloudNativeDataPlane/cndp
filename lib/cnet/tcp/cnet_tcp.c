@@ -42,7 +42,7 @@
 #include <cnet_route4.h>           // for rtLookup
 #include <cnet_pcb.h>              // for pcb_entry, pcb_key, cnet_pcb_free, pcb_hd
 #include <cnet_tcp.h>              // for tcb_entry, seg_entry, tcp_entry, DROP_PA...
-#include <cnet_pkt.h>              // for tcp_ipv4
+#include <cnet_pkt.h>              // for tcp_ip
 #include <cnet_ip_common.h>        // for ip_info
 #include <cnet_meta.h>             // for cnet_metadata
 #include <cnet_tcp_chnl.h>         // for cnet_drop_acked_data, cnet_tcp_chnl_scal...
@@ -227,6 +227,24 @@ cnet_tcp_dump(const char *msg, struct cne_tcp_hdr *tcp)
                be16toh(tcp->rx_win), be16toh(tcp->cksum), be16toh(tcp->tcp_urp));
 }
 
+static inline bool
+is_multicast(struct seg_entry *seg)
+{
+
+    bool is_mc = false;
+
+    if (is_pcb_dom_inet6(seg->pcb)) {
+        struct cne_ipv6_hdr *ip = (struct cne_ipv6_hdr *)seg->ip;
+
+        is_mc = inet6_is_multicast_addr((struct in6_addr *)&ip->dst_addr);
+    } else {
+        struct cne_ipv4_hdr *ip = (struct cne_ipv4_hdr *)seg->ip;
+        is_mc                   = CNE_IS_IPV4_MCAST(ip->dst_addr);
+    }
+
+    return is_mc;
+}
+
 /*
  * Set the congestion window for slow-start given the valid <tcb>, by looking at
  * the tcb->pcb->faddr and determine the connection is for a local subnet. When
@@ -250,7 +268,8 @@ tcp_set_CWND(struct tcb_entry *tcb)
      */
     tcb->snd_cwnd = tcb->max_mss;
     if (tcb->pcb != NULL) {
-        if (cnet_netif_match_subnet(&tcb->pcb->key.faddr.cin_addr))
+        if ((is_tcb_dom_inet4(tcb) && cnet_netif_match_subnet(&tcb->pcb->key.faddr.cin_addr)) ||
+            (is_tcb_dom_inet6(tcb) && cnet6_netif_match_subnet(&tcb->pcb->key.faddr.cin6_addr)))
             tcb->snd_cwnd =
                 CNE_MIN((4 * tcb->max_mss), CNE_MAX((2 * tcb->max_mss), TCP_INITIAL_CWND));
     }
@@ -382,33 +401,63 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     tcp->src_port = CIN_PORT(&pcb->key.laddr);
 
     /* When source address is zero then lookup an interface to use */
-    if (pcb->key.laddr.cin_addr.s_addr == 0) {
-        struct netif *nif;
-        int32_t k;
+    if (is_tcb_dom_inet6(tcb)) {
+        if (inet6_addr_is_zero(&pcb->key.laddr.cin6_addr)) {
+            struct netif *nif;
+            int32_t k;
 
-        nif = cnet_netif_match_subnet(&pcb->key.faddr.cin_addr);
-        if (!nif) {
-            char ip[INET6_ADDRSTRLEN + 4] = {0};
+            nif = cnet6_netif_match_subnet(&pcb->key.faddr.cin6_addr);
+            if (!nif) {
+                char ip[INET6_ADDRSTRLEN + 4] = {0};
 
-            pktmbuf_free(mbuf);
-            CNE_ERR_RET("No netif match %s\n",
-                        inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
+                pktmbuf_free(mbuf);
+                CNE_ERR_RET("No netif match %s\n",
+                            inet_ntop6(ip, sizeof(ip), &pcb->key.faddr.cin6_addr, NULL));
+            }
+            /* Find the correct subnet IP address for the given request */
+            if ((k = cnet_ipv6_compare(nif, (void *)&pcb->key.faddr.cin6_addr)) == -1) {
+                char ip[INET6_ADDRSTRLEN + 4] = {0};
+
+                pktmbuf_free(mbuf);
+                CNE_ERR_RET(
+                    "cnet_ipv4_compare(%s) failed\n",
+                    inet_ntop6(ip, sizeof(ip), (struct in6_addr *)&pcb->key.faddr.cin6_addr, NULL));
+            }
+
+            tcb->netif = nif;
+
+            /* Use the interface attached to the route for the source address */
+            inet6_addr_copy(&pcb->key.laddr.cin6_addr, &nif->ip6_addrs[k].ip);
         }
-        /* Find the correct subnet IP address for the given request */
-        if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
-            char ip[INET6_ADDRSTRLEN + 4] = {0};
 
-            pktmbuf_free(mbuf);
-            CNE_ERR_RET("cnet_ipv4_compare(%s) failed\n",
-                        inet_ntop4(ip, sizeof(ip),
-                                   (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL));
+    } else /* if AF_INET */
+        if (pcb->key.laddr.cin_addr.s_addr == 0) {
+            struct netif *nif;
+            int32_t k;
+
+            nif = cnet_netif_match_subnet(&pcb->key.faddr.cin_addr);
+            if (!nif) {
+                char ip[INET6_ADDRSTRLEN + 4] = {0};
+
+                pktmbuf_free(mbuf);
+                CNE_ERR_RET("No netif match %s\n",
+                            inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
+            }
+            /* Find the correct subnet IP address for the given request */
+            if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
+                char ip[INET6_ADDRSTRLEN + 4] = {0};
+
+                pktmbuf_free(mbuf);
+                CNE_ERR_RET("cnet_ipv4_compare(%s) failed\n",
+                            inet_ntop4(ip, sizeof(ip),
+                                       (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL));
+            }
+
+            tcb->netif = nif;
+
+            /* Use the interface attached to the route for the source address */
+            pcb->key.laddr.cin_addr.s_addr = htobe32(nif->ip4_addrs[k].ip.s_addr);
         }
-
-        tcb->netif = nif;
-
-        /* Use the interface attached to the route for the source address */
-        pcb->key.laddr.cin_addr.s_addr = htobe32(nif->ip4_addrs[k].ip.s_addr);
-    }
 
     /* Clear the send Ack Now bit, if an ACK is present. */
     if (is_set(seg->flags, TCP_ACK))
@@ -434,8 +483,13 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     if ((tcp->tcp_flags & TCP_URG) == 0 && tcp->tcp_urp)
         CNE_WARN("[orange]URG pointer set without URG flag\n");
 
-    md->faddr.cin_addr.s_addr = ch->ch_pcb->key.faddr.cin_addr.s_addr;
-    md->laddr.cin_addr.s_addr = ch->ch_pcb->key.laddr.cin_addr.s_addr;
+    if (is_tcb_dom_inet6(tcb)) {
+        inet6_addr_copy(&md->faddr.cin6_addr, &ch->ch_pcb->key.faddr.cin6_addr);
+        inet6_addr_copy(&md->laddr.cin6_addr, &ch->ch_pcb->key.laddr.cin6_addr);
+    } else { /* if AF_INET */
+        md->faddr.cin_addr.s_addr = ch->ch_pcb->key.faddr.cin_addr.s_addr;
+        md->laddr.cin_addr.s_addr = ch->ch_pcb->key.laddr.cin_addr.s_addr;
+    }
 
     if (unlikely(stk->tcp_tx_node == NULL)) {
         stk->tcp_tx_node = cne_graph_get_node_by_name(stk->graph, TCP_OUTPUT_NODE_NAME);
@@ -443,7 +497,12 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
             CNE_ERR_RET("Failed to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
     }
 
-    cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
+#if CNET_ENABLE_IP6
+    if (is_tcb_dom_inet6(tcb))
+        cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP6_OUTPUT, mbuf);
+    else /* if AF_INET */
+#endif
+        cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
 
     return 0;
 }
@@ -560,6 +619,7 @@ tcp_output(struct tcb_entry *tcb)
         int32_t len;
         uint32_t win;
         seq_t prev_rcv_adv;
+        int iphdr_len;
 
         /* Send a packet we must clear the segment structure each time */
         memset(seg, 0, sizeof(struct seg_entry));
@@ -781,14 +841,17 @@ tcp_output(struct tcb_entry *tcb)
 
         seg->mbuf->userptr = tcb->pcb;
 
+        if (is_pcb_dom_inet6(tcb->pcb))
+            iphdr_len = sizeof(struct cne_ipv6_hdr);
+        else
+            iphdr_len = sizeof(struct cne_ipv4_hdr);
         /* move the starting offset to account for headers */
-        pktmbuf_data_off(seg->mbuf) += sizeof(struct cne_tcp_hdr) + seg->optlen +
-                                       sizeof(struct cne_ipv4_hdr) + sizeof(struct ether_addr);
+        pktmbuf_data_off(seg->mbuf) +=
+            sizeof(struct cne_tcp_hdr) + seg->optlen + iphdr_len + sizeof(struct ether_addr);
 
         /* Make sure the headers are zero */
         memset(pktmbuf_mtod(seg->mbuf, char *), 0,
-               sizeof(struct cne_tcp_hdr) + seg->optlen + sizeof(struct cne_ipv4_hdr) +
-                   sizeof(struct ether_addr));
+               sizeof(struct cne_tcp_hdr) + seg->optlen + iphdr_len + sizeof(struct ether_addr));
 
         if (len) {
             len = tcp_mbuf_copydata(&ch->ch_snd, off, len, pktmbuf_mtod(seg->mbuf, char *));
@@ -971,8 +1034,11 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
     optlen = tcp_send_options(pcb->tcb, (uint8_t *)opts, flags);
 
     /* move the starting offset to account for headers */
-    pktmbuf_data_off(mbuf) += sizeof(struct cne_tcp_hdr) + optlen + sizeof(struct cne_ipv4_hdr) +
-                              sizeof(struct ether_addr);
+    pktmbuf_data_off(mbuf) += sizeof(struct cne_tcp_hdr) + optlen + sizeof(struct ether_addr);
+    if (is_pcb_dom_inet6(pcb))
+        pktmbuf_data_off(mbuf) += sizeof(struct cne_ipv6_hdr);
+    else
+        pktmbuf_data_off(mbuf) += sizeof(struct cne_ipv4_hdr);
     mbuf->userptr = pcb;
 
     /* Add the TCP options to the data packet */
@@ -1024,7 +1090,12 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
             CNE_RET("Failed to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
     }
 
-    cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
+#if CNET_ENABLE_IP6
+    if (is_pcb_dom_inet6(pcb))
+        cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP6_OUTPUT, mbuf);
+    else
+#endif
+        cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
 }
 
 /*
@@ -1041,7 +1112,6 @@ static void
 tcp_drop_with_reset(struct netif *netif, struct seg_entry *seg, struct pcb_entry *pcb)
 {
     pktmbuf_t *mbuf;
-    struct cne_ipv4_hdr *ip = (struct cne_ipv4_hdr *)seg->ip;
 
     CNE_DEBUG("Drop with [orange]Reset[]\n");
     /* Steal the input mbuf */
@@ -1049,8 +1119,7 @@ tcp_drop_with_reset(struct netif *netif, struct seg_entry *seg, struct pcb_entry
     seg->mbuf = NULL;
 
     /* Need to make sure we handle IP Multicast addresses and RST packets */
-    if (is_set(seg->flags, TCP_RST) || IN_CLASSD(ip->dst_addr) ||
-        (mbuf->ol_flags & CNE_MBUF_IS_MCAST)) {
+    if (is_set(seg->flags, TCP_RST) || is_multicast(seg) || (mbuf->ol_flags & CNE_MBUF_IS_MCAST)) {
         pktmbuf_free(mbuf);
     } else {
         /* Only send the RST if the ACK bit is set on the incoming segment */
@@ -1740,8 +1809,7 @@ do_segment_listen(struct seg_entry *seg)
      * in_broadcast() should never return true on a received
      * packet with M_BCAST not set.
      */
-    if (seg->mbuf->ol_flags & CNE_MBUF_IS_MCAST ||
-        CNE_IS_IPV4_MCAST(((struct cne_ipv4_hdr *)seg->ip)->dst_addr)) {
+    if (seg->mbuf->ol_flags & CNE_MBUF_IS_MCAST || is_multicast(seg)) {
         CNE_WARN("Multicast packet\n");
         return TCP_INPUT_NEXT_PKT_DROP;
     }
@@ -1840,23 +1908,27 @@ tcp_reassemble(struct seg_entry *seg)
     pktmbuf_t *mbuf       = seg->mbuf;
     struct pcb_entry *pcb = seg->pcb;
     struct tcb_entry *tcb = pcb->tcb;
-    struct tcp_ipv4 *tip  = seg->ip;
+    struct tcp_ip *tip    = seg->ip;
     struct cne_tcp_hdr *tcp;
     uint8_t flags = 0;
     pktmbuf_t *m, *p;
-    struct tcp_ipv4 *t;
+    struct tcp_ip *t;
     int32_t i;
+    uint32_t iplen;
 
     if (mbuf == NULL)
         goto handoff;
 
     tip->tcp.sent_seq = seg->seq; /* Already in host order */
-    tip->ip.len       = seg->len; /* Already in host order */
+    if (is_pcb_dom_inet6(seg->pcb))
+        tip->ip6.len = seg->len; /* Already in host order */
+    else
+        tip->ip4.len = seg->len; /* Already in host order */
 
     /* Find the segment after this one. */
     p = NULL;
     STAILQ_FOREACH (m, &tcb->reassemble, stq_next) {
-        t = pktmbuf_mtod(m, struct tcp_ipv4 *);
+        t = pktmbuf_mtod(m, struct tcp_ip *);
 
         if (seqGT(t->tcp.sent_seq, tip->tcp.sent_seq))
             break;
@@ -1865,14 +1937,20 @@ tcp_reassemble(struct seg_entry *seg)
 
     /* verify we are not pointing to the head of the circular list */
     if (!p) {
-        t = pktmbuf_mtod(p, struct tcb_ipv4 *);
+        t = pktmbuf_mtod(p, struct tcb_ip *);
 
-        i = t->tcp.sent_seq + t->ip.len - tip->tcp.sent_seq;
+        if (is_pcb_dom_inet6(seg->pcb))
+            iplen = t->ip6.len else iplen = t->ip4.len i =
+                t->tcp.sent_seq + iplen - tip->tcp.sent_seq;
 
         /* when positive we have to trim the incoming segment at the front */
         if (i > 0) {
+            if (is_pcb_dom_inet6(seg->pcb))
+                iplen = tip->ip6.len;
+            else
+                iplen = tip->ip4.len;
             /* Duplicate data, return after freeing packet */
-            if (i > tip->ip.len) {
+            if (i > iplen) {
                 pktmbuf_free(mbuf);
                 seg->mbuf = NULL;
                 return flags;
@@ -1880,22 +1958,36 @@ tcp_reassemble(struct seg_entry *seg)
 
             /* Remove data from the front of the segment */
             pktmbuf_adj_offset(mbuf, i);
-            tip->ip.len -= i;
+            if (is_pcb_dom_inet6(seg->pcb))
+                tip->ip6.len -= i;
+            else
+                tip->ip4.len -= i;
             tip->tcp.sent_seq += i;
         }
     }
 
     while (m != STAILQ_FIRST(&tcb->reassemble)) { /* not at head of list */
-        i = (tip->tcp.sent_seq + tip->ip.len) - t->tcp.sent_seq;
+        if (is_pcb_dom_inet6(seg->pcb))
+            iplen = tip->ip6.len;
+        else
+            iplen = tip->ip4.len;
+        i = (tip->tcp.sent_seq + iplen) - t->tcp.sent_seq;
 
         /* When i less then or equal to zero, segment is after this one. */
         if (i <= 0)
             break;
 
+        if (is_pcb_dom_inet6(seg->pcb))
+            iplen = t->ip6.len;
+        else
+            iplen = t->ip4.len;
         /* When i is positive and less then current segment length, must trim */
-        if (i < t->ip.len) {
+        if (i < iplen) {
             t->tcp.sent_seq += i;
-            t->ip.len -= i;
+            if (is_pcb_dom_inet6(seg->pcb))
+                t->ip6.len -= i;
+            else
+                t->ip4.len -= i;
 
             pktmbuf_append(m, i);
 
@@ -1906,12 +1998,20 @@ tcp_reassemble(struct seg_entry *seg)
         /* new segment is larger then current segment, which must be freed */
         t = (tcpip_t *)clist_next(t);
 
-        p = reass_pkt((tcpip_t *)t->ip.node.p_back);
-        clist_remove(t->ip.node.p_back);
+        if (is_pcb_dom_inet6(seg->pcb)) {
+            p = reass_pkt((tcpip_t *)t->ip6.node.p_back);
+            clist_remove(t->ip6.node.p_back);
+        } else {
+            p = reass_pkt((tcpip_t *)t->ip4.node.p_back);
+            clist_remove(t->ip4.node.p_back);
+        }
         pktmbuf_free(m);
     }
 
-    clist_insert(&tip->ip.node, t->ip.node.p_back);
+    if (is_pcb_dom_inet6(seg->pcb))
+        clist_insert(&tip->ip6.node, t->ip6.node.p_back);
+    else
+        clist_insert(&tip->ip4.node, t->ip4.node.p_back);
 
 handoff:
     if (tcb->state < TCPS_SYN_RCVD)
@@ -1922,7 +2022,11 @@ handoff:
     if (clist_empty(hd) || (tip->tcp.seq != tcb->rcv_nxt))
         return flags;
 
-    if ((tcb->state == TCPS_SYN_RCVD) && tip->ip.len)
+    if (is_pcb_dom_inet6(seg->pcb))
+        iplen = tip->ip6.len;
+    else
+        iplen = tip->ip4.len;
+    if ((tcb->state == TCPS_SYN_RCVD) && iplen)
         return flags;
 
     do {
@@ -3170,18 +3274,40 @@ tcp_header_prediction(struct seg_entry *seg, struct tcb_entry *tcb)
 static inline void
 tcp_strip_ip_options(pktmbuf_t *mbuf)
 {
-    struct cne_ipv4_hdr *ip;
-    int opt_len = (mbuf->l3_len - sizeof(struct cne_ipv4_hdr));
+    struct pcb_entry *pcb;
+    int opt_len;
+    void *ip;
 
-    if (opt_len == 0)
-        return;
+    pcb = mbuf->userptr;
 
-    ip = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, -mbuf->l3_len);
+    if (is_pcb_dom_inet6(pcb)) {
+        struct cne_ipv6_hdr *ip6;
+        opt_len = (mbuf->l3_len - sizeof(struct cne_ipv6_hdr));
+
+        if (opt_len == 0)
+            return;
+
+        ip6 = pktmbuf_mtod_offset(mbuf, struct cne_ipv6_hdr *, -mbuf->l3_len);
+
+        ip = (void *)ip6;
+
+    } else {
+        struct cne_ipv4_hdr *ip4;
+        opt_len = (mbuf->l3_len - sizeof(struct cne_ipv4_hdr));
+
+        if (opt_len == 0)
+            return;
+
+        ip4 = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, -mbuf->l3_len);
+
+        ip = (void *)ip4;
+    }
 
     pktmbuf_trim(mbuf, opt_len);
 
     /* remove the IP options */
-    memcpy(&ip[1], (char *)&ip[1] - opt_len, pktmbuf_data_len(mbuf) - mbuf->l3_len);
+    // memcpy(&ip[1], (char *)&ip[1] - opt_len, pktmbuf_data_len(mbuf) - mbuf->l3_len);
+    memcpy((char *)ip + 1, (char *)ip + 1 - opt_len, pktmbuf_data_len(mbuf) - mbuf->l3_len);
 }
 
 /*
@@ -3191,7 +3317,7 @@ tcp_strip_ip_options(pktmbuf_t *mbuf)
 int
 cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
 {
-    struct cne_ipv4_hdr *ip;
+    void *ip;
     struct cne_tcp_hdr *tcp;
     uint8_t *opts         = NULL;
     int rc                = TCP_INPUT_NEXT_PKT_DROP;
@@ -3218,7 +3344,17 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     seg->pcb  = pcb;
 
     /* Grab the IP and TCP header pointers */
-    ip = pktmbuf_mtod(mbuf, struct cne_ipv4_hdr *);
+    if (is_pcb_dom_inet6(pcb)) {
+        struct cne_ipv6_hdr *ip6;
+
+        ip6 = pktmbuf_mtod(mbuf, struct cne_ipv6_hdr *);
+        ip  = (void *)ip6;
+    } else {
+        struct cne_ipv4_hdr *ip4;
+
+        ip4 = pktmbuf_mtod(mbuf, struct cne_ipv4_hdr *);
+        ip  = (void *)ip4;
+    }
 
     /* packet offset has been adjusted to tcp header in tcp input graph node */
     tcp = pktmbuf_adjust(mbuf, struct cne_tcp_hdr *, mbuf->l3_len);
@@ -3237,7 +3373,10 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     }
 
     /* Total length of IP payload plus IP header and options */
-    tlen = be16toh(ip->total_length);
+    if (is_pcb_dom_inet6(pcb))
+        tlen = be16toh(((struct cne_ipv6_hdr *)ip)->payload_len);
+    else
+        tlen = be16toh(((struct cne_ipv4_hdr *)ip)->total_length);
 
     /* Calculate the TCP header + options value in bytes. */
     seg->offset = (tcp->data_off & 0xF0) >> 2;
@@ -3258,7 +3397,7 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
     seg->urp   = be16toh(tcp->tcp_urp);
     seg->flags = tcp->tcp_flags & TCP_MASK;
     seg->iplen = tlen;
-    seg->ip    = (void *)ip;
+    seg->ip    = ip;
 
     tlen -= (seg->offset + mbuf->l3_len); /* Real TCP length */
     seg->len = tlen + tcp_syn_fin_cnt[seg->flags & SYN_FIN];

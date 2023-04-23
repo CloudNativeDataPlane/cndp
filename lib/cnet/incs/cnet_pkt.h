@@ -21,14 +21,19 @@ extern "C" {
 #endif
 
 /* The UDP/IP Pseudo header */
-struct udp_ipv4 {
-    struct ipv4_overlay ip; /* IPv4 overlay header */
+struct udp_ip {
+    union {
+        struct ipv4_overlay ip4; /* IPv4 overlay header */
+        struct ipv6_overlay ip6; /* IPv6 overlay header */
+    };
     struct cne_udp_hdr udp; /* UDP header for protocol */
 } __cne_packed;
 
-/* The UDP/IP Pseudo header */
-struct tcp_ipv4 {
-    struct ipv4_overlay ip; /* IPv4 overlay header */
+struct tcp_ip {
+    union {
+        struct ipv4_overlay ip4; /* IPv4 overlay header */
+        struct ipv6_overlay ip6; /* IPv6 overlay header */
+    };
     struct cne_tcp_hdr tcp; /* tcp header for protocol */
 } __cne_packed;
 
@@ -37,8 +42,8 @@ struct pkt_hdr {
     union {
         struct cne_ipv4_hdr ipv4; /**< IPv4 Header */
         struct cne_ipv6_hdr ipv6; /**< IPv6 Header */
-        struct tcp_ipv4 tip;      /**< TCP + IPv4 Headers */
-        struct udp_ipv4 uip;      /**< UDP + IPv4 Headers */
+        struct tcp_ip tip;        /**< TCP + IPv4/IPv6 Headers */
+        struct udp_ip uip;        /**< UDP + IPv4/IPv6 Headers */
         uint64_t pad[8];          /**< Length of structures */
     } u;
 } __cne_packed;
