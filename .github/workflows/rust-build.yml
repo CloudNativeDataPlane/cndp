@@ -1,0 +1,42 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  PKG_CONFIG_PATH: "$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig"
+  LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v3
+
+    - name: Install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y\
+          build-essential libbsd-dev libelf-dev libjson-c-dev\
+          libnl-3-dev libnl-cli-3-dev libnuma-dev libpcap-dev meson\
+          pkg-config wget libbpf-dev llvm-dev libclang-dev clang
+
+    - name: Build and Install CNDP
+      run: make; sudo CNE_DEST_DIR=/ make install
+
+    - name: update rust
+      run: rustup update stable
+
+    - name: Build
+      working-directory: lang/rs
+      run: cargo build
+
+    - name: Run Tests
+      working-directory: lang/rs/apis/cne
+      run: ./run_cne_test.sh
