@@ -4,7 +4,8 @@
 FROM fedora:37 AS build
 
 # Setup container to build CNDP applications
-RUN dnf -y upgrade && dnf -y install \
+RUN dnf -y upgrade --refresh --nogpgcheck
+RUN dnf -y install \
     @development-tools \
     libbsd-devel \
     json-c-devel \
@@ -22,14 +23,9 @@ RUN dnf -y upgrade && dnf -y install \
 	clang \
 	llvm \
 	m4 \
-	bpftool
-
-# Install libxdp
-RUN git clone https://github.com/xdp-project/xdp-tools.git
-WORKDIR /xdp-tools/
-RUN ./configure
-RUN make -j; PREFIX=/usr make -j install
-ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
+	xdp-tools \
+	libxdp \
+	libxdp-devel
 
 # Install Rust bindgen dependencies.
 RUN dnf -y install clang-devel curl
