@@ -76,10 +76,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 if (f->xdp_uds == NULL)
                     CNE_ERR_RET("UDS handshake failed\n");
             }
-        } else if (!strncmp(obj.opt->name, XSK_MAP_PIN_PATH_TAG, nlen)) {
-            if (obj.opt->val.type == STRING_OPT_TYPE) {
-                f->xsk_map_path = obj.opt->val.str;
-            }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
@@ -192,6 +188,11 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.flags        = lport->flags;
             pcfg.flags |= (umem->shared_umem == 1) ? LPORT_SHARED_UMEM : 0;
 
+            if (lport->xsk_map_path) {
+                cne_printf("[yellow]**** [green]PINNED_BPF_MAP is [red]enabled[]\n");
+                pcfg.xsk_map_path = lport->xsk_map_path;
+            }
+
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);
             if (!pcfg.addr) {
                 free(pd);
@@ -200,13 +201,9 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
-            if (lport->flags & LPORT_UNPRIVILEGED) {
+            if ((lport->flags & LPORT_UNPRIVILEGED) & !lport->xsk_map_path) {
                 if (f->xdp_uds)
                     pcfg.xsk_uds = f->xdp_uds;
-                else if (f->xsk_map_path)
-                    pcfg.xsk_map_path = f->xsk_map_path;
-                else
-                    CNE_ERR_RET("UDS info struct is null\n");
             }
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));

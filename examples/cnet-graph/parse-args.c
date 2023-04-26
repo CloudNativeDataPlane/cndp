@@ -67,10 +67,6 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
         } else if (!strncmp(obj.opt->name, ENABLE_CLI_TAG, nlen)) {
             if (obj.opt->val.type == BOOLEAN_OPT_TYPE)
                 ci->opts.cli = obj.opt->val.boolean;
-        } else if (!strncmp(obj.opt->name, XSK_MAP_PIN_PATH_TAG, nlen)) {
-            if (obj.opt->val.type == STRING_OPT_TYPE) {
-                ci->xsk_map_path = obj.opt->val.str;
-            }
         }
         break;
 
@@ -158,13 +154,6 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
                             lport->name, lport->region_idx, umem->region_cnt);
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
-
-            if (lport->flags & LPORT_UNPRIVILEGED) {
-                if (ci->xsk_map_path)
-                    pcfg.xsk_map_path = ci->xsk_map_path;
-                else
-                    CNE_ERR_RET("BPF MAP path is not configured\n");
-            }
 
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));

@@ -55,15 +55,14 @@ enum {
     FWD_ACL_STATS   = (1 << 4), /**< Enable printing ACL stats */
 };
 
-#define PKT_API_TAG          "pkt_api"         /**< Packet API json tag */
-#define NO_METRICS_TAG       "no-metrics"      /**< json tag for no-metrics */
-#define NO_RESTAPI_TAG       "no-restapi"      /**< json tag for no-restapi */
-#define ENABLE_CLI_TAG       "cli"             /**< json tag to enable/disable CLI */
-#define MODE_TAG             "mode"            /**< json tag to set the mode flag */
-#define UDS_PATH_TAG         "uds_path"        /**< json tag for UDS to get xsk map fd */
-#define XSK_MAP_PIN_PATH_TAG "xsk-pin-path"    /**< json tag for pinned BPF map to get xsk map fd */
-#define FIB_RULES_TAG        "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
-#define HS_PATTERN_TAG       "hs-patterns"     /**< json tag for Hyperscan patterns */
+#define PKT_API_TAG    "pkt_api"         /**< Packet API json tag */
+#define NO_METRICS_TAG "no-metrics"      /**< json tag for no-metrics */
+#define NO_RESTAPI_TAG "no-restapi"      /**< json tag for no-restapi */
+#define ENABLE_CLI_TAG "cli"             /**< json tag to enable/disable CLI */
+#define MODE_TAG       "mode"            /**< json tag to set the mode flag */
+#define UDS_PATH_TAG   "uds_path"        /**< json tag for UDS to get xsk map fd */
+#define FIB_RULES_TAG  "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
+#define HS_PATTERN_TAG "hs-patterns"     /**< json tag for Hyperscan patterns */
 
 #define MODE_DROP           "drop"           /**< Drop the received packets */
 #define MODE_RX_ONLY        "rx-only"        /**< Alias for MODE_DROP */
@@ -153,7 +152,6 @@ struct fwd_info {
     int burst;                 /**< Burst Size */
     char **fib_rules;          /**< FIB entries */
     uint16_t fib_size;         /**< Number of FIB entries */
-    char *xsk_map_path;        /**< xsk_map pin path */
     char **hs_patterns;        /**< Hyperscan information */
     uint16_t hs_pattern_count; /**< Number of Hyperscan information entries */
     char **hs_expressions;     /**< List of parsed hyperscan regex expressions */

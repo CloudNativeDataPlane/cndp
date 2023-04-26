@@ -749,7 +749,9 @@ _lport_group(struct json_object *obj, int flags, struct json_object *parent __cn
                             JCFG_LPORT_BUSY_BUDGET_NAME);
         lpg->busy_budget = (uint16_t)val;
     } else if (!strncmp(key, JCFG_LPORT_UNPRIVILEGED_NAME, keylen))
-        lpg->flags |= json_object_get_boolean(obj) ? LPORT_UNPRIVILEGED : 0;
+        lpg->flags |= json_object_get_boolean(obj)
+                          ? LPORT_UNPRIVILEGED
+                          : 0;        // Keep for backward compatibility with UDS?
     else if (!strncmp(key, JCFG_LPORT_FORCE_WAKEUP_NAME, keylen))
         lpg->flags |= json_object_get_boolean(obj) ? LPORT_FORCE_WAKEUP : 0;
     else if (!strncmp(key, JCFG_LPORT_SKB_MODE_NAME, keylen))
