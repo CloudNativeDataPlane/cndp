@@ -34,11 +34,15 @@ else
 fi
 
 if [ ${PINNED_BPF_MAP} = false ]  ; then
-    UDS_OR_MAP_PATH="uds_path"
-    UDS_OR_MAP="/tmp/afxdp.sock"
+    UDS_PATH="uds_path"
+    UDS="/tmp/afxdp.sock"
+    UDS_CFG="\"$UDS_PATH\": \"$UDS\","
+    unset $MAP_CFG
 else
-    UDS_OR_MAP_PATH="xsk-pin-path"
-    UDS_OR_MAP="/tmp/xsks_map"
+    MAP_PATH="xsk_pin_path " #MT_TODO UPDATE
+    MAP="/tmp/xsks_map"
+    MAP_CFG="\"$MAP_PATH\": \"$MAP\","
+    unset $UDS_CFG
 fi
 
 num_of_interfaces=0
@@ -132,6 +136,7 @@ EOF
             "region": ${i},
             "unprivileged": true,
             "skb_mode": ${AFXDP_COPY_MODE},
+            ${MAP_CFG}
             "description": "LAN ${i} port"
         }
 EOF
@@ -251,6 +256,7 @@ cat <<-EOF > ${config_file}
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
     //    description   - (O) the description, 'desc' can be used as well
+    //    xsk_pin_path  - (O) Path to pinned xsk map for this port
     "lports": {${lports[*]}
     },
 
@@ -276,13 +282,12 @@ cat <<-EOF > ${config_file}
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
-    //   xsk-pin-path - (O) Path to pinned bpf map
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        "${UDS_OR_MAP_PATH}": "${UDS_OR_MAP}",
+        ${UDS_CFG}
         "mode": "drop"
     },
 

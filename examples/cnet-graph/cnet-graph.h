@@ -67,10 +67,9 @@ typedef enum {
     }
 // clang-format on
 
-#define NO_METRICS_TAG       "no-metrics"   /**< json tag for no-metrics */
-#define NO_RESTAPI_TAG       "no-restapi"   /**< json tag for no-restapi */
-#define ENABLE_CLI_TAG       "cli"          /**< json tag to enable/disable CLI */
-#define XSK_MAP_PIN_PATH_TAG "xsk-pin-path" /**< json tag for pinned BPF map to get xsk map fd */
+#define NO_METRICS_TAG "no-metrics" /**< json tag for no-metrics */
+#define NO_RESTAPI_TAG "no-restapi" /**< json tag for no-restapi */
+#define ENABLE_CLI_TAG "cli"        /**< json tag to enable/disable CLI */
 
 struct fwd_port {
     int lport;                           /**< PKTDEV lport id */
@@ -111,7 +110,6 @@ struct cnet_info {
     pthread_barrier_t barrier;                /**< Barrier for all threads */
     bool barrier_inited;                      /**< Barrier for all threads */
     graph_info_t graph_info[MAX_GRAPH_COUNT]; /**< Graph information */
-    char *xsk_map_path;                       /**< xsk_map pin path */
 };
 
 extern struct cnet_info *cinfo; /**< global application information pointer */

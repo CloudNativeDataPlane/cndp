@@ -171,7 +171,8 @@ typedef struct jcfg_lport {
     uint16_t qid;                /**< The queue ID number */
     uint16_t busy_timeout;       /**< busy timeout value in milliseconds */
     uint16_t busy_budget;        /**< busy budget 0xFFFF disabled, 0 use default, >0 budget */
-    uint16_t flags; /**< Flags to configure lport in lport_cfg_t.flags in cne_lport.h */
+    uint16_t flags;     /**< Flags to configure lport in lport_cfg_t.flags in cne_lport.h */
+    char *xsk_map_path; /**< The path to the pinned xsk_map for this port */
 } jcfg_lport_t;
 
 /** JCFG lport configuration names */
@@ -186,6 +187,7 @@ typedef struct jcfg_lport {
 #define JCFG_LPORT_BUSY_TIMEOUT_NAME "busy_timeout"
 #define JCFG_LPORT_BUSY_BUDGET_NAME  "busy_budget"
 #define JCFG_LPORT_UNPRIVILEGED_NAME "unprivileged"
+#define JCFG_PINNED_XSK_MAP_NAME     "xsk_pin_path"
 #define JCFG_LPORT_FORCE_WAKEUP_NAME "force_wakeup"
 #define JCFG_LPORT_SKB_MODE_NAME     "skb_mode"
 
@@ -237,6 +239,7 @@ typedef struct jcfg_lport_group {
     uint16_t busy_timeout;             /**< busy timeout value in milliseconds */
     uint16_t busy_budget;              /**< busy budget 0xFFFF disabled, 0 use default, >0 budget */
     uint16_t flags;                    /**< Flags to configure lport in lport_cfg_t.flags */
+
 } jcfg_lport_group_t;
 
 /** JCFG lport group configuration names */

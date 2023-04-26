@@ -82,6 +82,7 @@
     //    unprivileged  - (O) inhibit loading the BPF program if true, default false
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
+	//    xsk-pin-path  - (O) Path to pinned bpf map
     //    description   - (O) the description, 'desc' can be used as well
     "lports": {
         "eth0:0": {
@@ -124,7 +125,6 @@
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx,
     //                    acl-strict, acl-permissive, [hyperscan | hs]
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
-    //   xsk-pin-path - (O) Path to pinned bpf map
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,
