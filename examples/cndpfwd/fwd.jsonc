@@ -82,7 +82,7 @@
     //    unprivileged  - (O) inhibit loading the BPF program if true, default false
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
-	//    xsk-pin-path  - (O) Path to pinned bpf map
+	//    xsk_pin_path  - (O) Path to pinned xsk map for this port
     //    description   - (O) the description, 'desc' can be used as well
     "lports": {
         "eth0:0": {
