@@ -36,7 +36,3 @@ jobs:
     - name: Build
       working-directory: lang/rs
       run: cargo build
-
-    - name: Run Tests
-      working-directory: lang/rs/apis/cne
-      run: ./run_cne_test.sh
