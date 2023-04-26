@@ -122,7 +122,7 @@
     //   no-restapi - (O) Disable RestAPI support
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx,
-    //                    acl-strict, acl-permissive
+    //                    acl-strict, acl-permissive, [hyperscan | hs]
     //   uds_path   - (O) Path to unix domain socket to get xsk map fd
     "options": {
         "pkt_api": "xskdev",
@@ -130,9 +130,19 @@
         "no-restapi": false,
         "cli": true,
         "mode": "drop",
+        // FIB rules <IP Address>,<Destination MAC>,<destination port>
         "l3fwd-fib-rules": [
             "198.18.0.0/24,02:00:01:02:03:04,1",
             "198.18.1.0/24,06:00:01:02:03:04,0"
+        ],
+        // The lport ID value (bits 16-23) is destination port, lower 16bits is unique ID value.
+        // If bits 31 is set then matching packets are dropped. See Hyperscan
+        // documentation for regex and flags values. <ID>:/<expression>/<flags>
+        // Any packets not matching a pattern below are dropped.
+        "hs-patterns": [
+            "0x80000000:/foobar/iH",
+            "0x00010001:/foo/i",
+            "0x00000002:/bar/i"
         ]
     },
 

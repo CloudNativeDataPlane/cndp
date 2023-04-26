@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2021-2022 Intel Corporation
+# Copyright (c) 2021-2023 Intel Corporation
 
 sources = files('cne_dsa.c', 'sw_dsa.c')
 headers = files('cne_dsa.h')

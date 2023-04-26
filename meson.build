@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2022 Intel Corporation
+# Copyright (c) 2019-2023 Intel Corporation
 # Copyright (c) 2022 Red Hat, Inc.
 
 project('CNDP', 'C', 'cpp',
@@ -143,6 +143,14 @@ pcap_dep = dependency('libpcap', required: true, static: use_static_libs)
 if pcap_dep.found()
     add_project_link_arguments('-lpcap', language: 'c')
     extra_ldflags += '-lpcap'
+endif
+
+# Check for libhs (hyperscan) for cndpfwd
+hs_dep = dependency('libhs', required: false, static: use_static_libs)
+if hs_dep.found()
+    add_project_link_arguments('-lhs', language: 'c')
+    extra_ldflags += '-lhs'
+    cne_conf.set('ENABLE_HYPERSCAN', 1)
 endif
 
 add_project_arguments('-I/usr/include/libnl3', language: 'c')

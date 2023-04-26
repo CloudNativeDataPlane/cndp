@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2022 Intel Corporation
+# Copyright (c) 2019-2023 Intel Corporation
 # meson file, for building this example as part of a main CNDP build.
 #
 # To build this example as a standalone application with an already-installed

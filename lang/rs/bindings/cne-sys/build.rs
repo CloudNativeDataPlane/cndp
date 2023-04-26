@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2020-2022 Intel Corporation.
+ * Copyright (c) 2020-2023 Intel Corporation.
  */
 
 use std::env;
@@ -28,7 +28,7 @@ fn main() {
                     path.to_string() + &default_lib_dir,
                     path + &default_include_dir,
                 ),
-                None => panic!("Invalid CNDP_INSTALL_PATH = {}", install_path),
+                None => panic!("Invalid CNDP_INSTALL_PATH = {install_path}"),
             }
         }
         None => {
@@ -46,7 +46,7 @@ fn main() {
     cndp_include_dir.push_str("/cndp");
 
     // Tell cargo to tell rustc to link the CNDP CNE shared libraries.
-    println!("cargo:rustc-link-search=native={}", cndp_lib_dir);
+    println!("cargo:rustc-link-search=native={cndp_lib_dir}");
 
     // libcndp.so is present in /usr/local/lib/x86_64-linux-gnu for both Ubuntu and Fedora.
     let mut libcndp_so_path = String::from("/usr/local/lib/x86_64-linux-gnu");
@@ -57,7 +57,7 @@ fn main() {
         None => libcndp_so_path,
     };
     // Tell cargo to tell rustc to link the cndp shared library.
-    println!("cargo:rustc-link-search=native={}", libcndp_so_path);
+    println!("cargo:rustc-link-search=native={libcndp_so_path}");
     println!("cargo:rustc-link-lib=cndp");
 
     // CNDP pmd_af_xdp static library should be linked as whole archive.
@@ -93,28 +93,25 @@ fn main() {
         .compile("cne_rust_bindings");
 
     // Set rust_bindings library path.
-    println!(
-        "cargo:rustc-link-search=native={}",
-        rust_bindings_build_path
-    );
+    println!("cargo:rustc-link-search=native={rust_bindings_build_path}");
     println!("cargo:rustc-link-lib=static=cne_rust_bindings");
 
     // Resolve libbsd using pkg-config.
     let bsd_lib_dir = pkg_config::get_variable("libbsd", "libdir").unwrap();
 
     // Tell cargo to tell rustc to link libbsd library.
-    println!("cargo:rustc-link-search=native={}", bsd_lib_dir);
+    println!("cargo:rustc-link-search=native={bsd_lib_dir}");
     println!("cargo:rustc-link-lib=bsd");
 
     // Resolve libbpf using pkg-config.
     let bpf_lib_dir = pkg_config::get_variable("libbpf", "libdir").unwrap();
 
     // Tell cargo to tell rustc to link libbpf library.
-    println!("cargo:rustc-link-search=native={}", bpf_lib_dir);
+    println!("cargo:rustc-link-search=native={bpf_lib_dir}");
     println!("cargo:rustc-link-lib=bpf");
 
     // Set cndp include search path CNDP_INCLUDE_PATH from environment variable.
-    let cndp_include_clang_arg = format!(r#"-I{}"#, cndp_include_dir);
+    let cndp_include_clang_arg = format!(r#"-I{cndp_include_dir}"#);
 
     // The bindgen::Builder is the main entry point to bindgen, and lets you build up options for
     // the resulting bindings.

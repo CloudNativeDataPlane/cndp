@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 // IWYU pragma: no_include <bits/getopt_core.h>
 
@@ -77,16 +77,27 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                     CNE_ERR_RET("UDS handshake failed\n");
             }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
-            uint16_t i;
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
                 if (!f->fib_rules)
                     CNE_ERR_RET("Unable to allocate fib_rules array\n");
 
-                for (i = 0; i < obj.opt->val.array_sz; ++i)
+                for (int i = 0; i < obj.opt->val.array_sz; ++i) {
                     f->fib_rules[i] = obj.opt->val.arr[i]->str;
+                    f->fib_size++;
+                }
+            }
+        } else if (!strncmp(obj.opt->name, HS_PATTERN_TAG, nlen)) {
+            if (obj.opt->val.type == ARRAY_OPT_TYPE) {
+                f->hs_patterns = calloc(obj.opt->val.array_sz, sizeof(char *));
+                if (!f->hs_patterns)
+                    CNE_ERR_RET("Unable to allocate hsfwd information array\n");
 
-                f->fib_size = i;
+                for (int i = 0; i < obj.opt->val.array_sz; ++i) {
+                    CNE_DEBUG("Hyperscan pattern: '%s'\n", obj.opt->val.arr[i]->str);
+                    f->hs_patterns[i] = obj.opt->val.arr[i]->str;
+                    f->hs_pattern_count++;
+                }
             }
         }
         break;
@@ -266,7 +277,8 @@ print_usage(char *prog_name)
 {
     cne_printf("Usage: %s [-h] [-c json_file] [-b burst] <mode>\n"
                "  <mode>         Mode types [drop | rx-only], tx-only, [lb | loopback], fwd, "
-               "acl-strict or acl-permissive\n"
+               "acl-strict, acl-permissive\n"
+               "                 or [hyperscan | hs] Hyperscan needs to be installed to work\n"
                "  -a <api>       The API type to use xskdev or pktdev APIs, default is xskdev.\n"
                "                 The -a option overrides JSON file.\n"
                "  -b <burst>     Burst size. If not present default burst size %d max %d.\n"

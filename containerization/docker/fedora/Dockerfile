@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2020-2022 Intel Corporation.
+# Copyright (c) 2020-2023 Intel Corporation.
 
 FROM fedora:37 AS build
 
@@ -21,7 +21,8 @@ RUN dnf -y upgrade && dnf -y install \
     golang \
 	clang \
 	llvm \
-	m4
+	m4 \
+	bpftool
 
 # Install libxdp
 RUN git clone https://github.com/xdp-project/xdp-tools.git
@@ -29,6 +30,15 @@ WORKDIR /xdp-tools/
 RUN ./configure
 RUN make -j; PREFIX=/usr make -j install
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
+
+# Install Rust bindgen dependencies.
+RUN dnf -y install clang-devel curl
+
+# Install Rust and Cargo.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Set Cargo path.
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp
@@ -47,15 +57,6 @@ RUN make && make install
 # Build the prometheus-metrics app
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
-
-# Install Rust bindgen dependencies.
-RUN dnf -y install clang-devel curl
-
-# Install Rust and Cargo.
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-# Set Cargo path.
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Build and install Rust packet fwd example application.
 # 'fwd' binary will be installed in /cndp/usr/local/bin

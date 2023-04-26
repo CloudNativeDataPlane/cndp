@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2020-2022 Intel Corporation.
+ * Copyright (c) 2020-2023 Intel Corporation.
  */
 
 use clap::{App, Arg};
@@ -162,7 +162,7 @@ fn pnet_echo_server(interface_name: &str) {
         Ok(_) => {
             panic!("channel type not supported")
         }
-        Err(e) => panic!("Error creating the datalink channel: {}", e),
+        Err(e) => panic!("Error creating the datalink channel: {e}"),
     };
 
     loop {
@@ -293,8 +293,7 @@ fn cne_macswap_and_send(port: &Port, burst_size: usize) -> Result<(), CneError> 
     log::debug!("Number of packets read = {}", pkts_read);
 
     if pkts_read > 0 {
-        for i in 0..pkts_read {
-            let pkt = &mut rx_pkts[i as usize];
+        for pkt in rx_pkts.iter_mut().take(pkts_read) {
             let data = pkt.get_data_mut()?;
             // Swap mac address.
             swap_mac_address(data);

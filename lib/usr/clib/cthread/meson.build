@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2018-2022 Intel Corporation
+# Copyright (c) 2018-2023 Intel Corporation
 
 sources = files('cthread.c', 'cthread_tls.c', 'cthread_sema.c', 'cthread_sched.c',
 		'cthread_mutex.c', 'cthread_cond.c', 'cthread_barrier.c',

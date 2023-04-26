@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <stdio.h>         // for stdout, NULL
@@ -105,7 +105,7 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, NULL, RTM_INFINITY, 0) < 0)
-            CNE_RET("Unalble to insert route\n");
+            CNE_RET("Unable to insert route\n");
         break;
 
     case NL_ACT_CHANGE:

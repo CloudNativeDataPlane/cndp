@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 #include <unistd.h>            // for access, gettid, sysconf, F_OK, _SC_NPROCESS...
@@ -168,7 +168,7 @@ parse_sysfs_value(const char *filename, unsigned long *val)
 
     if ((f = fopen(filename, "r")) == NULL) {
         cne_printf("%s(): Warning cannot open sysfs value %s\n", __func__, filename);
-        return 0;
+        return -1;
     }
 
     if (fgets(buf, sizeof(buf), f) == NULL) {
