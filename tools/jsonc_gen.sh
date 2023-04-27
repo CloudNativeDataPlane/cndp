@@ -39,7 +39,7 @@ if [ ${PINNED_BPF_MAP} = false ]  ; then
     UDS_CFG=("\"$UDS_PATH\": \"$UDS\",")
     unset "${MAP_CFG[@]}"
 else
-    MAP_PATH="xsk_pin_path "
+    MAP_PATH="xsk_pin_path"
     MAP="/tmp/xsks_map"
     MAP_CFG=("\"$MAP_PATH\": \"$MAP\",")
     unset "${UDS_CFG[@]}"
@@ -134,7 +134,6 @@ EOF
             "qid": ${QID[i]},
             "umem": "umem0",
             "region": ${i},
-            "unprivileged": true,
             "skb_mode": ${AFXDP_COPY_MODE},
             ${MAP_CFG[@]}
             "description": "LAN ${i} port"
@@ -252,7 +251,6 @@ cat <<-EOF > ${config_file}
     //    busy_polling  -     Same as above
     //    busy_timeout  - (O) 1-65535 or 0 - use default value, values in milliseconds
     //    busy_budget   - (O) 0xFFFF disabled, 0 use default, >0 budget value
-    //    unprivileged  - (O) inhibit loading the BPF program if true, default false
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
     //    description   - (O) the description, 'desc' can be used as well
