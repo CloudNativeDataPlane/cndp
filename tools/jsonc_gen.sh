@@ -3,7 +3,7 @@
 # Copyright (c) 2021-2023 Intel Corporation
 
 
-# Bash script to generate jsonc UDS_OR_MAP to be used with cndpfwd app
+# Bash script to generate jsonc file to be used with cndpfwd app
 # This script is dependent on these environment variables being set:
 # AFXDP_DEVICES and LIST_OF_QIDS
 # AFXDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
@@ -166,13 +166,13 @@ EOF
 done
 
 IFS=$',\n';
-# generate the config UDS_OR_MAP:
+# generate the config file:
 cat <<-EOF > ${config_file}
 {
     // (R) - Required entry
     // (O) - Optional entry
     // All descriptions are optional and short form is 'desc'
-    // The order of the entries in this UDS_OR_MAP are handled when it is parsed and the
+    // The order of the entries in this file are handled when it is parsed and the
     // entries can be in any order.
 
     // (R) Application information
