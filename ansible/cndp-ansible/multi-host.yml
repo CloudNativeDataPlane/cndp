@@ -17,3 +17,4 @@
     - install_kernel
     - check_updated_kernel
     - install_libbpf
+    - install_libxdp

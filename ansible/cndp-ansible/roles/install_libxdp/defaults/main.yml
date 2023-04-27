@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 Intel Corporation
+
+clang_pkgs:
+  ubuntu:
+    - gcc-multilib
+    - clang-11
+    - llvm-11
+    - lld-11
+    - m4
+  fedora:
+    - clang
+    - llvm
+    - bpftool
