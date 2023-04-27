@@ -22,7 +22,6 @@ application to be used alongside this utility is shown below:
             "umem": "umem0",
             "region": 0,
             "description": "LAN 0 port",
-            "unprivileged": true
         }
     },
     ...

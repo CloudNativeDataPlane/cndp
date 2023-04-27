@@ -33,6 +33,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
     uint32_t total_region_cnt;
     char *umem_addr;
     size_t nlen;
+    jcfg_lport_t *lport;
 
     if (!_obj)
         return -1;
@@ -157,7 +158,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
     case JCFG_LPORT_TYPE:
         do {
-            jcfg_lport_t *lport = obj.lport;
+            lport = obj.lport;
             struct fwd_port *pd;
             mmap_t *mm;
             jcfg_umem_t *umem;
@@ -201,10 +202,11 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
-            if ((lport->flags & LPORT_UNPRIVILEGED) & !lport->xsk_map_path) {
-                if (f->xdp_uds)
-                    pcfg.xsk_uds = f->xdp_uds;
+            if (f->xdp_uds) {
+                pcfg.xsk_uds = f->xdp_uds;
+                lport->flags |= LPORT_UNPRIVILEGED;
             }
+
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));
             strlcpy(pcfg.ifname, lport->netdev, sizeof(pcfg.ifname));

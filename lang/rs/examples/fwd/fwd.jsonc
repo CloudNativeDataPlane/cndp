@@ -75,7 +75,6 @@
     //    busy_poll     - (O) Enable busy polling support, true or false, default false
     //    busy_timeout  - (O) 1-65535 or 0 - use default value, values in milli-seconds
     //    busy_budget   - (O) -1 disabled, 0 use default, >0 budget value
-    //    unprivileged  - (O) inhibit loading the BPF program if true, default false
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
     //    description   - (O) the description, 'desc' can be used as well
