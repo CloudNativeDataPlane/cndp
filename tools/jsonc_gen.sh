@@ -36,13 +36,13 @@ fi
 if [ ${PINNED_BPF_MAP} = false ]  ; then
     UDS_PATH="uds_path"
     UDS="/tmp/afxdp.sock"
-    UDS_CFG="\"$UDS_PATH\": \"$UDS\","
-    unset $MAP_CFG
+    UDS_CFG=("\"$UDS_PATH\": \"$UDS\",")
+    unset "${MAP_CFG[@]}"
 else
-    MAP_PATH="xsk_pin_path " #MT_TODO UPDATE
+    MAP_PATH="xsk_pin_path "
     MAP="/tmp/xsks_map"
-    MAP_CFG="\"$MAP_PATH\": \"$MAP\","
-    unset $UDS_CFG
+    MAP_CFG=("\"$MAP_PATH\": \"$MAP\",")
+    unset "${UDS_CFG[@]}"
 fi
 
 num_of_interfaces=0
@@ -136,7 +136,7 @@ EOF
             "region": ${i},
             "unprivileged": true,
             "skb_mode": ${AFXDP_COPY_MODE},
-            ${MAP_CFG}
+            ${MAP_CFG[@]}
             "description": "LAN ${i} port"
         }
 EOF
@@ -287,7 +287,7 @@ cat <<-EOF > ${config_file}
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        ${UDS_CFG}
+        ${UDS_CFG[@]}
         "mode": "drop"
     },
 
