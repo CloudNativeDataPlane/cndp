@@ -36,7 +36,7 @@
 #include "seq.h"                 // for pkt_seq_t
 #include "stats.h"               // for pkt_stats_t, txgen_page_stats
 #include "latency.h"
-
+#include "cne_net_crc.h"
 /* Allocated the txgen structure for global use */
 txgen_t txgen;
 
@@ -560,6 +560,14 @@ txgen_send_pkts(port_info_t *info)
         } else {
             xb->data_len = info->pkt.pktSize;
             memcpy(pktmbuf_mtod(xb, uint8_t *), (uint8_t *)&info->pkt.hdr, xb->data_len);
+
+            if (txgen_tst_port_flags(info, CALC_CHKSUM)) {
+                uint32_t crc =
+                    cne_net_crc_calc(pktmbuf_mtod(xb, uint8_t *), xb->data_len, CNE_NET_CRC32_ETH);
+                memcpy(pktmbuf_mtod(xb, uint8_t *) + xb->data_len, (uint8_t *)&crc,
+                       sizeof(uint32_t));
+                xb->data_len += sizeof(uint32_t);
+            }
         }
 
         cksum(pktmbuf_mtod(xb, uint8_t *), xb->data_len, 0);
