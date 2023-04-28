@@ -31,10 +31,11 @@ The creation of an AF_XDP socket involves loading of a BPF program which is a pr
 In order to run the CNDP application in an unprivileged container, the privileged operations are
 done by a Kubernetes device plugin. The CNDP application talks to the Kubernetes device plugin over
 a unix domain socket. The path to the unix domain socket created by the device plugin is the value
-of the "uds_path" attribute. The "unprivileged" flag should be true if running the CNDP app in an
-unprivileged container. The sysctl param ``kernel.unprivileged_bpf_disabled`` should be 0 to perform
-unprivileged BPF operations. For more details about the device plugin, please refer to
-:ref:`Integration of the K8s device plugin with CNDP <integration-k8s-dp>`.
+of the "uds_path" attribute. The "unprivileged" flag is automatically configured if the "uds_path"
+parameter is used. The sysctl param ``kernel.unprivileged_bpf_disabled`` should be 0 to perform
+unprivileged BPF operations. Alternatively the "xsk_pin_path" can be used in combination with the
+AF_XDP Device Plugin to support unprivileged Pods. For more details about the device plugin, please refer to
+:ref:`Integration of the K8s device plugin with CNDP <integration-k8s-dp>`. Alternatively
 
 Running the Application
 -----------------------

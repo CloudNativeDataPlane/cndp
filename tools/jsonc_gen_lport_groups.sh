@@ -66,9 +66,9 @@ function build_netdevs_by_node
     local node
     local dev
 
-    for dev in ${CNDP_DEVICES[@]}; do
-        node=$(cat /sys/class/net/$dev/device/numa_node 2>/dev/null || echo 0)
-        netdevs_by_node[$node]="${netdevs_by_node[$node]} $dev"
+    for dev in "${CNDP_DEVICES[@]}"; do
+        node=$(cat /sys/class/net/"$dev"/device/numa_node 2>/dev/null || echo 0)
+        netdevs_by_node[node]="${netdevs_by_node[$node]} $dev"
     done
 }
 
@@ -77,12 +77,13 @@ function build_netdevs_by_node
 #
 function build_lcores_by_node
 {
-    local lines=$(lscpu | awk -F: '/NUMA node[0-9] CPU\(s\):/{print $2}' | xargs)
+	local lines
+	lines=$(lscpu | awk -F: '/NUMA node[0-9] CPU\(s\):/{print $2}' | xargs)
     local line
     local i
 
     i=0
-    for line in ${lines[@]}; do
+    for line in "${lines[@]}"; do
         lcores_by_node[i]=$line
         i=$((i+1))
     done
