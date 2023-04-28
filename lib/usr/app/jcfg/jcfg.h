@@ -186,7 +186,6 @@ typedef struct jcfg_lport {
 #define JCFG_LPORT_BUSY_POLLING_NAME "busy_polling"
 #define JCFG_LPORT_BUSY_TIMEOUT_NAME "busy_timeout"
 #define JCFG_LPORT_BUSY_BUDGET_NAME  "busy_budget"
-#define JCFG_LPORT_UNPRIVILEGED_NAME "unprivileged"
 #define JCFG_PINNED_XSK_MAP_NAME     "xsk_pin_path"
 #define JCFG_LPORT_FORCE_WAKEUP_NAME "force_wakeup"
 #define JCFG_LPORT_SKB_MODE_NAME     "skb_mode"
