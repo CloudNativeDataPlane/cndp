@@ -72,6 +72,7 @@ enum { /* Per lport flag bits */
        SEND_PCAP_PKTS = (1 << 12), /**< Send a pcap file of packets */
 
        SAMPLING_LATENCIES = (1 << 14), /**< Sampling latency measurements> */
+       CALC_CHKSUM        = (1 << 15), /**< Calculate packet checksum> */
 
        RUNNING_FLAG = (1 << 8),
 };

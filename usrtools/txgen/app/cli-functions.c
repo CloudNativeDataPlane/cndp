@@ -449,8 +449,9 @@ theme_cmd(int argc, char **argv)
 }
 
 // clang-format off
-#define ed_type "pcap|"      /*  0 */    \
-        "capture|"         /*  1 */
+#define ed_type "pcap|" /* 0 */    \
+        "capture|"      /* 1 */    \
+        "chksum"        /* 2 */
 
 static struct cli_map enable_map[] = {
     { 10, "enable %P %|" ed_type },
@@ -464,7 +465,8 @@ static const char *enable_help[] = {
     "",
     "enable|disable <portlist> pcap     - Enable or Disable sending pcap packets on a portlist",
     "enable|disable <portlist> capture  - Enable/Disable packet capturing on a portlist, disable to save capture",
-    "                                     Disable capture on a port to save the data into the current working directory"
+    "                                     Disable capture on a port to save the data into the current working directory",
+    "enable|disable <portlist> chksum   - Enable/Disable packet checksum calc on a portlist",
     "enable|disable screen              - Enable/disable "
     "updating the screen and unlock/lock window",
     "    off                            - screen off shortcut",
@@ -499,6 +501,9 @@ en_dis_cmd(int argc, char **argv)
             break;
         case 1:
             foreach_port(portlist, enable_capture(info, state));
+            break;
+        case 2:
+            foreach_port(portlist, enable_chksum(info, state));
             break;
         default:
             return cli_cmd_error("Enable/Disable invalid command or command not supported yet",

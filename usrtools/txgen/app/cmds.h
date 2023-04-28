@@ -74,6 +74,7 @@ void pattern_set_user_pattern(port_info_t *info, char *str);
 
 /* Enable or toggle types */
 void enable_pcap(port_info_t *info, uint32_t state);
+void enable_chksum(port_info_t *info, uint32_t state);
 void enable_capture(port_info_t *info, uint32_t state);
 void start_stop_latency_sampler(port_info_t *info, uint32_t state);
 void txgen_start_latency_sampler(port_info_t *info);
