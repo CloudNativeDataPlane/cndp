@@ -16,12 +16,15 @@ spec:
     - name: cndp-0
       command: ["/bin/bash"]
       args: ["-c", "./jsonc_gen.sh; cndpfwd -c config.jsonc lb;"]
+      # args: ["-c", "./jsonc_gen.sh -k -p; cndpfwd -c config.jsonc lb;"] # to run in a kind cluster using bpf map pinning
       image: cndp
       imagePullPolicy: Never
       securityContext:
         capabilities:
           add:
             - NET_RAW
+            - IPC_LOCK
+            # - BPF # Enable if running in a kind cluster as the default kernel used is 5.15, BPF map support without privilege is only supported from 5.19.
       ports:
       - containerPort: 8094
         hostPort: 8094
