@@ -26,6 +26,8 @@ import "C"
 import (
 	"fmt"
 	"unsafe"
+	"encoding/binary"
+	"hash/fnv"
 )
 
 type Packet C.pktmbuf_t // Packet is the interface type for C.pktmbuf_t structure
@@ -227,8 +229,10 @@ func GetIPv4(pkt *Packet) *IPv4Hdr {
 
 	if pkt != nil {
 		ether := GetEtherHdr(pkt)
-
+		//fmt.Println("ethernet Header", ether)
+		//fmt.Println("Packet Info", pkt)
 		if ether != nil && ether.EtherType == SwapUint16(EtherTypeIPV4) {
+			//fmt.Printf("etherType: %v %02x", ether, ether.EtherType)
 			return (*IPv4Hdr)((unsafe.Pointer)(uintptr(unsafe.Pointer(ether)) + uintptr(EtherHdrLen)))
 		}
 	}
@@ -285,3 +289,40 @@ func GetTCP(pkt *Packet) *TCPHdr {
 
 	return nil
 }
+
+// GetHash will calculate with 3 tuples (src ip, dst ip and protocol)
+func GetHash(pkt *Packet) uint32 {
+	var t3Tuple []byte
+	ipv4 := GetIPv4(pkt)
+	ipv6 := GetIPv6(pkt)
+	if ipv4 != nil {
+		fmt.Println("ipv4 present")
+		t3Tuple = make([]byte, 9)
+		b := make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, uint32(ipv4.SrcAddr))
+		t3Tuple = append(t3Tuple, b...)
+
+		binary.LittleEndian.PutUint32(b, uint32(ipv4.DstAddr))
+		t3Tuple = append(t3Tuple, b...)
+
+		t3Tuple = append(t3Tuple, ipv4.NextProtoID)
+		var i int
+		for ;i<9;i++ {
+			fmt.Printf("%02x", t3Tuple[i])
+		}
+	} else if ipv6 != nil {
+		fmt.Println("ipv6present")
+		t3Tuple = make([]byte, IPv6AddrLen+IPv6AddrLen+1)
+		copy(t3Tuple[:], ipv6.SrcAddr[:IPv6AddrLen])
+		copy(t3Tuple[IPv6AddrLen:], ipv6.DstAddr[:IPv6AddrLen])
+		t3Tuple = append(t3Tuple, ipv6.Proto)
+	}
+	var hash uint32 
+	if ipv4 != nil || ipv6 != nil {
+		h := fnv.New32a()
+		h.Write(t3Tuple)
+		hash = h.Sum32()
+	}
+	return hash
+}
+
