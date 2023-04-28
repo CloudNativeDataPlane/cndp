@@ -64,7 +64,7 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
 
     a = rtnl_addr_get_local(addr);
     if (!a)
-        CNE_RET("Unable to get local address\n");
+        CNE_RET("Failed to get local address\n");
 
     memcpy(&ip4.ip.s_addr, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
     ip4.ip.s_addr = be32toh(ip4.ip.s_addr);
@@ -81,14 +81,14 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
-            CNE_WARN("Unable to set address for %s\n", netif->ifname);
+            CNE_WARN("Failed to set address for %s\n", netif->ifname);
 
         if (cnet_arp_add(netif->netif_idx, &ip4.ip, &mac, 1) == NULL)
-            CNE_WARN("Unable to set ARP for %s\n", netif->ifname);
+            CNE_WARN("Failed to set ARP for %s\n", netif->ifname);
 
         ip4.netmask.s_addr = 0xFFFFFFFF;
         if (cnet_route4_insert(netif->netif_idx, &ip4.ip, &ip4.netmask, NULL, 16, 0) < 0)
-            CNE_WARN("Unable to insert route for %s\n", netif->ifname);
+            CNE_WARN("Failed to insert route for %s\n", netif->ifname);
         break;
 
     case NL_ACT_CHANGE:
@@ -96,7 +96,7 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
-            CNE_WARN("Unable to set address for %s\n", netif->ifname);
+            CNE_WARN("Failed to set address for %s\n", netif->ifname);
         break;
 
     case NL_ACT_DEL:
@@ -104,13 +104,13 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_ipv4_ipaddr_delete(netif, &ip4.ip) < 0)
-            CNE_WARN("Unable to delete address for %s\n", netif->ifname);
+            CNE_WARN("Failed to delete address for %s\n", netif->ifname);
 
         if (cnet_arp_delete(&ip4.ip) < 0)
-            CNE_WARN("Unable to delete ARP for %s\n", netif->ifname);
+            CNE_WARN("Failed to delete ARP for %s\n", netif->ifname);
 
         if (cnet_route4_delete(&ip4.ip) < 0)
-            CNE_WARN("Unable to delete route for %s\n", netif->ifname);
+            CNE_WARN("Failed to delete route for %s\n", netif->ifname);
         break;
     }
 }
@@ -133,7 +133,7 @@ cnet_netlink_add_addrs(void *_info)
 
     cache = nl_cache_mngt_require_safe("route/addr");
     if (!cache)
-        CNE_ERR_RET("Unable to require route/addr\n");
+        CNE_ERR_RET("Failed to require route/addr\n");
 
     nl_cache_foreach(cache, addr_walk, info);
 

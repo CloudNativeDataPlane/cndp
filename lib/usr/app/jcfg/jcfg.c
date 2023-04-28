@@ -53,7 +53,7 @@ jcfg_list_add(jcfg_list_t *lst, void *obj)
     if (sz > lst->sz) {
         lst->list = realloc(lst->list, (sz * sizeof(void *)));
         if (!lst->list)
-            CNE_ERR_RET("Unable to allocate memory for jcfg_list_t.list[]\n");
+            CNE_ERR_RET("Failed to allocate memory for jcfg_list_t.list[]\n");
         lst->sz = sz;
     }
     lst->list[lst->cnt++] = obj;
@@ -218,7 +218,7 @@ jcfg_create(int flags)
         cfg = calloc(1, sizeof(struct jcfg));
         if (!cfg) {
             jcfg_destroy(jinfo);
-            CNE_NULL_RET("Unable to allocate struct jcfg\n");
+            CNE_NULL_RET("Failed to allocate struct jcfg\n");
         }
         jinfo->cfg = cfg;
 
@@ -240,7 +240,7 @@ jcfg_create(int flags)
         tok = json_tokener_new_ex(JSON_TOKENER_DEFAULT_DEPTH);
         if (!tok) {
             jcfg_destroy(jinfo);
-            CNE_NULL_RET("Unable to parse JSON file\n");
+            CNE_NULL_RET("Failed to parse JSON file\n");
         }
         cfg->tok     = tok;
         jinfo->flags = flags;
@@ -516,7 +516,7 @@ socket_listener(void *_c)
 
     int ret = pthread_setname_np(pthread_self(), "jcfg-listener");
     if (ret)
-        CNE_NULL_RET("Unable to set name for jcfg socket listener\n");
+        CNE_NULL_RET("Failed to set name for jcfg socket listener\n");
 
     jinfo          = c->info;
     jinfo->running = 1;
@@ -606,7 +606,7 @@ jcfg_socket_create(jcfg_info_t *jinfo, const char *runtime_dir)
 
     c = calloc(1, sizeof(jcfg_client_t));
     if (!c)
-        CNE_ERR_GOTO(leave, "Unable to allocate struct jcfg_client\n");
+        CNE_ERR_GOTO(leave, "Failed to allocate struct jcfg_client\n");
 
     c->s    = -1;
     c->info = jinfo;
@@ -617,7 +617,7 @@ jcfg_socket_create(jcfg_info_t *jinfo, const char *runtime_dir)
     cne_printf(">>> Waiting for configuration on %s\n", jinfo->sun.sun_path);
     int ret = pthread_create(&t, NULL, socket_listener, c);
     if (ret)
-        CNE_ERR_GOTO(error, "Unable to start socket_lister thread\n");
+        CNE_ERR_GOTO(error, "Failed to start socket_lister thread\n");
 
     if (pthread_barrier_wait(&c->barrier) > 0)
         CNE_ERR_GOTO(error, "Failed to wait on barrier\n");

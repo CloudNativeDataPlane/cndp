@@ -88,7 +88,7 @@ idlemgr_create(const char *name, uint16_t max_fds, uint32_t idle_timeout, uint32
 
     imgr = calloc(1, sizeof(imgr_t));
     if (!imgr)
-        CNE_NULL_RET("unable to allocate idlemgr instance\n");
+        CNE_NULL_RET("Failed to allocate idlemgr instance\n");
     strlcpy(imgr->name, name, sizeof(imgr->name));
 
     imgr->max_fds      = max_fds;
@@ -102,7 +102,7 @@ idlemgr_create(const char *name, uint16_t max_fds, uint32_t idle_timeout, uint32
 
     imgr->events = calloc(max_fds, sizeof(struct epoll_event));
     if (!imgr->events)
-        CNE_ERR_GOTO(err_leave, "unable to allocate epoll_event array of size %d\n", max_fds);
+        CNE_ERR_GOTO(err_leave, "Failed to allocate epoll_event array of size %d\n", max_fds);
 
     for (int i = 0; i < max_fds; i++)
         imgr->events[i].data.fd = -1;

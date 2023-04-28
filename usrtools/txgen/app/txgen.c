@@ -806,7 +806,7 @@ txgen_launch_one_lcore(void *arg)
 
     func = thread_types[txgen_thread_type(thd->thread_type)].func;
     if (!func) {
-        cne_printf("*** Unable to determine thread type (%s)\n", thd->thread_type);
+        cne_printf("*** Failed to determine thread type (%s)\n", thd->thread_type);
         return;
     }
 

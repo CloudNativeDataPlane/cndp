@@ -589,7 +589,7 @@ socket_listener(void *_info)
         c = calloc(1, sizeof(struct uds_client));
         if (!c) {
             snprintf(uds_log_error, sizeof(uds_log_error),
-                     "Unable to allocate uds_client structure\n");
+                     "Failed to allocate uds_client structure\n");
             close(s);
             break;
         }
@@ -599,7 +599,7 @@ socket_listener(void *_info)
 
         int ret = pthread_create(&th, NULL, client_handler, (void *)c);
         if (ret) {
-            snprintf(uds_log_error, sizeof(uds_log_error), "Unable to start uds_client handler\n");
+            snprintf(uds_log_error, sizeof(uds_log_error), "Failed to start uds_client handler\n");
             break;
         }
         pthread_detach(th);
