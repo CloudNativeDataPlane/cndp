@@ -31,7 +31,7 @@ _default_mbuf_ctor(struct pktmbuf_info_s *pi)
 
     pi->pd = mempool_create(&cfg);
     if (!pi->pd)
-        CNE_ERR_RET("Unable to create mempool\n");
+        CNE_ERR_RET("Failed to create mempool\n");
 
     return 0;
 }

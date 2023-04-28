@@ -122,7 +122,7 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
 
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
-                CNE_ERR_RET("Unable to allocate fwd_port structure\n");
+                CNE_ERR_RET("Failed to allocate fwd_port structure\n");
             lport->priv_ = pd;
 
             pcfg.qid          = lport->qid;
@@ -153,7 +153,7 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
             pd->lport = pktdev_port_setup(&pcfg);
             if (pd->lport < 0) {
                 free(pd);
-                CNE_ERR_RET("Unable to setup port %s, pktdev_port_setup() failed\n", lport->name);
+                CNE_ERR_RET("Failed to setup port %s, pktdev_port_setup() failed\n", lport->name);
             }
             if (cnet_netif_register(lport->lpid, lport->name, lport->netdev) < 0) {
                 free(pd);
@@ -171,7 +171,7 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
                                    &obj.thd->group->lcore_bitmap);
         } else if (!strcasecmp("graph", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, thread_func, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else
             CNE_WARN("[yellow]*** [cyan]Unknown thread type[] '[orange]%s[]'\n",

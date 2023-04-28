@@ -309,7 +309,7 @@ do_command(const char *cmd, int (*display)(char *, int))
 
     f = popen(cmd, "r");
     if (f == NULL) {
-        cne_printf("Unable to run '%s' command", cmd);
+        cne_printf("Failed to run '%s' command", cmd);
         return -1;
     }
 

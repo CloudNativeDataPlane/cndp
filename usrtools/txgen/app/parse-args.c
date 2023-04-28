@@ -148,7 +148,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
-                CNE_ERR_RET("Unable to allocate fwd_port structure\n");
+                CNE_ERR_RET("Failed to allocate fwd_port structure\n");
             lport->priv_ = pd;
 
             pcfg.qid          = lport->qid;
@@ -179,7 +179,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pd->lport = pktdev_port_setup(&pcfg);
             if (pd->lport < 0) {
                 free(pd);
-                CNE_ERR_RET("Unable to initialize pmd:%s, ifname:%s\n", pcfg.pmd_name, pcfg.ifname);
+                CNE_ERR_RET("Failed to initialize pmd:%s, ifname:%s\n", pcfg.pmd_name, pcfg.ifname);
             }
             for (int i = 0; i < pktdev_port_count(); i++) {
                 txgen_packet_capture_init(&txgen.captures[i]);
@@ -196,19 +196,19 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                                    &obj.thd->group->lcore_bitmap);
         } else if (!strcasecmp("rxtx", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, txgen_launch_one_lcore, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else if (!strcasecmp("tx_only", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, txgen_launch_one_lcore, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else if (!strcasecmp("rx_only", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, txgen_launch_one_lcore, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else if (!strcasecmp("stats", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, txgen_stats, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else
             CNE_ERR_RET("Unknown thread type '%s'\n", obj.thd->thread_type);

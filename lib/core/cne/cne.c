@@ -108,7 +108,7 @@ int
 cne_init(void)
 {
     if (cne_tailqs_init() < 0)
-        CNE_ERR_RET("unable to complete tailq initialization\n");
+        CNE_ERR_RET("Failed to complete tailq initialization\n");
     return cne_initial_uid();
 }
 

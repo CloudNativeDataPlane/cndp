@@ -108,6 +108,13 @@ else
     do_that();
 ```
 
+### Error message
+Avoid using "Unable to xxxx", use "Failed to xxx" instead for logging failed function calls:
+``` c
+// CNE_ERR_GOTO(out, "Unable to init CNE\n");
+CNE_ERR_GOTO(out, "Failed to init CNE\n");
+```
+
 ## Maintainers
 
 The CNDP maintainers are as follows:

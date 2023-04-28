@@ -116,12 +116,12 @@ mbuf_main(int argc, char **argv)
                ci->cache_sz);
 
         mm = mmap_alloc(ci->objcnt, ci->objsz, MMAP_HUGEPAGE_DEFAULT);
-        TST_ASSERT_GOTO(mm != NULL, "unable to allocate memory", err);
+        TST_ASSERT_GOTO(mm != NULL, "Failed to allocate memory", err);
 
         t->pi = pktmbuf_pool_create(mmap_addr(mm), ci->objcnt, ci->objsz, ci->cache_sz, NULL);
         if (t->expected) {
             if (t->pi) {
-                TST_ASSERT_GOTO(t->pi != NULL, "unable to create pktmbufs", err);
+                TST_ASSERT_GOTO(t->pi != NULL, "Failed to create pktmbufs", err);
 
                 err_msg[0] = '\0';
                 pktmbuf_iterate(t->pi, iterate_cb, t);
@@ -158,14 +158,14 @@ mbuf_main(int argc, char **argv)
                ci->cache_sz);
 
         mm = mmap_alloc(ci->objcnt, ci->objsz, MMAP_HUGEPAGE_DEFAULT);
-        TST_ASSERT_GOTO(mm != NULL, "unable to allocate memory", err);
+        TST_ASSERT_GOTO(mm != NULL, "Failed to allocate memory", err);
 
         pktmbuf_pool_cfg(&cfg, mmap_addr(mm), ci->objcnt, ci->objsz, ci->cache_sz, NULL, 0, NULL);
 
         t->pi = pktmbuf_pool_cfg_create(&cfg);
         if (t->expected) {
             if (t->pi) {
-                TST_ASSERT_GOTO(t->pi != NULL, "unable to create pktmbufs", err);
+                TST_ASSERT_GOTO(t->pi != NULL, "Failed to create pktmbufs", err);
 
                 err_msg[0] = '\0';
                 pktmbuf_iterate(t->pi, iterate_cb, t);

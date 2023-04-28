@@ -133,7 +133,7 @@ mc_create(const char *name, int sz, uint32_t flags)
 
     mc = calloc(1, sizeof(msg_chan_t));
     if (!mc)
-        CNE_ERR_GOTO(err, "Unable to allocate memory\n");
+        CNE_ERR_GOTO(err, "Failed to allocate memory\n");
 
     mc->cookie = MC_COOKIE;
 
@@ -168,7 +168,7 @@ err:
         cne_ring_free(mc->rings[MC_SEND_RING]);
 
         if (mc->mutex_inited && cne_mutex_destroy(&mc->mutex))
-            CNE_ERR("Unable to destroy mutex\n");
+            CNE_ERR("Failed to destroy mutex\n");
         memset(mc, 0, sizeof(msg_chan_t));
         free(mc);
     }
@@ -205,7 +205,7 @@ mc_destroy(msgchan_t *_mc)
             memset(mc, 0, sizeof(msg_chan_t));
 
             if (mc->mutex_inited && cne_mutex_destroy(&mc->mutex))
-                CNE_ERR("Unable to destroy mutex\n");
+                CNE_ERR("Failed to destroy mutex\n");
 
             free(mc);
         } else { /* Handle child destroy */

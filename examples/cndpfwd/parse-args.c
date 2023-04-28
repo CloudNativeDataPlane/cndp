@@ -80,7 +80,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
                 if (!f->fib_rules)
-                    CNE_ERR_RET("Unable to allocate fib_rules array\n");
+                    CNE_ERR_RET("Failed to allocate fib_rules array\n");
 
                 for (int i = 0; i < obj.opt->val.array_sz; ++i) {
                     f->fib_rules[i] = obj.opt->val.arr[i]->str;
@@ -91,7 +91,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->hs_patterns = calloc(obj.opt->val.array_sz, sizeof(char *));
                 if (!f->hs_patterns)
-                    CNE_ERR_RET("Unable to allocate hsfwd information array\n");
+                    CNE_ERR_RET("Failed to allocate hsfwd information array\n");
 
                 for (int i = 0; i < obj.opt->val.array_sz; ++i) {
                     CNE_DEBUG("Hyperscan pattern: '%s'\n", obj.opt->val.arr[i]->str);
@@ -168,7 +168,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
-                CNE_ERR_RET("Unable to allocate fwd_port structure\n");
+                CNE_ERR_RET("Failed to allocate fwd_port structure\n");
             lport->priv_ = pd;
 
             if (lport->flags & LPORT_SKB_MODE)
@@ -246,7 +246,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 func_arg->thd = obj.thd;
                 if (thread_create(obj.thd->name, thread_func, func_arg) < 0) {
                     free(func_arg);
-                    CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                    CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                                 obj.thd->thread_type);
                 }
             } else

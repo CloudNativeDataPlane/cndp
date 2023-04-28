@@ -60,7 +60,7 @@ _umem(struct json_object *obj, int flags, struct json_object *parent __cne_unuse
 
             umem->rinfo = calloc(umem->region_cnt, sizeof(region_info_t));
             if (!umem->rinfo) {
-                CNE_ERR("Unable to allocate UMEM regions (%d)\n", umem->region_cnt);
+                CNE_ERR("Failed to allocate UMEM regions (%d)\n", umem->region_cnt);
                 return JSON_C_VISIT_RETURN_ERROR;
             }
 
