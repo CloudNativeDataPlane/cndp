@@ -180,7 +180,7 @@ int fwd_acl_add_rule(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_build(uds_client_t *c, const char *cmd, const char *params);
 int fwd_acl_read(uds_client_t *c, const char *cmd, const char *params);
 int l3fwd_fib_init(struct fwd_info *fwd);
-int l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port);
+int l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port, int n);
 
 int hsfwd_init(struct fwd_info *fwd);
 void hsfwd_finish(struct fwd_info *fwd);
