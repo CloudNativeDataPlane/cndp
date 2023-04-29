@@ -162,10 +162,8 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     uint16_t *tx_port = malloc (n_pkts * sizeof(uint16_t));
     uint32_t *ip_addr = malloc (n_pkts * sizeof(uint32_t));
 
-    if (eaddr == NULL || tx_port == NULL || ip_addr) {
+    if (eaddr == NULL || tx_port == NULL || ip_addr)
         return -1;
-    }
-    
 
     for (int i = 0; i < n_pkts; i++) {
 
