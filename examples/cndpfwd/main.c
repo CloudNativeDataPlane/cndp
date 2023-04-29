@@ -148,8 +148,6 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     struct create_txbuff_thd_priv_t *thd_private = pd->thd->priv_;
     txbuff_t **txbuff;
     int n_pkts;
-    struct ether_addr eaddr;
-    uint16_t tx_port;
 
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
@@ -160,24 +158,36 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
         return -1;
 
+    struct ether_addr *eaddr = malloc (n_pkts * sizeof(struct ether_addr));
+    uint16_t *tx_port = malloc (n_pkts * sizeof(uint16_t));
+    uint32_t *ip_addr = malloc (n_pkts * sizeof(uint32_t));
+
+    if (eaddr == NULL || tx_port == NULL || ip_addr) {
+        return -1;
+    }
+    
+
     for (int i = 0; i < n_pkts; i++) {
 
         struct cne_ipv4_hdr *rx_ip_hdr =
             pktmbuf_mtod_offset(pd->rx_mbufs[i], struct cne_ipv4_hdr *, ETHER_HDR_LEN);
         rx_ip_hdr->time_to_live--;
         rx_ip_hdr->hdr_checksum = htons(ntohs(rx_ip_hdr->hdr_checksum) + 1);
-        uint32_t ip_addr        = ntohl(rx_ip_hdr->dst_addr);
+        ip_addr[i]        = ntohl(rx_ip_hdr->dst_addr);
+    }
 
-        l3fwd_fib_lookup(&ip_addr, &eaddr, &tx_port);
+    l3fwd_fib_lookup(ip_addr, eaddr, tx_port, n_pkts);
 
-        jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, tx_port);
+    for (int i = 0; i < n_pkts; i++) {
+
+        jcfg_lport_t *dst = jcfg_lport_by_index(fwd->jinfo, tx_port[i]);
 
         if (!dst) {
             /* Cannot forward to non-existing port, so echo back on incoming interface */
             dst = lport;
             MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], void *));
         } else
-            MAC_REWRITE(pktmbuf_mtod(pd->rx_mbufs[i], void *), &eaddr);
+            MAC_REWRITE(pktmbuf_mtod(pd->rx_mbufs[i], void *), &eaddr[i]);
 
         (void)txbuff_add(txbuff[dst->lpid], pd->rx_mbufs[i]);
     }

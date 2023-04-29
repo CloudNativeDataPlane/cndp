@@ -76,13 +76,20 @@ l3fwd_fib_populate(struct fwd_info *fwd, struct cne_fib *fib)
 }
 
 int
-l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port)
+l3fwd_fib_lookup(uint32_t *ip, struct ether_addr *eaddr, uint16_t *tx_port, int n)
 {
-    uint64_t nexthop;
+    uint64_t *nexthop = malloc(n * sizeof(uint64_t));
+    if (nexthop == NULL) 
+        return -1; 
 
-    cne_fib_lookup_bulk(fib, ip, &nexthop, 1);
-    inet_h64tom(nexthop, eaddr);
-    *tx_port = (uint16_t)(nexthop >> 48);
+    memset(nexthop, 0, n); 
+
+    cne_fib_lookup_bulk(fib, ip, nexthop, n);
+
+    for (uint16_t i = 0; i < n; i++) {
+        inet_h64tom(nexthop[i], &eaddr[i]);
+        tx_port[i] = (uint16_t)(nexthop[i] >> 48);
+    }
 
     return 0;
 }
