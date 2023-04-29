@@ -291,6 +291,7 @@ txgen_packet_ctor(port_info_t *info)
             /* IPv4 Header constructor */
             txgen_ipv4_ctor(pkt, l3_hdr);
         }
+
     } else
         cne_printf("Unknown EtherType 0x%04x", pkt->ethType);
 }
@@ -560,6 +561,8 @@ txgen_send_pkts(port_info_t *info)
             xb->data_len = info->pkt.pktSize;
             memcpy(pktmbuf_mtod(xb, uint8_t *), (uint8_t *)&info->pkt.hdr, xb->data_len);
         }
+
+        cksum(pktmbuf_mtod(xb, uint8_t *), xb->data_len, 0);
     }
     info->tx_mbufs.len += nb;
 

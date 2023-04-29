@@ -13,22 +13,36 @@
 # The available cores to the application are determined by
 # the 'lscpu' command.
 KIND=false
+PINNED_BPF_MAP=false
 config_file=config.jsonc
 AFXDP_DEVICES=${AFXDP_DEVICES:-net1}
 AFXDP_COPY_MODE=${AFXDP_COPY_MODE:-false}
 
-while getopts "k" flag; do
+while getopts "kp" flag; do
   case $flag in
     k) KIND=true      ;;
+    p) PINNED_BPF_MAP=true ;;
     *) echo 'error unkown flag' >&2
        exit 1
   esac
 done
 
 if [ ${KIND} = false ]  ; then
-LIST_OF_QIDS=${LIST_OF_QIDS:-4}
+    LIST_OF_QIDS=${LIST_OF_QIDS:-4}
 else
-LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+    LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+fi
+
+if [ ${PINNED_BPF_MAP} = false ]  ; then
+    UDS_PATH="uds_path"
+    UDS="/tmp/afxdp.sock"
+    UDS_CFG=("\"$UDS_PATH\": \"$UDS\",")
+    unset "${MAP_CFG[@]}"
+else
+    MAP_PATH="xsk_pin_path"
+    MAP="/tmp/xsks_map"
+    MAP_CFG=("\"$MAP_PATH\": \"$MAP\",")
+    unset "${UDS_CFG[@]}"
 fi
 
 num_of_interfaces=0
@@ -73,25 +87,35 @@ function get_lcore()
     echo """${LCORE[index]}"""
 
 }
-output=$(lscpu | grep "NUMA node[0-9] CPU")
 
-# Parse the list of cores for each numa node and store it in an array
-IFS=$':\n';
-for each_output in $output
-do
-   if [ $((l%2)) -eq 0 ]
-   then
-      ((num_of_numa_nodes++))
-   else
-      # split the comma separated value of cores into an array
-      IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
+if [ $KIND = false ]  ; then
+    output=$(lscpu | grep "NUMA node[0-9] CPU")
+    # Parse the list of cores for each numa node and store it in an array
+    IFS=$':\n';
+    for each_output in $output
+    do
+        if [ $((l%2)) -eq 0 ]
+        then
+            ((num_of_numa_nodes++))
+        else
+            # split the comma separated value of cores into an array
+            IFS=', ' read -ra list_of_numa_lcores <<< "$each_output"
 
-      num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
-      LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
-   fi
-   ((l++))
-done
-unset IFS
+            num_of_cores_in_each_numa_node[numa_node++]=${#list_of_numa_lcores[@]}
+            LCORE=("${LCORE[@]}" "${list_of_numa_lcores[@]}")
+        fi
+    ((l++))
+    done
+    unset IFS
+else
+    output=$(lscpu -b -p=Core | grep -v '^#')
+    IFS=$'\n';
+    for each_output in $output
+    do
+        LCORE=("${LCORE[@]}" "$each_output")
+    done
+    unset IFS
+fi
 
 while [ $i -lt $num_of_interfaces ]
 do
@@ -110,8 +134,8 @@ EOF
             "qid": ${QID[i]},
             "umem": "umem0",
             "region": ${i},
-            "unprivileged": true,
             "skb_mode": ${AFXDP_COPY_MODE},
+            ${MAP_CFG[@]}
             "description": "LAN ${i} port"
         }
 EOF
@@ -130,9 +154,9 @@ EOF
     )
 if [ $KIND = false ]  ; then
     nic_numa_node=$(cat /sys/class/net/"${NET[i]}"/device/numa_node || echo 0)
-	lcore=$(get_lcore "$nic_numa_node" $i)
+    lcore=$(get_lcore "$nic_numa_node" $i)
 else
-    lcore=0 # For kind you can't really retrieve the numa node as shown above
+    lcore=0 # For kind you can't really retrieve the nic_numa_node as shown above
 fi
     # create list of lcore groups
     lcore_groups[i]=$(
@@ -197,7 +221,7 @@ cat <<-EOF > ${config_file}
     //    description | desc - (O) Description of the umem space.
     "umems": {
         "umem0": {
-            "bufcnt": (16*$num_of_interfaces),
+            "bufcnt": $((num_of_interfaces * 16)),
             "bufsz": 2,
             "mtype": "2MB",
             "regions": [${regions[*]}
@@ -227,10 +251,10 @@ cat <<-EOF > ${config_file}
     //    busy_polling  -     Same as above
     //    busy_timeout  - (O) 1-65535 or 0 - use default value, values in milliseconds
     //    busy_budget   - (O) 0xFFFF disabled, 0 use default, >0 budget value
-    //    unprivileged  - (O) inhibit loading the BPF program if true, default false
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
     //    description   - (O) the description, 'desc' can be used as well
+    //    xsk_pin_path  - (O) Path to pinned xsk map for this port
     "lports": {${lports[*]}
     },
 
@@ -242,7 +266,7 @@ cat <<-EOF > ${config_file}
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
         "initial": ["${LCORE[i]}"],
-		${lcore_groups[*]},
+        ${lcore_groups[*]},
         "default": ["${LCORE[i+1]}"]
     },
 
@@ -261,7 +285,7 @@ cat <<-EOF > ${config_file}
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        "uds_path": "/tmp/afxdp.sock",
+        ${UDS_CFG[@]}
         "mode": "drop"
     },
 
