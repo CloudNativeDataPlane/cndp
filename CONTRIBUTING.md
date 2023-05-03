@@ -111,8 +111,9 @@ else
 ### Error message
 Avoid using "Unable to xxxx", use "Failed to xxx" instead for logging failed function calls:
 ``` c
-// CNE_ERR_GOTO(out, "Unable to init CNE\n");
-CNE_ERR_GOTO(out, "Failed to init CNE\n");
+CNE_ERR_GOTO(out, "Unable to init CNE\n");  // Do NOT use 'unable to' phase here
+
+CNE_ERR_GOTO(out, "Failed to init CNE\n");  // Use 'failed to' instead.
 ```
 
 ## Maintainers
