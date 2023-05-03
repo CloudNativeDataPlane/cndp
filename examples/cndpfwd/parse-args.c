@@ -12,6 +12,7 @@
 #include <stdint.h>            // for uint64_t, uint32_t
 #include <strings.h>           // for strcasecmp
 #include <string.h>            // for strncmp
+#include <errno.h>             // for strncmp
 
 #include <cne_common.h>          // for MEMPOOL_CACHE_MAX_SIZE, __cne_unused
 #include <cne_log.h>             // for CNE_LOG_ERR, CNE_ERR_RET, CNE_ERR
@@ -33,6 +34,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
     uint32_t total_region_cnt;
     char *umem_addr;
     size_t nlen;
+    jcfg_lport_t *lport;
 
     if (!_obj)
         return -1;
@@ -74,7 +76,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (obj.opt->val.type == STRING_OPT_TYPE) {
                 f->xdp_uds = udsc_handshake(obj.opt->val.str);
                 if (f->xdp_uds == NULL)
-                    CNE_ERR_RET("UDS handshake failed\n");
+                    CNE_ERR_RET("UDS handshake failed %s\n", strerror(errno));
             }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
@@ -157,7 +159,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
     case JCFG_LPORT_TYPE:
         do {
-            jcfg_lport_t *lport = obj.lport;
+            lport = obj.lport;
             struct fwd_port *pd;
             mmap_t *mm;
             jcfg_umem_t *umem;
@@ -188,6 +190,17 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.flags        = lport->flags;
             pcfg.flags |= (umem->shared_umem == 1) ? LPORT_SHARED_UMEM : 0;
 
+            if (lport->xsk_map_path) {
+                cne_printf("[yellow]**** [green]PINNED_BPF_MAP is [red]enabled[]\n");
+                pcfg.xsk_map_path = lport->xsk_map_path;
+            }
+
+            if (f->xdp_uds) {
+                cne_printf("[yellow]**** [green]UDS is [red]enabled[]\n");
+                pcfg.xsk_uds = f->xdp_uds;
+                pcfg.flags |= LPORT_UNPRIVILEGED;
+            }
+
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);
             if (!pcfg.addr) {
                 free(pd);
@@ -196,12 +209,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
-            if (lport->flags & LPORT_UNPRIVILEGED) {
-                if (f->xdp_uds)
-                    pcfg.xsk_uds = f->xdp_uds;
-                else
-                    CNE_ERR_RET("UDS info struct is null\n");
-            }
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));
             strlcpy(pcfg.ifname, lport->netdev, sizeof(pcfg.ifname));

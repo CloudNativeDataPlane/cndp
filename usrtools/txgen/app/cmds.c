@@ -294,8 +294,9 @@ txgen_flags_string(port_info_t *info)
 {
     static char buff[32];
 
-    snprintf(buff, sizeof(buff), "%c:%s:%6s", (txgen.flags & PROMISCUOUS_ON_FLAG) ? 'P' : '-',
-             (txgen_tst_port_flags(info, SEND_PCAP_PKTS)) ? "PCAP" : "-", "Single");
+    snprintf(buff, sizeof(buff), "%c:%s:%6s:%s", (txgen.flags & PROMISCUOUS_ON_FLAG) ? 'P' : '-',
+             (txgen_tst_port_flags(info, SEND_PCAP_PKTS)) ? "PCAP" : "-", "Single",
+             (txgen_tst_port_flags(info, CALC_CHKSUM)) ? "CHKSUM" : "-");
 
     return buff;
 }
@@ -964,6 +965,29 @@ pcap_filter(port_info_t *info, char *str)
     info->pcap_result = pcap_compile(pc, &info->pcap_program, str, 1, PCAP_NETMASK_UNKNOWN);
 
     pcap_close(pc);
+}
+
+/**
+ *
+ * enable_chksum - Enable or disable packet checksum calculation in Software.
+ *
+ * DESCRIPTION
+ * Enable or disable packet checksum calculation in Software
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+void
+enable_chksum(port_info_t *info, uint32_t state)
+{
+    if (state == ENABLE_STATE)
+        txgen_set_port_flags(info, CALC_CHKSUM);
+    else
+        txgen_clr_port_flags(info, CALC_CHKSUM);
+
+    return;
 }
 
 /**
