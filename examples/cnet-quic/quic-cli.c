@@ -114,7 +114,7 @@ static struct {
 struct {
     const char *path;
     int to_file;
-} * reqs;
+} *reqs;
 
 struct st_stream_data_t {
     quicly_streambuf_t streambuf;
