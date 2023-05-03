@@ -47,7 +47,8 @@ Ansible uses ssh to load and run it's modules on the target host. As such, it's 
 SSH key and copy it to the target node (note: the target node maybe the localhost).
 
 As root on both nodes run:
-```
+
+```bash
 ssh-keygen
 ssh-copy-id <target>
 ```
@@ -69,7 +70,7 @@ Before running the playbooks it's important to modify the following files:
 ### CNDP Ansible tree
 Below is the full directory tree of Ansible playbooks and roles.
 
-```
+```bash
 .
 ├── group_vars
 │   └── all    // contains global variable for ansible
