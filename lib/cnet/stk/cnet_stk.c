@@ -37,7 +37,7 @@ _stk_create(struct cnet *cnet)
     /* allocate the primary stack structure */
     stk = calloc(1, sizeof(stk_t));
     if (!stk)
-        CNE_ERR_RET("Unable to allocate stk structure\n");
+        CNE_ERR_RET("Failed to allocate stk structure\n");
 
     if (cnet_lock()) {
         stk_set(stk); /* Set the this_stk pointer for this thread */
@@ -52,7 +52,7 @@ _stk_create(struct cnet *cnet)
 
         if (cne_mutex_create(&stk->mutex, PTHREAD_MUTEX_RECURSIVE)) {
             cnet_unlock();
-            CNE_ERR_RET("Unable to initialize mutex\n");
+            CNE_ERR_RET("Failed to initialize mutex\n");
         }
 
         cnet_unlock();

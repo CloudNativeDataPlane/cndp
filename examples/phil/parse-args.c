@@ -58,7 +58,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg __cne_unused
                                    &obj.thd->group->lcore_bitmap);
         } else if (!strcasecmp("phil", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, thread_func, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else
             CNE_ERR_RET("*** Unknown thread type '%s'\n", obj.thd->thread_type);

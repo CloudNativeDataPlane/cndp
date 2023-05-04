@@ -159,7 +159,7 @@ cnet_netif_attach_ports(struct cnet *cnet)
         /* grab the driver that matches the port id */
         drv = vec_at_index(cnet->drvs, lpid);
         if (!drv)
-            CNE_ERR_RET("Unable to find driver for %d - %s\n", lpid, netif->ifname);
+            CNE_ERR_RET("Failed to find driver for %d - %s\n", lpid, netif->ifname);
 
         netif->drv = drv;
         drv->netif = netif;
@@ -180,7 +180,7 @@ cnet_netif_register(uint16_t lpid, char *ifname, char *netdev)
         CNE_ERR_GOTO(leave, "Arguments are invalid\n");
 
     if ((netif = cnet_netif_alloc(lpid)) == NULL)
-        CNE_ERR_GOTO(leave, "Unable to allocate netif structure\n");
+        CNE_ERR_GOTO(leave, "Failed to allocate netif structure\n");
 
     strlcpy(netif->ifname, ifname, sizeof(netif->ifname));
 

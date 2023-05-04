@@ -376,7 +376,7 @@ txgen_theme_save(char *filename)
 
     f = fopen(filename, "w+");
     if (f == NULL) {
-        cne_printf("Unable to open file [red]%s[]\n", filename);
+        cne_printf("Failed to open file [red]%s[]\n", filename);
         return;
     }
 

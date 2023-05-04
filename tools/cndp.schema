@@ -152,11 +152,6 @@
                             "minimum": 0,
                             "maximum": 65535
                         },
-                        "unprivileged": {
-                            "description": "Enable unprivileged operations",
-                            "type": "boolean",
-                            "default": false
-                        },
                         "force_wakeup": {
                             "description": "Force Tx wakeup calls for CVL NIC",
                             "type": "boolean",
@@ -329,11 +324,6 @@
                         "default": 0,
                         "minimum": 0,
                         "maximum": 65535
-                    },
-                    "unprivileged": {
-                        "description": "Enable unprivileged operations",
-                        "type": "boolean",
-                        "default": false
                     },
                     "force_wakeup": {
                         "description": "Force Tx wakeup calls for CVL NIC",

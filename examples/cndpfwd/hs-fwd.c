@@ -248,7 +248,7 @@ hsfwd_init(struct fwd_info *fwd)
     if (hs_compile_multi((const char *const *)fwd->hs_expressions, fwd->hs_flags, fwd->hs_ids,
                          fwd->hs_pattern_count, HS_MODE_BLOCK, NULL, &fwd->hs_database,
                          &compile_err) != HS_SUCCESS) {
-        cne_printf("[red]ERROR[]: Unable to compile patterns: %s\n", compile_err->message);
+        cne_printf("[red]ERROR[]: Failed to compile patterns: %s\n", compile_err->message);
         hs_free_compile_error(compile_err);
         return -1;
     }

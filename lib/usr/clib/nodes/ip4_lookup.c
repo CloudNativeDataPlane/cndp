@@ -279,7 +279,7 @@ cne_node_ip4_route_add(uint32_t ip, uint8_t depth, uint16_t next_hop,
         ret = cne_fib_add(ip4_lookup_nm.fib_tbl[socket], ip, depth, val);
         if (ret < 0) {
             node_err("ip4_lookup",
-                     "Unable to add entry %s / %d nh (%x) to FIB table on sock %d, rc=%d\n", abuf,
+                     "Failed to add entry %s / %d nh (%x) to FIB table on sock %d, rc=%d\n", abuf,
                      depth, val, socket, ret);
             return ret;
         }

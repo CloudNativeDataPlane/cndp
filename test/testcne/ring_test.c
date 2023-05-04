@@ -42,7 +42,7 @@ test_ring_cleanup(struct ring_test_info *ring_tst)
             cne_ring_free(ring_tst->r);
         if (ring_tst->mm) {
             if (mmap_free(ring_tst->mm) < 0)
-                CNE_WARN("unable to free mmap\n");
+                CNE_WARN("Failed to free mmap\n");
         }
 
         if (ring_tst->tst)
