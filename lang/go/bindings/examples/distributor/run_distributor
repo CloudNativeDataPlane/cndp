@@ -1,0 +1,25 @@
+#!/bin/bash
+
+cdir=$(pwd)
+PROJECT_PATH="${cdir}/../../../../.."
+
+cmdstring="sudo -E LD_LIBRARY_PATH=$PROJECT_PATH/usr/local/lib/x86_64-linux-gnu ./distributor $*"
+go env -w CGO_LDFLAGS_ALLOW='-Wl,--(?:no-)?whole-archive'
+
+go mod tidy
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "Go tidy failed"
+    exit $rc
+fi
+
+go build -o distributor ./cmd/
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "Go build failed"
+    exit $rc
+fi
+
+$cmdstring
+
+stty sane
