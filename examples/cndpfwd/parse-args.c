@@ -25,6 +25,9 @@
 
 #include "main.h"        // for fwd_info, fwd, app_options, get_app_mode
 
+#define foreach_thd_lport(_t, _lp) \
+    for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
+
 static int
 process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 {
@@ -147,7 +150,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             /* Initialize a pktmbuf_info_t structure for each region in the UMEM space */
             pi = pktmbuf_pool_create(ri->addr, ri->bufcnt, obj.umem->bufsz, cache_sz, NULL);
             if (!pi) {
-                mmap_free(obj.umem->mm);
                 CNE_ERR_RET("pktmbuf_pool_init() failed for region %d\n", i);
             }
             snprintf(name, sizeof(name), "%s-%d", obj.umem->name, i);
@@ -171,6 +173,10 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
                 CNE_ERR_RET("Failed to allocate fwd_port structure\n");
+
+            // Init lport to -1, so in cleanup routine we can know if we need to close it.
+            pd->lport = -1;
+
             lport->priv_ = pd;
 
             if (lport->flags & LPORT_SKB_MODE)
@@ -203,7 +209,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);
             if (!pcfg.addr) {
-                free(pd);
                 CNE_ERR_RET("lport %s region index %d >= %d or not configured correctly\n",
                             lport->name, lport->region_idx, umem->region_cnt);
             }
@@ -218,14 +223,12 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             case XSKDEV_PKT_API:
                 pd->xsk = xskdev_socket_create(&pcfg);
                 if (pd->xsk == NULL) {
-                    free(pd);
                     CNE_ERR_RET("xskdev_port_setup(%s) failed\n", lport->name);
                 }
                 break;
             case PKTDEV_PKT_API:
                 pd->lport = pktdev_port_setup(&pcfg);
                 if (pd->lport < 0) {
-                    free(pd);
                     CNE_ERR_RET("pktdev_port_setup(%s) failed\n", lport->name);
                 }
                 break;
@@ -299,6 +302,57 @@ print_usage(char *prog_name)
                "  -h             Display the help information\n"
                "  --%-12s Disable color output\n",
                prog_name, BURST_SIZE, MAX_BURST_SIZE, OPT_NO_COLOR);
+}
+
+static int
+_cleanup(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unused)
+{
+    jcfg_thd_t *thd = obj;
+    jcfg_lport_t *lport;
+    struct fwd_info *fwd = arg;
+
+    foreach_thd_lport (thd, lport) {
+        if (lport->umem) {
+            for (int i = 0; i < lport->umem->region_cnt; i++) {
+                pktmbuf_destroy(lport->umem->rinfo[i].pool);
+                lport->umem->rinfo[i].pool = NULL;
+            }
+            mmap_free(lport->umem->mm);
+            lport->umem->mm = NULL; /* Make sure we do not free this again */
+        }
+
+        struct fwd_port *pd = lport->priv_;
+
+        if (!pd)
+            continue;
+
+        switch (fwd->pkt_api) {
+        case XSKDEV_PKT_API:
+            if (pd->xsk) {
+                xskdev_socket_destroy(pd->xsk);
+                pd->xsk = NULL;
+            }
+            break;
+        case PKTDEV_PKT_API:
+            if (pd->lport >= 0) {
+                pktdev_close(pd->lport);
+                pd->lport = -1;
+            }
+            break;
+        default:
+            break;
+        }
+
+        free(pd);
+        lport->priv_ = NULL;
+    }
+
+    if (fwd->xdp_uds) {
+        udsc_close(fwd->xdp_uds);
+        fwd->xdp_uds = NULL;
+    }
+
+    return 0;
 }
 
 int
@@ -397,11 +451,21 @@ parse_args(int argc, char **argv, struct fwd_info *fwd)
         CNE_ERR_RET("*** Failed to initialize pthread barrier ***\n");
     fwd->barrier_inited = true;
 
-    if (jcfg_process(fwd->jinfo, flags, process_callback, fwd))
+    if (jcfg_process(fwd->jinfo, flags, process_callback, fwd)) {
+        jcfg_thread_foreach(fwd->jinfo, _cleanup, fwd);
         CNE_ERR_RET("*** Invalid configuration ***\n");
+    }
 
-    if (!fwd->opts.no_metrics && (enable_metrics(fwd) || enable_uds_info(fwd)))
-        CNE_ERR_RET("*** Failed to start metrics support ***\n");
+    if (!fwd->opts.no_metrics) {
+        int ret = enable_metrics(fwd);
+        if (ret == 0) {
+            ret = enable_uds_info(fwd);
+            if (ret)
+                metrics_destroy();
+        }
+        if (ret)
+            CNE_ERR_RET("*** Failed to start metrics support ***\n");
+    }
 
     /* enable ACL stats if we're in one of the ACL modes */
     if (fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST)
