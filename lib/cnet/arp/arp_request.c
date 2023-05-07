@@ -53,7 +53,7 @@ arp_request_process_mbuf(struct cne_node *node, pktmbuf_t *mbuf)
         sin.sin_addr.s_addr = ip4->dst_addr;
 
         if (sendto(ctx->s, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
-            CNE_WARN("Unable to send packets: %s\n", strerror(errno));
+            CNE_WARN("Failed to send packets: %s\n", strerror(errno));
     }
     return ARP_REQUEST_NEXT_PKT_DROP;
 }
@@ -206,7 +206,7 @@ arp_request_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
     ctx->s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (ctx->s < 0)
-        CNE_ERR_RET("Unable to open RAW socket\n");
+        CNE_ERR_RET("Failed to open RAW socket\n");
 
     return 0;
 }

@@ -131,15 +131,15 @@ netlink_create(struct cnet *cnet)
 
         info->sock = nl_socket_alloc();
         if (!info->sock)
-            CNE_ERR_GOTO(err, "Unable to allocate netlink_info structure\n");
+            CNE_ERR_GOTO(err, "Failed to allocate netlink_info structure\n");
 
         if (nl_cache_mngr_alloc(info->sock, NETLINK_ROUTE, NL_AUTO_PROVIDE, &info->mngr) < 0)
-            CNE_ERR_GOTO(err, "unable to allocate manager route/link\n");
+            CNE_ERR_GOTO(err, "Failed to allocate manager route/link\n");
 
         for (int i = 0; i < CACHE_INFO_MAX; i++) {
             if (nl_cache_mngr_add(info->mngr, cache_info[i].name, netlink_callback, info,
                                   &cache_info[i].cache) < 0)
-                CNE_ERR_GOTO(err, "unable to add manager %s\n", cache_info[i].name);
+                CNE_ERR_GOTO(err, "Failed to add manager %s\n", cache_info[i].name);
         }
     }
     return 0;
@@ -162,7 +162,7 @@ cnet_netlink_start(void)
         CNE_ERR_RET("struct netlink_info pointer is NULL\n");
 
     if (thread_create("cnet-netlink", netlink_thread, info) < 0)
-        CNE_ERR_RET("Unable to start netlink thread\n");
+        CNE_ERR_RET("Failed to start netlink thread\n");
 
     return 0;
 }
@@ -174,19 +174,19 @@ cnet_netlink_create(struct cnet *cnet)
         return -1;
 
     if (netlink_create(cnet) < 0)
-        CNE_ERR_RET("Unable to create netlink\n");
+        CNE_ERR_RET("Failed to create netlink\n");
 
     if (cnet_netlink_add_links(cnet->netlink_info) < 0)
-        CNE_ERR_RET("Unable to add links\n");
+        CNE_ERR_RET("Failed to add links\n");
 
     if (cnet_netlink_add_addrs(cnet->netlink_info) < 0)
-        CNE_ERR_RET("Unable to add addrs\n");
+        CNE_ERR_RET("Failed to add addrs\n");
 
     if (cnet_netlink_add_routes(cnet->netlink_info) < 0)
-        CNE_ERR_RET("Unable to add routes\n");
+        CNE_ERR_RET("Failed to add routes\n");
 
     if (cnet_netlink_add_neighs(cnet->netlink_info) < 0)
-        CNE_ERR_RET("Unable to add neighbours\n");
+        CNE_ERR_RET("Failed to add neighbours\n");
 
     return 0;
 }

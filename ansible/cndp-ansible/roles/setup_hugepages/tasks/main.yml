@@ -86,7 +86,7 @@
     - config_1GB_hugepages
 
 - name: update grub
-  shell: update-grub
+  shell: "{{ update_grub_cmd[required_dist | lower] }}"
   when:
     - hugepages_1GB > 0 and hugepages_1GB_check.stdout == "FOUND"
   tags:

@@ -461,7 +461,7 @@ ev_init(void)
         else {
             /* create the host thread to wait/handle the interrupt */
             if (pthread_create(&ev_thread, NULL, ev_thread_main, NULL) < 0)
-                CNE_ERR_GOTO(error, "Unable to start thread for cne_ev_init()\n");
+                CNE_ERR_GOTO(error, "Failed to start thread for cne_ev_init()\n");
             pthread_detach(ev_thread);
 
             sched_yield();

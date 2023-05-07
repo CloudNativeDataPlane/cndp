@@ -24,4 +24,9 @@
         apply:
           delegate_to: localhost
       tags: 02_install_libbpf
+    - include_role:
+        name: install_libxdp
+        apply:
+          delegate_to: localhost
+      tags: 03_install_libxdp
 
