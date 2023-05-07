@@ -618,7 +618,7 @@ rm_cmd(int argc, char **argv)
     }
 
     if (!cli_find_node(argv[1], &node)) {
-        cne_printf("Unable to find: %s\n", argv[1]);
+        cne_printf("Failed to find: %s\n", argv[1]);
         return -1;
     }
 
@@ -814,7 +814,7 @@ cli_default_tree_init(void)
 
     if (ret < 0) {
         this_cli->flags &= ~CLI_DEFAULT_TREE;
-        CNE_ERR_RET_VAL(ret, "Unable to add commands or directories\n");
+        CNE_ERR_RET_VAL(ret, "Failed to add commands or directories\n");
     }
 
     return ret;

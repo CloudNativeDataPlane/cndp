@@ -86,7 +86,7 @@ jcfg_dump_at(jcfg_info_t *jinfo, const char *key)
 
     obj = jcfg_object_by_name(jinfo, key);
     if (!obj) {
-        CNE_WARN("Unable to locate '%s'\n", key);
+        CNE_WARN("Failed to locate '%s'\n", key);
         return -1;
     }
 

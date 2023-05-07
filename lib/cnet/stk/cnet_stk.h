@@ -130,7 +130,7 @@ stk_lock(void)
     if (pthread_mutex_lock(&stk->mutex) == 0)
         return 1;
 
-    CNE_ERR_RET_VAL(0, "Unable to lock stk(%s) mutex\n", stk->name);
+    CNE_ERR_RET_VAL(0, "Failed to lock stk(%s) mutex\n", stk->name);
 }
 
 static inline void
@@ -142,7 +142,7 @@ stk_unlock(void)
         CNE_RET("Stack pointer is NULL\n");
 
     if (pthread_mutex_unlock(&stk->mutex))
-        CNE_ERR("Unable to unlock (%s) mutex\n", stk->name);
+        CNE_ERR("Failed to unlock (%s) mutex\n", stk->name);
 }
 
 /**

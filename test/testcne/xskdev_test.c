@@ -93,7 +93,7 @@ xskdev_main(int argc, char **argv)
     /*************************************************************************/
     mmap = mmap_alloc(DEFAULT_MBUF_COUNT, DEFAULT_MBUF_SIZE, MMAP_HUGEPAGE_4KB);
     if (mmap == NULL)
-        cne_panic("Unable to mmap(%lu, %s) memory",
+        cne_panic("Failed to mmap(%lu, %s) memory",
                   (uint64_t)DEFAULT_MBUF_COUNT * (uint64_t)DEFAULT_MBUF_SIZE,
                   mmap_name_by_type(MMAP_HUGEPAGE_4KB));
     reset_test_params(&pc, ifname, mmap);

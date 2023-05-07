@@ -112,7 +112,7 @@ __thread_init(void *arg)
     params->tidx = tidx; /* Return the tidx index value */
 
     if (pthread_setname_np(pthread_self(), params->name))
-        CNE_NULL_RET("Unable to set thread name\n");
+        CNE_NULL_RET("Failed to set thread name\n");
 
     if (pthread_barrier_wait(&params->barrier) > 0)
         CNE_NULL_RET("Failed to wait for barrier\n");
@@ -346,7 +346,7 @@ CNE_INIT_PRIO(thread_initialize, THREAD)
     /* thd_state_t should be max_threads + 1 cachelines in size */
     __thd = calloc(max_threads + 1, sizeof(thd_state_t));
     if (!__thd) {
-        cne_printf("%s: Unable to initialize thread state\n", __func__);
+        cne_printf("%s: Failed to initialize thread state\n", __func__);
         exit(-1);
     }
 

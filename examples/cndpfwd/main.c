@@ -749,7 +749,7 @@ main(int argc, char **argv)
 
     /* Set up tty to be able to see any key being pressed to exit */
     if (tty_setup(-1, -1) < 0)
-        CNE_ERR_RET("unable to setup tty, exiting\n");
+        CNE_ERR_RET("Failed to setup tty, exiting\n");
 
     fwd->timer_quit = 0;
     for (;;) {

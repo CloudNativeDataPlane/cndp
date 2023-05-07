@@ -105,7 +105,7 @@ phil_create_barriers(void)
 
     barriers = calloc(max_threads, sizeof(struct cthread_barrier *));
     if (!barriers)
-        CNE_RET("Unable to allocate cthread_barrier structures\n");
+        CNE_RET("Failed to allocate cthread_barrier structures\n");
 }
 
 /*******************************************************************************
@@ -378,7 +378,7 @@ phil_demo_start(void *arg)
     for (int i = 0; i < philos_attr.num_phil; i++) {
         phil = calloc(1, sizeof(phil_info_t));
         if (!phil)
-            CNE_ERR_GOTO(error, "Unable to allocate philosopher structure %d\n", i);
+            CNE_ERR_GOTO(error, "Failed to allocate philosopher structure %d\n", i);
         phil->doing       = PHIL_THINKING;
         phil->idx         = i;
         phil->solution    = solution;
@@ -388,7 +388,7 @@ phil_demo_start(void *arg)
         snprintf(name, sizeof(name), "Philosopher-%d", i);
         phil->cthd = cthread_create(name, philosopher_run, phil);
         if (!phil->cthd)
-            CNE_RET("Unable to start philosopher cthread %d\n", i);
+            CNE_RET("Failed to start philosopher cthread %d\n", i);
     }
 
     cthread_barrier_wait(*b);

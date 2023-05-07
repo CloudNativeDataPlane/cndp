@@ -23,11 +23,18 @@ EOF
 
 ### dependencies
 
+#### Ubuntu
 apt-get should now work to install the packages needed to use ansible.
 
-```
+```bash
 sudo apt update
 sudo apt-get install -y ansible
+```
+#### Fedora
+Install ansible using dnf
+
+```bash
+sudo dnf install -y ansible
 ```
 
 > Note: if ansible isn't available in the package tree, it can be installed by
@@ -40,7 +47,8 @@ Ansible uses ssh to load and run it's modules on the target host. As such, it's 
 SSH key and copy it to the target node (note: the target node maybe the localhost).
 
 As root on both nodes run:
-```
+
+```bash
 ssh-keygen
 ssh-copy-id <target>
 ```
@@ -49,7 +57,7 @@ where <target> is an IP address or localhost.
 
 Three playbooks are provided:
 1. multi-host.yml: Requires a control node and a managed node.
-2. localhost-kernel-install.yml: Installs all the required packages and updates kernel to 5.13
+2. localhost-kernel-install.yml: Installs all the required packages and updates kernel to 5.13 (for ubuntu 20.04)
    with XDP enabled (on the localhost). A user is expected to reboot the system after this script
    runs.
 3. localhost-post-kernel-install.yml: Installs any additional libraries needed for
@@ -57,12 +65,12 @@ Three playbooks are provided:
 
 Before running the playbooks it's important to modify the following files:
 1. hosts.ini: to add the hosts that you wish the multi-node playbook to setup.
-2. group_vars/all: to edit proxy variables.
+2. group_vars/all: to edit proxy and distribution variables.
 
 ### CNDP Ansible tree
 Below is the full directory tree of Ansible playbooks and roles.
 
-```
+```bash
 .
 ├── group_vars
 │   └── all    // contains global variable for ansible
@@ -98,7 +106,7 @@ Below is the full directory tree of Ansible playbooks and roles.
 
 > Note: it's important to edit group_vars/all and hosts.ini before running any playbooks.
 
-```
+```bash
 sudo ansible-playbook -i hosts.ini <playbook_name>
 ```
 
@@ -107,9 +115,10 @@ playbook
 
 ### Building CNDP
 
-After running Ansible to install all the dependencies, CNDP can be built by typing `make` in the
+After running Ansible to install all the dependencies, please set `PKG_CONFIG_PATH`, then CNDP can be built by typing `make` in the
 top level dir:
 
-```
-make
+```bash
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig
+make rebuild-install
 ```
