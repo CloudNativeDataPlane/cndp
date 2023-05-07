@@ -187,13 +187,13 @@ initialize_routes(void)
         if (cne_node_ip4_route_add(ipv4_l3fwd_lpm_route_array[i].ip,
                                    ipv4_l3fwd_lpm_route_array[i].depth, i,
                                    CNE_NODE_IP4_LOOKUP_NEXT_REWRITE) < 0)
-            CNE_ERR_RET("Unable to add ip4 route %s to graph\n", route_str);
+            CNE_ERR_RET("Failed to add ip4 route %s to graph\n", route_str);
 
         memcpy(rewrite_data, val_eth + dst_port, rewrite_len);
 
         /* Add next hop rewrite data for id 'i' */
         if (cne_node_ip4_rewrite_add(i, rewrite_data, rewrite_len, dst_port) < 0)
-            CNE_ERR_RET("Unable to add next hop %u for route %s\n", i, route_str);
+            CNE_ERR_RET("Failed to add next hop %u for route %s\n", i, route_str);
 
         CNE_INFO("Added route %s, next_hop %u\n", route_str, i);
     }
@@ -333,7 +333,7 @@ initialize(void)
         pktdev_conf[nb_conf++].port_id = lportid;
 
         if (pktdev_macaddr_get(lportid, &addr))
-            CNE_ERR_RET("Unable to get MAC address from lport %d\n", lportid);
+            CNE_ERR_RET("Failed to get MAC address from lport %d\n", lportid);
 
         ether_addr_copy(&addr, (struct ether_addr *)(val_eth + lportid) + 1);
     }

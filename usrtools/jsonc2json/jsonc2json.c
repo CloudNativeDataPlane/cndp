@@ -47,7 +47,7 @@ parse_jsonc(char *str)
 
     tok = json_tokener_new_ex(JSON_TOKENER_DEFAULT_DEPTH);
     if (!tok) {
-        fprintf(stderr, "Unable to create tokener instance\n");
+        fprintf(stderr, "Failed to create tokener instance\n");
         return -1;
     }
     json_tokener_set_flags(tok, (strict_json) ? strict_flags : 0);
@@ -170,7 +170,7 @@ main(int argc, char **argv)
     if (optind >= argc) {
         str = load_file("-");
         if (!str)
-            fprintf(stderr, "Unable to read stdin\n");
+            fprintf(stderr, "Failed to read stdin\n");
         else {
             if (parse_jsonc(str) < 0)
                 fprintf(stderr, "failed to parse json-c or json data\n");
@@ -182,7 +182,7 @@ main(int argc, char **argv)
         for (int i = optind; i < argc && argv[i]; i++) {
             str = load_file(argv[i]);
             if (!str)
-                fprintf(stderr, "Unable to open file (%s)\n", argv[i]);
+                fprintf(stderr, "Failed to open file (%s)\n", argv[i]);
             else {
                 if (parse_jsonc(str) < 0)
                     fprintf(stderr, "failed to parse json-c or json text\n");

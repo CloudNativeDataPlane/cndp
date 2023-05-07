@@ -96,7 +96,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
-            CNE_RET("Unable to add ARP address\n");
+            CNE_RET("Failed to add ARP address\n");
         break;
 
     case NL_ACT_CHANGE:
@@ -104,7 +104,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
-            CNE_RET("Unable to add ARP address\n");
+            CNE_RET("Failed to add ARP address\n");
         break;
 
     case NL_ACT_DEL:
@@ -112,7 +112,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_arp_delete(&in) < 0)
-            CNE_RET("Unable to delete ARP address\n");
+            CNE_RET("Failed to delete ARP address\n");
         break;
     default:
         CNE_WARN("Unknown action %d\n", action);
@@ -138,7 +138,7 @@ cnet_netlink_add_neighs(void *_info)
 
     cache = nl_cache_mngt_require_safe("route/neigh");
     if (!cache)
-        CNE_ERR_RET("Unable to require route/neigh\n");
+        CNE_ERR_RET("Failed to require route/neigh\n");
 
     nl_cache_foreach(cache, neigh_walk, info);
 

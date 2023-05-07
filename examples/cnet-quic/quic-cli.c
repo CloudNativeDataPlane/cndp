@@ -485,10 +485,10 @@ send_packets_default(int cd, struct sockaddr *dest, struct iovec *packets, size_
             cne_hexdump(NULL, "sendmsg", packets[i].iov_base, packets[i].iov_len);
 
         if (pktdev_buf_alloc(0, &m, 1) == 0)
-            CNE_RET("Unable to allocate mbufs\n");
+            CNE_RET("Failed to allocate mbufs\n");
 
         if (pktmbuf_write(packets[i].iov_base, packets[i].iov_len, m, 0) == NULL)
-            CNE_RET("Unable to copy data into mbuf\n");
+            CNE_RET("Failed to copy data into mbuf\n");
 
         if (chnl_sendto(cd, dest, &m, 1) < 0)
             perror("sendmsg failed");
@@ -1451,7 +1451,7 @@ quicly_main(int argc, char **argv)
 
     if (resolve_address((void *)&cinfo->sa, &cinfo->salen, host, port, AF_INET, SOCK_DGRAM,
                         IPPROTO_UDP) != 0)
-        CNE_ERR_RET("Unable to resolve host address\n");
+        CNE_ERR_RET("Failed to resolve host address\n");
 
     is_server = ctx.tls->certificates.count;
 

@@ -440,7 +440,7 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
     if (unlikely(stk->tcp_tx_node == NULL)) {
         stk->tcp_tx_node = cne_graph_get_node_by_name(stk->graph, TCP_OUTPUT_NODE_NAME);
         if (!stk->tcp_tx_node)
-            CNE_ERR_RET("Unable to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
+            CNE_ERR_RET("Failed to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
     }
 
     cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
@@ -473,7 +473,7 @@ tcp_mbuf_copydata(struct chnl_buf *cb, uint32_t off, uint32_t len, char *buf)
     int i          = 0;
 
     if (!stk_lock())
-        CNE_ERR_RET("Unable to acquire mutex\n");
+        CNE_ERR_RET("Failed to acquire mutex\n");
 
     m = vec_at_index(cb->cb_vec, i++);
 
@@ -963,7 +963,7 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
     /* Wait for a packet buffer, if one is not available */
     if (mbuf == NULL) {
         if (pktdev_buf_alloc(netif->lpid, &mbuf, 1) == 0)
-            CNE_RET("Unable to allocate packet buffer\n");
+            CNE_RET("Failed to allocate packet buffer\n");
     } else
         pktmbuf_reset(mbuf);
 
@@ -1021,7 +1021,7 @@ tcp_do_response(struct netif *netif __cne_unused, struct pcb_entry *pcb, pktmbuf
     if (unlikely(stk->tcp_tx_node == NULL)) {
         stk->tcp_tx_node = cne_graph_get_node_by_name(stk->graph, TCP_OUTPUT_NODE_NAME);
         if (!stk->tcp_tx_node)
-            CNE_RET("Unable to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
+            CNE_RET("Failed to find '%s' node\n", TCP_OUTPUT_NODE_NAME);
     }
 
     cne_node_enqueue_x1(stk->graph, stk->tcp_tx_node, TCP_OUTPUT_NEXT_IP4_OUTPUT, mbuf);
@@ -1596,7 +1596,7 @@ do_passive_open(struct seg_entry *seg)
 
     nch->ch_pcb->netif = cnet_netif_from_index(seg->mbuf->lport);
     if (!nch->ch_pcb->netif)
-        CNE_WARN("Unable to locate netif structure\n");
+        CNE_WARN("Failed to locate netif structure\n");
     CNE_DEBUG("Netif @ [orange]%p[]\n", nch->ch_pcb->netif);
 
     /* Add the pkt information to the new pcb */
@@ -1626,7 +1626,7 @@ do_passive_open(struct seg_entry *seg)
     tcb->ppcb = ppcb;
 
     if (tcp_q_add(&ppcb->tcb->half_open_q, tcb->pcb))
-        CNE_WARN("Unable to enqueue to half_open queue\n");
+        CNE_WARN("Failed to enqueue to half_open queue\n");
 
     /* Update and set the segment values */
     tcb->rcv_irs = seg->seq;
@@ -3885,7 +3885,7 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
 
     if (cne_timer_reset(&stk->tcp_timer, (cne_get_timer_hz() / 1000) * 10, PERIODICAL, cne_id(),
                         _process_timers, (void *)stk) < 0)
-        CNE_ERR_GOTO(cleanup, "Unable to start TCP timer for instance %s\n", stk->name);
+        CNE_ERR_GOTO(cleanup, "Failed to start TCP timer for instance %s\n", stk->name);
 
     return 0;
 
@@ -3928,7 +3928,7 @@ tcp_destroy(void *_stk __cne_unused)
     mempool_destroy(stk->seg_objs);
 
     if (cne_timer_stop(&stk->tcp_timer) < 0)
-        CNE_ERR("Unable to stop TCP timer for instance %s\n", stk->name);
+        CNE_ERR("Failed to stop TCP timer for instance %s\n", stk->name);
 
     return 0;
 }

@@ -65,7 +65,7 @@ _cthread_key_pool_init(void)
         snprintf(name, sizeof(name), "key_pool_%d", getpid());
         pool = cne_ring_create(name, sizeof(struct cthread_key), CTHREAD_MAX_KEYS, 0);
         if (!pool)
-            CNE_RET("Unable to allocate ring for key pool\n");
+            CNE_RET("Failed to allocate ring for key pool\n");
 
         for (int i = 1; i < CTHREAD_MAX_KEYS; i++) {
             new_key = &key_table[i];

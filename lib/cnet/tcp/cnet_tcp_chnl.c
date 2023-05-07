@@ -45,7 +45,7 @@ cnet_drop_acked_data(struct chnl_buf *cb, int32_t acked)
     int idx, len, free_cnt = 0;
 
     if (!stk_lock())
-        CNE_RET("Unable to acquire mutex\n");
+        CNE_RET("Failed to acquire mutex\n");
 
     len = vec_len(cb->cb_vec);
 

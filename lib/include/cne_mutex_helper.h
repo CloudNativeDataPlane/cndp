@@ -59,7 +59,7 @@ err:
     if (inited) {
         /* Do not lose the previous error value */
         if (pthread_mutexattr_destroy(&attr))
-            CNE_DEBUG("unable to destroy mutex attribute, but is not the root cause\n");
+            CNE_DEBUG("Failed to destroy mutex attribute, but is not the root cause\n");
     }
 
     errno = ret;

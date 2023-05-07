@@ -54,7 +54,7 @@ tst_start(const char *msg)
 
     tst = calloc(1, sizeof(tst_info_t));
     if (!tst) {
-        cne_printf("[red]Error[]: [magenta]Unable to allocate tst_info_t structure[]\n");
+        cne_printf("[red]Error[]: [magenta]Failed to allocate tst_info_t structure[]\n");
         abort();
     }
 

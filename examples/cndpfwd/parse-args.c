@@ -12,6 +12,7 @@
 #include <stdint.h>            // for uint64_t, uint32_t
 #include <strings.h>           // for strcasecmp
 #include <string.h>            // for strncmp
+#include <errno.h>             // for strncmp
 
 #include <cne_common.h>          // for MEMPOOL_CACHE_MAX_SIZE, __cne_unused
 #include <cne_log.h>             // for CNE_LOG_ERR, CNE_ERR_RET, CNE_ERR
@@ -24,6 +25,9 @@
 
 #include "main.h"        // for fwd_info, fwd, app_options, get_app_mode
 
+#define foreach_thd_lport(_t, _lp) \
+    for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
+
 static int
 process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 {
@@ -33,6 +37,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
     uint32_t total_region_cnt;
     char *umem_addr;
     size_t nlen;
+    jcfg_lport_t *lport;
 
     if (!_obj)
         return -1;
@@ -74,13 +79,13 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (obj.opt->val.type == STRING_OPT_TYPE) {
                 f->xdp_uds = udsc_handshake(obj.opt->val.str);
                 if (f->xdp_uds == NULL)
-                    CNE_ERR_RET("UDS handshake failed\n");
+                    CNE_ERR_RET("UDS handshake failed %s\n", strerror(errno));
             }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
                 if (!f->fib_rules)
-                    CNE_ERR_RET("Unable to allocate fib_rules array\n");
+                    CNE_ERR_RET("Failed to allocate fib_rules array\n");
 
                 for (int i = 0; i < obj.opt->val.array_sz; ++i) {
                     f->fib_rules[i] = obj.opt->val.arr[i]->str;
@@ -91,7 +96,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->hs_patterns = calloc(obj.opt->val.array_sz, sizeof(char *));
                 if (!f->hs_patterns)
-                    CNE_ERR_RET("Unable to allocate hsfwd information array\n");
+                    CNE_ERR_RET("Failed to allocate hsfwd information array\n");
 
                 for (int i = 0; i < obj.opt->val.array_sz; ++i) {
                     CNE_DEBUG("Hyperscan pattern: '%s'\n", obj.opt->val.arr[i]->str);
@@ -145,7 +150,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             /* Initialize a pktmbuf_info_t structure for each region in the UMEM space */
             pi = pktmbuf_pool_create(ri->addr, ri->bufcnt, obj.umem->bufsz, cache_sz, NULL);
             if (!pi) {
-                mmap_free(obj.umem->mm);
                 CNE_ERR_RET("pktmbuf_pool_init() failed for region %d\n", i);
             }
             snprintf(name, sizeof(name), "%s-%d", obj.umem->name, i);
@@ -157,7 +161,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
     case JCFG_LPORT_TYPE:
         do {
-            jcfg_lport_t *lport = obj.lport;
+            lport = obj.lport;
             struct fwd_port *pd;
             mmap_t *mm;
             jcfg_umem_t *umem;
@@ -168,7 +172,11 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
-                CNE_ERR_RET("Unable to allocate fwd_port structure\n");
+                CNE_ERR_RET("Failed to allocate fwd_port structure\n");
+
+            // Init lport to -1, so in cleanup routine we can know if we need to close it.
+            pd->lport = -1;
+
             lport->priv_ = pd;
 
             if (lport->flags & LPORT_SKB_MODE)
@@ -188,20 +196,24 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.flags        = lport->flags;
             pcfg.flags |= (umem->shared_umem == 1) ? LPORT_SHARED_UMEM : 0;
 
+            if (lport->xsk_map_path) {
+                cne_printf("[yellow]**** [green]PINNED_BPF_MAP is [red]enabled[]\n");
+                pcfg.xsk_map_path = lport->xsk_map_path;
+            }
+
+            if (f->xdp_uds) {
+                cne_printf("[yellow]**** [green]UDS is [red]enabled[]\n");
+                pcfg.xsk_uds = f->xdp_uds;
+                pcfg.flags |= LPORT_UNPRIVILEGED;
+            }
+
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);
             if (!pcfg.addr) {
-                free(pd);
                 CNE_ERR_RET("lport %s region index %d >= %d or not configured correctly\n",
                             lport->name, lport->region_idx, umem->region_cnt);
             }
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
-            if (lport->flags & LPORT_UNPRIVILEGED) {
-                if (f->xdp_uds)
-                    pcfg.xsk_uds = f->xdp_uds;
-                else
-                    CNE_ERR_RET("UDS info struct is null\n");
-            }
             /* Setup the mempool configuration */
             strlcpy(pcfg.pmd_name, lport->pmd_name, sizeof(pcfg.pmd_name));
             strlcpy(pcfg.ifname, lport->netdev, sizeof(pcfg.ifname));
@@ -211,14 +223,12 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             case XSKDEV_PKT_API:
                 pd->xsk = xskdev_socket_create(&pcfg);
                 if (pd->xsk == NULL) {
-                    free(pd);
                     CNE_ERR_RET("xskdev_port_setup(%s) failed\n", lport->name);
                 }
                 break;
             case PKTDEV_PKT_API:
                 pd->lport = pktdev_port_setup(&pcfg);
                 if (pd->lport < 0) {
-                    free(pd);
                     CNE_ERR_RET("pktdev_port_setup(%s) failed\n", lport->name);
                 }
                 break;
@@ -246,7 +256,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 func_arg->thd = obj.thd;
                 if (thread_create(obj.thd->name, thread_func, func_arg) < 0) {
                     free(func_arg);
-                    CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                    CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                                 obj.thd->thread_type);
                 }
             } else
@@ -292,6 +302,57 @@ print_usage(char *prog_name)
                "  -h             Display the help information\n"
                "  --%-12s Disable color output\n",
                prog_name, BURST_SIZE, MAX_BURST_SIZE, OPT_NO_COLOR);
+}
+
+static int
+_cleanup(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_unused)
+{
+    jcfg_thd_t *thd = obj;
+    jcfg_lport_t *lport;
+    struct fwd_info *fwd = arg;
+
+    foreach_thd_lport (thd, lport) {
+        if (lport->umem) {
+            for (int i = 0; i < lport->umem->region_cnt; i++) {
+                pktmbuf_destroy(lport->umem->rinfo[i].pool);
+                lport->umem->rinfo[i].pool = NULL;
+            }
+            mmap_free(lport->umem->mm);
+            lport->umem->mm = NULL; /* Make sure we do not free this again */
+        }
+
+        struct fwd_port *pd = lport->priv_;
+
+        if (!pd)
+            continue;
+
+        switch (fwd->pkt_api) {
+        case XSKDEV_PKT_API:
+            if (pd->xsk) {
+                xskdev_socket_destroy(pd->xsk);
+                pd->xsk = NULL;
+            }
+            break;
+        case PKTDEV_PKT_API:
+            if (pd->lport >= 0) {
+                pktdev_close(pd->lport);
+                pd->lport = -1;
+            }
+            break;
+        default:
+            break;
+        }
+
+        free(pd);
+        lport->priv_ = NULL;
+    }
+
+    if (fwd->xdp_uds) {
+        udsc_close(fwd->xdp_uds);
+        fwd->xdp_uds = NULL;
+    }
+
+    return 0;
 }
 
 int
@@ -390,11 +451,21 @@ parse_args(int argc, char **argv, struct fwd_info *fwd)
         CNE_ERR_RET("*** Failed to initialize pthread barrier ***\n");
     fwd->barrier_inited = true;
 
-    if (jcfg_process(fwd->jinfo, flags, process_callback, fwd))
+    if (jcfg_process(fwd->jinfo, flags, process_callback, fwd)) {
+        jcfg_thread_foreach(fwd->jinfo, _cleanup, fwd);
         CNE_ERR_RET("*** Invalid configuration ***\n");
+    }
 
-    if (!fwd->opts.no_metrics && (enable_metrics(fwd) || enable_uds_info(fwd)))
-        CNE_ERR_RET("*** Failed to start metrics support ***\n");
+    if (!fwd->opts.no_metrics) {
+        int ret = enable_metrics(fwd);
+        if (ret == 0) {
+            ret = enable_uds_info(fwd);
+            if (ret)
+                metrics_destroy();
+        }
+        if (ret)
+            CNE_ERR_RET("*** Failed to start metrics support ***\n");
+    }
 
     /* enable ACL stats if we're in one of the ACL modes */
     if (fwd->test == ACL_STRICT_TEST || fwd->test == ACL_PERMISSIVE_TEST)

@@ -25,7 +25,7 @@ drv_setup(struct cnet *cnet, int lport)
 
     drv = calloc(1, sizeof(struct drv_entry));
     if (!drv)
-        CNE_ERR_RET("Unable to allocate struct drv_entry structure\n");
+        CNE_ERR_RET("Failed to allocate struct drv_entry structure\n");
 
     vec_at_index(cnet->drvs, lport) = drv;
     vec_inc_len(cnet->drvs);

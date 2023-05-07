@@ -63,12 +63,12 @@ thread_func(void *arg)
 
     bid = ibroker_create(name);
     if (bid < 0)
-        CNE_RET("Unable to register ibroker %s\n", thread_name(-1));
+        CNE_RET("Failed to register ibroker %s\n", thread_name(-1));
 
     for (int i = 0; i < app->num_services; i++) {
         snprintf(buff, sizeof(buff), "srv-%s-%d", thread_name(-1), i);
         if (ibroker_add_service(bid, buff, i, srv_func, NULL) < 0)
-            CNE_RET("Unable to add service vector %2d to ibroker %-12s:%s\n", i, thread_name(-1),
+            CNE_RET("Failed to add service vector %2d to ibroker %-12s:%s\n", i, thread_name(-1),
                     buff);
     }
 
@@ -115,7 +115,7 @@ sender_func(void *arg __cne_unused)
 
         for (int j = 0; j < app->num_services; j++) {
             if (ibroker_del_service(ids[i], j) < 0)
-                CNE_ERR_GOTO(leave, "Unable to delete service vector %2d to ibroker %-12s:%s\n", j,
+                CNE_ERR_GOTO(leave, "Failed to delete service vector %2d to ibroker %-12s:%s\n", j,
                              thread_name(-1), ibroker_service_name(bid, j));
         }
     }
@@ -169,12 +169,12 @@ main(int argc, char **argv)
     srand(0x20250630 + (getpid() * 333));
 
     if ((tidx = cne_init()) < 0)
-        CNE_ERR_GOTO(err, "Unable to parse the arguments\n");
+        CNE_ERR_GOTO(err, "Failed to parse the arguments\n");
 
     cne_on_exit(__on_exit, app, signals, cne_countof(signals));
 
     if (parse_args(argc, argv))
-        CNE_ERR_GOTO(err, "Unable to parse the arguments\n");
+        CNE_ERR_GOTO(err, "Failed to parse the arguments\n");
 
     vt_cls();
     cne_printf_pos(99, 1,
@@ -193,7 +193,7 @@ main(int argc, char **argv)
         snprintf(buff, sizeof(buff), "Broker-%d", i);
 
         if (thread_create(buff, thread_func, &app->thread_ids[i]) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create broker thread\n");
+            CNE_ERR_GOTO(leave, "Failed to create broker thread\n");
     }
 
     cne_printf("Wait until [red]Ctrl-C[] is pressed\n");
@@ -203,7 +203,7 @@ main(int argc, char **argv)
         CNE_ERR_GOTO(leave, "Barrier wait failed: %s", strerror(errno));
 
     if (thread_create("Sender", sender_func, &app->sender_id) < 0)
-        CNE_ERR_GOTO(leave, "Unable to create sender thread\n");
+        CNE_ERR_GOTO(leave, "Failed to create sender thread\n");
 
     for (;;) {
         sleep(1);
