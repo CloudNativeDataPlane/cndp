@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2020-2022 Intel Corporation
+# Copyright (c) 2020-2023 Intel Corporation
 
 ---
 # This role checks if the libbpf is already installed.
@@ -27,7 +27,7 @@
 
 - name: Unarchive libbpf
   unarchive:
-    src: https://github.com/libbpf/libbpf/archive/refs/tags/v0.5.0.tar.gz
+    src: https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.0.tar.gz
     dest: /tmp
     remote_src: yes
   when: bpf_static_installed.stat.exists == False or bpf_shared_installed.stat.exists == False
@@ -37,7 +37,7 @@
 
 - name: Install libbpf
   make:
-    chdir: /tmp/libbpf-0.5.0/src
+    chdir: /tmp/libbpf-1.0.0/src
     target: install
     params:
       NUM_THREADS: "{{ num_threads }}"
@@ -46,15 +46,3 @@
   tags:
     - install_libbpf
 
-- name: check xsk_socket__create_shared
-  shell: nm /usr/lib/libbpf.so.0 | grep -q xsk_socket__create_shared && echo "FOUND" || echo "NOT FOUND"
-  register: xsk_shared_check_output
-  tags:
-    - check_xsk_shared
-
-- name: Print xsk_socket__create_shared result
-  debug:
-    msg: xsk_socket__create_shared check result {{ xsk_shared_check_output.stdout }}
-  when: xsk_shared_check_output.stdout != "FOUND"
-  tags:
-     - check_xsk_shared

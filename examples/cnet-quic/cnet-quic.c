@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <arpa/inet.h>           // for inet_ntop
@@ -89,7 +89,7 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
                graph_name, thd->name);
     ret = jcfg_option_array_get(cinfo->jinfo, thd->name, &pattern_array);
     if (ret < 0)
-        CNE_ERR_GOTO(err, "Unable to find %s option name\n", thd->name);
+        CNE_ERR_GOTO(err, "Failed to find %s option name\n", thd->name);
 
     if (pattern_array->array_sz == 0)
         CNE_ERR_GOTO(err, "Thread %s does not have any graph patterns\n", thd->name);
@@ -160,7 +160,7 @@ thread_func(void *arg)
         CNE_ERR_GOTO(err, "Initialize_graph() failed\n");
 
     if (open_quic_channel() < 0)
-        CNE_ERR_GOTO(err, "Unable to create QUIC channel\n");
+        CNE_ERR_GOTO(err, "Failed to create QUIC channel\n");
 
     while (likely(!thd->quit))
         cne_graph_walk(gi->graph);
@@ -289,7 +289,7 @@ main(int argc, char **argv)
     /* Create the CNET stack structure, options should have been parsed already */
     cinfo->cnet = cnet_create();
     if (!cinfo->cnet)
-        CNE_ERR_RET("Unable to create CNET instance\n");
+        CNE_ERR_RET("Failed to create CNET instance\n");
 
     usleep(1000);
 
@@ -301,7 +301,7 @@ main(int argc, char **argv)
 
     /* Create the CLI command tree */
     if (cli_setup_with_tree(cli_tree))
-        CNE_ERR_GOTO(err, "Unable to create CLI\n");
+        CNE_ERR_GOTO(err, "Failed to create CLI\n");
 
     if (quicly_main(argc, argv) < 0)
         CNE_ERR_GOTO(leave, "quicly_main() failed\n");

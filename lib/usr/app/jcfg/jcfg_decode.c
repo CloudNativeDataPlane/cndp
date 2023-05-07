@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <string.h>                    // for strcmp, NULL, strdup, size_t
@@ -331,7 +331,7 @@ jcfg_decode(jcfg_info_t *jinfo, const char *key, void *arg)
 
     obj = (key) ? jcfg_object_by_name(jinfo, key) : cfg->root;
     if (!obj)
-        CNE_ERR_RET("Unable to locate '%s'\n", key);
+        CNE_ERR_RET("Failed to locate '%s'\n", key);
 
     if (!arg)
         arg = jinfo;
@@ -390,7 +390,7 @@ jcfg_add_decoder(const char *section, json_c_visit_userfunc *func)
 
     d = _decoder_alloc(section, func);
     if (!d)
-        CNE_ERR_RET("unable to allocate a empty decoder structure");
+        CNE_ERR_RET("Failed to allocate a empty decoder structure");
 
     STAILQ_INSERT_TAIL(&decoder_head, d, next);
 

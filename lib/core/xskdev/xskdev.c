@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <asm/int-ll64.h>
@@ -26,6 +26,8 @@
 #include <cne_mutex_helper.h>
 #include <dirent.h>
 #include <limits.h>        // for PATH_MAX
+#include <bpf/bpf.h>
+#include <error.h>
 
 #include "xskdev.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
@@ -738,16 +740,26 @@ xskdev_socket_create(struct lport_cfg *c)
     xi->xsk_map_fd = -1;
 
     if (c->flags & LPORT_UNPRIVILEGED) {
-        /* If UDS is set then call xskdev_recv_xsk_fd to setup a UDS client
-         * and receive the XSK_MAP_FD.
-         * We will need (to wait) a flag or re checking of the value of the FD (latter preferred) to
-         * indicate we have completed reception before moving onto the socket create stage
-         */
-        xi->uds_info = (uds_info_t *)c->xsk_uds;
+        if (c->xsk_uds) {
+            /* If UDS is set then call xskdev_recv_xsk_fd to setup a UDS client
+             * and receive the XSK_MAP_FD.
+             * We will need (to wait) a flag or re checking of the value of the FD (latter
+             * preferred) to indicate we have completed reception before moving onto the socket
+             * create stage
+             */
+            xi->uds_info = (uds_info_t *)c->xsk_uds;
 
-        ret = xskdev_recv_xsk_fd(xi);
-        if (ret < 0)
-            CNE_ERR_GOTO(err, "Failed to receive xsk map fd\n");
+            ret = xskdev_recv_xsk_fd(xi);
+            if (ret < 0)
+                CNE_ERR_GOTO(err, "Failed to receive xsk map fd\n");
+        } else if (c->xsk_map_path) {
+            /* Try to retrieve the xsk_map_fd from a pinned bpf map*/
+            xi->xsk_map_fd = bpf_obj_get(c->xsk_map_path);
+            if (xi->xsk_map_fd < 0)
+                CNE_ERR_GOTO(err, "Failed to get xsk map fd from bpf object\n");
+        }
+
+        CNE_DEBUG("xi->xsk_map_fd = %d\n", xi->xsk_map_fd);
     }
 
     if (xskdev_use_tx_lock) {

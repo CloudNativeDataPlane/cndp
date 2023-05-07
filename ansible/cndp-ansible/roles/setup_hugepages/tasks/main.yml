@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2020-2022 Intel Corporation
+# Copyright (c) 2020-2023 Intel Corporation
 
 ---
 # This role will setup hugepages for CNDP
@@ -86,7 +86,7 @@
     - config_1GB_hugepages
 
 - name: update grub
-  shell: update-grub
+  shell: "{{ update_grub_cmd[required_dist | lower] }}"
   when:
     - hugepages_1GB > 0 and hugepages_1GB_check.stdout == "FOUND"
   tags:

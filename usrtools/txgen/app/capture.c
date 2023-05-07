@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2010-2022 Intel Corporation.
+ * Copyright (c) 2010-2023 Intel Corporation.
  */
 
 #include "capture.h"
@@ -61,7 +61,7 @@ txgen_packet_capture_init(capture_t *capture)
 
     mmap = mmap_alloc(DEFAULT_MBUF_COUNT, DEFAULT_MBUF_SIZE, MMAP_HUGEPAGE_4KB);
     if (mmap == NULL)
-        cne_panic("Unable to mmap(%lu, %s) memory",
+        cne_panic("Failed to mmap(%lu, %s) memory",
                   (uint64_t)DEFAULT_MBUF_COUNT * (uint64_t)DEFAULT_MBUF_SIZE,
                   mmap_name_by_type(MMAP_HUGEPAGE_4KB));
 

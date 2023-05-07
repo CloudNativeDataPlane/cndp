@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <stdio.h>         // for stdout, NULL
@@ -52,14 +52,14 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
 
     first = rtnl_route_nexthop_n(route, 0);
     if (!first)
-        CNE_RET("Unable to get nexthop (%d)\n", rtnl_route_get_nnexthops(route));
+        CNE_RET("Failed to get nexthop (%d)\n", rtnl_route_get_nnexthops(route));
 
     ifindex = rtnl_route_nh_get_ifindex(first);
     if (!cnet_is_ifindex_valid(ifindex))
         return;
     netif = cnet_netif_find_by_ifindex(ifindex);
     if (!netif)
-        CNE_RET("Unable to find netif by ifinex %d\n", ifindex);
+        CNE_RET("Failed to find netif by ifinex %d\n", ifindex);
 
     nexthop = rtnl_route_get_dst(route);
     if (!nexthop)
@@ -105,7 +105,7 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, NULL, RTM_INFINITY, 0) < 0)
-            CNE_RET("Unalble to insert route\n");
+            CNE_RET("Failed to insert route\n");
         break;
 
     case NL_ACT_CHANGE:
@@ -118,7 +118,7 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_route4_delete(&ipaddr) < 0)
-            CNE_RET("Unable to delete route\n");
+            CNE_RET("Failed to delete route\n");
         break;
     }
     if (netlink_debug)
@@ -143,7 +143,7 @@ cnet_netlink_add_routes(void *_info)
 
     cache = nl_cache_mngt_require_safe("route/route");
     if (!cache)
-        CNE_ERR_RET("Unable to require route/route\n");
+        CNE_ERR_RET("Failed to require route/route\n");
 
     nl_cache_foreach(cache, route_walk, info);
 

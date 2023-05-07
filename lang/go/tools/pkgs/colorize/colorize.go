@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2019-2022 Intel Corporation
+// Copyright (c) 2019-2023 Intel Corporation
 
 package colorize
 
@@ -127,11 +127,12 @@ func SetDefaultFlags(f string) {
 }
 
 // Colorize - Add color to the value passed, w size can be 0, 1 or 2
-//   w[0] is the width and w[1] is precision or a float value if present
-//   w[1] is not present then use default colorInfo.floatPrecision
-//   w[2] is the foreground color
-//   w[3] is the background color
-//   w[4] is the attribute of the color
+//
+//	w[0] is the width and w[1] is precision or a float value if present
+//	w[1] is not present then use default colorInfo.floatPrecision
+//	w[2] is the foreground color
+//	w[3] is the background color
+//	w[4] is the attribute of the color
 func Colorize(color string, v interface{}, w ...interface{}) string {
 	if colorInfo.defForeground == "" {
 		colorInfo.defForeground = "ivory"

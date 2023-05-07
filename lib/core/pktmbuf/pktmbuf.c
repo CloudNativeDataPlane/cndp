@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  * Copyright (c) 2019-2020 6WIND S.A.
  */
 
@@ -158,7 +158,7 @@ pktmbuf_pool_cfg_create(const pktmbuf_pool_cfg_t *cfg)
 
     pi = calloc(1, sizeof(pktmbuf_info_t));
     if (!pi)
-        CNE_ERR_GOTO(leave, "unable to allocate pktmbuf_info_t structure\n");
+        CNE_ERR_GOTO(leave, "Failed to allocate pktmbuf_info_t structure\n");
 
     pi->addr           = c->addr;
     pi->bufcnt         = c->bufcnt;

@@ -717,7 +717,7 @@ test_print_stats(void)
 
     stats = cne_graph_cluster_stats_create(&s_param);
     if (stats == NULL) {
-        tst_info("Unable to get stats");
+        tst_info("Failed to get stats");
         return -1;
     }
     /* Clear screen and move to top left */

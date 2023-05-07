@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <pthread.h>        // for pthread_barrier_wait, pthread_self, pthread_...
@@ -15,7 +15,6 @@
 #include <cne.h>               // for cne_init, cne_on_exit, CNE_CALLED_EXIT, CNE_...
 #include <cne_log.h>           // for CNE_LOG_ERR, CNE_ERR, CNE_DEBUG, CNE_LOG_DEBUG
 #include <metrics.h>           // for metrics_destroy
-#include <txbuff.h>            // for txbuff_t, txbuff_add, txbuff_free, txbuff_pk...
 #include <cne_system.h>        // for cne_lcore_id
 #include <jcfg.h>              // for jcfg_thd_t, jcfg_lport_t, jcfg_lport_by_index
 #include <idlemgr.h>
@@ -24,11 +23,6 @@
 
 static struct fwd_info fwd_info;
 static struct fwd_info *fwd = &fwd_info;
-
-struct create_txbuff_thd_priv_t {
-    txbuff_t **txbuffs; /**< txbuff_t double pointer */
-    pkt_api_t pkt_api;  /**< The packet API mode */
-};
 
 #define foreach_thd_lport(_t, _lp) \
     for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
@@ -458,6 +452,7 @@ thread_func(void *arg)
         {acl_fwd_test},
         {acl_fwd_test},
         {_txonly_rx_test},
+        {hsfwd_test},
         {NULL}
     };
     // clang-format on
@@ -474,7 +469,7 @@ thread_func(void *arg)
         goto leave_no_lport;
 
     if (fwd->test == FWD_TEST || fwd->test == L3_FWD_TEST || fwd->test == ACL_STRICT_TEST ||
-        fwd->test == ACL_PERMISSIVE_TEST) {
+        fwd->test == ACL_PERMISSIVE_TEST || fwd->test == HYPERSCAN_TEST) {
         if (create_per_thread_txbuff(thd, fwd))
             cne_exit("Failed to create txbuff(s) for \"%s\" thread\n", thd->name);
     }
@@ -540,7 +535,7 @@ thread_func(void *arg)
 
 leave:
     if (fwd->test == FWD_TEST || fwd->test == L3_FWD_TEST || fwd->test == ACL_STRICT_TEST ||
-        fwd->test == ACL_PERMISSIVE_TEST)
+        fwd->test == ACL_PERMISSIVE_TEST || fwd->test == HYPERSCAN_TEST)
         destroy_per_thread_txbuff(thd, fwd);
 leave_no_lport:
     if (imgr)
@@ -697,7 +692,8 @@ main(int argc, char **argv)
 {
     // clang-format off
     const char *tests[] = {
-        "Unknown", "Drop",
+        "Unknown",
+        "Drop",
         "Loopback",
         "Tx Only",
 		"Forward",
@@ -705,11 +701,13 @@ main(int argc, char **argv)
         "ACL Strict",
         "ACL Permissive",
         "Tx Only+RX",
+        "Hyperscan",
         NULL
     };
     // clang-format on
     const char *apis[] = {"Unknown", "XSKDEV", "PKTDEV", NULL};
     int signals[]      = {SIGINT, SIGUSR1, SIGTERM};
+    char c;
 
     memset(&fwd_info, 0, sizeof(struct fwd_info));
 
@@ -734,13 +732,21 @@ main(int argc, char **argv)
     if (fwd->test == L3_FWD_TEST && l3fwd_fib_init(fwd) < 0)
         goto err;
 
+    if (fwd->test == HYPERSCAN_TEST && hsfwd_init(fwd) < 0)
+        goto err;
+
     /* don't start any threads before we initialize ACL */
     if (pthread_barrier_wait(&fwd->barrier) > 0)
         CNE_ERR_GOTO(err, "Failed to wait for barrier\n");
 
+    /* Set up tty to be able to see any key being pressed to exit */
+    if (tty_setup(-1, -1) < 0)
+        CNE_ERR_RET("Failed to setup tty, exiting\n");
+
     fwd->timer_quit = 0;
     for (;;) {
-        sleep(1);
+        if (tty_poll(&c, 1, 1000))
+            break;
 
         if (fwd->timer_quit) /* Test for quitting after sleep to avoid calling print_port_stats() */
             break;
@@ -748,18 +754,26 @@ main(int argc, char **argv)
         if (fwd->opts.cli)
             print_port_stats_all(fwd);
     }
-    if (pthread_barrier_destroy(&fwd->barrier))
-        CNE_ERR_GOTO(err, "Failed to destroy barrier\n");
+    if (fwd->test == HYPERSCAN_TEST)
+        hsfwd_finish(fwd);
 
-    cne_printf(">>> [cyan]Application Exiting[]: [green]Bye![]\n");
+    if (pthread_barrier_destroy(&fwd->barrier))
+        CNE_ERR_RET("Failed to destroy barrier\n");
+
+    cne_printf_pos(99, 1, ">>> [cyan]Application Exiting[]: [green]Bye![]\n");
     return 0;
 
 err:
     if (fwd->barrier_inited && pthread_barrier_destroy(&fwd->barrier))
         CNE_ERR("Failed to destroy barrier\n");
 
-    cne_printf("\n*** [cyan]CNDPFWD Forward Application[], [green]API[]: [magenta]%s [green]PID[]: "
-               "[magenta]%d[] failed\n",
-               apis[fwd->pkt_api], getpid());
+    if (fwd->test == HYPERSCAN_TEST)
+        hsfwd_finish(fwd);
+
+    cne_printf_pos(
+        99, 1,
+        "\n*** [cyan]CNDPFWD Forward Application[], [green]API[]: [magenta]%s [green]PID[]: "
+        "[magenta]%d[] failed\n",
+        apis[fwd->pkt_api], getpid());
     return -1;
 }

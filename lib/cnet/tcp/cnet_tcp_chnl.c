@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 /* cnet_tcp_chnl.c - TCP chnl support routines. */
@@ -45,7 +45,7 @@ cnet_drop_acked_data(struct chnl_buf *cb, int32_t acked)
     int idx, len, free_cnt = 0;
 
     if (!stk_lock())
-        CNE_RET("Unable to acquire mutex\n");
+        CNE_RET("Failed to acquire mutex\n");
 
     len = vec_len(cb->cb_vec);
 

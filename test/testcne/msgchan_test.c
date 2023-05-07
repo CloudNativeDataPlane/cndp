@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation.
+ * Copyright (c) 2022-2023 Intel Corporation.
  */
 
 #include <stdio.h>         // for NULL, snprintf, EOF
@@ -260,12 +260,12 @@ test3(void)
 
     err = pthread_create(&s, NULL, server_func, server);
     if (err)
-        CNE_ERR_GOTO(err_exit, "Unable to start server thread: %s\n", strerror(err));
+        CNE_ERR_GOTO(err_exit, "Failed to start server thread: %s\n", strerror(err));
     sthread_inited = 1;
 
     err = pthread_create(&c, NULL, client_func, client);
     if (err)
-        CNE_ERR_GOTO(err_exit, "Unable to start client thread: %s\n", strerror(err));
+        CNE_ERR_GOTO(err_exit, "Failed to start client thread: %s\n", strerror(err));
     cthread_inited = 1;
 
     err = pthread_barrier_wait(&barrier);

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -630,7 +630,7 @@ cli_create(struct cli_cfg *cfg)
 
     cli = calloc(1, sizeof(struct cli));
     if (cli == NULL)
-        CNE_ERR_RET("Unable to allocate CLI structure\n");
+        CNE_ERR_RET("Failed to allocate CLI structure\n");
 
     this_cli      = cli;
     cli_quit_flag = 0;
@@ -647,7 +647,7 @@ cli_create(struct cli_cfg *cfg)
 
     cli->node_mem = calloc(cfg->nb_nodes, sizeof(struct cli_node));
     if (cli->node_mem == NULL)
-        CNE_ERR_RET("Unable to allocate CLI node structures\n");
+        CNE_ERR_RET("Failed to allocate CLI node structures\n");
 
     TAILQ_INIT(&cli->root);       /* Init the directory list */
     TAILQ_INIT(&cli->free_nodes); /* List of free nodes */
@@ -675,18 +675,18 @@ cli_create(struct cli_cfg *cfg)
 
     root = cli_create_root(CLI_ROOT_NAME);
     if (!root)
-        CNE_ERR_GOTO(error_exit, "Unable to create root directory\n");
+        CNE_ERR_GOTO(error_exit, "Failed to create root directory\n");
 
     /* Set current working directory to root*/
     set_cwd(root);
 
     if (cli_set_history(cfg->nb_hist))
-        CNE_ERR_GOTO(error_exit, "Unable to create history\n");
+        CNE_ERR_GOTO(error_exit, "Failed to create history\n");
 
     /* create and initialize the gap buffer structures */
     cli->gb = gb_create();
     if (!cli->gb)
-        CNE_ERR_GOTO(error_exit, "Unable to create Gap Buffer\n");
+        CNE_ERR_GOTO(error_exit, "Failed to create Gap Buffer\n");
 
     /* Startup the environment system */
     cli->env = cli_env_create();

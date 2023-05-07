@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <json-c/json_types.h>
@@ -126,7 +126,7 @@ _decode_defaults(struct json_object *obj, int flags, struct json_object *parent 
 
     ret = json_c_visit(obj, 0, __default_objs, jinfo);
     if (ret == JSON_C_VISIT_RETURN_ERROR)
-        CNE_ERR("Unable to parse defaults\n");
+        CNE_ERR("Failed to parse defaults\n");
 
     if (jinfo->flags & JCFG_DEBUG_DECODING) {
         jcfg_defaults_foreach(jinfo, _default_print, NULL);

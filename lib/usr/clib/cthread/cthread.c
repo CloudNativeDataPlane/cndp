@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 /*
@@ -243,7 +243,7 @@ cthread_create(const char *name, cthread_func_t fun, void *arg)
         name = "Not Set";
 
     if (!THIS_SCHED && cthread_sched_create(0) < 0)
-        CNE_NULL_RET("Unable to create scheduler\n");
+        CNE_NULL_RET("Failed to create scheduler\n");
 
     cne_spinlock_recursive_lock(&THIS_SCHED->lock);
 
@@ -251,7 +251,7 @@ cthread_create(const char *name, cthread_func_t fun, void *arg)
     struct cthread *ct = _cthread_objcache_alloc((THIS_SCHED)->cthread_cache);
     if (!ct) {
         cne_spinlock_recursive_unlock(&THIS_SCHED->lock);
-        CNE_NULL_RET("Unable to allocate struct cthread\n");
+        CNE_NULL_RET("Failed to allocate struct cthread\n");
     }
 
     bzero(ct, sizeof(struct cthread));

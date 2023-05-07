@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation.
+ * Copyright (c) 2022-2023 Intel Corporation.
  */
 
 #include <cne_fib.h>              // for fib_create, fib_add...
@@ -53,7 +53,7 @@ l3fwd_fib_populate(struct fwd_info *fwd, struct cne_fib *fib)
             CNE_ERR_RET("invalid number of ip and mask syntax\n");
 
         if (inet_pton(AF_INET, address[0], (void *)&ip) != 1)
-            CNE_ERR_RET("Unable to convert IP4 address to network order\n");
+            CNE_ERR_RET("Failed to convert IP4 address to network order\n");
 
         ip_addr = ntohl(ip.s_addr);
         mask    = (uint8_t)atoi(address[1]);

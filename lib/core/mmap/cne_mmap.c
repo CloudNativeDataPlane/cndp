@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <bits/mman-map-flags-generic.h>
@@ -177,7 +177,7 @@ mmap_alloc(uint32_t bufcnt, uint32_t bufsz, mmap_type_t typ)
 
     mm = calloc(1, sizeof(struct mmap_data));
     if (!mm)
-        CNE_NULL_RET("unable to allocate mmap_data structure\n");
+        CNE_NULL_RET("Failed to allocate mmap_data structure\n");
 
     if (!bufcnt || !bufsz)
         CNE_ERR_GOTO(leave, "bufcnt %u * bufsz %u is zero\n", bufcnt, bufsz);
@@ -192,7 +192,7 @@ retry:
         va = __alloc_mem(mm, MMAP_HUGEPAGE_1GB);
         if (va != MAP_FAILED)
             break;
-        CNE_WARN("unable to allocate %s hugepages, trying %s pages\n",
+        CNE_WARN("Failed to allocate %s hugepages, trying %s pages\n",
                  mmap_types[MMAP_HUGEPAGE_1GB].name, mmap_types[MMAP_HUGEPAGE_2MB].name);
         /* fall through */
 
@@ -200,7 +200,7 @@ retry:
         va = __alloc_mem(mm, MMAP_HUGEPAGE_2MB);
         if (va != MAP_FAILED)
             break;
-        CNE_WARN("unable to allocate %s hugepages, trying %s pages\n",
+        CNE_WARN("Failed to allocate %s hugepages, trying %s pages\n",
                  mmap_types[MMAP_HUGEPAGE_2MB].name, mmap_types[MMAP_HUGEPAGE_4KB].name);
         /* fall through */
 
@@ -208,7 +208,7 @@ retry:
     case MMAP_HUGEPAGE_4KB:
         va = __alloc_mem(mm, MMAP_HUGEPAGE_4KB);
         if (va == MAP_FAILED)
-            CNE_ERR_GOTO(leave, "unable to allocate %s pages for %'ld bytes:\n    Error: %s\n",
+            CNE_ERR_GOTO(leave, "Failed to allocate %s pages for %'ld bytes:\n    Error: %s\n",
                          mmap_types[MMAP_HUGEPAGE_4KB].name,
                          ((uint64_t)mm->bufcnt * (uint64_t)mm->bufsz), strerror(errno));
         break;
@@ -234,18 +234,18 @@ retry:
 
         switch (mm->typ) {
         case MMAP_HUGEPAGE_1GB:
-            CNE_WARN("unable to allocate %s hugepages, trying %s pages\n",
+            CNE_WARN("Failed to allocate %s hugepages, trying %s pages\n",
                      mmap_types[MMAP_HUGEPAGE_1GB].name, mmap_types[MMAP_HUGEPAGE_2MB].name);
             typ = MMAP_HUGEPAGE_2MB;
             break;
         case MMAP_HUGEPAGE_2MB:
-            CNE_WARN("unable to allocate %s hugepages, trying %s pages\n",
+            CNE_WARN("Failed to allocate %s hugepages, trying %s pages\n",
                      mmap_types[MMAP_HUGEPAGE_2MB].name, mmap_types[MMAP_HUGEPAGE_4KB].name);
             typ = MMAP_HUGEPAGE_4KB;
             break;
         case MMAP_HUGEPAGE_4KB:
         default:
-            CNE_ERR_GOTO(leave, "unable to allocate %s pages for %'ld bytes\n",
+            CNE_ERR_GOTO(leave, "Failed to allocate %s pages for %'ld bytes\n",
                          mmap_types[MMAP_HUGEPAGE_4KB].name,
                          (uint64_t)mm->bufcnt * (uint64_t)mm->bufsz);
         }

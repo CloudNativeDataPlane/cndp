@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <json-c/json_types.h>
@@ -108,9 +108,10 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
                 CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "%s: Invalid Range\n",
                                 JCFG_LPORT_BUSY_BUDGET_NAME);
             lport->busy_budget = (uint16_t)val;
-        } else if (!strncmp(key, JCFG_LPORT_UNPRIVILEGED_NAME, keylen))
-            lport->flags |= json_object_get_boolean(obj) ? LPORT_UNPRIVILEGED : 0;
-        else if (!strncmp(key, JCFG_LPORT_FORCE_WAKEUP_NAME, keylen))
+        } else if (!strncmp(key, JCFG_PINNED_XSK_MAP_NAME, keylen)) {
+            lport->xsk_map_path = strndup(json_object_get_string(obj), JCFG_MAX_STRING_SIZE);
+            lport->flags |= LPORT_UNPRIVILEGED;
+        } else if (!strncmp(key, JCFG_LPORT_FORCE_WAKEUP_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_FORCE_WAKEUP : 0;
         else if (!strncmp(key, JCFG_LPORT_SKB_MODE_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_SKB_MODE : 0;

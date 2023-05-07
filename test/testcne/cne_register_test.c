@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -56,14 +56,14 @@ cne_register_test(void *arg)
 
     ret = cne_set_private(tuid, setv);
     if (ret < 0) {
-        tst_error("Unable to set a private value for uid = %d", tuid);
+        tst_error("Failed to set a private value for uid = %d", tuid);
         goto err;
     } else
         tst_ok("PASS --- TEST: Set private value, %d", *(int *)setv);
 
     ret = cne_get_private(tuid, getv);
     if (ret < 0) {
-        tst_error("Unable to get the private value for uid = %d", tuid);
+        tst_error("Failed to get the private value for uid = %d", tuid);
         goto err;
     } else
         tst_ok("PASS --- TEST: Retrieved private value, %d", *(int *)*getv);

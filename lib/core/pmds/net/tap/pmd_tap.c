@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation.
+ * Copyright (c) 2022-2023 Intel Corporation.
  */
 
 #include <arpa/inet.h>              // for htons
@@ -333,7 +333,7 @@ _tap_probe(int tap_type, lport_cfg_t *c)
 
     lport = calloc(1, sizeof(struct pmd_lport));
     if (!lport)
-        CNE_ERR_RET("Unable to allocate memory for %s\n", c->name);
+        CNE_ERR_RET("Failed to allocate memory for %s\n", c->name);
 
     strlcpy(lport->if_name, c->name, sizeof(lport->if_name));
 
@@ -347,7 +347,7 @@ _tap_probe(int tap_type, lport_cfg_t *c)
 
     lport->ti = tun_alloc(tap_type, lport->if_name);
     if (lport->ti == NULL)
-        CNE_ERR_GOTO(err_exit, "Unable to create %s\n", lport->if_name);
+        CNE_ERR_GOTO(err_exit, "Failed to create %s\n", lport->if_name);
 
     lport->rxq = calloc(1, sizeof(struct tap_rx_q));
     lport->txq = calloc(1, sizeof(struct tap_tx_q));

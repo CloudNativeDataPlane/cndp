@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2017-2022 Intel Corporation
+ * Copyright (c) 2017-2023 Intel Corporation
  */
 
 #include <mempool.h>         // for mempool_destroy, mempool_get, mem...
@@ -119,7 +119,7 @@ cnet_arp_delete(struct in_addr *addr)
 
         if (entry) {
             if (cne_fib_delete(fi->fib, entry->pa.s_addr, 32) < 0)
-                CNE_ERR_RET("Unable to delete ARP entry\n");
+                CNE_ERR_RET("Failed to delete ARP entry\n");
 
             if (fib_info_free(fi, (uint32_t)idx) != entry)
                 CNE_WARN("Freed entry does not match\n");
@@ -194,12 +194,12 @@ cnet_arp_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
 
     fib = cne_fib_create("arp-fib", &fcfg);
     if (fib == NULL)
-        CNE_ERR_GOTO(err, "Unable to create FIB\n");
+        CNE_ERR_GOTO(err, "Failed to create FIB\n");
 
     fi = fib_info_create(fib, num_entries, ARP_NEXT_INDEX_SHIFT);
     if (!fi) {
         cne_fib_free(fib);
-        CNE_ERR_GOTO(err, "Unable to allocate ARP-FIB\n");
+        CNE_ERR_GOTO(err, "Failed to allocate ARP-FIB\n");
     }
 
     cnet->arp_finfo = fi;

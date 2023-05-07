@@ -89,7 +89,7 @@ __cne_node_register(const struct cne_node_register *reg)
     node = calloc(1, sz);
     if (node == NULL) {
         errno = ENOMEM;
-        CNE_ERR_GOTO(fail, "Unable to allocate memory\n");
+        CNE_ERR_GOTO(fail, "Failed to allocate memory\n");
     }
 
     /* Initialize the node */

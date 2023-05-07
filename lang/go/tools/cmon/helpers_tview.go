@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2019-2022 Intel Corporation
+// Copyright (c) 2019-2023 Intel Corporation
 
 package main
 
@@ -113,8 +113,9 @@ func CreateList(flex *tview.Flex, msg string, align, fixedSize, proportion int, 
 // row, col of the cell to create and fill
 // msg is the string content to insert in the cell
 // a is an interface{} object list
-//   object a is int then alignment tview.AlignLeft/Right/Center
-//   object a is bool then set the cell as selectable or not
+//
+//	object a is int then alignment tview.AlignLeft/Right/Center
+//	object a is bool then set the cell as selectable or not
 func SetCell(table *tview.Table, row, col int, msg string, a ...interface{}) *tview.TableCell {
 
 	align := tview.AlignRight

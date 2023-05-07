@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2021-2022 Intel Corporation
+ * Copyright (c) 2021-2023 Intel Corporation
  */
 
 #include <net/cne_ether.h>        // for ether_addr_copy, cne_ether_hdr, ether_ad...
@@ -66,7 +66,7 @@ punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
             sin.sin_addr.s_addr = ip4->dst_addr;
 
             if (sendto(ctx->sock, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
-                CNE_WARN("Unable to send packets: %s\n", strerror(errno));
+                CNE_WARN("Failed to send packets: %s\n", strerror(errno));
         }
     }
 }
@@ -135,7 +135,7 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
     ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (ctx->sock < 0)
-        CNE_ERR_RET("Unable to open RAW socket\n");
+        CNE_ERR_RET("Failed to open RAW socket\n");
 
     return 0;
 }

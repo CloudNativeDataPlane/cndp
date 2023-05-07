@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2021-2022 Intel Corporation
+ * Copyright (c) 2021-2023 Intel Corporation
  */
 
 #include <stdio.h>             // for NULL
@@ -7,6 +7,7 @@
 #include <sys/socket.h>        // for send, CMSG_DATA
 #include <bsd/string.h>        // for strlcat, strlcpy
 #include <sched.h>             // for sched_yield
+#include <errno.h>
 
 #include "uds_connect.h"
 
@@ -97,7 +98,6 @@ udsc_handshake(const char *uds_name)
     const char *err_msg               = NULL;
     char connect_msg[UDS_MAX_CMD_LEN] = {0};
     char hostname[HOST_NAME_LEN]      = {0};
-    int len                           = 0;
     int num_of_tries                  = 0;
     uds_info_t *info                  = NULL;
     const uds_group_t *group          = NULL;
@@ -106,10 +106,10 @@ udsc_handshake(const char *uds_name)
      * to register protocol commands with and process information
      * exchanged on the UDS.
      */
-
     info = uds_connect(uds_name, &err_msg, NULL);
     if (!info)
         return NULL;
+
     /* get root group */
     group = uds_get_group_by_name(info, NULL);
     if (group == NULL)
@@ -142,24 +142,24 @@ udsc_handshake(const char *uds_name)
      * If hostname is correct, /host_ok will be sent by the UDS
      * and if incorrect, /host_nak is sent by the UDS.
      */
-    strlcpy(connect_msg, UDS_CONNECT_MSG, sizeof(connect_msg));
     if (gethostname(hostname, sizeof(hostname)) < 0)
         goto err;
 
-    strlcat(connect_msg, ",", sizeof(connect_msg));
-    len = strlcat(connect_msg, hostname, sizeof(connect_msg));
-
-    if (send(info->sock, connect_msg, len, 0) <= 0)
+    snprintf(connect_msg, sizeof(connect_msg), "%s,%s", UDS_CONNECT_MSG, hostname);
+    if (send(info->sock, connect_msg, strlen(connect_msg), 0) < 0)
         goto err;
 
     do {
         num_of_tries++;
         sched_yield();
     } while (info->xsk_uds_state != UDS_HOST_OK && num_of_tries < MAX_NUM_TRIES);
+
     if (info->xsk_uds_state == UDS_HOST_OK)
         return info;
-    else if (num_of_tries == MAX_NUM_TRIES)
+    else if (num_of_tries == MAX_NUM_TRIES) {
+        errno               = -ETIMEDOUT;
         info->xsk_uds_state = UDS_HOST_ERR;
+    }
 
 err:
     uds_destroy(info);

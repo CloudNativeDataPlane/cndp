@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -42,7 +42,7 @@ test_ring_cleanup(struct ring_test_info *ring_tst)
             cne_ring_free(ring_tst->r);
         if (ring_tst->mm) {
             if (mmap_free(ring_tst->mm) < 0)
-                CNE_WARN("unable to free mmap\n");
+                CNE_WARN("Failed to free mmap\n");
         }
 
         if (ring_tst->tst)

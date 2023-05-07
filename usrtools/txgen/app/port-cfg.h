@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  * Copyright (c) 2022 Red Hat, Inc.
  */
 
@@ -72,6 +72,7 @@ enum { /* Per lport flag bits */
        SEND_PCAP_PKTS = (1 << 12), /**< Send a pcap file of packets */
 
        SAMPLING_LATENCIES = (1 << 14), /**< Sampling latency measurements> */
+       CALC_CHKSUM        = (1 << 15), /**< Calculate packet checksum> */
 
        RUNNING_FLAG = (1 << 8),
 };

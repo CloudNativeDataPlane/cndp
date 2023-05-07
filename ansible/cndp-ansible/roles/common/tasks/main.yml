@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2020-2022 Intel Corporation
+# Copyright (c) 2020-2023 Intel Corporation
 
 ---
 # This role installs all the packages needed for CNDP
@@ -18,87 +18,11 @@
      update_cache: yes
   environment: "{{ proxy_env }}"
 
-- name: install build-essential
+- name: install packages
   package:
-     name: build-essential
-     state: present
+    name: "{{ item }}"
+    state: present
   environment: "{{ proxy_env }}"
   tags: install_pkgs
-
-- name: install libbsd-dev
-  package:
-     name: libbsd-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libelf-dev
-  package:
-     name: libelf-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libjson-c-dev
-  package:
-     name: libjson-c-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libnuma-dev
-  package:
-     name: libnuma-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libpcap-dev
-  package:
-     name: libpcap-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install meson
-  package:
-     name: meson
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install pkg-config
-  package:
-     name: pkg-config
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install doxygen
-  package:
-     name: doxygen
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install python3-sphinx
-  package:
-     name: python3-sphinx
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libnl-3-dev
-  package:
-     name: libnl-3-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
-
-- name: install libnl-cli-3-dev
-  package:
-     name: libnl-cli-3-dev
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_pkgs
+  with_items: "{{ common_pkgs[required_dist | lower] }}"
 

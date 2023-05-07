@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2019-2022 Intel Corporation
+// Copyright (c) 2019-2023 Intel Corporation
 
 package irq
 
@@ -67,10 +67,11 @@ type Info struct {
 
 // Convert the IRQDevice string into its component parts, returning a DeviceInfo structure
 // The components are driver-netdev-QType-QueueID
-//     driver : i40e, ... can be unknown
-//     netdev : eth0, eth1, ens0, ...
-//     QType  : TxRx or something else
-//     QueueID: The queue ID number
+//
+//	driver : i40e, ... can be unknown
+//	netdev : eth0, eth1, ens0, ...
+//	QType  : TxRx or something else
+//	QueueID: The queue ID number
 func (irq *Info) parseDeviceStr(devStr string) (*DeviceInfo, error) {
 	var err error
 

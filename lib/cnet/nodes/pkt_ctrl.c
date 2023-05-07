@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2021-2022 Intel Corporation
+ * Copyright (c) 2021-2023 Intel Corporation
  * Copyright (c) 2020 Marvell International Ltd.
  */
 #include <string.h>           // for memset
@@ -58,7 +58,7 @@ cnet_eth_node_config(struct pkt_eth_node_config *conf, uint16_t nb_confs)
             /* Clone a new rx node with same edges as parent */
             id = cne_node_clone(rx_node->id, name);
             if (id == CNE_NODE_ID_INVALID)
-                CNE_ERR_RET_VAL(-EIO, "Unable to clone rx node %s\n", name);
+                CNE_ERR_RET_VAL(-EIO, "Failed to clone rx node %s\n", name);
 
             /* Add it to list of rx nodes for lookup */
             elem = calloc(1, sizeof(eth_rx_node_elem_t));

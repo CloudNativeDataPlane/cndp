@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation
+ * Copyright (c) 2022-2023 Intel Corporation
  */
 
 #ifndef __CNE_MUTEX_HELPER_H
@@ -59,7 +59,7 @@ err:
     if (inited) {
         /* Do not lose the previous error value */
         if (pthread_mutexattr_destroy(&attr))
-            CNE_DEBUG("unable to destroy mutex attribute, but is not the root cause\n");
+            CNE_DEBUG("Failed to destroy mutex attribute, but is not the root cause\n");
     }
 
     errno = ret;

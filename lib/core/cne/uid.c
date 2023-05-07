@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 #include <stdint.h>                   // for uint16_t
@@ -122,7 +122,7 @@ entry_destroy(struct uid_entry *e)
     if (e) {
         /* use the max_ids to detect mutex was created */
         if (e->max_ids && cne_mutex_destroy(&e->mutex) < 0)
-            CNE_ERR("Unable to destroy mutex\n");
+            CNE_ERR("Failed to destroy mutex\n");
         free(e->bitmap);
         free(e);
     }

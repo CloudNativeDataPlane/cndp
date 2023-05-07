@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2016 6WIND S.A.
- * Copyright (c) 2020-2022 Intel Corporation.
+ * Copyright (c) 2020-2023 Intel Corporation.
  */
 
 #include <stdint.h>        // for uint32_t

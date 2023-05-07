@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2021-2022 Intel Corporation
+ * Copyright (c) 2021-2023 Intel Corporation
  */
 
 #include <stddef.h>        // for NULL
@@ -51,7 +51,7 @@ tap_ioctl(struct tap_info *ti, unsigned long request, struct ifreq *ifr, int set
             /* fetch current flags to leave other flags untouched */
             if (ioctl(ti->sock, SIOCGIFFLAGS, ifr) < 0)
                 CNE_ERR_RET_VAL(
-                    -errno, "[orange]%s[] - [cyan]Unable to get [orange]%s[cyan]: [orange]%s[]\n",
+                    -errno, "[orange]%s[] - [cyan]Failed to get [orange]%s[cyan]: [orange]%s[]\n",
                     ti->name, tap_ioctl_req2str(request), strerror(errno));
             if (set)
                 ifr->ifr_flags |= req_flags;
@@ -68,7 +68,7 @@ tap_ioctl(struct tap_info *ti, unsigned long request, struct ifreq *ifr, int set
                             tap_ioctl_req2str(request), ti->name);
         }
         if (ioctl(ti->sock, request, ifr) < 0)
-            CNE_ERR_RET_VAL(-errno, "[cyan]Unable to support request[]: [orange]%s[]\n",
+            CNE_ERR_RET_VAL(-errno, "[cyan]Failed to support request[]: [orange]%s[]\n",
                             strerror(errno));
     }
     return 0;
@@ -112,7 +112,7 @@ tun_alloc(int tun_flags, const char *if_name)
 
     ti->fd = open(TUN_TAP_DEV_PATH, O_RDWR);
     if (ti->fd < 0)
-        CNE_ERR_GOTO(error, "[cyan]Unable to open [orange]%s [cyan]interface[]\n",
+        CNE_ERR_GOTO(error, "[cyan]Failed to open [orange]%s [cyan]interface[]\n",
                      TUN_TAP_DEV_PATH);
 
     ifr.ifr_flags = ti->flags;
@@ -121,7 +121,7 @@ tun_alloc(int tun_flags, const char *if_name)
     if (ti->flags & IFF_MULTI_QUEUE) {
         /* Grab the TUN features to verify we can work multi-queue */
         if (ioctl(ti->fd, TUNGETFEATURES, &ti->features) < 0)
-            CNE_ERR_GOTO(error, "[cyan]unable to get TUN/TAP features[]\n");
+            CNE_ERR_GOTO(error, "[cyan]Failed to get TUN/TAP features[]\n");
 
         if (ti->features & IFF_MULTI_QUEUE)
             ifr.ifr_flags |= IFF_MULTI_QUEUE;
@@ -137,7 +137,7 @@ tun_alloc(int tun_flags, const char *if_name)
 
     /* Set the TUN/TAP configuration and set the name if needed */
     if (ioctl(ti->fd, TUNSETIFF, (void *)&ifr) < 0)
-        CNE_ERR_GOTO(error, "[cyan]Unable to set TUNSETIFF for [orange]%s[]: [orange]%s[]\n",
+        CNE_ERR_GOTO(error, "[cyan]Failed to set TUNSETIFF for [orange]%s[]: [orange]%s[]\n",
                      ifr.ifr_name, strerror(errno));
     /*
      * Name passed to kernel might be wildcard like tun%d
@@ -147,17 +147,17 @@ tun_alloc(int tun_flags, const char *if_name)
 
     flags = fcntl(ti->fd, F_GETFL);
     if (flags == -1)
-        CNE_ERR_GOTO(error, "[cyan]Unable to get [orange]%s [cyan]current flags[]\n", ifr.ifr_name);
+        CNE_ERR_GOTO(error, "[cyan]Failed to get [orange]%s [cyan]current flags[]\n", ifr.ifr_name);
 
     /* Always set the file descriptor to non-blocking */
     flags |= O_NONBLOCK;
     if (fcntl(ti->fd, F_SETFL, flags) < 0)
-        CNE_ERR_GOTO(error, "[cyan]Unable to set [orange]%s [cyan]to nonblocking[]: [orange]%s[]\n",
+        CNE_ERR_GOTO(error, "[cyan]Failed to set [orange]%s [cyan]to nonblocking[]: [orange]%s[]\n",
                      ifr.ifr_name, strerror(errno));
 
     if (ti->flags & IFF_TAP) {
         if (ioctl(ti->fd, SIOCGIFHWADDR, &ifr) < 0)
-            CNE_ERR_GOTO(error, "[cyan]Unable to get TAP MAC address:[orange]%s[]\n",
+            CNE_ERR_GOTO(error, "[cyan]Failed to get TAP MAC address:[orange]%s[]\n",
                          strerror(errno));
 
         memcpy(&ti->eth_addr, ifr.ifr_hwaddr.sa_data, sizeof(struct ether_addr));
@@ -165,22 +165,22 @@ tun_alloc(int tun_flags, const char *if_name)
 
     ti->if_index = if_nametoindex(ti->name);
     if (!ti->if_index)
-        CNE_ERR_GOTO(error, "[cyan]Unable to get ifindex for [orange]%s[]\n", ti->name);
+        CNE_ERR_GOTO(error, "[cyan]Failed to get ifindex for [orange]%s[]\n", ti->name);
 
     ti->sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (ti->sock == -1)
         CNE_ERR_GOTO(error,
-                     "[orange]%s [cyan]Unable to get a socket for management[]: [orange]%s[]\n",
+                     "[orange]%s [cyan]Failed to get a socket for management[]: [orange]%s[]\n",
                      ti->name, strerror(errno));
 
     if (tap_link_set_up(ti) < 0)
-        CNE_ERR_GOTO(error, "[cyan]Unable to set [orange]%s [cyan]interface up[]\n", ti->name);
+        CNE_ERR_GOTO(error, "[cyan]Failed to set [orange]%s [cyan]interface up[]\n", ti->name);
 
     return ti;
 
 error:
     if (tun_free(ti) < 0)
-        CNE_ERR("[cyan]Unable to free tun/tap interface[]\n");
+        CNE_ERR("[cyan]Failed to free tun/tap interface[]\n");
 
     return NULL;
 }
@@ -190,7 +190,7 @@ tun_free(struct tap_info *ti)
 {
     if (ti) {
         if (tap_link_set_down(ti) < 0)
-            CNE_ERR_RET("[cyan]Unable to set [orange]%s [cyan]interface down[]\n", ti->name);
+            CNE_ERR_RET("[cyan]Failed to set [orange]%s [cyan]interface down[]\n", ti->name);
 
         if (ti->fd >= 0)
             close(ti->fd);

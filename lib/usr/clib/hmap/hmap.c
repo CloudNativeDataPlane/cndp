@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <bsd/sys/queue.h>        // for TAILQ_FOREACH_SAFE
@@ -162,7 +162,7 @@ hmap_create(const char *name, uint32_t max_capacity, hmap_funcs_t *funcs)
 
     hmap = calloc(1, sizeof(hmap_t));
     if (!hmap)
-        CNE_ERR_GOTO(err_leave, "Unable to allocate hmap structure\n");
+        CNE_ERR_GOTO(err_leave, "Failed to allocate hmap structure\n");
 
     strlcpy(hmap->name, name, sizeof(hmap->name));
 
@@ -181,10 +181,10 @@ hmap_create(const char *name, uint32_t max_capacity, hmap_funcs_t *funcs)
     /* Start out with the initial capacity */
     hmap->map = calloc(hmap->capacity, sizeof(struct hmap_kvp));
     if (!hmap->map)
-        CNE_ERR_GOTO(err_leave, "Unable to allocate KVP for %d capacity\n", hmap->capacity);
+        CNE_ERR_GOTO(err_leave, "Failed to allocate KVP for %d capacity\n", hmap->capacity);
 
     if (hmap_set_funcs(hmap, funcs) < 0)
-        CNE_ERR_GOTO(err_leave, "Unable to set function pointers\n");
+        CNE_ERR_GOTO(err_leave, "Failed to set function pointers\n");
 
     if (cne_mutex_create(&hmap->mutex, PTHREAD_MUTEX_RECURSIVE) < 0)
         CNE_ERR_GOTO(err_leave, "mutex init(hmap->mutex) failed: %s\n", strerror(errno));

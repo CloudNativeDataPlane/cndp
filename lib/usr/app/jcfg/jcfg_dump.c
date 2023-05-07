@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <json-c/json_types.h>
@@ -86,7 +86,7 @@ jcfg_dump_at(jcfg_info_t *jinfo, const char *key)
 
     obj = jcfg_object_by_name(jinfo, key);
     if (!obj) {
-        CNE_WARN("Unable to locate '%s'\n", key);
+        CNE_WARN("Failed to locate '%s'\n", key);
         return -1;
     }
 

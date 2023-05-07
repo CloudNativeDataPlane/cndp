@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <pthread.h>           // for pthread_self, pthread_setaffinity_np
@@ -121,7 +121,7 @@ thread_func(void *arg)
     pthread_once(&once, phil_create_barriers);
 
     if (cthread_create(thd->name, (cthread_func_t)phil_demo_start, (void *)app) == NULL)
-        CNE_RET("Unable to create cthread\n");
+        CNE_RET("Failed to create cthread\n");
 
     cthread_run();
 }
@@ -180,10 +180,10 @@ main(int argc, char **argv)
         srand(0x19560630 + lcore_id * 333);
 
     if (cne_init() < 0)
-        CNE_ERR_RET("Unable to initialize the CNE system\n");
+        CNE_ERR_RET("Failed to initialize the CNE system\n");
 
     if (parse_args(argc, argv))
-        CNE_ERR_RET("Unable to parse the arguments\n");
+        CNE_ERR_RET("Failed to parse the arguments\n");
 
     vt_cls();
     cne_printf_pos(2, 1, "*** [yellow]Dining Philosphers[], [magenta]PID: [lightskyblue]%d[]\n",

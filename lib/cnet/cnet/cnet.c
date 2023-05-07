@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <execinfo.h>        // for backtrace, backtrace_symbols
@@ -48,14 +48,14 @@ cnet_lock(void)
     if (pthread_spin_lock(&__cnet_lock) == 0)
         return 1;
 
-    CNE_ERR_RET_VAL(0, "Unable to lock CNET: %s\n", strerror(errno));
+    CNE_ERR_RET_VAL(0, "Failed to lock CNET: %s\n", strerror(errno));
 }
 
 void
 cnet_unlock(void)
 {
     if (pthread_spin_unlock(&__cnet_lock))
-        CNE_ERR("Unable to unlock CNET: %s\n", strerror(errno));
+        CNE_ERR("Failed to unlock CNET: %s\n", strerror(errno));
 }
 
 struct cnet *
@@ -72,22 +72,22 @@ cnet_config_create(uint32_t num_chnls, uint32_t num_routes)
         cnet->nb_ports = pktdev_port_count();
 
         if (cnet_drv_create(cnet) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create OSAL\n");
+            CNE_ERR_GOTO(leave, "Failed to create OSAL\n");
 
         if (cnet_route4_create(cnet, num_routes, 0) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create route\n");
+            CNE_ERR_GOTO(leave, "Failed to create route\n");
 
         if (cnet_arp_create(cnet, 0, 0) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create netif\n");
+            CNE_ERR_GOTO(leave, "Failed to create netif\n");
 
         if (cnet_netlink_create(cnet) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create netlink\n");
+            CNE_ERR_GOTO(leave, "Failed to create netlink\n");
 
         if (cnet_netif_attach_ports(cnet) < 0)
-            CNE_ERR_GOTO(leave, "Unable to create route\n");
+            CNE_ERR_GOTO(leave, "Failed to create route\n");
 
         if (cnet_netlink_start())
-            CNE_ERR_GOTO(leave, "Unable to start netlink thread\n");
+            CNE_ERR_GOTO(leave, "Failed to start netlink thread\n");
 
         cnet_unlock();
     }
@@ -120,7 +120,7 @@ cnet_stop(void)
         vec_free(cnet->netifs);
 
         if (uid_unregister(cnet->chnl_uids) < 0)
-            CNE_ERR("Unable to unregister UID\n");
+            CNE_ERR("Failed to unregister UID\n");
         vec_free(cnet->chnl_descriptors);
 
         __cnet = NULL;
@@ -128,7 +128,7 @@ cnet_stop(void)
         cnet_unlock();
 
         if (pthread_spin_destroy(&__cnet_lock))
-            CNE_ERR("Unable to destroy spinlock\n");
+            CNE_ERR("Failed to destroy spinlock\n");
     }
 }
 
@@ -163,7 +163,7 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
     memset(cnet, 0, sizeof(struct cnet));
 
     if (pthread_spin_init(&__cnet_lock, PTHREAD_PROCESS_PRIVATE))
-        CNE_RET("Unable to initialize spinlock\n");
+        CNE_RET("Failed to initialize spinlock\n");
 
     cnet->flags = ((CNET_ENABLE_PUNTING) ? CNET_PUNT_ENABLED : 0);
     cnet->flags |= ((CNET_ENABLE_TCP) ? CNET_TCP_ENABLED : 0);
@@ -172,38 +172,38 @@ CNE_INIT_PRIO(cnet_initialize, STACK)
 
     cnet->chnl_uids = uid_register("CHNL_UIDs", cnet->num_chnls);
     if (!cnet->chnl_uids)
-        CNE_ERR_GOTO(err, "Unable to allocate UID values\n");
+        CNE_ERR_GOTO(err, "Failed to allocate UID values\n");
 
     /* Vector of chnl descriptors indexed by chnl UID number */
     cnet->chnl_descriptors = vec_alloc(cnet->chnl_descriptors, cnet->num_chnls);
     if (cnet->chnl_descriptors == NULL)
-        CNE_ERR_GOTO(err, "Unable to allocate channel descriptor array\n");
+        CNE_ERR_GOTO(err, "Failed to allocate channel descriptor array\n");
 
     cnet->stks = vec_alloc(cnet->stks, STK_VEC_COUNT);
     if (!cnet->stks)
-        CNE_ERR_GOTO(err, "Unable to allocate stk vector\n");
+        CNE_ERR_GOTO(err, "Failed to allocate stk vector\n");
 
     cnet->netifs = vec_alloc(cnet->netifs, CNE_MAX_ETHPORTS);
     if (!cnet->netifs)
-        CNE_ERR_GOTO(err, "Unable to allocate netif vector\n");
+        CNE_ERR_GOTO(err, "Failed to allocate netif vector\n");
 
     cnet->drvs = vec_alloc(cnet->drvs, CNE_MAX_ETHPORTS);
     if (!cnet->drvs)
-        CNE_ERR_GOTO(err, "Unable to allocate driver vector\n");
+        CNE_ERR_GOTO(err, "Failed to allocate driver vector\n");
 
     __cnet = cnet;
     return;
 
 err:
     if (uid_unregister(cnet->chnl_uids) < 0)
-        CNE_ERR("Unable to unregister UID\n");
+        CNE_ERR("Failed to unregister UID\n");
     vec_free(cnet->chnl_descriptors);
     vec_free(cnet->netifs);
     vec_free(cnet->drvs);
     vec_free(cnet->stks);
 
     if (pthread_spin_destroy(&__cnet_lock))
-        CNE_ERR("Unable to destroy spinlock\n");
+        CNE_ERR("Failed to destroy spinlock\n");
 
     memset(cnet, 0, sizeof(struct cnet));
 }

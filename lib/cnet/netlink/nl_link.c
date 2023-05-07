@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <stdio.h>         // for stdout, NULL
@@ -73,7 +73,7 @@ __nl_link(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_netif_set_flags(netif, flags) < 0)
-            CNE_ERR_GOTO(leave, "Unable to set ifflags\n");
+            CNE_ERR_GOTO(leave, "Failed to set ifflags\n");
 
         /* Get MAC address */
         a = rtnl_link_get_addr(link);
@@ -85,7 +85,7 @@ __nl_link(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (cnet_netif_set_flags(netif, flags) < 0)
-            CNE_ERR_GOTO(leave, "Unable to set ifflags\n");
+            CNE_ERR_GOTO(leave, "Failed to set ifflags\n");
         break;
 
     case NL_ACT_DEL:
@@ -116,7 +116,7 @@ cnet_netlink_add_links(void *_info)
 
     cache = nl_cache_mngt_require_safe("route/link");
     if (!cache)
-        CNE_ERR_RET("Unable to require route/link\n");
+        CNE_ERR_RET("Failed to require route/link\n");
 
     nl_cache_foreach(cache, link_walk, info);
 

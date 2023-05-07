@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <arpa/inet.h>           // for inet_ntop
@@ -86,7 +86,7 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
                    graph_name, thd->name);
     ret = jcfg_option_array_get(cinfo->jinfo, thd->name, &pattern_array);
     if (ret < 0)
-        CNE_ERR_GOTO(err, "Unable to find %s option name\n", thd->name);
+        CNE_ERR_GOTO(err, "Failed to find %s option name\n", thd->name);
 
     if (pattern_array->array_sz == 0)
         CNE_ERR_GOTO(err, "Thread %s does not have any graph patterns\n", thd->name);
@@ -153,7 +153,7 @@ udp_recv(int cd)
         if (nb_mbufs > 0) {
             if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
                 pktmbuf_free_bulk(mbufs, nb_mbufs);
-                CNE_ERR("Unable to send packets\n");
+                CNE_ERR("Failed to send packets\n");
             }
         } else if (nb_mbufs < 0)
             CNE_ERR("Receive packets failed\n");
@@ -233,7 +233,7 @@ tcp_recv(int cd)
 
             if (chnl_send(cd, mbufs, nb_mbufs) < 0) {
                 pktmbuf_free_bulk(mbufs, nb_mbufs);
-                CNE_ERR("Unable to send packets\n");
+                CNE_ERR("Failed to send packets\n");
             }
         }
         CNE_DEBUG("Loopback count [cyan]%3d[] in [cyan]%3d[] loops\n", tot_cnt, cnt);
@@ -251,7 +251,7 @@ tcp_close(int cd __cne_unused)
 {
     CNE_DEBUG("Close channel %d\n", cd);
     if (chnl_close(cd) < 0)
-        CNE_ERR_RET("unable to close connection on %d channel\n", cd);
+        CNE_ERR_RET("Failed to close connection on %d channel\n", cd);
     return 0;
 }
 
@@ -307,7 +307,7 @@ thread_func(void *arg)
     snprintf(chnl_name, sizeof(chnl_name), "%s-chnl", thd->name);
 
     if (jcfg_option_array_get(cinfo->jinfo, chnl_name, &chnl_array) < 0)
-        CNE_ERR_GOTO(skip, "Unable to find %s option name\n", thd->name);
+        CNE_ERR_GOTO(skip, "Failed to find %s option name\n", thd->name);
 
     if (chnl_array->array_sz == 0)
         CNE_ERR_GOTO(skip, "Thread %s does not have any graph patterns\n", thd->name);
@@ -487,7 +487,7 @@ main(int argc, char **argv)
     /* Create the CNET stack structure, options should have been parsed already */
     cinfo->cnet = cnet_create();
     if (!cinfo->cnet)
-        CNE_ERR_RET("Unable to create CNET instance\n");
+        CNE_ERR_RET("Failed to create CNET instance\n");
 
     usleep(1000);
 
@@ -499,7 +499,7 @@ main(int argc, char **argv)
 
     /* Create the CLI command tree */
     if (cli_setup_with_tree(cli_tree))
-        CNE_ERR_GOTO(err, "Unable to create CLI\n");
+        CNE_ERR_GOTO(err, "Failed to create CLI\n");
 
     /* Wait for all threads to initialize, before starting stats printout */
     if (pthread_barrier_wait(&cinfo->barrier) > 0)

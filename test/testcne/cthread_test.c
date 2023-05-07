@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -95,7 +95,7 @@ cthread_sema_tests(void)
     ret = cthread_sema_init(sema_name, &s, NULL);
     if (ret < 0) {
         ret = errno;
-        tst_error("Unable to initialize a semaphore, %s\n", strerror(errno));
+        tst_error("Failed to initialize a semaphore, %s\n", strerror(errno));
         /* return errno if this test fails due to permission error */
         return (ret == EPERM) || (ret == EACCES) ? ret : -1;
     }
@@ -104,7 +104,7 @@ cthread_sema_tests(void)
 
     ret = cthread_sema_reset(s);
     if (ret < 0) {
-        tst_error("Unable to reset semaphore, %s\n", strerror(errno));
+        tst_error("Failed to reset semaphore, %s\n", strerror(errno));
         goto err;
     }
 
@@ -144,7 +144,7 @@ cthread_sema_tests(void)
 
     ret = cthread_sema_destroy(s);
     if (ret < 0) {
-        tst_error("Unable to destroy semaphore, %s\n", strerror(errno));
+        tst_error("Failed to destroy semaphore, %s\n", strerror(errno));
         goto err;
     }
 
@@ -218,7 +218,7 @@ cthread_main_spawner(void)
 
     /* create a main thread to spawn the rest of the threads */
     if (cthread_create("Main", cthread_spawner, NULL) == NULL) {
-        CNE_ERR("Unable to start main cthread spawner routine\n");
+        CNE_ERR("Failed to start main cthread spawner routine\n");
         atomic_store(&failed, true);
     }
 
@@ -258,7 +258,7 @@ pthread_main_spawner(void)
     memset(data, 0, (thread_cnt * sizeof(thread_data_t)));
 
     if (pthread_start_threads() < 0) {
-        CNE_ERR("Unable to start pthread_start_threads()\n");
+        CNE_ERR("Failed to start pthread_start_threads()\n");
         atomic_store(&failed, true);
     }
 }
@@ -298,7 +298,7 @@ cthread_main(int argc, char **argv)
 
     data = calloc(thread_cnt, sizeof(thread_data_t));
     if (!data)
-        CNE_ERR_GOTO(leave, "Unable to allocate thread_data_t\n");
+        CNE_ERR_GOTO(leave, "Failed to allocate thread_data_t\n");
 
     cne_printf("[green]Waiting [red]%d [green]seconds[]\n", thread_time);
 

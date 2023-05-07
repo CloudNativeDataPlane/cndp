@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  * Copyright (c) 2019-2020 6WIND S.A.
  */
 
@@ -31,7 +31,7 @@ _default_mbuf_ctor(struct pktmbuf_info_s *pi)
 
     pi->pd = mempool_create(&cfg);
     if (!pi->pd)
-        CNE_ERR_RET("Unable to create mempool\n");
+        CNE_ERR_RET("Failed to create mempool\n");
 
     return 0;
 }

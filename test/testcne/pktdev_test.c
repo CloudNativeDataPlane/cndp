@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -110,7 +110,7 @@ general_tests(const char *ifname, const char *pmd)
     if (!strcmp(pmd, PMD_NET_AF_XDP_NAME)) {
         mmap = mmap_alloc(DEFAULT_MBUF_COUNT, DEFAULT_MBUF_SIZE, MMAP_HUGEPAGE_4KB);
         if (mmap == NULL)
-            cne_panic("Unable to mmap(%lu, %s) memory",
+            cne_panic("Failed to mmap(%lu, %s) memory",
                       (uint64_t)DEFAULT_MBUF_COUNT * (uint64_t)DEFAULT_MBUF_SIZE,
                       mmap_name_by_type(MMAP_HUGEPAGE_4KB));
 

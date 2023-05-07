@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <cnet.h>        // for cnet_add_instance
@@ -78,10 +78,10 @@ cnet_route4_delete(struct in_addr *ipaddr)
         struct rt4_entry *rt;
 
         if (fib_info_get(fi, &nexthop, (void **)&rt, 1) < 0)
-            CNE_ERR_RET("Unable to delete FIB entry pointer\n");
+            CNE_ERR_RET("Failed to delete FIB entry pointer\n");
 
         if (cne_fib_delete(fi->fib, rt->nexthop.s_addr, cne_prefixbits(rt->netmask.s_addr)) < 0)
-            CNE_ERR_RET("Unable to delete FIB entry\n");
+            CNE_ERR_RET("Failed to delete FIB entry\n");
 
         if (fib_info_free(fi, (uint32_t)nexthop) != rt)
             CNE_WARN("Freed entry does not match\n");
@@ -179,12 +179,12 @@ cnet_route4_create(struct cnet *cnet, uint32_t num_rules, uint32_t num_tbl8s)
 
     fib = cne_fib_create("rt4-fib", &cfg);
     if (!fib)
-        CNE_ERR_GOTO(err, "Unable to create FIB\n");
+        CNE_ERR_GOTO(err, "Failed to create FIB\n");
 
     fi = fib_info_create(fib, num_rules, RT4_NEXT_INDEX_SHIFT);
     if (!fi) {
         cne_fib_free(fib);
-        CNE_ERR_GOTO(err, "Unable to allocate fib_info structure\n");
+        CNE_ERR_GOTO(err, "Failed to allocate fib_info structure\n");
     }
 
     cnet->rt4_finfo = fi;
@@ -194,7 +194,7 @@ cnet_route4_create(struct cnet *cnet, uint32_t num_rules, uint32_t num_tbl8s)
     mcfg.cache_sz = 16;
     cnet->rt4_obj = mempool_create(&mcfg);
     if (cnet->rt4_obj == NULL)
-        CNE_ERR_GOTO(err, "Unable to allocate rt4_obj\n");
+        CNE_ERR_GOTO(err, "Failed to allocate rt4_obj\n");
 
     return 0;
 err:

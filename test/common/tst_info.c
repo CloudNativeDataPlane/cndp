@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 #include <stdio.h>             // for fflush, vprintf, stdout
@@ -54,7 +54,7 @@ tst_start(const char *msg)
 
     tst = calloc(1, sizeof(tst_info_t));
     if (!tst) {
-        cne_printf("[red]Error[]: [magenta]Unable to allocate tst_info_t structure[]\n");
+        cne_printf("[red]Error[]: [magenta]Failed to allocate tst_info_t structure[]\n");
         abort();
     }
 

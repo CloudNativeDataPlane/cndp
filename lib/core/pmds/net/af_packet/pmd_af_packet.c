@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2021-2022 Intel Corporation.
+ * Copyright (c) 2021-2023 Intel Corporation.
  */
 
 #include <arpa/inet.h>              // for htons
@@ -275,7 +275,7 @@ pmd_af_packet_probe(lport_cfg_t *c)
 
     lport = calloc(1, sizeof(struct pmd_lport));
     if (!lport)
-        CNE_ERR_RET("Unable to allocate memory\n");
+        CNE_ERR_RET("Failed to allocate memory\n");
 
     strlcpy(lport->if_name, c->ifname, sizeof(lport->if_name));
 

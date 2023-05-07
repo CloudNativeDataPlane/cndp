@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 #include <sys/stat.h>        // for fchmod
@@ -376,7 +376,7 @@ txgen_theme_save(char *filename)
 
     f = fopen(filename, "w+");
     if (f == NULL) {
-        cne_printf("Unable to open file [red]%s[]\n", filename);
+        cne_printf("Failed to open file [red]%s[]\n", filename);
         return;
     }
 

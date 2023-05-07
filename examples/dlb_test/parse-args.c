@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -105,7 +105,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
 
             pd = calloc(1, sizeof(struct fwd_port));
             if (!pd)
-                CNE_ERR_RET("Unable to allocate fwd_port structure\n");
+                CNE_ERR_RET("Failed to allocate fwd_port structure\n");
             lport->priv_ = pd;
 
             pcfg.qid        = lport->qid;
@@ -131,7 +131,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pd->lport = pktdev_port_setup(&pcfg);
             if (pd->lport < 0) {
                 free(pd);
-                CNE_ERR_RET("Unable to setup port %s, pktdev_port_setup() failed\n", lport->name);
+                CNE_ERR_RET("Failed to setup port %s, pktdev_port_setup() failed\n", lport->name);
             }
         } while ((0));
         break;
@@ -145,11 +145,11 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                                    &obj.thd->group->lcore_bitmap);
         } else if (!strcasecmp("producer", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, (void *)producer, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else if (!strcasecmp("consumer", obj.thd->thread_type)) {
             if (thread_create(obj.thd->name, (void *)consumer, obj.thd) < 0)
-                CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                             obj.thd->thread_type);
         } else if (!strcasecmp("worker", obj.thd->thread_type)) {
             if (num_workers > obj.thd->group->lcore_cnt)
@@ -163,7 +163,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                     bit++;
                 work_args[i].lcore = bit;
                 if (thread_create(obj.thd->name, (void *)worker, (void *)&work_args[i]) < 0)
-                    CNE_ERR_RET("Unable to create thread %d (%s) or type %s\n", idx, obj.thd->name,
+                    CNE_ERR_RET("Failed to create thread %d (%s) or type %s\n", idx, obj.thd->name,
                                 obj.thd->thread_type);
             }
         } else

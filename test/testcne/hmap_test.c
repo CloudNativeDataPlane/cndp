@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corp, Inc.
+ * Copyright (c) 2019-2023 Intel Corp, Inc.
  */
 
 #include <stdio.h>           // for NULL, EOF
@@ -102,7 +102,7 @@ test_hmap(int flags)
         if (ret)
             CNE_ERR_GOTO(
                 leave,
-                "[magenta]Unable to add[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID [cyan]%d[]\n",
+                "[magenta]Failed to add[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID [cyan]%d[]\n",
                 (v->prefix) ? v->prefix : "", v->key, v->id);
     }
     tst_ok("Insert all values\n");
@@ -206,7 +206,7 @@ test_hmap(int flags)
         if (ret)
             CNE_ERR_GOTO(
                 leave,
-                "[magenta]Unable to get[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID [cyan]%d[]\n",
+                "[magenta]Failed to get[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID [cyan]%d[]\n",
                 (v->prefix) ? v->prefix : "", v->key, v->id);
     }
     tst_ok("Retrieve all values\n");
@@ -217,7 +217,7 @@ test_hmap(int flags)
 
         if ((ret = hmap_lookup(h, v->prefix, v->key, NULL)) < 0)
             CNE_ERR_GOTO(leave,
-                         "[magenta]Unable to lookup[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID "
+                         "[magenta]Failed to lookup[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID "
                          "[cyan]%d[]\n",
                          (v->prefix) ? v->prefix : "", v->key, v->id);
     }
@@ -230,7 +230,7 @@ test_hmap(int flags)
 
         if ((ret = hmap_del(h, v->prefix, v->key)) < 0)
             CNE_ERR_GOTO(leave,
-                         "[magenta]Unable to delete[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID "
+                         "[magenta]Failed to delete[] '[cyan]%s[]:[orange]%s[]' [magenta]with ID "
                          "[cyan]%d[]\n",
                          (v->prefix) ? v->prefix : "", v->key, v->id);
     }

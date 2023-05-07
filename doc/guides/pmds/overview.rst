@@ -1,5 +1,5 @@
 ..  SPDX-License-Identifier: BSD-3-Clause
-    Copyright (c) 2019-2022 Intel Corporation.
+    Copyright (c) 2019-2023 Intel Corporation.
 
 Overview of CNDP Poll Mode Drivers
 ==================================
@@ -20,7 +20,7 @@ of these devices.
    Refer to the :ref:`xskdev buffer management <xsk_buf_mgmt>` guide for
    details.
 
-.. image:: APIs.*
+.. image:: APIs.svg
 
 There are more differences between drivers regarding some internal properties,
 portability or even documentation availability.

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation.
+ * Copyright (c) 2019-2023 Intel Corporation.
  */
 
 // IWYU pragma: no_include "generic/cne_cycles.h"
@@ -479,7 +479,7 @@ path_cmd(int argc __cne_unused, char **argv __cne_unused)
 static const char *copyright =
     "   BSD LICENSE\n"
     "\n"
-    "   Copyright (c) 2019-2022 Intel Corporation. All rights reserved.\n"
+    "   Copyright (c) 2019-2023 Intel Corporation. All rights reserved.\n"
     "\n"
     "   Redistribution and use in source and binary forms, with or without\n"
     "   modification, are permitted provided that the following conditions\n"
@@ -618,7 +618,7 @@ rm_cmd(int argc, char **argv)
     }
 
     if (!cli_find_node(argv[1], &node)) {
-        cne_printf("Unable to find: %s\n", argv[1]);
+        cne_printf("Failed to find: %s\n", argv[1]);
         return -1;
     }
 
@@ -814,7 +814,7 @@ cli_default_tree_init(void)
 
     if (ret < 0) {
         this_cli->flags &= ~CLI_DEFAULT_TREE;
-        CNE_ERR_RET_VAL(ret, "Unable to add commands or directories\n");
+        CNE_ERR_RET_VAL(ret, "Failed to add commands or directories\n");
     }
 
     return ret;

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <pthread.h>           // for pthread_mutex_init, pthread_cond_init, pth...
@@ -105,7 +105,7 @@ free_chnl(struct chnl *ch)
     vec_free(ch->ch_snd.cb_vec);
 
     if (cne_mutex_destroy(&ch->ch_mutex))
-        CNE_RET("unable to destroy ch_mutex\n");
+        CNE_RET("Failed to destroy ch_mutex\n");
 
     mp_init(stk->chnl_objs, NULL, (void *)ch, 0);
 
@@ -133,14 +133,14 @@ chnl_alloc(void)
 
             if (!stk->chnl_objs) {
                 stk_unlock();
-                CNE_NULL_RET("Unable to create objpool\n");
+                CNE_NULL_RET("Failed to create objpool\n");
             }
 
             mempool_obj_iter(stk->chnl_objs, mp_init, NULL);
         }
         stk_unlock();
     } else
-        CNE_NULL_RET("Unable to acquire mutex\n");
+        CNE_NULL_RET("Failed to acquire mutex\n");
 
     return alloc_chnl();
 }
@@ -208,7 +208,7 @@ chnl_cleanup(struct chnl *ch)
             else if (ch->ch_proto->proto == IPPROTO_TCP)
                 cnet_pcb_delete(&this_stk->tcp->tcp_hd, pcb);
             else
-                CNE_WARN("Unable to determine pcb type %d\n", ch->ch_proto->proto);
+                CNE_WARN("Failed to determine pcb type %d\n", ch->ch_proto->proto);
         }
         chnl_free(ch);
 

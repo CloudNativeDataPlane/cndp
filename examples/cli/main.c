@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2020-2022 Intel Corporation
+ * Copyright (c) 2020-2023 Intel Corporation
  */
 
 #include <stdint.h>            // for uint64_t
@@ -215,7 +215,7 @@ main(int argc, char *argv[])
     }
 
     if (cne_init() < 0)
-        CNE_ERR_GOTO(out, "Unable to init CNE\n");
+        CNE_ERR_GOTO(out, "Failed to init CNE\n");
 
     cne_on_exit(__on_exit, NULL, NULL, 0);
 

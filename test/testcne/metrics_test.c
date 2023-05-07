@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Intel Corporation
+ * Copyright (c) 2022-2023 Intel Corporation
  */
 
 #include <stdio.h>           // for NULL, EOF
@@ -35,7 +35,7 @@ metrics_test(void)
     ret = metrics_init(NULL);
     if (ret < 0) {
         ret = errno;
-        tst_error("Unable to initialize metrics library, %s\n", strerror(errno));
+        tst_error("Failed to initialize metrics library, %s\n", strerror(errno));
         free(client);
         /* return errno if this test fails due to permission error */
         return (ret == EPERM) || (ret == EACCES) ? ret : -1;
@@ -45,7 +45,7 @@ metrics_test(void)
 
     ret = metrics_register(client->cmd, test_cb);
     if (ret < 0) {
-        tst_error("Unable to register new metrics command, %s\n", strerror(errno));
+        tst_error("Failed to register new metrics command, %s\n", strerror(errno));
         goto err;
     }
 
@@ -69,7 +69,7 @@ metrics_test(void)
 
     ret = metrics_port_stats(client, lpname, &stats);
     if (ret < 0) {
-        tst_error("Unable to add lport stats, %s\n", strerror(errno));
+        tst_error("Failed to add lport stats, %s\n", strerror(errno));
         goto err;
     }
 
@@ -80,7 +80,7 @@ metrics_test(void)
 
     ret = metrics_destroy();
     if (ret < 0) {
-        tst_error("Unable to remove registered metrics commands, %s\n", strerror(errno));
+        tst_error("Failed to remove registered metrics commands, %s\n", strerror(errno));
         goto err;
     }
 

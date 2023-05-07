@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2019-2023 Intel Corporation
  */
 
 // IWYU pragma: no_include <bits/getopt_core.h>
@@ -33,11 +33,11 @@ static int
 create_pktmbuf(void)
 {
     mm = mmap_alloc(DEFAULT_MBUF_COUNT, DEFAULT_MBUF_SIZE, MMAP_HUGEPAGE_DEFAULT);
-    TST_ASSERT_GOTO(mm, "unable to allocate memory", err);
+    TST_ASSERT_GOTO(mm, "Failed to allocate memory", err);
 
     pi = pktmbuf_pool_create(mmap_addr(mm), DEFAULT_MBUF_COUNT, DEFAULT_MBUF_SIZE,
                              MEMPOOL_CACHE_MAX_SIZE, NULL);
-    TST_ASSERT_GOTO(pi != NULL, "unable to allocate pktmbufs", err);
+    TST_ASSERT_GOTO(pi != NULL, "Failed to allocate pktmbufs", err);
 
     return 0;
 err:

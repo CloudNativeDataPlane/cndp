@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2022 Intel Corporation
+ * Copyright (c) 2016-2023 Intel Corporation
  */
 
 #include <bsd/string.h>
@@ -81,7 +81,7 @@ create_chnl(int otype, int domain, int type, const char *name, int port, int fla
         in_caddr_zero(&addr);
 
         if (name && inet_pton(AF_INET, name, (void *)&addr.cin_addr.s_addr) != 1)
-            CNE_ERR_RET("Unable to convert IP4 address to network order\n");
+            CNE_ERR_RET("Failed to convert IP4 address to network order\n");
         addr.cin_family = domain;
         addr.cin_len    = sizeof(struct in_addr);
         addr.cin_port   = htobe16(port);
@@ -128,7 +128,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         }
     }
     if (pt->nb_fields == MAX_OPEN_TYPES)
-        CNE_ERR_RET("unable to find chnl_open(%s) with %d fields\n", str, nb_fields);
+        CNE_ERR_RET("Failed to find chnl_open(%s) with %d fields\n", str, nb_fields);
 
     domain = AF_UNSPEC;
     typ    = 0;
