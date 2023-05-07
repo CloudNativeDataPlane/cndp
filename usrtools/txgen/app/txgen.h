@@ -146,7 +146,7 @@ enum {
     DEFAULT_PRIME_COUNT = 1,
     DEFAULT_SRC_PORT    = 1234,
     DEFAULT_DST_PORT    = 5678,
-    DEFAULT_TTL         = 4,
+    DEFAULT_TTL         = 64,
     DEFAULT_PKT_NUMBER  = 0x012345678,
     DEFAULT_ACK_NUMBER  = 0x012345690,
     DEFAULT_WND_SIZE    = 8192,
@@ -309,7 +309,7 @@ do_command(const char *cmd, int (*display)(char *, int))
 
     f = popen(cmd, "r");
     if (f == NULL) {
-        cne_printf("Unable to run '%s' command", cmd);
+        cne_printf("Failed to run '%s' command", cmd);
         return -1;
     }
 

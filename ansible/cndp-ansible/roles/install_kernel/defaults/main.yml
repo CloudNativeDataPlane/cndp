@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 Intel Corporation
+
+kernel_pkgs:
+  ubuntu:
+    - linux-image-unsigned-5.13.0-1009-oem
+    - linux-headers-5.13.0-1009-oem
+    - linux-tools-5.13.0-1009-oem
+  fedora:
+    - kernel

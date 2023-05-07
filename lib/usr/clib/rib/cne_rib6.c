@@ -419,7 +419,7 @@ cne_rib6_create(const char *name, const struct cne_rib6_conf *conf)
     cfg.objsz  = sizeof(struct cne_rib6_node) + conf->ext_sz;
     mm         = mmap_alloc(cfg.objcnt, cfg.objsz, MMAP_HUGEPAGE_DEFAULT);
     if (!mm)
-        CNE_NULL_RET("Unable to mmap() memory\n");
+        CNE_NULL_RET("Failed to mmap() memory\n");
     cfg.addr = mmap_addr(mm);
 
     cne_rwlock_write_lock(&__rib6_lock);

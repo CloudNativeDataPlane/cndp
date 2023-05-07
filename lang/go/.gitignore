@@ -1,3 +1,4 @@
 # Remove some binary applications
 bindings/examples/fwd/fwd
+bindings/examples/distributor/distributor
 tools/cmon/cmon

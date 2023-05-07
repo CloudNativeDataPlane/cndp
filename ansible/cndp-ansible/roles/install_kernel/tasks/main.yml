@@ -9,7 +9,7 @@
   debug:
     msg: Kernel version {{ ansible_kernel }} is OK no need to update
   when:
-    - ansible_kernel is version ( min_kernel, '>=')
+    - ansible_kernel is version ( installed_kernel, '>=')
   tags:
      - check_kernel
 
@@ -17,36 +17,37 @@
   debug:
     msg: Kernel will be updated
   when:
-    - ansible_kernel is version ( min_kernel, '<')
+    - ansible_kernel is version ( installed_kernel, '<')
   tags:
      - check_kernel
 
-- name: install linux-image-unsigned-5.13.0-1009-oem
+- name: install kernel for ubuntu
   package:
-     name: linux-image-unsigned-5.13.0-1009-oem
-     state: present
+    name: "{{ item }}"
+    state: present
   environment: "{{ proxy_env }}"
   tags: install_kernel
+  with_items: "{{ kernel_pkgs[required_dist | lower] }}"
+  when:
+    - ansible_kernel is version ( installed_kernel, '<')
+    - required_dist | lower == "ubuntu"
 
-- name: install linux-headers-5.13.0-1009-oem
+- name: update kernel for fedora
   package:
-     name: linux-headers-5.13.0-1009-oem
-     state: present
+    name: "{{ item }}"
+    state: latest
   environment: "{{ proxy_env }}"
   tags: install_kernel
-
-- name: install linux-oem-5.13-tools-5.13.0-1009
-  package:
-     name: linux-oem-5.13-tools-5.13.0-1009
-     state: present
-  environment: "{{ proxy_env }}"
-  tags: install_kernel
+  with_items: "{{ kernel_pkgs[required_dist | lower] }}"
+  when:
+    - ansible_kernel is version ( installed_kernel, '<')
+    - required_dist | lower == "fedora"
 
 - name: Reboot the host after kernel installation
   reboot:
     reboot_timeout: 3600
 #    pre_reboot_delay: 60
   when:
-    - ansible_kernel is version ( min_kernel, '<') and localhost_install != true
+    - ansible_kernel is version ( installed_kernel, '<') and localhost_install != true
   tags:
     - reboot_cndp_remote

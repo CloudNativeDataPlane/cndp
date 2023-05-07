@@ -122,7 +122,7 @@ entry_destroy(struct uid_entry *e)
     if (e) {
         /* use the max_ids to detect mutex was created */
         if (e->max_ids && cne_mutex_destroy(&e->mutex) < 0)
-            CNE_ERR("Unable to destroy mutex\n");
+            CNE_ERR("Failed to destroy mutex\n");
         free(e->bitmap);
         free(e);
     }

@@ -215,7 +215,7 @@ main(int argc, char *argv[])
     }
 
     if (cne_init() < 0)
-        CNE_ERR_GOTO(out, "Unable to init CNE\n");
+        CNE_ERR_GOTO(out, "Failed to init CNE\n");
 
     cne_on_exit(__on_exit, NULL, NULL, 0);
 

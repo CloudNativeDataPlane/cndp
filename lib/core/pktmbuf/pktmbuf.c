@@ -158,7 +158,7 @@ pktmbuf_pool_cfg_create(const pktmbuf_pool_cfg_t *cfg)
 
     pi = calloc(1, sizeof(pktmbuf_info_t));
     if (!pi)
-        CNE_ERR_GOTO(leave, "unable to allocate pktmbuf_info_t structure\n");
+        CNE_ERR_GOTO(leave, "Failed to allocate pktmbuf_info_t structure\n");
 
     pi->addr           = c->addr;
     pi->bufcnt         = c->bufcnt;

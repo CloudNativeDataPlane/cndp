@@ -237,7 +237,7 @@ kernel_recv_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
     ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (ctx->sock < 0)
-        CNE_ERR_RET("Unable to open RAW socket\n");
+        CNE_ERR_RET("Failed to open RAW socket\n");
 
     /* Allocate a memory region and pktmbuf info structure to be used in receiving
      * packets from the kernel */
