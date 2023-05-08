@@ -20,10 +20,10 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          TAG=$(echo $GITHUB_SHA | head -c7)
+          TAG=$(echo "${GITHUB_SHA}" | head -c7)
           IMAGE="cndp"
-          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
-          echo ::set-output name=tag::${TAG}
+          echo ::set-output "name=tagged_image::${IMAGE}:${TAG}"
+          echo ::set-output "name=tag::${TAG}"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -55,5 +55,5 @@ jobs:
         # https://github.com/moby/buildkit/issues/1896
       - name: Move cache
         run: |
-          rm -rf /tmp/.buildx-cache
+          rm -rf /tmp/.buildx-cache && \
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
