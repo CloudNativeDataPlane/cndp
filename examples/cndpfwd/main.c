@@ -159,8 +159,8 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         return -1;
 
     struct ether_addr ethaddrs[n_pkts], *eaddr = &ethaddrs[0];
-    uint16_t tport[n_pkts], *tx_port = &tport[0];
-    uint32_t ipaddrs[n_pkts], *ip_addr = &ipaddrs[0];
+    uint16_t tport[n_pkts], *tx_port           = &tport[0];
+    uint32_t ipaddrs[n_pkts], *ip_addr         = &ipaddrs[0];
 
     for (int i = 0; i < n_pkts; i++) {
 
@@ -168,7 +168,7 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             pktmbuf_mtod_offset(pd->rx_mbufs[i], struct cne_ipv4_hdr *, ETHER_HDR_LEN);
         rx_ip_hdr->time_to_live--;
         rx_ip_hdr->hdr_checksum = htons(ntohs(rx_ip_hdr->hdr_checksum) + 1);
-        ip_addr[i]        = ntohl(rx_ip_hdr->dst_addr);
+        ip_addr[i]              = ntohl(rx_ip_hdr->dst_addr);
     }
 
     l3fwd_fib_lookup(ip_addr, eaddr, tx_port, n_pkts);
