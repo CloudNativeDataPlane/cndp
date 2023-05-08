@@ -5,34 +5,34 @@
 package cne
 
 import (
-	"log"
-	"testing"
 	"encoding/binary"
+	"log"
 	"net"
+	"testing"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
 func int2ip(nn uint32) net.IP {
-    ip := make(net.IP, 4)
-    binary.BigEndian.PutUint32(ip, nn)
+	ip := make(net.IP, 4)
+	binary.BigEndian.PutUint32(ip, nn)
 
-    return ip
+	return ip
 }
 
-func createUdpPacket() *Packet{
+func createUdpPacket() *Packet {
 
 	log.Println("Create UDP Packet")
 	udpPkt := make([]*Packet, 2)
-    for _, lport := range cneSys.LPortList() {
+	for _, lport := range cneSys.LPortList() {
 
-        size := PktBufferAlloc(lport.LPortID(), udpPkt)
-        if size <= 0 {
-            log.Println("PktBufferAlloc failed")
-            return nil
-        }
-    }
+		size := PktBufferAlloc(lport.LPortID(), udpPkt)
+		if size <= 0 {
+			log.Println("PktBufferAlloc failed")
+			return nil
+		}
+	}
 
 	options := gopacket.SerializeOptions{
 		ComputeChecksums: true,
@@ -56,7 +56,7 @@ func createUdpPacket() *Packet{
 		DstPort: layers.UDPPort(2152),
 	}
 
-    err := udpLayer.SetNetworkLayerForChecksum(ipLayer)
+	err := udpLayer.SetNetworkLayerForChecksum(ipLayer)
 	if err != nil {
 		log.Println("set checksum for UDP layer in endmarker failed")
 		return nil
@@ -71,53 +71,53 @@ func createUdpPacket() *Packet{
 
 	if err == nil {
 		outgoingPacket := buffer.Bytes()
-        if WritePktData(udpPkt[0], 0, outgoingPacket) < 0 {
-	        log.Println("WritePktData failed")
-            return  nil
-        }
-        return udpPkt[0]
+		if WritePktData(udpPkt[0], 0, outgoingPacket) < 0 {
+			log.Println("WritePktData failed")
+			return nil
+		}
+		return udpPkt[0]
 	} else {
 		log.Println("go packet serialize failed : ", err)
 	}
 
-    return nil
+	return nil
 }
 
 func TestGetEtherHdr(t *testing.T) {
 
-    t.Run("TestEtherHdrNull", func(t *testing.T) {
-       ethHdr := GetEtherHdr(nil)
-       if ethHdr != nil {
-           t.Fatalf("Error getting EthHdr")
-       }
-    })
-    t.Run("TestEtherHdrSuccess", func(t *testing.T) {
-       pkt := createUdpPacket()
-       if pkt != nil {
-           ethHdr := GetEtherHdr(pkt)
-           if ethHdr == nil {
-               t.Fatalf("Error getting EthHdr")
-           }
-       }
-    })
+	t.Run("TestEtherHdrNull", func(t *testing.T) {
+		ethHdr := GetEtherHdr(nil)
+		if ethHdr != nil {
+			t.Fatalf("Error getting EthHdr")
+		}
+	})
+	t.Run("TestEtherHdrSuccess", func(t *testing.T) {
+		pkt := createUdpPacket()
+		if pkt != nil {
+			ethHdr := GetEtherHdr(pkt)
+			if ethHdr == nil {
+				t.Fatalf("Error getting EthHdr")
+			}
+		}
+	})
 }
 
 func TestSwapMacAddr(t *testing.T) {
 
-    t.Run("SwapMacAddr success", func(t *testing.T) {
-       pkt := createUdpPacket()
-       if pkt != nil {
-           ethHdr := GetEtherHdr(pkt)
-           if ethHdr != nil {
-                src := ethHdr.SAddr
-                SwapMacAddr(pkt)
-                ethHdr = GetEtherHdr(pkt)
-                if src != ethHdr.DAddr {
-                    t.Errorf("SwapMacAddr fails")
-                }
-           }else {
-                t.Errorf("getEtherHdr fails")
-            }
-       }
-    })
+	t.Run("SwapMacAddr success", func(t *testing.T) {
+		pkt := createUdpPacket()
+		if pkt != nil {
+			ethHdr := GetEtherHdr(pkt)
+			if ethHdr != nil {
+				src := ethHdr.SAddr
+				SwapMacAddr(pkt)
+				ethHdr = GetEtherHdr(pkt)
+				if src != ethHdr.DAddr {
+					t.Errorf("SwapMacAddr fails")
+				}
+			} else {
+				t.Errorf("getEtherHdr fails")
+			}
+		}
+	})
 }
