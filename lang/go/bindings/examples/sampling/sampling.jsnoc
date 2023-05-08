@@ -50,10 +50,7 @@
             "bufcnt":64,
             "bufsz": 2,
             "mtype": "2MB",
-            "regions": [
-                32,
-                32
-            ],
+            "regions": [64],
             "rxdesc": 0,
             "txdesc": 0,
             "description": "UMEM Description 0"
@@ -123,10 +120,10 @@
         "no-restapi": false,
         "cli": true,
         "mode": "l3fwd",
-	"l3fwd-fib-rules": [
+	    "l3fwd-fib-rules": [
              "198.18.0.0/24,70:b5:e8:f0:31:30,1",
              "198.18.1.0/24,b4:96:91:ba:0a:de,0"
-	],
+	    ],
         "no-color": false,
         "burst-size": 64
     },
@@ -150,10 +147,5 @@
             "lports": ["eno12399:0"],
             "description": "Forward thread 0"
         },
-        "fwd:1": {
-            "group": "group1",
-            "lports": ["eno12399:0"],
-            "description": "Forward thread 1"
-        }
     }
 }
