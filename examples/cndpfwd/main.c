@@ -158,12 +158,9 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (n_pkts == PKTDEV_ADMIN_STATE_DOWN)
         return -1;
 
-    struct ether_addr *eaddr = malloc (n_pkts * sizeof(struct ether_addr));
-    uint16_t *tx_port = malloc (n_pkts * sizeof(uint16_t));
-    uint32_t *ip_addr = malloc (n_pkts * sizeof(uint32_t));
-
-    if (eaddr == NULL || tx_port == NULL || ip_addr)
-        return -1;
+    struct ether_addr ethaddrs[n_pkts], *eaddr = &ethaddrs[0];
+    uint16_t tport[n_pkts], *tx_port = &tport[0];
+    uint32_t ipaddrs[n_pkts], *ip_addr = &ipaddrs[0];
 
     for (int i = 0; i < n_pkts; i++) {
 
