@@ -1,6 +1,5 @@
-/* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2017-2023 Intel Corporation.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2023 Intel Corporation.
 
 package main
 
@@ -27,32 +26,32 @@ import (
 )
 
 const (
-	samplingLogID   = "SamplingLogID"
-	timerSteps = 2
+	samplingLogID = "SamplingLogID"
+	timerSteps    = 2
 )
 
 type SamplingInfo struct {
-	handle *cne.System
-	ctx    context.Context
-	stop   context.CancelFunc
-	app    *tview.Application
-	flex0  *tview.Flex
-	table  *tview.Table
-	sigs   chan os.Signal
-	timers *etimers.EventTimers
-	stats  []*cne.LPortStats
-	redraw bool
+	handle      *cne.System
+	ctx         context.Context
+	stop        context.CancelFunc
+	app         *tview.Application
+	flex0       *tview.Flex
+	table       *tview.Table
+	sigs        chan os.Signal
+	timers      *etimers.EventTimers
+	stats       []*cne.LPortStats
+	redraw      bool
 	samplingCtx map[uint32]uint32
 }
 
 var (
-	SamplingAction string = "FORWARD"
-    SamplingPktsLimit uint32 = 15
-	ConfigFlag string
-	TestFlag   string
-	PttyFlag   string
-	twirl      int
-	twirlStr   string = "|/-\\"
+	SamplingAction    string = "FORWARD"
+	SamplingPktsLimit uint32 = 15
+	ConfigFlag        string
+	TestFlag          string
+	PttyFlag          string
+	twirl             int
+	twirlStr          string = "|/-\\"
 )
 
 func init() {
@@ -81,20 +80,20 @@ func (f *SamplingInfo) collectStats() {
 }
 
 // update sampling count
-func (f *SamplingInfo) getSamplingAction(pkt *cne.Packet)  string {
+func (f *SamplingInfo) getSamplingAction(pkt *cne.Packet) string {
 	SamplingAction = "FORWARD"
 
 	//(*C.pktmbuf_t)(unsafe.Pointer(pkt))
-	hash := cne.GetHash(pkt) 
-    //hash value is set FOR ipv4 or ipv6 PACKETS
+	hash := cne.GetHash(pkt)
+	//hash value is set FOR ipv4 or ipv6 PACKETS
 	if hash != 0 {
-		count,found := f.samplingCtx[hash]
+		count, found := f.samplingCtx[hash]
 		if !found {
 			f.samplingCtx[hash] = 1
 		} else if count > SamplingPktsLimit {
 			SamplingAction = "DROP"
 		} else {
-			f.samplingCtx[hash] = (count+1)
+			f.samplingCtx[hash] = (count + 1)
 		}
 	} else {
 		SamplingAction = "FORWARD"
@@ -102,12 +101,13 @@ func (f *SamplingInfo) getSamplingAction(pkt *cne.Packet)  string {
 	//fmt.Println("Hash and Action", hash, SamplingAction)
 	return SamplingAction
 }
+
 // display the stats for all lports into a table
 func (f *SamplingInfo) displayStats() {
 
 	row, col := 0, 0
 	f.table.SetCell(row, col, tview.NewTableCell(fmt.Sprintf("Ports %c",
-                                                             twirlStr[twirl&3])).SetTextColor(tcell.ColorCornsilk))
+		twirlStr[twirl&3])).SetTextColor(tcell.ColorCornsilk))
 	twirl++
 	f.table.SetCell(row, col+1, tview.NewTableCell(":").SetTextColor(tcell.ColorOrange))
 	col += 2
@@ -128,13 +128,13 @@ func (f *SamplingInfo) displayStats() {
 		f.table.SetCell(row, col+1, tview.NewTableCell(":").SetTextColor(tcell.ColorOrange))
 		row++
 	}
-    row++
+	row++
 	for _, t := range []string{"Total Sampling Contexts"} {
 		f.table.SetCell(row, col, tview.NewTableCell(fmt.Sprintf("%-12s", t)).SetTextColor(tcell.ColorOrange))
 		f.table.SetCell(row, col+1, tview.NewTableCell(":").SetTextColor(tcell.ColorOrange))
 		row++
 	}
-    
+
 	prt := message.NewPrinter(language.English)
 	for i, s := range f.stats {
 		row = 1
@@ -318,7 +318,7 @@ func (f *SamplingInfo) reTransmitPackets(thdName string, lportNames []string) {
 					fwdPackets := make([]*cne.Packet, 0)
 					pkts := packets[:size]
 					var i int
-					for ; i<size; i++ {
+					for ; i < size; i++ {
 						action := f.getSamplingAction(pkts[i])
 						if action != "DROP" {
 							fwdPackets = append(fwdPackets, pkts[i])
@@ -455,7 +455,7 @@ func samplingSetup() *SamplingInfo {
 	f.stats = make([]*cne.LPortStats, len(f.handle.LPortList()))
 
 	f.samplingCtx = make(map[uint32]uint32)
-	
+
 	return f
 }
 
@@ -498,7 +498,7 @@ func main() {
 			go f.receivePackets(thdName, thd.LPorts)
 		case "tx":
 			go f.transmitPackets(thdName, thd.LPorts)
-        //sampling functionality works in lb mode only
+			//sampling functionality works in lb mode only
 		case "lb":
 			go f.reTransmitPackets(thdName, thd.LPorts)
 		case "chksum":
