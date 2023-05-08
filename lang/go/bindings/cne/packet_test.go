@@ -109,14 +109,12 @@ func TestSwapMacAddr(t *testing.T) {
        if pkt != nil {
            ethHdr := GetEtherHdr(pkt)
            if ethHdr != nil {
-                //dest := ethHdr.DAddr
                 src := ethHdr.SAddr
                 SwapMacAddr(pkt)
                 ethHdr = GetEtherHdr(pkt)
                 if src != ethHdr.DAddr {
                     t.Errorf("SwapMacAddr fails")
                 }
-
            }else {
                 t.Errorf("getEtherHdr fails")
             }
