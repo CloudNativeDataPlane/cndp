@@ -11,6 +11,10 @@ pub fn get_cstring_from_str(s: &str) -> CString {
     CString::new(s).unwrap()
 }
 
+pub fn free_cchar_ptr(ptr: *mut i8) {
+    unsafe { CString::from_raw(ptr) };
+}
+
 #[allow(dead_code)]
 pub fn get_str_from_raw_ptr<'a>(s_raw: *mut i8) -> &'a str {
     let s_cstr: &CStr = unsafe { CStr::from_ptr(s_raw) };
