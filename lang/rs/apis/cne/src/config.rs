@@ -87,12 +87,11 @@ struct Lport {
     #[serde(default)]
     busy_budget: u16,
     #[serde(default)]
-    unprivileged: bool,
-    #[serde(default)]
     force_wakeup: bool,
     #[serde(default)]
     skb_mode: bool,
     description: Option<String>,
+    xsk_pin_path: Option<String>,
     #[serde(skip_deserializing, skip_serializing)]
     xdp_uds: Option<*mut uds_info_t>,
     #[serde(skip_deserializing, skip_serializing)]
@@ -413,9 +412,6 @@ impl Config {
                 pcfg.busy_budget = lport.busy_budget;
 
                 let mut flags = 0;
-                if lport.unprivileged {
-                    flags |= LPORT_UNPRIVILEGED;
-                }
                 if lport.force_wakeup {
                     flags |= LPORT_FORCE_WAKEUP
                 }
@@ -456,22 +452,26 @@ impl Config {
 
                 pcfg.pi = lport_umem.rinfo[lport.region].pool;
 
-                // UDS handshake.
-                if pcfg.flags & LPORT_UNPRIVILEGED as u16 != 0 {
-                    if let Some(options) = &self.options {
-                        if let Some(uds_path) = &options.uds_path {
-                            if !uds_path.is_empty() {
-                                let c_uds_path = get_cstring_from_str(uds_path).as_ptr();
-                                let xsk_uds = udsc_handshake(c_uds_path);
+                // xsk pin path.
+                if let Some(xsk_pin_path) = &lport.xsk_pin_path {
+                    pcfg.xsk_map_path = get_cstring_from_str(xsk_pin_path).into_raw();
+                }
 
-                                if xsk_uds.is_null() {
-                                    let err_msg =
-                                        format!("UDS handshake failed for lport {lport_name}");
-                                    return Err(CneError::ConfigError(err_msg));
-                                }
-                                pcfg.xsk_uds = xsk_uds as *mut c_void;
-                                lport.xdp_uds = Some(xsk_uds);
+                // UDS handshake.
+                if let Some(options) = &self.options {
+                    if let Some(uds_path) = &options.uds_path {
+                        if !uds_path.is_empty() {
+                            let c_uds_path = get_cstring_from_str(uds_path).as_ptr();
+                            let xsk_uds = udsc_handshake(c_uds_path);
+
+                            if xsk_uds.is_null() {
+                                let err_msg =
+                                    format!("UDS handshake failed for lport {lport_name}");
+                                return Err(CneError::ConfigError(err_msg));
                             }
+                            pcfg.xsk_uds = xsk_uds as *mut c_void;
+                            pcfg.flags |= LPORT_UNPRIVILEGED as u16;
+                            lport.xdp_uds = Some(xsk_uds);
                         }
                     }
                 }
@@ -498,6 +498,11 @@ impl Config {
 
                 // Setup lport.
                 Self::setup_lport(&self.options, pcfg, lport_name, lport)?;
+
+                // Free allocated string if xsk_pin_path is present.
+                if lport.xsk_pin_path.is_some() {
+                    free_cchar_ptr(pcfg.xsk_map_path);
+                }
             }
         }
 

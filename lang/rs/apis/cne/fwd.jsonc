@@ -77,6 +77,7 @@
     //    busy_budget   - (O) -1 disabled, 0 use default, >0 budget value
     //    force_wakeup  - (O) force TX wakeup calls for CVL NIC, default false
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
+    //    xsk_pin_path  - (O) Path to pinned xsk map for this port
     //    description   - (O) the description, 'desc' can be used as well
     "lports": {
         "enp134s0:0": {
