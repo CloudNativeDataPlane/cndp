@@ -327,9 +327,7 @@ cne_conf.set('CNE_COMPILE_TIME_CPUFLAGS', ','.join(compile_time_cpuflags))
 # specify -D_GNU_SOURCE unconditionally
 add_project_arguments('-D_GNU_SOURCE', language: 'c')
 
-# configure the build, and make sure configs here and in config folder are
-# able to be included in any file. We also store a global array of include dirs
-# for passing to pmdinfogen scripts
+# Add the cne_build_config.h as a default include for all files.
 global_inc = include_directories('.')
 build_cfg_file = 'cne_build_config.h'
 add_project_arguments(['-include', build_cfg_file] + machine_args, language: 'c')
