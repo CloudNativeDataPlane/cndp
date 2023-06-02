@@ -292,7 +292,7 @@ perf record -a -e xdp:xdp_redirect_err \
     -e xdp:xdp_devmap_xmit
 ```
 
-## References:
+## References
 
 - [Debugging Silent Packet Drops](https://docs.kernel.org/bpf/redirect.html#debugging-packet-drops)
 - [Capturing network traffic in an eXpress Data Path (XDP) environment](https://www.redhat.com/en/blog/capturing-network-traffic-express-data-path-xdp-environment)
