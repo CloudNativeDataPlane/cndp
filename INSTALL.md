@@ -45,8 +45,7 @@ The [libbpf](https://github.com/libbpf/libbpf) is a dependency of CNDP. Starting
 it can be installed using apt. For earlier Ubuntu versions, or for users who want the latest code,
 it can be installed from source.
 
-#### _Note:_
-
+> **_NOTE:_**
 Newer versions of libbpf greater than or equal to v0.7.0 require _libxdp_ to be installed. For now we
 can checkout a previous version v0.5.0 or v0.6.1 instead of installing _libxdp_.
 
@@ -235,3 +234,65 @@ launch the application, specifying the updated configuration file.
 ```bash
 sudo ./builddir/examples/cndpfwd/cndpfwd -c examples/cndpfwd/fwd.jsonc drop
 ```
+
+### XDP Packet Capture
+
+Packets processed at the XDP hook can't be captured using tcpdump. Instead,
+it's recommended to use [xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump).
+
+The following example shows how to redirect a capture file from xdpdump to tcpdump for real-time packet decoding:
+
+```bash
+xdpdump -i eno1 -w - | tcpdump -r - -n
+```
+
+### Debugging packet drops
+
+Silent packet drops for AF_XDP can be debugged using:
+
+- `bpftrace`
+- `perf record`
+
+#### bpftrace
+
+The following `bpftrace` command can be used to capture and count all XDP tracepoints:
+
+```bash
+sudo bpftrace -e 'tracepoint:xdp:* { @cnt[probe] = count(); }'
+Attaching 12 probes...
+^C
+
+@cnt[tracepoint:xdp:mem_connect]: 18
+@cnt[tracepoint:xdp:mem_disconnect]: 18
+@cnt[tracepoint:xdp:xdp_exception]: 19605
+@cnt[tracepoint:xdp:xdp_devmap_xmit]: 1393604
+@cnt[tracepoint:xdp:xdp_redirect]: 22292200
+
+```
+
+> **_NOTE:_** The various xdp tracepoints can be found in [xdp.h](https://github.com/torvalds/linux/blob/master/include/trace/events/xdp.h) in the kernel source tree.
+
+The following `bpftrace` command can be used to extract the ERRNO being returned as part of the err parameter:
+
+```bash
+sudo bpftrace -e \
+'tracepoint:xdp:xdp_redirect*_err {@redir_errno[-args->err] = count();}
+tracepoint:xdp:xdp_devmap_xmit {@devmap_errno[-args->err] = count();}'
+
+```
+
+#### perf record
+
+`perf` also supports recording tracepoints:
+
+```bash
+perf record -a -e xdp:xdp_redirect_err \
+    -e xdp:xdp_redirect_map_err \
+    -e xdp:xdp_exception \
+    -e xdp:xdp_devmap_xmit
+```
+
+## References:
+
+- [Debugging Silent Packet Drops](https://docs.kernel.org/bpf/redirect.html#debugging-packet-drops)
+- [Capturing network traffic in an eXpress Data Path (XDP) environment](https://www.redhat.com/en/blog/capturing-network-traffic-express-data-path-xdp-environment)
