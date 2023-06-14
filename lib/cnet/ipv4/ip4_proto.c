@@ -31,6 +31,7 @@ static uint16_t
 ip4_proto_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
                        uint16_t nb_objs)
 {
+    struct cnet *cnet = this_cnet;
     pktmbuf_t *mbuf0, *mbuf1, *mbuf2, *mbuf3, **pkts;
     cne_edge_t next0, next1, next2, next3;
     cne_edge_t next_index;
@@ -41,8 +42,12 @@ ip4_proto_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     uint16_t held = 0;
     int i;
 
-    /* Speculative next */
-    next_index = CNE_NODE_IP4_INPUT_PROTO_DROP;
+    /* Speculative next
+     * If the packet is a proto that we don't know it will get punted to the Kernel
+     * instead of being dropped.
+     */
+    next_index = (cnet->flags & CNET_PUNT_ENABLED) ? CNE_NODE_IP4_INPUT_PROTO_PUNT
+                                                   : CNE_NODE_IP4_INPUT_PROTO_DROP;
 
     pkts        = (pktmbuf_t **)objs;
     from        = objs;
@@ -205,6 +210,7 @@ static struct cne_node_register ip4_proto_node = {
         {
             [CNE_NODE_IP4_INPUT_PROTO_DROP] = PKT_DROP_NODE_NAME,
             [CNE_NODE_IP4_INPUT_PROTO_UDP]  = UDP_INPUT_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_PROTO_PUNT] = PUNT_KERNEL_NODE_NAME,
 #if CNET_ENABLE_TCP
             [CNE_NODE_IP4_INPUT_PROTO_TCP] = TCP_INPUT_NODE_NAME,
 #endif

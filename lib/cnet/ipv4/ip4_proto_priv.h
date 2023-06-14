@@ -22,6 +22,7 @@ extern "C" {
 enum cne_node_ip4_proto_next {
     CNE_NODE_IP4_INPUT_PROTO_DROP, /**< Packet drop node. */
     CNE_NODE_IP4_INPUT_PROTO_UDP,  /**< UDP protocol. */
+    CNE_NODE_IP4_INPUT_PROTO_PUNT,
 #if CNET_ENABLE_TCP
     CNE_NODE_IP4_INPUT_PROTO_TCP, /**< TCP protocol. */
 #endif
