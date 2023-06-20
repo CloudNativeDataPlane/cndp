@@ -141,6 +141,37 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     return n_pkts;
 }
 
+/*
+ * Adjust the checksum to reflect that the TTL had been decremented.
+ *
+ * Flip the bits on the checksum, decrement the high byte of the checksum,
+ * fold in any carry, and then flip the bits back.  Rather than convert
+ * the checksum to host byte order and then back to network byte order,
+ * just convert the increment to network byte order.  Note: in 1's
+ * complement arithmetic, subtracting by x is the same as adding the 1's
+ * complement of x.  So, in 16 bit arithmetic, rather than subtracting by
+ * (1<<8), we can add by (1<<8)^0xffff.  Since it's all constants, that
+ * should be evaluated by the compiler at compile time.
+ *
+ * Doing the ^0xffff to initially flip the bits keeps the upper bits from
+ * also being flipped. Using the ~ operation at the end doesn't matter,
+ * because the upper bits get tossed when we assign it to the 16 bit sum
+ * field, so let the compiler do whatever is fastest.
+ */
+static inline void
+ipv4_adjust_cksum(struct cne_ipv4_hdr *hdr)
+{
+    int32_t cksum;
+
+    hdr->time_to_live--;
+
+    /* increment checksum high byte */
+    cksum = (int32_t)(hdr->hdr_checksum ^ 0xFFFF) + (int32_t)htobe16(((1 << 8) ^ 0xFFFF));
+
+    /* Fold the carry bit into the checksum */
+    hdr->hdr_checksum = ~(cksum + (cksum >> 16));
+}
+
 static int
 _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 {
@@ -166,9 +197,8 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 
         struct cne_ipv4_hdr *rx_ip_hdr =
             pktmbuf_mtod_offset(pd->rx_mbufs[i], struct cne_ipv4_hdr *, ETHER_HDR_LEN);
-        rx_ip_hdr->time_to_live--;
-        rx_ip_hdr->hdr_checksum = htons(ntohs(rx_ip_hdr->hdr_checksum) + 1);
-        ip_addr[i]              = ntohl(rx_ip_hdr->dst_addr);
+        ipv4_adjust_cksum(rx_ip_hdr);
+        ip_addr[i] = ntohl(rx_ip_hdr->dst_addr);
     }
 
     l3fwd_fib_lookup(ip_addr, eaddr, tx_port, n_pkts);
