@@ -43,8 +43,8 @@ ip4_proto_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     int i;
 
     /* Speculative next
-     * If the packet is a proto that we don't know it will get punted to the Kernel
-     * instead of being dropped.
+     * If the packet has made it this far and isn't UDP/TCP,
+     * punt it to the kernel if punt is enabled, else drop it.
      */
     next_index = (cnet->flags & CNET_PUNT_ENABLED) ? CNE_NODE_IP4_INPUT_PROTO_PUNT
                                                    : CNE_NODE_IP4_INPUT_PROTO_DROP;
@@ -209,8 +209,8 @@ static struct cne_node_register ip4_proto_node = {
     .next_nodes =
         {
             [CNE_NODE_IP4_INPUT_PROTO_DROP] = PKT_DROP_NODE_NAME,
-            [CNE_NODE_IP4_INPUT_PROTO_UDP]  = UDP_INPUT_NODE_NAME,
             [CNE_NODE_IP4_INPUT_PROTO_PUNT] = PUNT_KERNEL_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_PROTO_UDP]  = UDP_INPUT_NODE_NAME,
 #if CNET_ENABLE_TCP
             [CNE_NODE_IP4_INPUT_PROTO_TCP] = TCP_INPUT_NODE_NAME,
 #endif

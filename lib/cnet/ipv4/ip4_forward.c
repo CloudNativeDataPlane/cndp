@@ -157,6 +157,7 @@ ip4_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
             }
         }
 
+        fi = cnet->rt4_finfo;
         /* Enqueue four to next node */
         cne_edge_t fix_spec =
             ((n_index ^ n0) && (n_index ^ n1) && (n_index ^ n2) && (n_index ^ n3));
