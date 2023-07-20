@@ -280,7 +280,12 @@ cat <<-EOF > ${config_file}
         "no-restapi": false,
         "cli": false,
         ${UDS_CFG[@]}
-        "mode": "drop"
+        "mode": "drop",
+        // FIB rules <IP Address>,<Destination MAC>,<destination port>
+        "l3fwd-fib-rules": [
+            "198.18.0.0/24,02:00:01:02:03:04,1",
+            "198.18.1.0/24,06:00:01:02:03:04,0"
+        ]
     },
 
     // List of threads to start and information for that thread. Application can start
