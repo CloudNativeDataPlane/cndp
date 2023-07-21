@@ -2,16 +2,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2021-2023 Intel Corporation
 
-
 # Bash script to generate jsonc file to be used with cndpfwd app
 # This script is dependent on these environment variables being set:
-# AFXDP_DEVICES and LIST_OF_QIDS
+# AFXDP_DEVICES
 # AFXDP_DEVICES is the list of interfaces that are passed into the cndpfwd app
 # When this script is used as part of a K8s deployment, the K8s device plugin
 # would populate the AFXDP_DEVICES environment variable.
-# LIST_OF_QIDS is the list of queue IDs that are used to program ethtool filters.
 # The available cores to the application are determined by
 # the 'lscpu' command.
+
 KIND=false
 PINNED_BPF_MAP=false
 config_file=config.jsonc
@@ -28,9 +27,9 @@ while getopts "kp" flag; do
 done
 
 if [ ${KIND} = false ]  ; then
-    LIST_OF_QIDS=${LIST_OF_QIDS:-4}
+    DEFAULT_QID=4
 else
-    LIST_OF_QIDS=${LIST_OF_QIDS:-0} # For kind using veth use queue 0
+    DEFAULT_QID=0 # For kind using veth use queue 0
 fi
 
 if [ ${PINNED_BPF_MAP} = false ]  ; then
@@ -58,12 +57,7 @@ declare -a LCORE
 for net in $AFXDP_DEVICES
 do
     NET[num_of_interfaces++]=$net
-done
-
-# get list of qids
-for qid in $LIST_OF_QIDS
-do
-    QID[num_of_qids++]=$qid
+	QID[num_of_qids++]=${DEFAULT_QID}
 done
 
 function get_lcore()
@@ -286,7 +280,12 @@ cat <<-EOF > ${config_file}
         "no-restapi": false,
         "cli": false,
         ${UDS_CFG[@]}
-        "mode": "drop"
+        "mode": "drop",
+        // FIB rules <IP Address>,<Destination MAC>,<destination port>
+        "l3fwd-fib-rules": [
+            "198.18.0.0/24,02:00:01:02:03:04,1",
+            "198.18.1.0/24,06:00:01:02:03:04,0"
+        ]
     },
 
     // List of threads to start and information for that thread. Application can start
