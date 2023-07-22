@@ -24,12 +24,20 @@ else
 	verbose=
 endif
 
-all: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} static build
+ifeq (${tcp},1)
+    tcp_build=tcp
 else
-	${Build} ${verbose} build
+    tcp_build=
 endif
+
+ifeq (${static_build},1)
+    build_static=static
+else
+    build_static=
+endif
+
+all: FORCE
+	${Build} ${verbose} ${tcp_build} ${ipv6_build} ${build_static} build
 
 help: FORCE
 	${Build} help
@@ -37,44 +45,27 @@ help: FORCE
 	@echo "Makefile options:"
 	@echo " Adding 'static_build=1' to the make line enables building static files"
 	@echo "    eg: 'make static_build=1 rebuild install' for static executables"
+	@echo " Adding 'tcp=1' to enable TCP building"
+	@echo "    eg: 'make tcp=1 rebuild-install' to enable TCP support"
+	@echo " Adding 'V=1' to enable verbose build messages"
 
 build: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} static build
-else
-	${Build} ${verbose} build
-endif
+	${Build} ${verbose} ${tcp_build} ${build_static} build
 
 rebuild: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} clean static build
-else
-	${Build} ${verbose} clean build
-endif
+	${Build} ${verbose} ${tcp_build} clean ${build_static} build
 
 rebuild-install: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} clean static build install
-else
-	${Build} ${verbose} clean build install
-endif
+	${Build} ${verbose} ${tcp_build} clean ${build_static} build install
 
 coverity: FORCE
 	${Build} ${verbose} clean coverity
 
 debug: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} static debug
-else
-	${Build} ${verbose} debug
-endif
+	${Build} ${verbose} ${tcp_build} ${build_static} debug
 
 debugopt: FORCE
-ifeq (${static_build},1)
-	${Build} ${verbose} static debugopt
-else
-	${Build} ${verbose} debugopt
-endif
+	${Build} ${verbose} ${tcp_build} ${build_static} debugopt
 
 clean: FORCE
 	${Build} ${verbose} clean

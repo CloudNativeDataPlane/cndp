@@ -23,6 +23,7 @@ buildtype="release"
 static=""
 coverity=""
 configure=""
+tcp=""
 
 if [[ "${build_dir}" = /* ]]; then
     # absolute path to build dir. Don't prepend workdir.
@@ -57,7 +58,7 @@ echo ""
 
 function run_meson() {
     btype="-Dbuildtype=$buildtype"
-    meson $configure $static $coverity $btype --prefix="/$target_dir" "$build_path" "$sdk_dir"
+    meson $configure $static $coverity $btype $tcp --prefix="/$target_dir" "$build_path" "$sdk_dir"
 }
 
 function ninja_build() {
@@ -193,8 +194,9 @@ usage() {
     echo "  cne-build.sh     - create the 'build_dir' directory if not present and compile CNDP"
     echo "                     If the 'build_dir' directory exists it will use ninja to build CNDP"
     echo "                     without running meson unless one of the meson.build files were changed"
-    echo "    -v             - Enable verbose output"
+    echo "    -v | --verbose - Enable verbose output"
     echo "    build          - build CNDP using the 'build_dir' directory"
+    echo "    tcp            - build CNDP with TCP support enabled"
     echo "    static         - build CNDP static using the 'build_dir' directory, 'make static build'"
     echo "    debug          - turn off optimization, may need to do 'clean' then 'debug' the first time"
     echo "    debugopt       - turn optimization on with -O2, may need to do 'clean' then 'debugopt'"
@@ -220,6 +222,11 @@ do
 
     '-v' | '--verbose')
         verbose=true
+        ;;
+
+    'tcp')
+        echo ">>> Enable TCP builds"
+        tcp=-Denable_tcp=true
         ;;
 
     'static')
@@ -251,7 +258,7 @@ do
         ;;
 
     'clean')
-    echo "*** Removing $build_path directory"
+        echo "*** Removing $build_path directory"
         rm -fr "$build_path"
         ;;
 
