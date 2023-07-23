@@ -16,7 +16,7 @@
 
 #include "cne_common.h"          // for __cne_cache_aligned
 #include "cne_fib6.h"            // for cne_fib6_conf (ptr only), cne_fib6_lookup_...
-#include "private_fib6.h"        // for CNE_FIB6_IPV6_ADDR_SIZE, cne_fib6_lookup_fn_t
+#include "private_fib6.h"        // for IPV6_ADDR_LEN, cne_fib6_lookup_fn_t
 
 struct cne_fib6;
 
@@ -117,8 +117,7 @@ is_entry_extended(uint64_t ent)
 }
 
 #define LOOKUP_FUNC(suffix, type, nh_sz)                                                        \
-    static inline void cne_trie_lookup_bulk_##suffix(void *p,                                   \
-                                                     uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE],    \
+    static inline void cne_trie_lookup_bulk_##suffix(void *p, uint8_t ips[][IPV6_ADDR_LEN],     \
                                                      uint64_t *next_hops, const unsigned int n) \
     {                                                                                           \
         struct cne_trie_tbl *dp = (struct cne_trie_tbl *)p;                                     \
@@ -138,13 +137,13 @@ LOOKUP_FUNC(2b, uint16_t, 1)
 LOOKUP_FUNC(4b, uint32_t, 2)
 LOOKUP_FUNC(8b, uint64_t, 3)
 
-void *trie_create(const char *name, struct cne_fib6_conf *conf);
+void *trie_create(const char *name, struct cne_fib_conf *conf);
 
 void trie_free(void *p);
 
-cne_fib6_lookup_fn_t trie_get_lookup_fn(void *p, enum cne_fib6_lookup_type type);
+cne_fib6_lookup_fn_t trie_get_lookup_fn(void *p, enum cne_fib_lookup_type type);
 
-int trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth,
+int trie_modify(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth,
                 uint64_t next_hop, int op);
 
 #ifdef __cplusplus

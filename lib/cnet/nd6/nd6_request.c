@@ -205,13 +205,9 @@ nd6_request_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 
     ctx->s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_ICMPV6);
     if (ctx->s6 < 0) {
-        int errnum = errno;
-
-        if (errnum == EPROTONOSUPPORT)
-            ctx->s6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-
+        ctx->s6 = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
         if (ctx->s6 < 0)
-            CNE_ERR_RET("Unable to open ICMPv6 socket\n");
+            return -errno;
     }
 
     return 0;

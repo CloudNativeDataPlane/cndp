@@ -22,7 +22,7 @@
 #include <arpa/inet.h>
 
 #include <cne_byteorder.h>
-#include <pktmbuf.h>
+#include <pktmbuf_offload.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -194,24 +194,6 @@ cne_raw_cksum(const void *buf, size_t len)
 
     sum = __cne_raw_cksum(buf, len, 0);
     return __cne_raw_cksum_reduce(sum);
-}
-
-/**
- * Compute the raw (non complemented) checksum of a packet.
- *
- * @param m
- *   The pointer to the mbuf.
- * @param off
- *   The offset in bytes to start the checksum.
- * @param len
- *   The length in bytes of the data to checksum.
- * @return
- *   checksum value
- */
-static inline uint16_t
-cne_raw_cksum_mbuf(const pktmbuf_t *m, uint32_t off, uint32_t len)
-{
-    return cne_raw_cksum(pktmbuf_mtod_offset(m, const char *, off), len);
 }
 
 /**

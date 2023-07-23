@@ -21,7 +21,6 @@
 #include "cmds.h"
 #include "display.h"              // for display_resume, display_pause, ...
 #include "cne_inet.h"             // for inet_ntop4
-#include "net/cne_inet6.h"        // for inet_ntop6
 #include "_pcap.h"                // for pcap_info_t
 #include "capture.h"              // for txgen_set_capture
 #include "cli.h"                  // for cli_quit

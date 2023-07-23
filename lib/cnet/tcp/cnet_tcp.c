@@ -411,17 +411,21 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
                 char ip[INET6_ADDRSTRLEN + 4] = {0};
 
                 pktmbuf_free(mbuf);
-                CNE_ERR_RET("No netif match %s\n",
-                            inet_ntop6(ip, sizeof(ip), &pcb->key.faddr.cin6_addr, NULL));
+                if (inet_ntop6(ip, sizeof(ip), &pcb->key.faddr.cin6_addr, NULL))
+                    CNE_ERR_RET("No netif match %s\n", ip);
+                else
+                    CNE_ERR_RET("Address invalid\n");
             }
             /* Find the correct subnet IP address for the given request */
             if ((k = cnet_ipv6_compare(nif, (void *)&pcb->key.faddr.cin6_addr)) == -1) {
                 char ip[INET6_ADDRSTRLEN + 4] = {0};
 
                 pktmbuf_free(mbuf);
-                CNE_ERR_RET(
-                    "cnet_ipv4_compare(%s) failed\n",
-                    inet_ntop6(ip, sizeof(ip), (struct in6_addr *)&pcb->key.faddr.cin6_addr, NULL));
+
+                if (inet_ntop6(ip, sizeof(ip), (struct in6_addr *)&pcb->key.faddr.cin6_addr, NULL))
+                    CNE_ERR_RET("cnet_ipv6_compare(%s) failed\n", ip);
+                else
+                    CNE_ERR_RET("cnet_ipv6_compare() failed\n");
             }
 
             tcb->netif = nif;
@@ -440,17 +444,22 @@ tcp_send_segment(struct tcb_entry *tcb, struct seg_entry *seg)
                 char ip[INET6_ADDRSTRLEN + 4] = {0};
 
                 pktmbuf_free(mbuf);
-                CNE_ERR_RET("No netif match %s\n",
-                            inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL));
+
+                if (inet_ntop4(ip, sizeof(ip), &pcb->key.faddr.cin_addr, NULL))
+                    CNE_ERR_RET("No netif match %s\n", ip);
+                else
+                    CNE_ERR_RET("Address is invalid\n");
             }
             /* Find the correct subnet IP address for the given request */
             if ((k = cnet_ipv4_compare(nif, (void *)&pcb->key.faddr.cin_addr.s_addr)) == -1) {
                 char ip[INET6_ADDRSTRLEN + 4] = {0};
 
                 pktmbuf_free(mbuf);
-                CNE_ERR_RET("cnet_ipv4_compare(%s) failed\n",
-                            inet_ntop4(ip, sizeof(ip),
-                                       (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr, NULL));
+                if (inet_ntop4(ip, sizeof(ip), (struct in_addr *)&pcb->key.faddr.cin_addr.s_addr,
+                               NULL))
+                    CNE_ERR_RET("cnet_ipv4_compare(%s) failed\n", ip);
+                else
+                    CNE_ERR_RET("Address is invalid\n");
             }
 
             tcb->netif = nif;

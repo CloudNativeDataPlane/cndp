@@ -36,7 +36,7 @@ typedef struct tcpip_s2 {
         struct cne_ipv4_hdr ip4; /* IPv4 header */
         struct cne_ipv6_hdr ip6; /* IPv6 header */
     };
-    struct cne_tcp_hdr tcp;  /* TCP header */
+    struct cne_tcp_hdr tcp; /* TCP header */
 } __cne_packed tcpip_t2;
 
 static inline uint16_t

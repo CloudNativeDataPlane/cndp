@@ -7,7 +7,7 @@
 #include <cne_rwlock.h>          // for cne_rwlock_write_unlock, cne_rwlock_write_...
 #include <cne_log.h>             // for CNE_LOG_ERR, CNE_ERR_GOTO, CNE_NULL_RET
 #include <cne_rib6.h>            // for cne_rib6_free, cne_rib6_conf, cne_rib6_create
-#include "private_fib6.h"        // for CNE_FIB6_IPV6_ADDR_SIZE, CNE_FIB6_TRIE
+#include "private_fib6.h"        // for IPV6_ADDR_LEN, CNE_FIB6_TRIE
 #include <cne_fib6.h>
 #include <bsd/string.h>        // for strlcpy
 #include <errno.h>             // for EINVAL, ENOENT
@@ -23,7 +23,7 @@ static cne_rwlock_t __fib6_lock;
 
 struct cne_fib6 {
     char name[FIB6_NAMESIZE];
-    enum cne_fib6_type type;     /**< Type of FIB struct */
+    enum cne_fib_type type;      /**< Type of FIB struct */
     struct cne_rib6 *rib;        /**< RIB helper datastruct */
     void *dp;                    /**< pointer to the dataplane struct*/
     cne_fib6_lookup_fn_t lookup; /**< fib lookup function */
@@ -32,8 +32,7 @@ struct cne_fib6 {
 };
 
 static void
-dummy_lookup(void *fib_p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops,
-             const unsigned int n)
+dummy_lookup(void *fib_p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops, const unsigned int n)
 {
     unsigned int i;
     struct cne_fib6 *fib = fib_p;
@@ -49,7 +48,7 @@ dummy_lookup(void *fib_p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next
 }
 
 static int
-dummy_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth,
+dummy_modify(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth,
              uint64_t next_hop, int op)
 {
     struct cne_rib6_node *node;
@@ -59,13 +58,13 @@ dummy_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], ui
     node = cne_rib6_lookup_exact(fib->rib, ip, depth);
 
     switch (op) {
-    case CNE_FIB6_ADD:
+    case CNE_FIB_ADD:
         if (node == NULL)
             node = cne_rib6_insert(fib->rib, ip, depth);
         if (node == NULL)
             return -1;
         return cne_rib6_set_nh(node, next_hop);
-    case CNE_FIB6_DEL:
+    case CNE_FIB_DEL:
         if (node == NULL)
             return -ENOENT;
         cne_rib6_remove(fib->rib, ip, depth);
@@ -75,22 +74,22 @@ dummy_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], ui
 }
 
 static int
-init_dataplane(struct cne_fib6 *fib, struct cne_fib6_conf *conf)
+init_dataplane(struct cne_fib6 *fib, struct cne_fib_conf *conf)
 {
     char dp_name[sizeof(void *)];
 
     snprintf(dp_name, sizeof(dp_name), "%p", fib);
     switch (conf->type) {
-    case CNE_FIB6_DUMMY:
+    case CNE_FIB_DUMMY:
         fib->dp     = fib;
         fib->lookup = dummy_lookup;
         fib->modify = dummy_modify;
         return 0;
-    case CNE_FIB6_TRIE:
+    case CNE_FIB_TRIE:
         fib->dp = trie_create(dp_name, conf);
         if (fib->dp == NULL)
             return -1;
-        fib->lookup = trie_get_lookup_fn(fib->dp, CNE_FIB6_LOOKUP_DEFAULT);
+        fib->lookup = trie_get_lookup_fn(fib->dp, CNE_FIB_LOOKUP_DEFAULT);
         fib->modify = trie_modify;
         return 0;
     default:
@@ -100,32 +99,31 @@ init_dataplane(struct cne_fib6 *fib, struct cne_fib6_conf *conf)
 }
 
 int
-cne_fib6_add(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth,
+cne_fib6_add(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth,
              uint64_t next_hop)
 {
     if ((fib == NULL) || (ip == NULL) || (fib->modify == NULL) || (depth > CNE_FIB6_MAXDEPTH))
         return -EINVAL;
-    return fib->modify(fib, ip, depth, next_hop, CNE_FIB6_ADD);
+    return fib->modify(fib, ip, depth, next_hop, CNE_FIB_ADD);
 }
 
 int
-cne_fib6_delete(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth)
+cne_fib6_delete(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth)
 {
     if ((fib == NULL) || (ip == NULL) || (fib->modify == NULL) || (depth > CNE_FIB6_MAXDEPTH))
         return -EINVAL;
-    return fib->modify(fib, ip, depth, 0, CNE_FIB6_DEL);
+    return fib->modify(fib, ip, depth, 0, CNE_FIB_DEL);
 }
 
 int
-cne_fib6_lookup_bulk(struct cne_fib6 *fib, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE],
-                     uint64_t *next_hops, int n)
+cne_fib6_lookup_bulk(struct cne_fib6 *fib, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops, int n)
 {
     fib->lookup(fib->dp, ips, next_hops, n);
     return 0;
 }
 
 struct cne_fib6 *
-cne_fib6_create(const char *name, struct cne_fib6_conf *conf)
+cne_fib6_create(const char *name, struct cne_fib_conf *conf)
 {
     int ret;
     struct cne_fib6 *fib = NULL;
@@ -133,7 +131,7 @@ cne_fib6_create(const char *name, struct cne_fib6_conf *conf)
     struct cne_rib6_conf rib_conf;
 
     /* Check user arguments. */
-    if ((name == NULL) || (conf == NULL) || (conf->max_routes < 0) || (conf->type > CNE_FIB6_TRIE))
+    if ((name == NULL) || (conf == NULL) || (conf->max_routes < 0) || (conf->type > CNE_FIB_TRIE))
         return NULL;
 
     rib_conf.ext_sz    = 0;
@@ -174,9 +172,9 @@ static void
 free_dataplane(struct cne_fib6 *fib)
 {
     switch (fib->type) {
-    case CNE_FIB6_DUMMY:
+    case CNE_FIB_DUMMY:
         return;
-    case CNE_FIB6_TRIE:
+    case CNE_FIB_TRIE:
         trie_free(fib->dp);
     default:
         return;
@@ -207,12 +205,12 @@ cne_fib6_get_rib(struct cne_fib6 *fib)
 }
 
 int
-cne_fib6_select_lookup(struct cne_fib6 *fib, enum cne_fib6_lookup_type type)
+cne_fib6_select_lookup(struct cne_fib6 *fib, enum cne_fib_lookup_type type)
 {
     cne_fib6_lookup_fn_t fn;
 
     switch (fib->type) {
-    case CNE_FIB6_TRIE:
+    case CNE_FIB_TRIE:
         fn = trie_get_lookup_fn(fib->dp, type);
         if (fn == NULL)
             return -EINVAL;

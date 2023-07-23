@@ -19,46 +19,14 @@
 #include <stdint.h>        // for uint8_t, uint64_t, uint32_t
 #include <cne_common.h>
 
+#include <cne_fib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct cne_fib6;
 struct cne_rib6;
-
-/** Maximum FIB6 IPv6 address size */
-#define CNE_FIB6_IPV6_ADDR_SIZE 16
-
-/** Type of FIB struct */
-enum cne_fib6_type {
-    CNE_FIB6_DUMMY, /**< RIB6 tree based FIB */
-    CNE_FIB6_TRIE   /**< TRIE based fib  */
-};
-
-/** Size of nexthop (1 << nh_sz) bits for TRIE based FIB */
-enum cne_fib_trie_nh_sz { CNE_FIB6_TRIE_2B = 1, CNE_FIB6_TRIE_4B, CNE_FIB6_TRIE_8B };
-
-/** Type of lookup function implementation */
-enum cne_fib6_lookup_type {
-    CNE_FIB6_LOOKUP_DEFAULT,
-    /**< Selects the best implementation based on the max AVX bitwidth */
-    CNE_FIB6_LOOKUP_TRIE_SCALAR,       /**< Scalar lookup function implementation*/
-    CNE_FIB6_LOOKUP_TRIE_VECTOR_AVX512 /**< Vector implementation using AVX512 */
-};
-
-/** FIB configuration structure */
-struct cne_fib6_conf {
-    enum cne_fib6_type type; /**< Type of FIB struct */
-    /** Default value returned on lookup if there is no route */
-    uint64_t default_nh;
-    int max_routes;
-    union {
-        struct {
-            enum cne_fib_trie_nh_sz nh_sz;
-            uint32_t num_tbl8;
-        } trie;
-    };
-};
 
 /**
  * Create FIB
@@ -70,7 +38,7 @@ struct cne_fib6_conf {
  * @return
  *  Handle to FIB object on success or NULL on error.
  */
-struct cne_fib6 *cne_fib6_create(const char *name, struct cne_fib6_conf *conf);
+struct cne_fib6 *cne_fib6_create(const char *name, struct cne_fib_conf *conf);
 
 /**
  * Free an FIB object.
@@ -96,7 +64,7 @@ void cne_fib6_free(struct cne_fib6 *fib);
  * @return
  *   0 on success, negative value otherwise
  */
-int cne_fib6_add(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth,
+int cne_fib6_add(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth,
                  uint64_t next_hop);
 
 /**
@@ -111,7 +79,7 @@ int cne_fib6_add(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE]
  * @return
  *   0 on success, negative value otherwise
  */
-int cne_fib6_delete(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth);
+int cne_fib6_delete(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth);
 
 /**
  * Lookup multiple IP addresses in the FIB.
@@ -130,8 +98,8 @@ int cne_fib6_delete(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SI
  *  @return
  *   -EINVAL for incorrect arguments, otherwise 0
  */
-int cne_fib6_lookup_bulk(struct cne_fib6 *fib, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE],
-                         uint64_t *next_hops, int n);
+int cne_fib6_lookup_bulk(struct cne_fib6 *fib, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops,
+                         int n);
 
 /**
  * Get pointer to the dataplane specific struct
@@ -167,7 +135,7 @@ struct cne_rib6 *cne_fib6_get_rib(struct cne_fib6 *fib);
  *   0 on success
  *   -EINVAL on failure
  */
-int cne_fib6_select_lookup(struct cne_fib6 *fib, enum cne_fib6_lookup_type type);
+int cne_fib6_select_lookup(struct cne_fib6 *fib, enum cne_fib_lookup_type type);
 
 #ifdef __cplusplus
 }

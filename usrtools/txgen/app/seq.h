@@ -8,6 +8,7 @@
 #include <cne_common.h>
 #include <net/cne_ether.h>
 #include <cne_inet.h>
+#include <pktmbuf.h>
 
 #ifdef __cplusplus
 extern "C" {

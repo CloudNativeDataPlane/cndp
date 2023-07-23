@@ -26,7 +26,6 @@
 #include "port-cfg.h"            // for port_info_t, port_sizes_t, ABC_FILL_PATTERN
 #include "seq.h"                 // for pkt_seq_t
 #include "stats.h"               // for pkt_stats_t, txgen_get_link_status, txgen_...
-#include "net/cne_inet6.h"
 
 /**
  *

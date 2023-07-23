@@ -62,7 +62,7 @@ ip6_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
     struct cne_ether_hdr *eth[4];
 
     struct nd6_cache_entry *nd6[4];
-    uint8_t ip6[4][CNE_FIB6_IPV6_ADDR_SIZE] = {0};
+    uint8_t ip6[4][IPV6_ADDR_LEN] = {0};
 
     /* Speculative next as last next */
     n_index = IP6_FORWARD_NODE_LAST_NEXT(node->ctx);
@@ -108,19 +108,19 @@ ip6_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
         n_left_from -= 4;
 
         hdr[0] = pktmbuf_mtod(mbuf0, struct cne_ipv6_hdr *);
-        memcpy(ip6[0], hdr[0]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ip6[0], hdr[0]->dst_addr, IPV6_ADDR_LEN);
         eth[0] = pktmbuf_adjust(mbuf0, struct cne_ether_hdr *, -mbuf0->l2_len);
 
         hdr[1] = pktmbuf_mtod(mbuf1, struct cne_ipv6_hdr *);
-        memcpy(ip6[1], hdr[1]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ip6[1], hdr[1]->dst_addr, IPV6_ADDR_LEN);
         eth[1] = pktmbuf_adjust(mbuf1, struct cne_ether_hdr *, -mbuf1->l2_len);
 
         hdr[2] = pktmbuf_mtod(mbuf2, struct cne_ipv6_hdr *);
-        memcpy(ip6[2], hdr[2]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ip6[2], hdr[2]->dst_addr, IPV6_ADDR_LEN);
         eth[2] = pktmbuf_adjust(mbuf2, struct cne_ether_hdr *, -mbuf2->l2_len);
 
         hdr[3] = pktmbuf_mtod(mbuf3, struct cne_ipv6_hdr *);
-        memcpy(ip6[3], hdr[3]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ip6[3], hdr[3]->dst_addr, IPV6_ADDR_LEN);
         eth[3] = pktmbuf_adjust(mbuf3, struct cne_ether_hdr *, -mbuf3->l2_len);
 
         n0 = n1 = n2 = n3 = NODE_IP6_FORWARD_ND6_REQUEST;
@@ -229,7 +229,7 @@ ip6_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
         eth[0] = pktmbuf_adjust(mbuf0, struct cne_ether_hdr *, -mbuf0->l2_len);
 
         /* Look up the destination IP address in the nd6 hash table */
-        memcpy(ip6[0], hdr[0]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ip6[0], hdr[0]->dst_addr, IPV6_ADDR_LEN);
 
         n0 = NODE_IP6_FORWARD_ND6_REQUEST;
         if (unlikely(fib6_info_lookup(fi, ip6, (void **)nd6, 1) > 0)) {

@@ -52,7 +52,7 @@ ip6_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt
     struct nd6_cache_entry *nd6;
     struct cnet_metadata *md;
     struct netif *nif;
-    uint8_t ipaddr[CNE_FIB6_IPV6_ADDR_SIZE] = {0};
+    uint8_t ipaddr[IPV6_ADDR_LEN] = {0};
     void *l4;
     uint32_t nfllabel, exfllabel, tclass = 0;
 
@@ -83,10 +83,10 @@ ip6_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt
     ip->payload_len = htobe16(pktmbuf_data_len(m));
     ip->hop_limits  = pcb->ttl;
     ip->proto       = pcb->ip_proto; /* Protocol, next header. */
-    memcpy(ip->dst_addr, md->faddr.cin6_addr.s6_addr, CNE_FIB6_IPV6_ADDR_SIZE);
-    memcpy(ip->src_addr, md->laddr.cin6_addr.s6_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+    memcpy(ip->dst_addr, md->faddr.cin6_addr.s6_addr, IPV6_ADDR_LEN);
+    memcpy(ip->src_addr, md->laddr.cin6_addr.s6_addr, IPV6_ADDR_LEN);
 
-    memcpy(ipaddr, ip->src_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+    memcpy(ipaddr, ip->src_addr, IPV6_ADDR_LEN);
 
     if (likely(fib6_info_lookup(cnet->rt6_finfo, &ipaddr, (void **)&rt6, 1) > 0)) {
         m->l2_len = sizeof(struct cne_ether_hdr);
@@ -115,7 +115,7 @@ ip6_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt
             return nxt;
 
         nxt = IP6_OUTPUT_NEXT_ND6_REQUEST;
-        memcpy(ipaddr, ip->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+        memcpy(ipaddr, ip->dst_addr, IPV6_ADDR_LEN);
         if (likely(fib6_info_lookup(cnet->arp_finfo, &ipaddr, (void **)&nd6, 1) > 0)) {
             ether_addr_copy(&nd6->ll_addr, &eth->d_addr);
 

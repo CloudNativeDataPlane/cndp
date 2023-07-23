@@ -64,7 +64,7 @@ typedef struct ip_overlay_s {
 } __attribute__((__packed__)) ip_overlay_t;
 
 /* IP6 overlay header for the pseudo header */
-struct ip6_overlay_s {
+typedef struct ip6_overlay_s {
     uint8_t src[16];      /**< IP address of source host. */
     uint8_t dst[16];      /**< IP address of destination host(s). */
     uint32_t payload_len; /**< IP payload size, including ext. headers */
@@ -77,8 +77,8 @@ typedef unsigned int seq_t; /* TCP Sequence type */
 /* The UDP/IP Pseudo header */
 typedef struct udpip_s {
     union {
-        ip_overlay_t ip4;         /* IPv4 overlay header */
-        struct ip6_overlay_s ip6; /* IPv6 overlay header */
+        ip_overlay_t ip4;  /* IPv4 overlay header */
+        ip6_overlay_t ip6; /* IPv6 overlay header */
     };
     struct cne_udp_hdr udp; /* UDP header for protocol */
 } __attribute__((__packed__)) udpip_t;
@@ -86,8 +86,8 @@ typedef struct udpip_s {
 /* The TCP/IPv4 Pseudo header */
 typedef struct tcpip_s {
     union {
-        ip_overlay_t ip4;         /* IPv4 overlay header */
-        struct ip6_overlay_s ip6; /* IPv6 overlay header */
+        ip_overlay_t ip4;  /* IPv4 overlay header */
+        ip6_overlay_t ip6; /* IPv6 overlay header */
     };
     struct cne_tcp_hdr tcp; /* TCP header for protocol */
 } __attribute__((__packed__)) tcpip_t;
@@ -130,9 +130,9 @@ typedef struct l3_4route_s {
 
 #define IBUF_SIZE 256
 
-#define INET_MASK_STRLEN 4
+#define INET_MASK_STRLEN  4
 #define INET6_MASK_STRLEN 8 /* First 64-bits are the prefix of IPv6 Address */
-#define IP4_ADDR_STRLEN  (INET_ADDRSTRLEN + INET_MASK_STRLEN)
+#define IP4_ADDR_STRLEN   (INET_ADDRSTRLEN + INET_MASK_STRLEN)
 #define IP6_ADDR_STRLEN   (INET6_ADDRSTRLEN + INET6_MASK_STRLEN)
 
 #ifdef __cplusplus
@@ -142,3 +142,6 @@ typedef struct l3_4route_s {
 #endif /* __CNE_INET_H */
 
 #include <cne_inet4.h>
+#ifdef CNET_ENABLE_IP6
+#include <cne_inet6.h>
+#endif

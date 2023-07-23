@@ -19,7 +19,6 @@
 #include <cnet_reg.h>
 #include <cnet_stk.h>
 #include <cne_inet.h>
-#include <net/cne_inet6.h>
 #include <cnet_netif.h>
 #include <cnet_arp.h>
 #include <cnet_nd6.h>

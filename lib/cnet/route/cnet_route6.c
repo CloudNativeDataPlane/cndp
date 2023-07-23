@@ -4,16 +4,15 @@
 
 #include <cnet.h>        // for cnet_add_instance
 #include <cnet_reg.h>
-#include <cnet_stk.h>             // for stk_entry, per_thread_stk, this_stk
-#include <net/cne_inet6.h>        // for _in_addr, in_caddr_copy, inet_ntop6, in_caddr
-#include <cnet_ipv6.h>            // for __netbytes
-#include <cnet_netif.h>           // for netif
-#include <endian.h>               // for be32toh
-#include <stdio.h>                // for printf, NULL
-#include <cne_fib6.h>             // for
-#include <ip6_node_api.h>         // for cne_node_ip6_add_input()
+#include <cnet_stk.h>            // for stk_entry, per_thread_stk, this_stk
+#include <cne_inet6.h>           // for _in_addr, in_caddr_copy, inet_ntop6, in_caddr
+#include <cnet_ipv6.h>           // for __netbytes
+#include <cnet_netif.h>          // for netif
+#include <endian.h>              // for be32toh
+#include <stdio.h>               // for printf, NULL
+#include <cne_fib6.h>            // for
+#include <ip6_node_api.h>        // for cne_node_ip6_add_input()
 
-#include "net/cne_inet6.h"
 #include "cnet_fib_info.h"
 #include "cnet_route.h"
 #include "cnet_route6.h"
@@ -159,7 +158,7 @@ cnet_route6_create(struct cnet *cnet, uint32_t num_rules, uint32_t num_tbl8s)
 {
     fib_info_t *fi = NULL;
     struct cne_fib6 *fib;
-    struct cne_fib6_conf cfg;
+    struct cne_fib_conf cfg;
 
     struct mempool_cfg mcfg = {0};
 
@@ -171,11 +170,11 @@ cnet_route6_create(struct cnet *cnet, uint32_t num_rules, uint32_t num_tbl8s)
     num_rules        = cne_align32pow2(num_rules);
     cnet->num_routes = num_rules;
 
-    cfg.type = CNE_FIB6_TRIE;
+    cfg.type = CNE_FIB_TRIE;
     cfg.default_nh =
         (uint64_t)((CNE_NODE_IP6_INPUT_NEXT_PKT_DROP << RT6_NEXT_INDEX_SHIFT) | (num_rules + 1));
     cfg.max_routes    = num_rules;
-    cfg.trie.nh_sz    = CNE_FIB6_TRIE_4B;
+    cfg.trie.nh_sz    = CNE_FIB_TRIE_4B;
     cfg.trie.num_tbl8 = num_tbl8s;
 
     fib = cne_fib6_create("rt6-fib", &cfg);

@@ -79,15 +79,23 @@ int
 get_sysctl_value(const char *path)
 {
     FILE *fp;
+    char buf[1024];
     int val = -1;
 
     if (access(path, R_OK) != 0)
         return val;
 
-    fp = fopen(path, "r");
-    fscanf(fp, "%d", &val);
+    if ((fp = fopen(path, "r")) == NULL)
+        cne_printf("%s(): failed to open %s\n", __func__, path);
+    else {
+        if (fgets(buf, sizeof(buf), fp) == NULL)
+            cne_printf("%s(): failed to read path %s\n", __func__, path);
+        else
+            val = strtol(buf, NULL, 0);
+    }
 
-    fclose(fp);
+    if (fp)
+        fclose(fp);
 
     return val;
 }

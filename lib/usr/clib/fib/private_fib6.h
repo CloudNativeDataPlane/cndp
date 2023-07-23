@@ -31,16 +31,11 @@ struct cne_fib6;
 struct cne_rib6;
 
 /** Modify FIB function */
-typedef int (*cne_fib6_modify_fn_t)(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE],
+typedef int (*cne_fib6_modify_fn_t)(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN],
                                     uint8_t depth, uint64_t next_hop, int op);
 /** FIB bulk lookup function */
-typedef void (*cne_fib6_lookup_fn_t)(void *fib, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE],
-                                     uint64_t *next_hops, const unsigned int n);
-
-enum cne_fib6_op {
-    CNE_FIB6_ADD,
-    CNE_FIB6_DEL,
-};
+typedef void (*cne_fib6_lookup_fn_t)(void *fib, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops,
+                                     const unsigned int n);
 
 #ifdef __cplusplus
 }

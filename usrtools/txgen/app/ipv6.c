@@ -7,9 +7,8 @@
 
 #include "txgen.h"        // for txgen, txgen_t
 #include "ipv6.h"
-#include "cne_inet.h"             // for IPv6_VERSION
-#include "net/cne_ip.h"           // for cne_ipv6_hdr, cne_ipv6_cksum
-#include "net/cne_inet6.h"        // for inet6_addr_copy_octs2octs
+#include "cne_inet.h"          // for IPv6_VERSION
+#include "net/cne_ip.h"        // for cne_ipv6_hdr, cne_ipv6_cksum
 
 /**
  *

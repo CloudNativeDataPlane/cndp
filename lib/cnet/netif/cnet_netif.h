@@ -13,8 +13,7 @@
 #include <net/if.h>
 #include <cne_atomic.h>
 #include <pktdev.h>
-#include <cne_inet.h>             // for _in_addr, _in6_addr, inet_addr_mask_cmp, inet_ntop4 etc.
-#include <net/cne_inet6.h>        // for inet6_addr_cmp, inet6_addr_copy etc.
+#include <cne_inet.h>        // for _in_addr, _in6_addr, inet_addr_mask_cmp, inet_ntop4 etc.
 #include <stddef.h>          // for NULL
 #include <stdint.h>          // for uint64_t, uint8_t, uint16_t, uint32_t, int32_t
 

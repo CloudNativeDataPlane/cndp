@@ -41,7 +41,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
 {
     struct rtnl_neigh *neigh = nl_object_priv(obj);
     struct nl_addr *dst = NULL, *lladdr = NULL;
-    struct in_addr in = {0};
+    struct in_addr in   = {0};
     struct in6_addr in6 = {0};
     struct netif *netif;
     struct ether_addr mac = {0};

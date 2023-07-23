@@ -11,7 +11,6 @@
 
 #include "cnet_pcb.h"
 #include "cne_inet.h"        // for CIN_PORT, CIN_CADDR, CIN_F...
-#include "net/cne_inet6.h"        // for inet6_addr_is_any, inet6_addr_cmp etc.
 
 /*
  * Lookup a PCB in the given list to locate the matching PCB or near matching
