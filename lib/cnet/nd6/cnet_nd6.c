@@ -213,10 +213,10 @@ cnet_nd6_show(void)
 int
 cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
 {
-    struct mempool_cfg cfg    = {0};
-    struct cne_fib6_conf fcfg = {0};
-    fib_info_t *fi            = NULL;
-    struct cne_fib6 *fib      = NULL;
+    struct mempool_cfg cfg   = {0};
+    struct cne_fib_conf fcfg = {0};
+    fib_info_t *fi           = NULL;
+    struct cne_fib6 *fib     = NULL;
 
     if (!cnet)
         return -1;
@@ -232,7 +232,7 @@ cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
     fcfg.default_nh =
         (uint64_t)((CNE_NODE_IP6_INPUT_NEXT_PKT_DROP << ND6_NEXT_INDEX_SHIFT) | (num_entries + 1));
     fcfg.max_routes    = num_entries;
-    fcfg.trie.nh_sz    = CNE_FIB_DIR24_8_4B;
+    fcfg.trie.nh_sz    = CNE_FIB_TRIE_4B;
     fcfg.trie.num_tbl8 = num_tbl8s;
 
     fib = cne_fib6_create("nd6-fib", &fcfg);

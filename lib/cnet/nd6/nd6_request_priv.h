@@ -21,7 +21,7 @@ typedef struct nd6_request_node_elem nd6_request_node_elem_t;
  * ND6 Request node context structure.
  */
 typedef struct nd6_request_node_ctx {
-    int s6; /* RAW socket FD */
+    int s6; /* ICMPv6 or Raw socket FD */
 } nd6_request_node_ctx_t;
 
 /**

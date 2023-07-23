@@ -11,6 +11,7 @@
 #include <sys/queue.h>
 
 #include <cne_common.h>
+#include <cne.h>
 #include <cne_cycles.h>
 #include <net/cne_ip.h>
 #include <cne_strings.h>

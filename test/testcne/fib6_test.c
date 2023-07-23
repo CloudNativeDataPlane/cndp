@@ -8,7 +8,7 @@
 #include <getopt.h>              // for getopt_long, option
 #include <cne_log.h>             // for CNE_LOG_ERR
 #include <cne_rib6.h>            // for get_msk_part
-#include <private_fib6.h>        // for CNE_FIB6_MAXDEPTH, CNE_FIB6_IPV6_ADDR_SIZE
+#include <private_fib6.h>        // for CNE_FIB6_MAXDEPTH, IPV6_ADDR_LEN
 #include <cne_fib6.h>            // for cne_fib6_create, cne_fib6_conf, cne_fib6_free
 #include <tst_info.h>            // for tst_end, tst_start, TST_FAILED, TST_PASSED
 
@@ -39,11 +39,11 @@ int32_t
 test_create_invalid(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf config;
+    struct cne_fib_conf config;
 
     config.max_routes = MAX_ROUTES;
     config.default_nh = 0;
-    config.type       = CNE_FIB6_DUMMY;
+    config.type       = CNE_FIB_DUMMY;
 
     /* cne_fib6_create: fib name == NULL */
     fib = cne_fib6_create(NULL, &config);
@@ -59,17 +59,17 @@ test_create_invalid(void)
     CNE_TEST_ASSERT(fib == NULL, "Call succeeded with invalid parameters\n");
     config.max_routes = MAX_ROUTES;
 
-    config.type = CNE_FIB6_TRIE + 1;
+    config.type = CNE_FIB_TRIE + 1;
     fib         = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib == NULL, "Call succeeded with invalid parameters\n");
 
-    config.type          = CNE_FIB6_TRIE;
+    config.type          = CNE_FIB_TRIE;
     config.trie.num_tbl8 = MAX_TBL8;
 
-    config.trie.nh_sz = CNE_FIB6_TRIE_8B + 1;
+    config.trie.nh_sz = CNE_FIB_TRIE_8B + 1;
     fib               = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib == NULL, "Call succeeded with invalid parameters\n");
-    config.trie.nh_sz = CNE_FIB6_TRIE_8B;
+    config.trie.nh_sz = CNE_FIB_TRIE_8B;
 
     config.trie.num_tbl8 = 0;
     fib                  = cne_fib6_create(__func__, &config);
@@ -86,11 +86,11 @@ int32_t
 test_multiple_create(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf config;
+    struct cne_fib_conf config;
     int32_t i;
 
     config.default_nh = 0;
-    config.type       = CNE_FIB6_DUMMY;
+    config.type       = CNE_FIB_DUMMY;
 
     for (i = 0; i < 100; i++) {
         config.max_routes = MAX_ROUTES - i;
@@ -112,11 +112,11 @@ int32_t
 test_free_null(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf config;
+    struct cne_fib_conf config;
 
     config.max_routes = MAX_ROUTES;
     config.default_nh = 0;
-    config.type       = CNE_FIB6_DUMMY;
+    config.type       = CNE_FIB_DUMMY;
 
     fib = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib != NULL, "Failed to create FIB\n");
@@ -135,15 +135,15 @@ int32_t
 test_add_del_invalid(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf config;
-    uint64_t nh                         = 100;
-    uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE] = {0};
+    struct cne_fib_conf config;
+    uint64_t nh               = 100;
+    uint8_t ip[IPV6_ADDR_LEN] = {0};
     int ret;
     uint8_t depth = 24;
 
     config.max_routes = MAX_ROUTES;
     config.default_nh = 0;
-    config.type       = CNE_FIB6_DUMMY;
+    config.type       = CNE_FIB_DUMMY;
 
     /* cne_fib6_add: fib == NULL */
     ret = cne_fib6_add(NULL, ip, depth, nh);
@@ -194,9 +194,8 @@ test_get_invalid(void)
  * After delete routes with doing lookup on each step
  */
 static int
-lookup_and_check_asc(struct cne_fib6 *fib,
-                     uint8_t ip_arr[CNE_FIB6_MAXDEPTH][CNE_FIB6_IPV6_ADDR_SIZE],
-                     uint8_t ip_missing[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t def_nh, uint32_t n)
+lookup_and_check_asc(struct cne_fib6 *fib, uint8_t ip_arr[CNE_FIB6_MAXDEPTH][IPV6_ADDR_LEN],
+                     uint8_t ip_missing[][IPV6_ADDR_LEN], uint64_t def_nh, uint32_t n)
 {
     uint64_t nh_arr[CNE_FIB6_MAXDEPTH];
     int ret;
@@ -218,9 +217,8 @@ lookup_and_check_asc(struct cne_fib6 *fib,
 }
 
 static int
-lookup_and_check_desc(struct cne_fib6 *fib,
-                      uint8_t ip_arr[CNE_FIB6_MAXDEPTH][CNE_FIB6_IPV6_ADDR_SIZE],
-                      uint8_t ip_missing[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t def_nh, uint32_t n)
+lookup_and_check_desc(struct cne_fib6 *fib, uint8_t ip_arr[CNE_FIB6_MAXDEPTH][IPV6_ADDR_LEN],
+                      uint8_t ip_missing[][IPV6_ADDR_LEN], uint64_t def_nh, uint32_t n)
 {
     uint64_t nh_arr[CNE_FIB6_MAXDEPTH];
     int ret;
@@ -245,16 +243,16 @@ static int
 check_fib(struct cne_fib6 *fib)
 {
     uint64_t def_nh = 100;
-    uint8_t ip_arr[CNE_FIB6_MAXDEPTH][CNE_FIB6_IPV6_ADDR_SIZE];
-    uint8_t ip_add[CNE_FIB6_IPV6_ADDR_SIZE]        = {0};
-    uint8_t ip_missing[1][CNE_FIB6_IPV6_ADDR_SIZE] = {{255}};
+    uint8_t ip_arr[CNE_FIB6_MAXDEPTH][IPV6_ADDR_LEN];
+    uint8_t ip_add[IPV6_ADDR_LEN]        = {0};
+    uint8_t ip_missing[1][IPV6_ADDR_LEN] = {{255}};
     uint32_t i, j;
     int ret;
 
     ip_add[0]        = 128;
     ip_missing[0][0] = 127;
     for (i = 0; i < CNE_FIB6_MAXDEPTH; i++) {
-        for (j = 0; j < CNE_FIB6_IPV6_ADDR_SIZE; j++) {
+        for (j = 0; j < IPV6_ADDR_LEN; j++) {
             ip_arr[i][j] = ip_add[j] | ~get_msk_part(CNE_FIB6_MAXDEPTH - i, j);
         }
     }
@@ -302,13 +300,13 @@ int32_t
 test_lookup(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf config;
+    struct cne_fib_conf config;
     uint64_t def_nh = 100;
     int ret;
 
     config.max_routes = MAX_ROUTES;
     config.default_nh = def_nh;
-    config.type       = CNE_FIB6_DUMMY;
+    config.type       = CNE_FIB_DUMMY;
 
     fib = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib != NULL, "Failed to create FIB\n");
@@ -316,9 +314,9 @@ test_lookup(void)
     CNE_TEST_ASSERT(ret == TEST_SUCCESS, "Check_fib fails for DUMMY type\n");
     cne_fib6_free(fib);
 
-    config.type = CNE_FIB6_TRIE;
+    config.type = CNE_FIB_TRIE;
 
-    config.trie.nh_sz    = CNE_FIB6_TRIE_2B;
+    config.trie.nh_sz    = CNE_FIB_TRIE_2B;
     config.trie.num_tbl8 = MAX_TBL8 - 1;
     fib                  = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib != NULL, "Failed to create FIB\n");
@@ -326,7 +324,7 @@ test_lookup(void)
     CNE_TEST_ASSERT(ret == TEST_SUCCESS, "Check_fib fails for TRIE_2B type\n");
     cne_fib6_free(fib);
 
-    config.trie.nh_sz    = CNE_FIB6_TRIE_4B;
+    config.trie.nh_sz    = CNE_FIB_TRIE_4B;
     config.trie.num_tbl8 = MAX_TBL8;
     fib                  = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib != NULL, "Failed to create FIB\n");
@@ -334,7 +332,7 @@ test_lookup(void)
     CNE_TEST_ASSERT(ret == TEST_SUCCESS, "Check_fib fails for TRIE_4B type\n");
     cne_fib6_free(fib);
 
-    config.trie.nh_sz    = CNE_FIB6_TRIE_8B;
+    config.trie.nh_sz    = CNE_FIB_TRIE_8B;
     config.trie.num_tbl8 = MAX_TBL8;
     fib                  = cne_fib6_create(__func__, &config);
     CNE_TEST_ASSERT(fib != NULL, "Failed to create FIB\n");

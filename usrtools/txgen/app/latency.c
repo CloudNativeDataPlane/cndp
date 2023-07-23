@@ -9,7 +9,7 @@
 #include "display.h"        // for display_set_color, display_dashline
 #include "cmds.h"           // for display_set_color, display_dashline
 #include "latency.h"
-#include "net/cne_inet6.h"
+#include "cne_inet6.h"
 
 /**
  *

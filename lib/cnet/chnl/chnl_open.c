@@ -164,7 +164,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         domain = (pt->otype == UDP4_LISTEN) ? AF_INET : AF_INET6;
         if (!CNET_ENABLE_IP6 && domain == AF_INET6)
             CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
-        typ    = SOCK_DGRAM;
+        typ = SOCK_DGRAM;
 
         if (pt->nb_fields == 2)
             pstr = info[1];
@@ -190,7 +190,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         domain = (pt->otype == TCP4_LISTEN) ? AF_INET : AF_INET6;
         if (!CNET_ENABLE_IP6 && domain == AF_INET6)
             CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
-        typ    = SOCK_STREAM;
+        typ = SOCK_STREAM;
 
         if (pt->nb_fields == 2)
             pstr = info[1];
@@ -207,7 +207,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         domain = (pt->otype == TCP4_CONNECT) ? AF_INET : AF_INET6;
         if (!CNET_ENABLE_IP6 && domain == AF_INET6)
             CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
-        typ    = SOCK_STREAM;
+        typ = SOCK_STREAM;
 
         ipaddr = info[1];
         pstr   = info[2];

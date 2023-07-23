@@ -11,7 +11,6 @@
  */
 
 #include <net/cne_ip.h>        // for cne_ipv6_hdr
-#include <net/cne_inet6.h>
 #include <cne_inet.h>          // for _in_addr
 #include <endian.h>            // for htobe16
 #include <netinet/in.h>        // for IN_CLASSA, IN_CLASSB, IN_CLASSC, IN_CLASSD

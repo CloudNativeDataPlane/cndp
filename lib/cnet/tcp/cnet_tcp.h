@@ -46,8 +46,8 @@
 
 #include <net/cne_tcp.h>
 #include <netinet/in.h>        // for in6_addr
-#include <stdint.h>        // for uint32_t, uint16_t, int32_t, int16_t, uint8_t
-#include <stdio.h>         // for NULL
+#include <stdint.h>            // for uint32_t, uint16_t, int32_t, int16_t, uint8_t
+#include <stdio.h>             // for NULL
 #include <stdbool.h>
 #include <sys/queue.h>        // for TAILQ_ENTRY, TAILQ_INSERT_TAIL, TAILQ_REMOVE
 
@@ -57,7 +57,7 @@
 #include "cnet_stk.h"          // for per_thread_stk, stk_entry, this_stk
 #include "mempool.h"           // for mempool_get, mempool_put
 #include "pktmbuf.h"           // for pktmbuf_t
-#include <net/cne_inet6.h>
+#include <cne_inet6.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

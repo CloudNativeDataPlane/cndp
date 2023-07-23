@@ -10,7 +10,6 @@
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_udp.h"        // for cne_udp_hdr
-#include "net/cne_inet6.h"
 
 static inline struct cne_udp_hdr *
 txgen_init_udp_hdr(struct cne_udp_hdr *udp, pkt_seq_t *pkt, uint16_t ip_hdr_sz)

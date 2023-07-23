@@ -86,7 +86,7 @@ nd6_send_ns(struct cne_graph *graph, struct cne_node *node, struct in6_addr *src
     else
         inet6_ns_multicast_addr((struct in6_addr *)&ip6->dst_addr, target);
 
-    ns_pkt->nd_ns_cksum = cne_ipv6_icmpv6_cksum(ip6, (const void *)&ns_pkt);
+    ns_pkt->nd_ns_cksum = cne_ipv6_icmpv6_cksum(ip6, ns_pkt);
 
     cnet_nd6_add(nif->netif_idx, target, NULL, ND_INCOMPLETE); /* Create a nd6 cache entry */
 
@@ -99,7 +99,7 @@ nd6_send_na(struct cne_graph *graph, struct cne_node *node, struct in6_addr *src
             struct in6_addr *target, uint32_t flags, struct in6_addr *invoke_src)
 {
     struct cne_ipv6_hdr *ip6;
-    struct nd_neighbor_advert *na_pkt;
+    struct nd_neighbor_advert *na_pkt = NULL;
     uint32_t tclass = 0, flw_label = 0;
     struct nd_opt_hdr *nopt;
     uint32_t optlen = 0;
@@ -166,7 +166,7 @@ nd6_send_na(struct cne_graph *graph, struct cne_node *node, struct in6_addr *src
     else
         inet6_all_node_multicast_addr((struct in6_addr *)&ip6->dst_addr);
 
-    na_pkt->nd_na_cksum = cne_ipv6_icmpv6_cksum(ip6, (const void *)&na_pkt);
+    na_pkt->nd_na_cksum = cne_ipv6_icmpv6_cksum(ip6, na_pkt);
 
     /* Send it now */
     cne_node_enqueue_x1(graph, node, nxt, mbuf);

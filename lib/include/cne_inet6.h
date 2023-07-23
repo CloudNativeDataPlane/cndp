@@ -17,6 +17,7 @@
 
 #include <cne_common.h>
 #include <cne_inet.h>
+#include <cne_log.h>
 
 #ifndef __CNE_INET_H
 #error "Do not include this file directly use cne_inet.h instead."
@@ -51,7 +52,7 @@ extern "C" {
 
 #define IP6_MAX_MTU ETHER_MAX_MTU
 
-#define DEFAULT_IPV6_HDR_SIZE 40 /* Minimum octets required for IPv6 header is 40 octest */
+#define DEFAULT_IPV6_HDR_SIZE 40 /* Minimum octets required for IPv6 header is 40 octets */
 
 /* Compare two IPv6 Addresses */
 static inline int
@@ -190,8 +191,8 @@ inet6_addr_is_all_ones(struct in6_addr *f)
     return true;
 }
 
-/* char * inet_ntop6(char * buff, int len, unsigned long ip_addr, unsigned long mask) - Convert
- * IPv6 address to ascii */
+/* char *inet_ntop6(char * buff, int len, struct in6_addr *ip_addr, struct in6_mask *mask)
+ * - Convert IPv6 address to ascii */
 static inline char *
 inet_ntop6(char *buff, int len, struct in6_addr *ip_addr, struct in6_addr *mask)
 {

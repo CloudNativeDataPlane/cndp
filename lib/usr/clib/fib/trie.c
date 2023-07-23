@@ -8,7 +8,7 @@
 #include <stdio.h>               // for NULL
 #include <cne_log.h>             // for CNE_ASSERT
 #include <cne_rib6.h>            // for cne_rib6_copy_addr, cne_rib6_get_nh
-#include "private_fib6.h"        // for CNE_FIB6_IPV6_ADDR_SIZE, cne_fib6...
+#include "private_fib6.h"        // for IPV6_ADDR_LEN, cne_fib6...
 #include <cne_fib6.h>            // for cne_fib6_conf, cne_fib6_conf::(an...
 #include <errno.h>               // for EINVAL, ENOSPC, ENOENT
 
@@ -32,11 +32,11 @@ static inline cne_fib6_lookup_fn_t
 get_scalar_fn(enum cne_fib_trie_nh_sz nh_sz)
 {
     switch (nh_sz) {
-    case CNE_FIB6_TRIE_2B:
+    case CNE_FIB_TRIE_2B:
         return cne_trie_lookup_bulk_2b;
-    case CNE_FIB6_TRIE_4B:
+    case CNE_FIB_TRIE_4B:
         return cne_trie_lookup_bulk_4b;
-    case CNE_FIB6_TRIE_8B:
+    case CNE_FIB_TRIE_8B:
         return cne_trie_lookup_bulk_8b;
     default:
         return NULL;
@@ -51,11 +51,11 @@ get_vector_fn(enum cne_fib_trie_nh_sz nh_sz)
         (cne_vect_get_max_simd_bitwidth() < CNE_VECT_SIMD_512))
         return NULL;
     switch (nh_sz) {
-    case CNE_FIB6_TRIE_2B:
+    case CNE_FIB_TRIE_2B:
         return cne_trie_vec_lookup_bulk_2b;
-    case CNE_FIB6_TRIE_4B:
+    case CNE_FIB_TRIE_4B:
         return cne_trie_vec_lookup_bulk_4b;
-    case CNE_FIB6_TRIE_8B:
+    case CNE_FIB_TRIE_8B:
         return cne_trie_vec_lookup_bulk_8b;
     default:
         return NULL;
@@ -67,7 +67,7 @@ get_vector_fn(enum cne_fib_trie_nh_sz nh_sz)
 }
 
 cne_fib6_lookup_fn_t
-trie_get_lookup_fn(void *p, enum cne_fib6_lookup_type type)
+trie_get_lookup_fn(void *p, enum cne_fib_lookup_type type)
 {
     enum cne_fib_trie_nh_sz nh_sz;
     cne_fib6_lookup_fn_t ret_fn;
@@ -79,11 +79,11 @@ trie_get_lookup_fn(void *p, enum cne_fib6_lookup_type type)
     nh_sz = dp->nh_sz;
 
     switch (type) {
-    case CNE_FIB6_LOOKUP_TRIE_SCALAR:
+    case CNE_FIB_LOOKUP_TRIE_SCALAR:
         return get_scalar_fn(nh_sz);
-    case CNE_FIB6_LOOKUP_TRIE_VECTOR_AVX512:
+    case CNE_FIB_LOOKUP_TRIE_VECTOR_AVX512:
         return get_vector_fn(nh_sz);
-    case CNE_FIB6_LOOKUP_DEFAULT:
+    case CNE_FIB_LOOKUP_DEFAULT:
         ret_fn = get_vector_fn(nh_sz);
         return (ret_fn != NULL) ? ret_fn : get_scalar_fn(nh_sz);
     default:
@@ -101,15 +101,15 @@ write_to_dp(void *ptr, uint64_t val, enum cne_fib_trie_nh_sz size, int n)
     uint64_t *ptr64 = (uint64_t *)ptr;
 
     switch (size) {
-    case CNE_FIB6_TRIE_2B:
+    case CNE_FIB_TRIE_2B:
         for (i = 0; i < n; i++)
             ptr16[i] = (uint16_t)val;
         break;
-    case CNE_FIB6_TRIE_4B:
+    case CNE_FIB_TRIE_4B:
         for (i = 0; i < n; i++)
             ptr32[i] = (uint32_t)val;
         break;
-    case CNE_FIB6_TRIE_8B:
+    case CNE_FIB_TRIE_8B:
         for (i = 0; i < n; i++)
             ptr64[i] = (uint64_t)val;
         break;
@@ -176,7 +176,7 @@ tbl8_recycle(struct cne_trie_tbl *dp, void *par, uint64_t tbl8_idx)
     uint64_t *ptr64;
 
     switch (dp->nh_sz) {
-    case CNE_FIB6_TRIE_2B:
+    case CNE_FIB_TRIE_2B:
         ptr16 = &((uint16_t *)dp->tbl8)[tbl8_idx * TRIE_TBL8_GRP_NUM_ENT];
         nh    = *ptr16;
         if (nh & TRIE_EXT_ENT)
@@ -189,7 +189,7 @@ tbl8_recycle(struct cne_trie_tbl *dp, void *par, uint64_t tbl8_idx)
         for (i = 0; i < TRIE_TBL8_GRP_NUM_ENT; i++)
             ptr16[i] = 0;
         break;
-    case CNE_FIB6_TRIE_4B:
+    case CNE_FIB_TRIE_4B:
         ptr32 = &((uint32_t *)dp->tbl8)[tbl8_idx * TRIE_TBL8_GRP_NUM_ENT];
         nh    = *ptr32;
         if (nh & TRIE_EXT_ENT)
@@ -202,7 +202,7 @@ tbl8_recycle(struct cne_trie_tbl *dp, void *par, uint64_t tbl8_idx)
         for (i = 0; i < TRIE_TBL8_GRP_NUM_ENT; i++)
             ptr32[i] = 0;
         break;
-    case CNE_FIB6_TRIE_8B:
+    case CNE_FIB_TRIE_8B:
         ptr64 = &((uint64_t *)dp->tbl8)[tbl8_idx * TRIE_TBL8_GRP_NUM_ENT];
         nh    = *ptr64;
         if (nh & TRIE_EXT_ENT)
@@ -240,13 +240,13 @@ get_val_by_p(void *p, uint8_t nh_sz)
     uint64_t val = 0;
 
     switch (nh_sz) {
-    case CNE_FIB6_TRIE_2B:
+    case CNE_FIB_TRIE_2B:
         val = *(uint16_t *)p;
         break;
-    case CNE_FIB6_TRIE_4B:
+    case CNE_FIB_TRIE_4B:
         val = *(uint32_t *)p;
         break;
-    case CNE_FIB6_TRIE_8B:
+    case CNE_FIB_TRIE_8B:
         val = *(uint64_t *)p;
         break;
     }
@@ -339,9 +339,9 @@ write_edge(struct cne_trie_tbl *dp, const uint8_t *ip_part, uint64_t next_hop, i
     return ret;
 }
 
-#define IPV6_MAX_IDX (CNE_FIB6_IPV6_ADDR_SIZE - 1)
+#define IPV6_MAX_IDX (IPV6_ADDR_LEN - 1)
 #define TBL24_BYTES  3
-#define TBL8_LEN     (CNE_FIB6_IPV6_ADDR_SIZE - TBL24_BYTES)
+#define TBL8_LEN     (IPV6_ADDR_LEN - TBL24_BYTES)
 
 static int
 install_to_dp(struct cne_trie_tbl *dp, const uint8_t *ledge, const uint8_t *r, uint64_t next_hop)
@@ -436,12 +436,12 @@ get_nxt_net(uint8_t *ip, uint8_t depth)
 }
 
 static int
-modify_dp(struct cne_trie_tbl *dp, struct cne_rib6 *rib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE],
+modify_dp(struct cne_trie_tbl *dp, struct cne_rib6 *rib, const uint8_t ip[IPV6_ADDR_LEN],
           uint8_t depth, uint64_t next_hop)
 {
     struct cne_rib6_node *tmp = NULL;
-    uint8_t ledge[CNE_FIB6_IPV6_ADDR_SIZE];
-    uint8_t redge[CNE_FIB6_IPV6_ADDR_SIZE];
+    uint8_t ledge[IPV6_ADDR_LEN];
+    uint8_t redge[IPV6_ADDR_LEN];
     int ret;
     uint8_t tmp_depth;
 
@@ -480,15 +480,15 @@ modify_dp(struct cne_trie_tbl *dp, struct cne_rib6 *rib, const uint8_t ip[CNE_FI
 }
 
 int
-trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uint8_t depth,
-            uint64_t next_hop, int op)
+trie_modify(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth, uint64_t next_hop,
+            int op)
 {
     struct cne_trie_tbl *dp;
     struct cne_rib6 *rib;
     struct cne_rib6_node *tmp = NULL;
     struct cne_rib6_node *node;
     struct cne_rib6_node *parent;
-    uint8_t ip_masked[CNE_FIB6_IPV6_ADDR_SIZE];
+    uint8_t ip_masked[IPV6_ADDR_LEN];
     int i, ret = 0;
     uint64_t par_nh, node_nh;
     uint8_t tmp_depth, depth_diff = 0, parent_depth = 24;
@@ -501,7 +501,7 @@ trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uin
     rib = cne_fib6_get_rib(fib);
     CNE_ASSERT(rib);
 
-    for (i = 0; i < CNE_FIB6_IPV6_ADDR_SIZE; i++)
+    for (i = 0; i < IPV6_ADDR_LEN; i++)
         ip_masked[i] = ip[i] & get_msk_part(depth, i);
 
     if (depth > 24) {
@@ -519,7 +519,7 @@ trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uin
     }
     node = cne_rib6_lookup_exact(rib, ip_masked, depth);
     switch (op) {
-    case CNE_FIB6_ADD:
+    case CNE_FIB_ADD:
         if (node != NULL) {
             cne_rib6_get_nh(node, &node_nh);
             if (node_nh == next_hop)
@@ -551,7 +551,7 @@ trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uin
 
         dp->rsvd_tbl8s += depth_diff;
         return 0;
-    case CNE_FIB6_DEL:
+    case CNE_FIB_DEL:
         if (node == NULL)
             return -ENOENT;
 
@@ -577,15 +577,15 @@ trie_modify(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE], uin
 }
 
 void *
-trie_create(const char *name, struct cne_fib6_conf *conf)
+trie_create(const char *name, struct cne_fib_conf *conf)
 {
     struct cne_trie_tbl *dp = NULL;
     uint64_t def_nh;
     uint32_t num_tbl8;
     enum cne_fib_trie_nh_sz nh_sz;
 
-    if ((name == NULL) || (conf == NULL) || (conf->trie.nh_sz < CNE_FIB6_TRIE_2B) ||
-        (conf->trie.nh_sz > CNE_FIB6_TRIE_8B) ||
+    if ((name == NULL) || (conf == NULL) || (conf->trie.nh_sz < CNE_FIB_TRIE_2B) ||
+        (conf->trie.nh_sz > CNE_FIB_TRIE_8B) ||
         (conf->trie.num_tbl8 > get_max_nh(conf->trie.nh_sz)) || (conf->trie.num_tbl8 == 0) ||
         (conf->default_nh > get_max_nh(conf->trie.nh_sz)))
         return NULL;

@@ -18,6 +18,8 @@
 #include <stdint.h>        // for uint32_t, uint64_t, uint8_t
 #include <cne_common.h>
 
+#include <cne_inet.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,8 +32,9 @@ struct cne_rib;
 
 /** Type of FIB struct */
 enum cne_fib_type {
-    CNE_FIB_DUMMY,  /**< RIB tree based FIB */
-    CNE_FIB_DIR24_8 /**< DIR24_8 based FIB */
+    CNE_FIB_DUMMY,   /**< RIB tree based FIB */
+    CNE_FIB_DIR24_8, /**< DIR24_8 based FIB */
+    CNE_FIB_TRIE     /**< TRIE based fib  */
 };
 
 /** Modify FIB function */
@@ -51,26 +54,22 @@ enum cne_fib_dir24_8_nh_sz {
     CNE_FIB_DIR24_8_1B,
     CNE_FIB_DIR24_8_2B,
     CNE_FIB_DIR24_8_4B,
-    CNE_FIB_DIR24_8_8B
+    CNE_FIB_DIR24_8_8B,
 };
+
+enum cne_fib_trie_nh_sz { CNE_FIB_TRIE_2B = 1, CNE_FIB_TRIE_4B, CNE_FIB_TRIE_8B };
 
 /** Type of lookup function implementation */
 enum cne_fib_lookup_type {
-    CNE_FIB_LOOKUP_DEFAULT,
-    /**< Selects the best implementation based on the max simd bitwidth */
-    CNE_FIB_LOOKUP_DIR24_8_SCALAR_MACRO,
-    /**< Macro based lookup function */
-    CNE_FIB_LOOKUP_DIR24_8_SCALAR_INLINE,
-    /**<
-     * Lookup implementation using inlined functions
-     * for different next hop sizes
-     */
-    CNE_FIB_LOOKUP_DIR24_8_SCALAR_UNI,
-    /**<
-     * Unified lookup function for all next hop sizes
-     */
-    CNE_FIB_LOOKUP_DIR24_8_VECTOR_AVX512
-    /**< Vector implementation using AVX512 */
+    CNE_FIB_LOOKUP_DEFAULT, /**< Selects the best implementation based on the max simd bit width */
+    CNE_FIB_LOOKUP_DIR24_8_SCALAR_MACRO,  /**< Macro based lookup function */
+    CNE_FIB_LOOKUP_DIR24_8_SCALAR_INLINE, /**< Lookup implementation using inlined functions for
+                                             different next hop sizes */
+    CNE_FIB_LOOKUP_DIR24_8_SCALAR_UNI,    /**< Unified lookup function for all next hop sizes */
+    CNE_FIB_LOOKUP_DIR24_8_VECTOR_AVX512, /**< Vector implementation using AVX512 */
+    CNE_FIB_LOOKUP_TRIE_SCALAR,           /**< Scalar lookup function implementation*/
+    CNE_FIB_LOOKUP_TRIE_VECTOR_AVX512     /**< Vector implementation using AVX512 */
+
 };
 
 /** FIB configuration structure */
@@ -84,6 +83,10 @@ struct cne_fib_conf {
             enum cne_fib_dir24_8_nh_sz nh_sz;
             uint32_t num_tbl8;
         } dir24_8;
+        struct {
+            enum cne_fib_trie_nh_sz nh_sz;
+            uint32_t num_tbl8;
+        } trie;
     };
 };
 

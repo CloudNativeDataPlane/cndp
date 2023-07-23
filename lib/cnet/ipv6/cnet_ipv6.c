@@ -32,7 +32,7 @@
 #include "cnet_ipv6.h"            // for ipv6_entry, ipv6_stats, DEFAULT_I...
 #include "cnet_protosw.h"         // for protosw_entry, cnet_ipproto_get
 #include "pktmbuf.h"              // for pktmbuf_t, pktmbuf_free
-#include <cne_fib6.h>             // for CNE_FIB6_IPV6_ADDR_SIZE
+#include <cne_fib6.h>             // for IPV6_ADDR_LEN
 #include <ip6_flowlabel.h>        // for srhash_init0()
 
 static void
@@ -79,8 +79,8 @@ cnet_ipv6_dump(const char *msg, struct cne_ipv6_hdr *ip6)
 
     cne_printf("%s [cyan]IPv6 Header[] @ %p\n", (msg == NULL) ? "" : msg, ip6);
 
-    memcpy(daddr.s6_addr, ip6->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
-    memcpy(saddr.s6_addr, ip6->src_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+    memcpy(daddr.s6_addr, ip6->dst_addr, IPV6_ADDR_LEN);
+    memcpy(saddr.s6_addr, ip6->src_addr, IPV6_ADDR_LEN);
     cne_printf(
         "   [cyan]Src [orange]%s \n [cyan]Dst [orange]%s \n"
         "[cyan]Version [orange]%d [cyan]Traffic Class [orange]%d  [cyan]Flow Label [orange]%d\n",

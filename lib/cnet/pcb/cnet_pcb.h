@@ -7,7 +7,7 @@
 
 /**
  * @file
- * CNET PCB routines.
+ *  CNET PCB routines.
  */
 
 #include <cne_inet.h>        // for in_caddr
@@ -39,17 +39,17 @@ struct tcb_entry;
 struct ip6_flowentry;
 
 struct pcb_entry {
-    TAILQ_ENTRY(pcb_entry) next; /**< Pointer to the next pcb_entry in a list */
-    struct pcb_key key;          /**< Key values for PCB entry */
-    struct netif *netif;         /**< Netif pointer */
-    struct chnl *ch;             /**< Channel pointer */
-    struct tcb_entry *tcb;       /**< TCB pointer */
+    TAILQ_ENTRY(pcb_entry) next;        /**< Pointer to the next pcb_entry in a list */
+    struct pcb_key key;                 /**< Key values for PCB entry */
+    struct netif *netif;                /**< Netif pointer */
+    struct chnl *ch;                    /**< Channel pointer */
+    struct tcb_entry *tcb;              /**< TCB pointer */
     struct ip6_flowentry *ip6_fl_entry; /**< IPv6 Flow Entry */
-    uint16_t opt_flag;           /**< Option flags */
-    uint8_t ttl;                 /**< Time to live */
-    uint8_t tos;                 /**< TOS value */
-    uint8_t closed;              /**< Closed flag */
-    uint8_t ip_proto;            /**< IP protocol number */
+    uint16_t opt_flag;                  /**< Option flags */
+    uint8_t ttl;                        /**< Time to live */
+    uint8_t tos;                        /**< TOS value */
+    uint8_t closed;                     /**< Closed flag */
+    uint8_t ip_proto;                   /**< IP protocol number */
 } __cne_cache_aligned;
 
 #ifndef __CNET_PCB_HD_STRUCT_
@@ -83,8 +83,8 @@ cnet_pcb_alloc(struct pcb_hd *hd, uint16_t proto)
     if (mempool_get(this_stk->pcb_objs, (void *)&pcb) < 0)
         return NULL;
 
-    pcb->closed   = 0;
-    pcb->ip_proto = proto;
+    pcb->closed       = 0;
+    pcb->ip_proto     = proto;
     pcb->ip6_fl_entry = (struct ip6_flowentry *)malloc(sizeof(struct ip6_flowentry));
     if (pcb->ip6_fl_entry != NULL) {
         pcb->ip6_fl_entry->autoflowlabel_set = false;

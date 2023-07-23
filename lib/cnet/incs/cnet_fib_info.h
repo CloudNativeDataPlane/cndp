@@ -391,7 +391,7 @@ fib_info_lookup(fib_info_t *fi, uint32_t *ip, void **objs, int n)
  *   -1 on error or number of objects returned
  */
 static inline int
-fib6_info_lookup(fib_info_t *fi, uint8_t ip[][CNE_FIB6_IPV6_ADDR_SIZE], void **objs, int n)
+fib6_info_lookup(fib_info_t *fi, uint8_t ip[][IPV6_ADDR_LEN], void **objs, int n)
 {
     if (fi && ip) {
         uint64_t nh[n];
@@ -439,7 +439,7 @@ fib_info_lookup_index(fib_info_t *fi, uint32_t *ip, uint64_t *idxs, int n)
  *   -1 on error or number of objects returned
  */
 static inline int
-fib6_info_lookup_index(fib_info_t *fi, uint8_t ip[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *idxs, int n)
+fib6_info_lookup_index(fib_info_t *fi, uint8_t ip[][IPV6_ADDR_LEN], uint64_t *idxs, int n)
 {
     if (!fi || !ip || !idxs)
         return -1;

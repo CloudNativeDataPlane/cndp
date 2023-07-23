@@ -15,8 +15,8 @@
 #include <stdint.h>              // for uint8_t, uint16_t
 
 #include "nd6.h"
-#include <net/cne_inet6.h>        // for inet_ntop6, inet_addr_copy
-#include "pktmbuf.h"              // for pktmbuf_t
+#include <cne_inet6.h>        // for inet_ntop6, inet_addr_copy
+#include "pktmbuf.h"          // for pktmbuf_t
 
 #ifdef __cplusplus
 extern "C" {

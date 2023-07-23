@@ -26,7 +26,7 @@
 #include "cne_common.h"                   // for CNE_BUILD_BUG_ON, CNE_PRIORITY_LAST
 #include "cne_log.h"                      // for CNE_LOG_DEBUG, CNE_LOG_ERR, CNE_INFO
 #include "cnet_fib_info.h"
-#include "net/cne_inet6.h"        // for inet6_addr_copy
+#include "cne_inet6.h"        // for inet6_addr_copy
 
 static inline void
 ipv6_save_metadata(pktmbuf_t *mbuf, struct cne_ipv6_hdr *hdr)
@@ -62,8 +62,8 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     uint16_t n_left_from;
     uint16_t held = 0;
     struct cne_ipv6_hdr *ip6[4];
-    uint64_t dst[4]                         = {0};
-    uint8_t dip[4][CNE_FIB6_IPV6_ADDR_SIZE] = {0};
+    uint64_t dst[4]               = {0};
+    uint8_t dip[4][IPV6_ADDR_LEN] = {0};
 
     /* Speculative next */
     next_index = CNE_NODE_IP6_INPUT_NEXT_FORWARD;
@@ -107,10 +107,10 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 
         next0 = next1 = next2 = next3 = CNE_NODE_IP6_INPUT_NEXT_PKT_DROP;
 
-        memset(dip[0], 0, CNE_FIB6_IPV6_ADDR_SIZE);
-        memset(dip[1], 0, CNE_FIB6_IPV6_ADDR_SIZE);
-        memset(dip[2], 0, CNE_FIB6_IPV6_ADDR_SIZE);
-        memset(dip[3], 0, CNE_FIB6_IPV6_ADDR_SIZE);
+        memset(dip[0], 0, IPV6_ADDR_LEN);
+        memset(dip[1], 0, IPV6_ADDR_LEN);
+        memset(dip[2], 0, IPV6_ADDR_LEN);
+        memset(dip[3], 0, IPV6_ADDR_LEN);
 
         /* Extract DIP from mbufs plus validate the IP header checksum. */
         ip6[0] = pktmbuf_mtod(mbuf0, struct cne_ipv6_hdr *);
@@ -129,16 +129,16 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
          * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
          */
         if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)))
-            memcpy(dip[0], ip6[0]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+            memcpy(dip[0], ip6[0]->dst_addr, IPV6_ADDR_LEN);
 
         if (likely(pktmbuf_data_len(mbuf1) < pktmbuf_buf_len(mbuf1)))
-            memcpy(dip[1], ip6[1]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+            memcpy(dip[1], ip6[1]->dst_addr, IPV6_ADDR_LEN);
 
         if (likely(pktmbuf_data_len(mbuf2) < pktmbuf_buf_len(mbuf2)))
-            memcpy(dip[2], ip6[2]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+            memcpy(dip[2], ip6[2]->dst_addr, IPV6_ADDR_LEN);
 
         if (likely(pktmbuf_data_len(mbuf3) < pktmbuf_buf_len(mbuf3)))
-            memcpy(dip[3], ip6[3]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+            memcpy(dip[3], ip6[3]->dst_addr, IPV6_ADDR_LEN);
 
         ipv6_save_metadata(mbuf0, ip6[0]);
         ipv6_save_metadata(mbuf1, ip6[1]);
@@ -212,7 +212,7 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 
         /* Set defaults and the pointer to the IPv6 header. */
         next0 = CNE_NODE_IP6_INPUT_NEXT_PKT_DROP;
-        memset(dip[0], 0, CNE_FIB6_IPV6_ADDR_SIZE);
+        memset(dip[0], 0, IPV6_ADDR_LEN);
         ip6[0] = pktmbuf_mtod(mbuf0, struct cne_ipv6_hdr *);
 
         /* Adjust the data length for an IPv6 packet to the size given in the header */
@@ -223,7 +223,7 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
          * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
          */
         if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)))
-            memcpy(dip[0], ip6[0]->dst_addr, CNE_FIB6_IPV6_ADDR_SIZE);
+            memcpy(dip[0], ip6[0]->dst_addr, IPV6_ADDR_LEN);
 
         ipv6_save_metadata(mbuf0, ip6[0]);
 
@@ -260,8 +260,8 @@ ip6_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 }
 
 int
-cne_node_ip6_add_input(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE],
-                       uint8_t depth, uint32_t hop)
+cne_node_ip6_add_input(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN], uint8_t depth,
+                       uint32_t hop)
 {
     uint64_t nh = hop;
 

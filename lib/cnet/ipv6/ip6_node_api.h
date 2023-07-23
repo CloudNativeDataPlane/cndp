@@ -33,7 +33,7 @@ extern "C" {
  * @return
  *   0 on success, negative otherwise.
  */
-CNDP_API int cne_node_ip6_add_input(struct cne_fib6 *fib, const uint8_t ip[CNE_FIB6_IPV6_ADDR_SIZE],
+CNDP_API int cne_node_ip6_add_input(struct cne_fib6 *fib, const uint8_t ip[IPV6_ADDR_LEN],
                                     uint8_t depth, uint32_t idx);
 
 /**

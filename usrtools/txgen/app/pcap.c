@@ -15,7 +15,6 @@
 #include "txgen.h"          // for COLUMN_WIDTH_1, COLUMN_WIDTH_0
 #include "display.h"        // for display_set_color, display_...
 #include "pcap.h"
-#include "cne_inet4.h"
 #include "cne_inet.h"                     // for pkt_hdr_t, inet_ntop4, pkt_hdr_s:...
 #include "_pcap.h"                        // for pcap_info_t, _pcap_read, _pcap_re...
 #include "cne_branch_prediction.h"        // for unlikely
@@ -25,7 +24,6 @@
 #include "net/cne_udp.h"        // for cne_udp_hdr
 #include "pktdev_api.h"         // for pktdev_port_count
 #include "port-cfg.h"           // for port_info_t, SEND_PCAP_PKTS
-#include "net/cne_inet6.h"
 
 #ifndef MBUF_INVALID_PORT
 #define MBUF_INVALID_PORT UINT8_MAX
@@ -120,11 +118,11 @@ txgen_print_pcap(uint16_t pid)
                        inet_mtoa(buff, sizeof(buff), &hdr->eth.s_addr));
         col += COLUMN_WIDTH_1;
 
-        type  = ntohs(hdr->eth.ether_type);
-        vlan  = 0;
+        type = ntohs(hdr->eth.ether_type);
+        vlan = 0;
         if (type == CNE_ETHER_TYPE_VLAN) {
-            vlan  = ntohs(((uint16_t *)&hdr->eth.ether_type)[1]);
-            type  = ntohs(((uint16_t *)&hdr->eth.ether_type)[2]);
+            vlan = ntohs(((uint16_t *)&hdr->eth.ether_type)[1]);
+            type = ntohs(((uint16_t *)&hdr->eth.ether_type)[2]);
 #if CNET_ENABLE_IP6
             if (type == CNE_ETHER_TYPE_IPV6)
                 /* Why offset 4, will it be different for ipv6 ? */
@@ -139,7 +137,7 @@ txgen_print_pcap(uint16_t pid)
             char *b;
 
             proto = hdr->ipv4.next_proto_id;
-            b = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.dst_addr, &mask);
+            b     = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.dst_addr, &mask);
             cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
             col += COLUMN_WIDTH_1;
             b = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.src_addr, &mask);

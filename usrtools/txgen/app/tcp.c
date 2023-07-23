@@ -11,7 +11,6 @@
 #include "cne_common.h"         // for __cne_unused
 #include "net/cne_ip.h"         // for cne_ipv4_hdr, cne_ipv4_udptcp_cksum
 #include "net/cne_tcp.h"        // for cne_tcp_hdr
-#include "net/cne_inet6.h"
 
 static inline struct cne_tcp_hdr *
 txgen_init_tcp_hdr(struct cne_tcp_hdr *tcp, pkt_seq_t *pkt)

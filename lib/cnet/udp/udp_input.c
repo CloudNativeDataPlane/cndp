@@ -38,7 +38,7 @@ typedef struct udpip_s2 {
         struct cne_ipv4_hdr ip4; /* IPv4 header */
         struct cne_ipv6_hdr ip6; /* IPv6 header */
     };
-    struct cne_udp_hdr udp;  /* UDP header */
+    struct cne_udp_hdr udp; /* UDP header */
 } __cne_packed udpip_t2;
 
 static inline uint16_t
