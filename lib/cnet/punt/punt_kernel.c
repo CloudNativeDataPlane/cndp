@@ -68,6 +68,9 @@ punt_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_t cnt)
             if (sendto(ctx->sock, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
                 CNE_WARN("Failed to send packets: %s\n", strerror(errno));
         }
+
+        if (cnt)
+            pktmbuf_free_bulk(mbufs, cnt);
     }
 }
 
@@ -125,7 +128,6 @@ punt_kernel_node_process(struct cne_graph *graph __cne_unused, struct cne_node *
         punt_kernel_process_mbuf(node, mbufs, 1);
     }
 
-    cne_node_next_stream_move(graph, node, PUNT_KERNEL_NEXT_PKT_DROP);
     return nb_objs;
 }
 static int
@@ -158,11 +160,6 @@ static struct cne_node_register punt_kernel_node_base = {
     .init = punt_kernel_node_init,
     .fini = punt_kernel_node_fini,
 
-    .nb_edges = PUNT_KERNEL_NEXT_MAX,
-    .next_nodes =
-        {
-            [PUNT_KERNEL_NEXT_PKT_DROP] = PKT_DROP_NODE_NAME,
-        },
 };
 
 struct cne_node_register *
