@@ -904,16 +904,16 @@ txgen_stats(void *arg)
         if (curr >= page) {
             page = curr + page_timo;
             txgen_page_display();
-        } else {
-            if (curr >= stats) {
-                stats = curr + process_timo;
-                PKTDEV_FOREACH (pid) {
-                    txgen_process_stats(pid);
-                    if (thd->quit)
-                        break;
-                }
-            } else
-                cne_pause();
         }
+
+        if (curr >= stats) {
+            stats = curr + process_timo;
+            PKTDEV_FOREACH (pid) {
+                txgen_process_stats(pid);
+                if (thd->quit)
+                    break;
+            }
+        }
+        usleep(100); /* 100ms */
     }
 }
