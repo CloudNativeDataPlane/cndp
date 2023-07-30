@@ -142,6 +142,4 @@ typedef struct l3_4route_s {
 #endif /* __CNE_INET_H */
 
 #include <cne_inet4.h>
-#ifdef CNET_ENABLE_IP6
 #include <cne_inet6.h>
-#endif

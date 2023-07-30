@@ -62,9 +62,7 @@ txgen_tcp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
 
         tcp->cksum = cne_ipv4_udptcp_cksum(ipv4, (const void *)tcp);
 
-    }
-#if CNET_ENABLE_IP6
-    else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+    } else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
         struct cne_ipv6_hdr *ipv6 = (struct cne_ipv6_hdr *)hdr;
         tcp                       = (struct cne_tcp_hdr *)&ipv6[1];
 
@@ -80,7 +78,6 @@ txgen_tcp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
 
         tcp->cksum = cne_ipv6_udptcp_cksum(ipv6, (const void *)tcp);
     }
-#endif
 
     /* In this case we return the original value to allow IP ctor to work */
     return hdr;

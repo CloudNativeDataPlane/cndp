@@ -148,11 +148,9 @@ pcb_v6_lookup(struct pcb_entry **vec, struct pcb_key *key, int32_t flag)
 struct pcb_entry *
 cnet_pcb_lookup(struct pcb_hd *hd, struct pcb_key *key, int32_t flag)
 {
-#if CNET_ENABLE_IP6
     if (flag & IPV6_TYPE)
         return pcb_v6_lookup(hd->vec, key, flag);
     else
-#endif
         return pcb_v4_lookup(hd->vec, key, flag);
 }
 
@@ -215,17 +213,13 @@ pcb_show(struct pcb_entry *pcb)
     cne_printf("       [green]%-6s [orange] %04x [red]%6s[]", pcb->closed ? "Closed" : "Open",
                pcb->opt_flag, chnl_protocol_str(pcb->ip_proto));
 
-#if CNET_ENABLE_IP6
     if (is_pcb_dom_inet6(pcb)) {
         ret = inet_ntop6(ip1, sizeof(ip1), &pcb->key.faddr.cin6_addr, NULL);
         ret = inet_ntop6(ip2, sizeof(ip2), &pcb->key.laddr.cin6_addr, NULL);
     } else {
-#endif
         ret = inet_ntop4(ip1, sizeof(ip1), &pcb->key.faddr.cin_addr, NULL);
         ret = inet_ntop4(ip2, sizeof(ip2), &pcb->key.laddr.cin_addr, NULL);
-#if CNET_ENABLE_IP6
     }
-#endif
 
     if (snprintf(fbuf, sizeof(fbuf), "%s:%d", ret ? ret : "Invalid IP",
                  ntohs(CIN_PORT(&pcb->key.faddr))) < 0)
@@ -302,18 +296,19 @@ is_ch_dom_inet4(struct chnl *ch)
 bool
 is_tcb_dom_inet6(struct tcb_entry *tcb)
 {
-    return (tcb && tcb->pcb && tcb->pcb->ch && tcb->pcb->ch->ch_proto &&
+    return (CNET_ENABLE_IP6 && tcb && tcb->pcb && tcb->pcb->ch && tcb->pcb->ch->ch_proto &&
             (tcb->pcb->ch->ch_proto->domain == AF_INET6));
 }
 
 bool
 is_pcb_dom_inet6(struct pcb_entry *pcb)
 {
-    return (pcb && pcb->ch && pcb->ch->ch_proto && (pcb->ch->ch_proto->domain == AF_INET6));
+    return (CNET_ENABLE_IP6 && pcb && pcb->ch && pcb->ch->ch_proto &&
+            (pcb->ch->ch_proto->domain == AF_INET6));
 }
 
 bool
 is_ch_dom_inet6(struct chnl *ch)
 {
-    return (ch && ch->ch_proto && (ch->ch_proto->domain == AF_INET6));
+    return (CNET_ENABLE_IP6 && ch && ch->ch_proto && (ch->ch_proto->domain == AF_INET6));
 }

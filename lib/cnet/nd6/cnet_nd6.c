@@ -218,6 +218,8 @@ cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
     fib_info_t *fi           = NULL;
     struct cne_fib6 *fib     = NULL;
 
+    if (!CNET_ENABLE_IP6)
+        return 0;
     if (!cnet)
         return -1;
 
@@ -228,7 +230,7 @@ cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
     num_entries    = cne_align32pow2(num_entries);
     cnet->num_arps = num_entries;
 
-    fcfg.type = CNE_FIB_DIR24_8;
+    fcfg.type = CNE_FIB_TRIE;
     fcfg.default_nh =
         (uint64_t)((CNE_NODE_IP6_INPUT_NEXT_PKT_DROP << ND6_NEXT_INDEX_SHIFT) | (num_entries + 1));
     fcfg.max_routes    = num_entries;

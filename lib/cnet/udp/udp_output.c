@@ -55,10 +55,7 @@ udp_output_header(pktmbuf_t *m, uint16_t nxt)
     udp->dgram_cksum = 0;
 
 #if CNET_ENABLE_IP6
-    struct pcb_entry *pcb;
-
-    pcb = m->userptr;
-    if (is_pcb_dom_inet6(pcb))
+    if (is_pcb_dom_inet6((struct pcb_entry *)m->userptr))
         nxt = UDP_OUTPUT_NEXT_IP6_OUTPUT;
     else
 #endif
@@ -78,7 +75,7 @@ udp_output_node_do(struct cne_graph *graph, struct cne_node *node, void **objs, 
     uint16_t n_left_from;
     uint16_t held = 0;
 
-    /* This is defaul, and not using UDP_OUTPUT_NEXT_IP6_OUTPUT in the beginning.
+    /* This is default, and not using UDP_OUTPUT_NEXT_IP6_OUTPUT in the beginning.
      * The next0, next1 etc. should take care below if it's IPv6 */
     next_index = UDP_OUTPUT_NEXT_IP4_OUTPUT;
 

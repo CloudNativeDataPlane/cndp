@@ -741,7 +741,6 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
             if (!md)
                 CNE_ERR_RET_VAL(__errno_set(EFAULT), "pktmbuf metadata is NULL\n");
 
-#if CNET_ENABLE_IP6
             if (is_ch_dom_inet6(ch)) {
                 struct sockaddr_in6 *addr;
 
@@ -753,7 +752,6 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
                     inet6_addr_copy(&md->faddr.cin6_addr, &addr->sin6_addr);
                 }
             } else {
-#endif
                 struct sockaddr_in *addr;
 
                 addr = (struct sockaddr_in *)&sa[i];
@@ -763,9 +761,7 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
                     md->faddr.cin_len         = sizeof(struct in_addr);
                     md->faddr.cin_addr.s_addr = addr->sin_addr.s_addr;
                 }
-#if CNET_ENABLE_IP6
             }
-#endif
         }
     }
 
@@ -952,11 +948,9 @@ chnl_connect_common(struct chnl *ch, struct in_caddr *to, int32_t tolen __cne_un
     chnl_state_set(ch, _ISCONNECTED);
 
     if (!ch->ch_pcb->netif) {
-#if CNET_ENABLE_IP6
         if (is_ch_dom_inet6(ch))
             ch->ch_pcb->netif = cnet6_netif_match_subnet(&to->cin6_addr);
         else /* if AF_INET */
-#endif
             ch->ch_pcb->netif = cnet_netif_match_subnet(&to->cin_addr);
     }
 

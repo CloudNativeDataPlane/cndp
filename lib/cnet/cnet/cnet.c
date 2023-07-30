@@ -30,6 +30,7 @@
 #include <cnet_route.h>
 #include <cnet_route4.h>
 #include <cnet_arp.h>            // for
+#include <cnet_nd6.h>            // for
 #include <cnet_netif.h>          // for
 #include <cnet_netlink.h>        // for
 
@@ -77,8 +78,14 @@ cnet_config_create(uint32_t num_chnls, uint32_t num_routes)
         if (cnet_route4_create(cnet, num_routes, 0) < 0)
             CNE_ERR_GOTO(leave, "Failed to create route\n");
 
+        if (cnet_route6_create(cnet, num_routes, 0) < 0)
+            CNE_ERR_GOTO(leave, "Failed to create route6\n");
+
         if (cnet_arp_create(cnet, 0, 0) < 0)
-            CNE_ERR_GOTO(leave, "Failed to create netif\n");
+            CNE_ERR_GOTO(leave, "Failed to create arp\n");
+
+        if (cnet_nd6_create(cnet, 0, 0) < 0)
+            CNE_ERR_GOTO(leave, "Failed to create nd6\n");
 
         if (cnet_netlink_create(cnet) < 0)
             CNE_ERR_GOTO(leave, "Failed to create netlink\n");

@@ -30,7 +30,7 @@
 #include "cnet_const.h"        // for iofunc_t, BEST_MATCH, False, IPV4_IO
 #include "cnet_reg.h"
 #include "cnet_ipv6.h"            // for ipv6_entry, ipv6_stats, DEFAULT_I...
-#include "cnet_protosw.h"         // for protosw_entry, cnet_ipproto_get
+#include "cnet_protosw.h"         // for protosw_entry
 #include "pktmbuf.h"              // for pktmbuf_t, pktmbuf_free
 #include <cne_fib6.h>             // for IPV6_ADDR_LEN
 #include <ip6_flowlabel.h>        // for srhash_init0()

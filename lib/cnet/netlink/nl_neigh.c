@@ -102,7 +102,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (nl_addr_get_family(dst) == AF_INET6) {
-            if (cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
+            if (CNET_ENABLE_IP6 && cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
                 CNE_RET("Unable to add ND6 entry\n");
         } else /* IPv4 */ {
             if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
@@ -115,7 +115,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (nl_addr_get_family(dst) == AF_INET6) {
-            if (cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
+            if (CNET_ENABLE_IP6 && cnet_nd6_add(netif->netif_idx, &in6, &mac, ND_REACHABLE) == 0)
                 CNE_RET("Unable to add ND6 entry\n");
         } else /* IPv4 */ {
             if (cnet_arp_add(netif->netif_idx, &in, &mac, 0) == 0)
@@ -128,7 +128,7 @@ __nl_neigh(struct netlink_info *info, struct nl_object *obj, int action)
         NL_OBJ_DUMP(obj);
 
         if (nl_addr_get_family(dst) == AF_INET6) {
-            if (cnet_nd6_delete(&in6) < 0)
+            if (CNET_ENABLE_IP6 && cnet_nd6_delete(&in6) < 0)
                 CNE_RET("Unable to delete ND6 entry\n");
         } else /* IPv4 */ {
             if (cnet_arp_delete(&in) < 0)

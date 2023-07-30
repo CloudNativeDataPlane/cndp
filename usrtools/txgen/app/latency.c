@@ -106,17 +106,14 @@ txgen_print_latency(void)
         snprintf(buff, sizeof(buff), "%d/%5d/%5d", pkt->ttl, pkt->sport, pkt->dport);
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, buff);
         snprintf(buff, sizeof(buff), "%s / %s",
-                 (pkt->ethType == CNE_ETHER_TYPE_IPV4) ? "IPv4"
-#if CNET_ENABLE_IP6
+                 (pkt->ethType == CNE_ETHER_TYPE_IPV4)   ? "IPv4"
                  : (pkt->ethType == CNE_ETHER_TYPE_IPV6) ? "IPv6"
-#endif
                                                          : "unknown",
                  (pkt->ipProto == IPPROTO_TCP) ? "TCP" : "UDP");
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, buff);
 
         display_set_color("stats.ip");
         memset(buff, 0, sizeof(buff));
-#if CNET_ENABLE_IP6
         if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
             struct in6_addr mask6, ip6_dst, ip6_src;
 
@@ -130,7 +127,6 @@ txgen_print_latency(void)
             cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
 
         } else /* IPv4 */ {
-#endif
             struct in_addr mask = {.s_addr = 0xFFFFFFFF}, ip_dst, ip_src;
 
             ip_dst.s_addr = be32toh(pkt->ip_dst_addr.s_addr);
@@ -140,9 +136,7 @@ txgen_print_latency(void)
             ip_src.s_addr = be32toh(pkt->ip_src_addr.s_addr);
             b = inet_ntop4(buff, sizeof(buff), &ip_src, (struct in_addr *)&pkt->ip_mask);
             cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
-#if CNET_ENABLE_IP6
         }
-#endif
         display_set_color("stats.mac");
         cne_printf_pos(row++, col, "%*s", COLUMN_WIDTH_1,
                        inet_mtoa(buff, sizeof(buff), &pkt->eth_dst_addr));
