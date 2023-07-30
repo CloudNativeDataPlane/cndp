@@ -95,11 +95,15 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
 
     if (cinfo->flags & FWD_DEBUG_STATS)
         cne_printf("  [magenta]Patterns[]: ");
+
     for (int i = 0; i < pattern_array->array_sz; i++) {
         char *pat = pattern_array->arr[i]->str;
 
         if ((CNET_ENABLE_TCP == 0) && !strncasecmp("tcp*", pat, 4))
             continue;
+        if ((CNET_ENABLE_IP6 == 0) && !strncasecmp("ip6*", pat, 4))
+            continue;
+
         if (cinfo->flags & FWD_DEBUG_STATS)
             cne_printf("'[orange]%s[]' ", pat);
 

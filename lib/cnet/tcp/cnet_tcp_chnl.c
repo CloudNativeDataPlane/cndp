@@ -527,10 +527,17 @@ tcp_chnl_create(void *_stk __cne_unused)
 {
     struct protosw_entry *psw;
 
-    psw = cnet_protosw_find(AF_INET, SOCK_STREAM, 0);
+    psw = cnet_protosw_find(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (!psw)
         return -1;
     psw->funcs = &tcpFuncs;
+
+    if (CNET_ENABLE_IP6) {
+        psw = cnet_protosw_find(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+        if (!psw)
+            return -1;
+        psw->funcs = &tcpFuncs;
+    }
 
     cnet_chnl_opt_add(&tcp_sol_opts);
     cnet_chnl_opt_add(&tcp_ipproto_opts);

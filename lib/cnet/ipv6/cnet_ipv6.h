@@ -128,19 +128,19 @@ CNDP_API int cnet_ipv6_stats_dump(struct stk_s *stk);
  */
 CNDP_API void cnet_ipv6_dump(const char *msg, struct cne_ipv6_hdr *ip);
 
-inline cne_be32_t
+static inline cne_be32_t
 ip6_get_flowlabel(struct cne_ipv6_hdr *ip6h)
 {
     return (ip6h->vtc_flow & IPV6_FLOWLABEL_MASK);
 }
 
-inline cne_be32_t
+static inline cne_be32_t
 ip6_get_tclass(struct cne_ipv6_hdr *ip6h)
 {
     return ((ip6h->vtc_flow & IPV6_TCLASS_MASK) >> IPV6_TCLASS_SHIFT);
 }
 
-inline cne_be32_t
+static inline cne_be32_t
 ip6_get_version(struct cne_ipv6_hdr *ip6h)
 {
     return ((ip6h->vtc_flow & IPV6_VERSION_MASK) >> IPV6_VERSION_SHIFT);

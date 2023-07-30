@@ -58,9 +58,7 @@ txgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
         udp              = txgen_init_udp_hdr(udp, pkt, sizeof(struct cne_ipv4_hdr));
         udp->dgram_cksum = cne_ipv4_udptcp_cksum(ipv4, (const void *)udp);
 
-    }
-#if CNET_ENABLE_IP6
-    else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
+    } else if (pkt->ethType == CNE_ETHER_TYPE_IPV6) {
         struct cne_ipv6_hdr *ipv6 = hdr;
         udp                       = (struct cne_udp_hdr *)&ipv6[1];
 
@@ -75,7 +73,6 @@ txgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type __cne_unused)
         udp              = txgen_init_udp_hdr(udp, pkt, sizeof(struct cne_ipv6_hdr));
         udp->dgram_cksum = cne_ipv6_udptcp_cksum(ipv6, (const void *)udp);
     }
-#endif
 
     if (udp && udp->dgram_cksum == 0)
         udp->dgram_cksum = 0xFFFF;

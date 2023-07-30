@@ -512,7 +512,7 @@ nd6_recv_requests(struct cne_graph *graph, struct cne_node *node, icmp6ip_t *iip
 static inline void
 nd6_init(void)
 {
-    CNE_DEBUG("All ND6 initilizations\n");
+    CNE_DEBUG("All ND6 initializations\n");
 }
 
 /* ND6 Utility functions */

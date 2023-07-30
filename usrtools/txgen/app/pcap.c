@@ -123,12 +123,10 @@ txgen_print_pcap(uint16_t pid)
         if (type == CNE_ETHER_TYPE_VLAN) {
             vlan = ntohs(((uint16_t *)&hdr->eth.ether_type)[1]);
             type = ntohs(((uint16_t *)&hdr->eth.ether_type)[2]);
-#if CNET_ENABLE_IP6
-            if (type == CNE_ETHER_TYPE_IPV6)
+            if (type == CNE_ETHER_TYPE_IPV6) {
                 /* Why offset 4, will it be different for ipv6 ? */
                 proto = ((struct cne_ipv6_hdr *)((char *)&hdr->ipv6 + 4))->proto;
-            else
-#endif
+            } else
                 proto = ((struct cne_ipv4_hdr *)((char *)&hdr->ipv4 + 4))->next_proto_id;
         }
 
@@ -148,9 +146,7 @@ txgen_print_pcap(uint16_t pid)
                      ntohs(hdr->uip.udp.dst_port));
             cne_printf_pos(row, col, "%*s", 12, buff);
             col += 12;
-        }
-#if CNET_ENABLE_IP6
-        else if (type == CNE_ETHER_TYPE_IPV6) {
+        } else if (type == CNE_ETHER_TYPE_IPV6) {
             struct in6_addr mask;
             char *b;
 
@@ -167,9 +163,7 @@ txgen_print_pcap(uint16_t pid)
                      ntohs(hdr->uip.udp.dst_port));
             cne_printf_pos(row, col, "%*s", 12, buff);
             col += 12;
-        }
-#endif
-        else {
+        } else {
             skip++;
             col += ((2 * COLUMN_WIDTH_1) + 2 + 12);
         }

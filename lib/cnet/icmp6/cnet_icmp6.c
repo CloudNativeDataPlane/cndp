@@ -30,8 +30,6 @@ icmp6_create(void *_stk)
 
     CNE_ASSERT(psw != NULL);
 
-    cnet_ipproto_set(IPPROTO_ICMPV6, psw);
-
     stk->icmp6->cksum_on            = 1;
     stk->icmp6->rcv_size            = MAX_ICMP6_RCV_SIZE;
     stk->icmp6->snd_size            = MAX_ICMP6_SND_SIZE;

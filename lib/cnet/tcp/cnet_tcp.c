@@ -64,7 +64,7 @@
 #include "cne_vec.h"              // for vec_len, vec_add, vec_at_index
 #include <cnet_reg.h>
 #include "cnet_ipv4.h"           // for TOS_DEFAULT, TTL_DEFAULT, _OFF_DF
-#include "cnet_protosw.h"        // for protosw_entry, cnet_ipproto_set, cnet_pr...
+#include "cnet_protosw.h"        // for protosw_entry, cnet_pr...
 #include "cnet_udp.h"            // for chnl, chnl_buf, cb_space, chnl_cant_snd_...
 #include <pktmbuf_ptype.h>
 #include <cnet_fib_info.h>
@@ -4023,11 +4023,13 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
     if (stk->seg_objs == NULL)
         goto err_exit;
 
-    psw = cnet_protosw_add("TCP", AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (!psw)
+    if (!cnet_protosw_add("TCP", AF_INET, SOCK_STREAM, IPPROTO_TCP))
         goto err_exit;
 
-    cnet_ipproto_set(IPPROTO_TCP, psw);
+    if (CNET_ENABLE_IP6) {
+        if (!cnet_protosw_add("TCPv6", AF_INET6, SOCK_STREAM, IPPROTO_TCP))
+            goto err_exit;
+    }
 
     cne_timer_init(&stk->tcp_timer);
 
