@@ -31,8 +31,6 @@
 /* Next node for each ptype, default is '0' is "pkt_drop" */
 static const uint8_t p_nxt[_PTYPE_MASK + 1] __cne_cache_aligned = {
     [CNE_PTYPE_L2_ETHER_ARP]                                 = PTYPE_NEXT_FRAME_PUNT,
-    [_L2_L3_IPV4]                                            = PTYPE_NEXT_IP4_INPUT,
-    [_L2_L3_IPV4_EXT]                                        = PTYPE_NEXT_PKT_PUNT,
     [_L2_L3_IPV4 | CNE_PTYPE_L4_UDP]                         = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4 | CNE_PTYPE_L4_TCP]                         = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4_EXT | CNE_PTYPE_L4_UDP]                     = PTYPE_NEXT_IP4_INPUT,
