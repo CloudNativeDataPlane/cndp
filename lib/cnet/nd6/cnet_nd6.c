@@ -203,6 +203,8 @@ _nd6_show(struct nd6_cache_entry *entry, void *arg __cne_unused)
 int
 cnet_nd6_show(void)
 {
+    if (CNET_ENABLE_IP6 == 0)
+        return 0;
     cne_printf("[magenta]NDP Table for CNET on lcore [orange]%d[]\n", cne_lcore_id());
     cne_printf("  [magenta]%-15s %-17s %-4s %3s %-16s[]\n", "Neighbor's IP6 Address", "MAC Address",
                "Reachability State", " IF", "Name");
@@ -218,7 +220,7 @@ cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
     fib_info_t *fi           = NULL;
     struct cne_fib6 *fib     = NULL;
 
-    if (!CNET_ENABLE_IP6)
+    if (CNET_ENABLE_IP6 == 0)
         return 0;
     if (!cnet)
         return -1;
@@ -227,8 +229,8 @@ cnet_nd6_create(struct cnet *cnet, uint32_t num_entries, uint32_t num_tbl8s)
         num_entries = ND6_FIB_DEFAULT_ENTRIES;
     if (num_tbl8s == 0)
         num_tbl8s = ND6_FIB_DEFAULT_NUM_TBL8S;
-    num_entries    = cne_align32pow2(num_entries);
-    cnet->num_arps = num_entries;
+    num_entries      = cne_align32pow2(num_entries);
+    cnet->num_neighs = num_entries;
 
     fcfg.type = CNE_FIB_TRIE;
     fcfg.default_nh =
@@ -265,7 +267,7 @@ err:
 int
 cnet_nd6_destroy(struct cnet *cnet)
 {
-    if (cnet) {
+    if (CNET_ENABLE_IP6 && cnet) {
         fib_info_destroy(cnet->nd6_finfo);
         if (cnet->nd6_obj)
             mempool_destroy(cnet->nd6_obj);

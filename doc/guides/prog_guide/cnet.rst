@@ -178,36 +178,44 @@ the information to control the CNET stack. This structure is created once for al
 .. code-block:: c
    :caption: CNET Structure layout
 
-       struct cnet {
-           CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
-           uint16_t nb_ports;                   /**< Number of ports in the system */
-           uint32_t num_chnls;                  /**< Number of channels in system */
-           uint32_t num_routes;                 /**< Number of routes */
-           uint32_t num_arps;                   /**< Number of ARP entries */
-           uint16_t flags;                      /**< Flags */
-           u_id_t chnl_uids;                    /**< UID for channel descriptor like values */
-           void **chnl_descriptors;             /**< List of channel descriptors pointers */
-           void *netlink_info;                  /**< Netlink information structure */
-           struct stk_s **stks;                 /**< Vector list of stk_entry pointers */
-           struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */
-           struct netif **netifs;               /**< List of active netif structures */
-           struct cne_mempool *rt4_obj;         /**< Route IPv4 table pointer */
-           struct cne_mempool *arp_obj;         /**< ARP object structures */
-           struct fib_info *rt4_finfo;          /**< Pointer to the IPv4 FIB information structure */
-           struct fib_info *arp_finfo;          /**< ARP FIB table pointer */
-           struct fib_info *pcb_finfo;          /**< PCB FIB table pointer */
-           struct fib_info *tcb_finfo;          /**< TCB FIB table pointer */
-       } __cne_cache_aligned;
+         struct cnet {
+            CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
+            uint16_t nb_ports;                   /**< Number of ports in the system */
+            uint32_t num_chnls;                  /**< Number of channels in system */
+            uint32_t num_routes;                 /**< Number of IPv4 routes */
+            uint32_t num_6routes;                /**< Number of IPv6 routes */
+            uint32_t num_arps;                   /**< Number of ARP entries */
+            uint32_t num_neighs;                 /**< Number of ND6 entries */
+            uint16_t flags;                      /**< Flags enable Punting, TCP, ... */
+            u_id_t chnl_uids;                    /**< UID for channel descriptor like values */
+            void **chnl_descriptors;             /**< List of channel descriptors pointers */
+            void *netlink_info;                  /**< Netlink information structure */
+            struct stk_s **stks;                 /**< Vector list of stk_entry pointers */
+            struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */
+            struct netif **netifs;               /**< List of active netif structures */
+            struct cne_mempool *rt4_obj;         /**< Route IPv4 table pointer */
+            struct cne_mempool *rt6_obj;         /**< Route IPv6 table pointer */
+            struct cne_mempool *arp_obj;         /**< ARP object structures */
+            struct cne_mempool *nd6_obj;         /**< NDP for IPv6 object structures */
+            struct fib_info *rt4_finfo;          /**< Pointer to the IPv4 FIB information structure */
+            struct fib_info *rt6_finfo;          /**< Pointer to the IPv6 FIB information structure */
+            struct fib_info *arp_finfo;          /**< ARP FIB table pointer */
+            struct fib_info *nd6_finfo;          /**< NDP (for IPv6) FIB table pointer */
+            struct fib_info *pcb_finfo;          /**< PCB FIB table pointer */
+            struct fib_info *tcb_finfo;          /**< TCB FIB table pointer */
+         } __cne_cache_aligned;
 
 The **netlink_info** is the opaque pointer to the *Netlink* information and is used with the *netlink*
 library to manage the messages from the kernel. The next set of entries *nb_ports*, *num_chnls*,
-*num_routes* and *num_arps* are values set at startup time to define and limit the
+*num_routes*, *num_6routes* and *num_arps* are values set at startup time to define and limit the
 number of items created.
 
   - **nb_ports** defines the number of ports assigned to the application for the stack to use.
   - **num_chnls** defines the number of channel structures allowed in the stack.
-  - **num_routes** defines the number of routes structures allowed in the stack.
+  - **num_routes** defines the number of IPv4 routes structures allowed in the stack.
+  - **num_6routes** defines the number of IPv6 routes structures allowed in the stack.
   - **num_arps** defines the number of ARP structures allowed in the stack.
+  - **num_neighs** defines the number of MD6 structures allowed in the stack.
 
 The **flags** field defines a simple set of flags that can be used by the stack. The two currently
 defined are *CNET_PUNT_ENABLED* and *CNET_TCP_ENABLED* to control if we support punting packets to the
@@ -227,8 +235,12 @@ CNET stack. The **netifs** is the list of network interfaces attached to the CNE
 system network interfaces.
 
 The **rt4_obj** and **arp_obj** are mempools holding the number of IPv4 route structures and ARP structures
-to enable allocating/freeing these entries quickly, plus limiting the number of each item. The *fib*
-entries rt4, arp, pcb and tcb are used to locate these entries quickly using the *FIB* LPM library.
+to enable allocating/freeing these entries quickly, plus limiting the number of each item.
+
+The **rt6_obj** and **nd6_obj** are mempools holding the number of IPv6 route structures and ND6 structures
+to enable allocating/freeing these entries quickly, plus limiting the number of each item.
+
+The *fib* entries rt4, rt6, arp, nd6, pcb and tcb are used to locate these entries quickly using the *FIB* LPM library.
 
 CNET Stack Structure
 ^^^^^^^^^^^^^^^^^^^^

@@ -19,16 +19,14 @@ extern "C" {
 /**
  * @brief Show/modify routing information for a given stack instance.
  *
- * @param stk
- *   The current stack instance.
- * @param argc
- *   The number of arguments to be passed to the stack instance.
- * @param argv
- *   The arguments to be passed to the stack instance.
+ * @param ip4
+ *   Display route information for IPv4.
+ * @param ip6
+ *   Display route information for IPv6.
  * @return
  *   -1 on error, 0 on success.
  */
-CNDP_API int cnet_rtshow(stk_t *stk, int argc, char **argv);
+CNDP_API int cnet_rtshow(int ip4, int ip6);
 
 #ifdef __cplusplus
 }

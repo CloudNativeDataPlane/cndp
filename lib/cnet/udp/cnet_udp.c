@@ -43,10 +43,8 @@ udp_create(void *_stk)
     if (cnet_protosw_add("UDP", AF_INET, SOCK_DGRAM, IPPROTO_UDP) == NULL)
         CNE_ERR_RET("Failed to add %s for INET %d\n", "UDP", AF_INET);
 
-    if (CNET_ENABLE_IP6) {
-        if (cnet_protosw_add("UDPv6", AF_INET6, SOCK_DGRAM, IPPROTO_UDP) == NULL)
-            CNE_ERR_RET("Failed to add %s for INET %d\n", "UDPv6", AF_INET6);
-    }
+    if (CNET_ENABLE_IP6 && !cnet_protosw_add("UDPv6", AF_INET6, SOCK_DGRAM, IPPROTO_UDP))
+        CNE_ERR_RET("Failed to add %s for INET %d\n", "UDPv6", AF_INET6);
     stk->udp->cksum_on          = 1;
     stk->udp->rcv_size          = MAX_UDP_RCV_SIZE;
     stk->udp->snd_size          = MAX_UDP_SND_SIZE;

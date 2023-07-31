@@ -34,8 +34,10 @@ struct cnet {
     CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
     uint16_t nb_ports;                   /**< Number of ports in the system */
     uint32_t num_chnls;                  /**< Number of channels in system */
-    uint32_t num_routes;                 /**< Number of routes */
+    uint32_t num_routes;                 /**< Number of IPv4 routes */
+    uint32_t num_6routes;                /**< Number of IPv6 routes */
     uint32_t num_arps;                   /**< Number of ARP entries */
+    uint32_t num_neighs;                 /**< Number of ND6 entries */
     uint16_t flags;                      /**< Flags enable Punting, TCP, ... */
     u_id_t chnl_uids;                    /**< UID for channel descriptor like values */
     void **chnl_descriptors;             /**< List of channel descriptors pointers */

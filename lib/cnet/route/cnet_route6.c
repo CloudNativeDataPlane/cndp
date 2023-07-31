@@ -162,13 +162,15 @@ cnet_route6_create(struct cnet *cnet, uint32_t num_rules, uint32_t num_tbl8s)
 
     struct mempool_cfg mcfg = {0};
 
+    if (CNET_ENABLE_IP6 == 0)
+        return 0;
     if (num_rules == 0 || (num_rules > RT6_MAX_RULES))
         num_rules = RT6_DEFAULT_NUM_RULES;
     if (num_tbl8s == 0)
         num_tbl8s = RT6_DEFAULT_NUM_TBL8S;
 
-    num_rules        = cne_align32pow2(num_rules);
-    cnet->num_routes = num_rules;
+    num_rules         = cne_align32pow2(num_rules);
+    cnet->num_6routes = num_rules;
 
     cfg.type = CNE_FIB_TRIE;
     cfg.default_nh =
@@ -241,6 +243,8 @@ route6_dump(struct rt6_entry *rt, void *arg __cne_unused)
 int
 cnet_route6_show(void)
 {
+    if (CNET_ENABLE_IP6 == 0)
+        return 0;
     cne_printf("[magenta]IPv6 Route Table for CNET on lcore [orange]%d[]\n", cne_lcore_id());
     cne_printf("  [magenta]%-17s %-17s  IF  %-17s Metric Timeout   Netdev[]\n", "Nexthop", "Mask",
                "Gateway");

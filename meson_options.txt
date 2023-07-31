@@ -40,7 +40,10 @@ option('cnet_num_channels', type: 'integer', value: '512',
     description: 'Max number of Channels')
 
 option('cnet_num_routes', type: 'integer', value: '512',
-    description: 'Max number of Routes')
+    description: 'Max number of IPv4 Routes')
+
+option('cnet_num_6routes', type: 'integer', value: '512',
+    description: 'Max number of IPv6 Routes')
 
 option('cnet_num_segs', type: 'integer', value: '8192',
     description: 'Max number of TCB segments')

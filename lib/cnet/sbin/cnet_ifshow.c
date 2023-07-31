@@ -50,7 +50,7 @@ netif_show(struct netif *netif, char *ifname)
         return;
 
     /* When a interface is given only display that interface */
-    if (ifname && strncmp(ifname, netif->ifname, sizeof(netif->ifname)) == 0)
+    if (ifname && strncmp(ifname, netif->ifname, sizeof(netif->ifname)))
         return;
 
     if (pktdev_stats_get(netif->lpid, &stats) < 0)
