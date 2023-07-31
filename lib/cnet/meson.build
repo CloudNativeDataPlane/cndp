@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2018-2023 Intel Corporation
+# Copyright (c) Red Hat Inc.
 
 def_deps = [
     build_cfg,
@@ -14,7 +15,6 @@ def_deps = [
     pktdev,
     pktmbuf,
     fib,
-
     ring,
     cli,
     hash,
@@ -25,6 +25,9 @@ def_deps = [
     graph,
     jcfg,
     tun,
+    uds,
+    pmd_tap,
+    xskdev,
     ]
 
 dirs = [ # list is not sorted and must be in this order.

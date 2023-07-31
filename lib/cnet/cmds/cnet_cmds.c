@@ -345,6 +345,7 @@ _node_style(char *name, int src)
         { 0,                    ARP_REQUEST_NODE_NAME,   "[fillcolor=mediumspringgreen]" },
         { 0,                    ETH_TX_NODE_NAME"*",     "[fillcolor=cyan]" },
         { 0,                    PUNT_KERNEL_NODE_NAME,   "[fillcolor=coral]" },
+        { 0,                    PUNT_ETHER_NODE_NAME,    "[fillcolor=coral]" },
         { 0,                    PTYPE_NODE_NAME,         "[fillcolor=goldenrod]" },
         { 0,                    GTPU_INPUT_NODE_NAME,    "[fillcolor=lightskyblue]" },
         { 0,                    "tcp_*",                 "[fillcolor=lightpink]" },
