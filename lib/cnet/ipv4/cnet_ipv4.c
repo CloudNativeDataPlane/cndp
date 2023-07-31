@@ -37,7 +37,7 @@
 static void
 __ipv4_stats_dump(stk_t *stk)
 {
-    cne_printf("[magenta]Network Stack statistics[]: [orange]%s[]\n", stk->name);
+    cne_printf("[yellow]IPv4 [magenta]Network Stack statistics[]: [orange]%s[]\n", stk->name);
 
 #define _(stat) cne_printf("    [magenta]%-24s[]= [orange]%'ld[]\n", #stat, stk->ipv4->stats.stat)
     _(ip_ver_error);

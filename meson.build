@@ -420,6 +420,7 @@ endif
 cne_conf.set('CNET_NUM_TCBS', get_option('cnet_num_tcbs'))
 cne_conf.set('CNET_NUM_CHANNELS', get_option('cnet_num_channels'))
 cne_conf.set('CNET_NUM_ROUTES', get_option('cnet_num_routes'))
+cne_conf.set('CNET_NUM_6ROUTES', get_option('cnet_num_6routes'))
 cne_conf.set('CNET_NUM_SEGMENTS', get_option('cnet_num_segs'))
 
 # ----

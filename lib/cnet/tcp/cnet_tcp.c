@@ -4026,10 +4026,8 @@ tcp_init(int32_t n_tcb_entries, bool wscale, bool t_stamp)
     if (!cnet_protosw_add("TCP", AF_INET, SOCK_STREAM, IPPROTO_TCP))
         goto err_exit;
 
-    if (CNET_ENABLE_IP6) {
-        if (!cnet_protosw_add("TCPv6", AF_INET6, SOCK_STREAM, IPPROTO_TCP))
-            goto err_exit;
-    }
+    if (CNET_ENABLE_IP6 && !cnet_protosw_add("TCPv6", AF_INET6, SOCK_STREAM, IPPROTO_TCP))
+        goto err_exit;
 
     cne_timer_init(&stk->tcp_timer);
 

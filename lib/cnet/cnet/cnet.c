@@ -120,6 +120,7 @@ cnet_stop(void)
         cnet_drv_destroy(cnet);
         cnet_route4_destroy(cnet);
         cnet_arp_destroy(cnet);
+        cnet_nd6_destroy(cnet);
         cnet_netlink_destroy(cnet);
 
         vec_free(cnet->stks);

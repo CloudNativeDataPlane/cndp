@@ -38,7 +38,7 @@
 static void
 __ipv6_stats_dump(stk_t *stk)
 {
-    cne_printf("[magenta]Network Stack statistics[]: [orange]%s[]\n", stk->name);
+    cne_printf("[yellow]IPv6 [magenta]Network Stack statistics[]: [orange]%s[]\n", stk->name);
 
 #define _(stat) cne_printf("    [magenta]%-24s[]= [orange]%'ld[]\n", #stat, stk->ipv6->stats.stat)
     _(ip6_ver_error);
@@ -61,6 +61,9 @@ __ipv6_stats_dump(stk_t *stk)
 int
 cnet_ipv6_stats_dump(stk_t *stk)
 {
+    if (CNET_ENABLE_IP6 == 0)
+        return 0;
+
     if (stk)
         __ipv6_stats_dump(stk);
     else {
@@ -76,6 +79,9 @@ cnet_ipv6_dump(const char *msg, struct cne_ipv6_hdr *ip6)
     struct in6_addr daddr, saddr;
     char ip6_src[IP6_ADDR_STRLEN] = {0};
     char ip6_dst[IP6_ADDR_STRLEN] = {0};
+
+    if (CNET_ENABLE_IP6 == 0)
+        return;
 
     cne_printf("%s [cyan]IPv6 Header[] @ %p\n", (msg == NULL) ? "" : msg, ip6);
 
