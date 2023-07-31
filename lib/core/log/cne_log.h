@@ -20,6 +20,7 @@
 #include <cne_stdio.h>
 
 #include "cne_build_config.h"        // for CNE_ENABLE_ASSERT
+#include "cne_branch_prediction.h"
 
 #ifdef __cplusplus
 extern "C" {
