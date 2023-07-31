@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2021-2023 Intel Corporation.
  * Copyright (c) 2020 Marvell.
+ * Copyright (c) Red Hat Inc.
  */
 #ifndef __INCLUDE_PTYPE_PRIV_H__
 #define __INCLUDE_PTYPE_PRIV_H__
@@ -17,6 +18,8 @@ struct ptype_node_ctx {
 
 enum ptype_next_nodes {
     PTYPE_NEXT_PKT_DROP,
+    PTYPE_NEXT_PKT_PUNT,
+    PTYPE_NEXT_FRAME_PUNT,
     PTYPE_NEXT_IP4_INPUT,
     PTYPE_NEXT_GTPU_INPUT,
     PTYPE_NEXT_MAX,

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2022-2023 Intel Corporation
+ * Copyright (c) Red Hat Inc.
  */
 
 #ifndef __CNET_NODE_NAMES_H
@@ -35,6 +36,7 @@ extern "C" {
 #define PKT_DROP_NODE_NAME      "pkt_drop"
 #define PTYPE_NODE_NAME         "ptype"
 #define PUNT_KERNEL_NODE_NAME   "punt_kernel"
+#define PUNT_ETHER_NODE_NAME    "punt_l2_kernel"
 #define TCP_INPUT_NODE_NAME     "tcp_input"
 #define TCP_OUTPUT_NODE_NAME    "tcp_output"
 #define UDP_INPUT_NODE_NAME     "udp_input"
