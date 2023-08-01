@@ -119,10 +119,12 @@ cnet_stop(void)
     if (cnet && cnet_lock()) {
         cnet_drv_destroy(cnet);
         cnet_route4_destroy(cnet);
+        cnet_route6_destroy(cnet);
         cnet_arp_destroy(cnet);
         cnet_nd6_destroy(cnet);
         cnet_netlink_destroy(cnet);
 
+        vec_free(cnet->chnl_descriptors);
         vec_free(cnet->stks);
         vec_free(cnet->drvs);
         vec_free(cnet->netifs);

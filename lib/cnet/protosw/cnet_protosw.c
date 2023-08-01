@@ -14,6 +14,10 @@
 #include "cnet_protosw.h"
 #include "cne_log.h"        // for CNE_LOG, CNE_LOG_DEBUG, CNE_LOG_WARNING
 
+/**
+ * This module manages the list of "protocol switch" structures, each of which
+ * corresponds to a channel type, e.g. {AF_INET, AF_INET6, SOCK_DGRAM, IPPROTO_UDP, IPPROTO_TCP}.
+ */
 static struct protosw_entry *
 cnet_protosw_match(uint16_t domain, uint16_t type, uint16_t proto)
 {
