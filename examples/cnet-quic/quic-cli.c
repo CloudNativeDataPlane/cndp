@@ -825,8 +825,8 @@ run_server(int cd, pktmbuf_t *mbuf)
                 break;
             } else {
                 /* new connection */
-                int ret =
-                    quicly_accept(&conn, &ctx, NULL, &remote.sa, &packet, token, &next_cid, NULL);
+                int ret = quicly_accept(&conn, &ctx, NULL, &remote.sa, &packet, token, &next_cid,
+                                        NULL, NULL);
                 if (ret == 0) {
                     assert(conn != NULL);
                     ++next_cid.master_id;
@@ -1493,7 +1493,7 @@ open_quic_channel(void)
 
         ret =
             quicly_connect(&conn, &ctx, cinfo->host, (struct sockaddr *)&cinfo->sa, NULL, &next_cid,
-                           resumption_token, &hs_properties, &resumed_transport_params);
+                           resumption_token, &hs_properties, &resumed_transport_params, NULL);
         assert(ret == 0);
         ++next_cid.master_id;
         enqueue_requests(conn);

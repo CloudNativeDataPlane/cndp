@@ -35,6 +35,7 @@ if quicly_dep.found()
     ]
 
     warning_flags = [
+        '-Wno-error',
         '-Wno-cast-qual',
         '-Wno-unused-parameter',
         '-Wno-sign-compare',
@@ -56,7 +57,7 @@ if quicly_dep.found()
             quic_cflags += arg
         endif
     endforeach
-    quic_cflags += ['-I'+quicly_path+'/include', '-I'+picotls_path+'/include']
+    quic_cflags += ['-I'+quicly_path+'/../include', '-I'+picotls_path+'/../include']
     quic_cflags += ['-DPICOTLS_USE_DTRACE=0', '-DQUICLY_HAVE_FUSION=1']
 
     executable('cnet-quic',
