@@ -16,10 +16,8 @@
 
 /**
  * This module manages the list of "protocol switch" structures, each of which
- * corresponds to a channel type, e.g. {AF_INET, SOCK_DGRAM, IPPROTO_UDP}.
+ * corresponds to a channel type, e.g. {AF_INET, AF_INET6, SOCK_DGRAM, IPPROTO_UDP, IPPROTO_TCP}.
  */
-static struct protosw_entry *ipproto_table[CNET_MAX_IPPROTO];
-
 static struct protosw_entry *
 cnet_protosw_match(uint16_t domain, uint16_t type, uint16_t proto)
 {
@@ -85,22 +83,6 @@ cnet_protosw_add(const char *name, uint16_t domain, uint16_t type, uint16_t prot
     vec_add(this_stk->protosw_vec, psw);
 
     return psw;
-}
-
-int
-cnet_ipproto_set(uint8_t ipproto, struct protosw_entry *psw)
-{
-    if (ipproto_table[ipproto])
-        return -1;
-
-    ipproto_table[ipproto] = psw;
-    return 0;
-}
-
-struct protosw_entry *
-cnet_ipproto_get(uint8_t ipproto)
-{
-    return ipproto_table[ipproto];
 }
 
 struct protosw_entry *

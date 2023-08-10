@@ -34,8 +34,10 @@ struct cnet {
     CNE_ATOMIC(uint_fast16_t) stk_order; /**< Order of the stack initializations */
     uint16_t nb_ports;                   /**< Number of ports in the system */
     uint32_t num_chnls;                  /**< Number of channels in system */
-    uint32_t num_routes;                 /**< Number of routes */
+    uint32_t num_routes;                 /**< Number of IPv4 routes */
+    uint32_t num_6routes;                /**< Number of IPv6 routes */
     uint32_t num_arps;                   /**< Number of ARP entries */
+    uint32_t num_neighs;                 /**< Number of ND6 entries */
     uint16_t flags;                      /**< Flags enable Punting, TCP, ... */
     u_id_t chnl_uids;                    /**< UID for channel descriptor like values */
     void **chnl_descriptors;             /**< List of channel descriptors pointers */
@@ -44,9 +46,13 @@ struct cnet {
     struct drv_entry **drvs;             /**< Vector list of drv_entry pointers */
     struct netif **netifs;               /**< List of active netif structures */
     struct cne_mempool *rt4_obj;         /**< Route IPv4 table pointer */
+    struct cne_mempool *rt6_obj;         /**< Route IPv6 table pointer */
     struct cne_mempool *arp_obj;         /**< ARP object structures */
+    struct cne_mempool *nd6_obj;         /**< NDP for IPv6 object structures */
     struct fib_info *rt4_finfo;          /**< Pointer to the IPv4 FIB information structure */
+    struct fib_info *rt6_finfo;          /**< Pointer to the IPv6 FIB information structure */
     struct fib_info *arp_finfo;          /**< ARP FIB table pointer */
+    struct fib_info *nd6_finfo;          /**< NDP (for IPv6) FIB table pointer */
     struct fib_info *pcb_finfo;          /**< PCB FIB table pointer */
     struct fib_info *tcb_finfo;          /**< TCB FIB table pointer */
 } __cne_cache_aligned;

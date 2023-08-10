@@ -14,7 +14,9 @@
 #include <cnet_route.h>            // for
 #include <cnet_netif.h>            // for netif
 #include <cnet_route4.h>           // for cnet_route4_show
+#include <cnet_route6.h>           // for cnet_route6_show
 #include <cnet_arp.h>              // for cnet_arp_show
+#include <cnet_nd6.h>              // for cnet_nd6_show
 #include <hmap.h>                  // for hmap_list_dump
 #include <cnet_ip_common.h>        // for ip_info
 #include <cnet_meta.h>             // for cnet_metadata
@@ -46,6 +48,13 @@
     do {                                                                   \
         snprintf(pbuff, sizeof(pbuff), "sizeof([cyan]struct %s[])", #_s);  \
         cne_printf("%-40s : [magenta]%4lu[]\n", pbuff, sizeof(struct _s)); \
+    } while (0)
+
+#define _prt2(_s, _d, _t)                                                 \
+    do {                                                                  \
+        snprintf(pbuff, sizeof(pbuff), "sizeof([cyan]struct %s[])", #_s); \
+        cne_printf("%-40s : [magenta]%4lu[]", pbuff, sizeof(struct _s));  \
+        cne_printf(" * %5d([cyan]netifs[]) = [magenta]%lu[]\n", _d, _t);  \
     } while (0)
 
 #define gfprintf(f, format, args...)                 \
@@ -90,32 +99,39 @@ dump_sizes(void)
 
     tot = (sizeof(stk_t) * stk_cnt);
     total += tot;
-    _prt(stk_s);
-    cne_printf("%32s : * %5d([cyan]lcores[]) = [magenta]%lu[]\n", "", stk_cnt, tot);
+    _prt2(stk_s, stk_cnt, tot);
 
     tot = (sizeof(struct netif) * (stk_cnt * drv_cnt));
     total += tot;
-    _prt(netif);
-    cne_printf("%32s : * %5d([cyan]netifs[]) = [magenta]%lu[]\n", "", (stk_cnt * drv_cnt), tot);
+    _prt2(netif, (stk_cnt * drv_cnt), tot);
 
     tot = (sizeof(struct drv_entry) * drv_cnt);
     total += tot;
-    _prt(drv_entry);
-    cne_printf("%32s : * %5d([cyan]ports[])  = [magenta]%lu[]\n", "", drv_cnt, tot);
+    _prt2(drv_entry, drv_cnt, tot);
 
     tot = (sizeof(struct rt4_entry) * this_cnet->num_routes);
     total += tot;
-    _prt(rt4_entry);
-    cne_printf("%32s : * %5d([cyan]routes[]) = [magenta]%lu[]\n", "", this_cnet->num_routes, tot);
+    _prt2(rt4_entry, this_cnet->num_routes, tot);
+
+    tot = (sizeof(struct rt6_entry) * this_cnet->num_6routes);
+    total += tot;
+    _prt2(rt6_entry, this_cnet->num_6routes, tot);
+
+    tot = (sizeof(struct arp_entry) * this_cnet->num_arps);
+    total += tot;
+    _prt2(arp_entry, this_cnet->num_arps, tot);
+
+    tot = (sizeof(struct nd6_cache_entry) * this_cnet->num_neighs);
+    total += tot;
+    _prt2(nd6_cache_entry, this_cnet->num_neighs, tot);
 
     tot = sizeof(struct ipv4_entry);
     total += tot;
     _prt(ipv4_entry);
 
-    tot = (sizeof(struct arp_entry) * this_cnet->num_arps);
+    tot = sizeof(struct ipv6_entry);
     total += tot;
-    _prt(arp_entry);
-    cne_printf("%32s : * %5d([cyan]routes[]) = [magenta]%lu[]\n", "", this_cnet->num_arps, tot);
+    _prt(ipv6_entry);
 
     cne_printf("\n  Total memory used [magenta]%lu[] bytes\n", total);
 
@@ -190,7 +206,7 @@ cmd_info(int argc, char **argv)
 
     m = cli_mapping(info_map, argc, argv);
     if (!m)
-        return cli_cmd_error("Info command is invalid", "Info", argc, argv);
+        return cli_cmd_error("Command is invalid", "Info", argc, argv);
 
     switch (m->index) {
     case 10:
@@ -319,6 +335,7 @@ _node_style(char *name, int src)
     } styles[] = {
         // clang-format off
         { 0,                    "ip4_*",                 "[fillcolor=mediumspringgreen]" },
+        { 0,                    "ip6_*",                 "[fillcolor=mediumspringgreen]" },
         { 0,                    "udp_*",                 "[fillcolor=cornsilk]" },
         { 0,                    PKT_DROP_NODE_NAME,      "[fillcolor=lightgrey]" },
         { 0,                    CHNL_CALLBACK_NODE_NAME, "[fillcolor=lightgrey]" },
@@ -564,7 +581,10 @@ static struct cli_map ip_map[] = {
     {10, "ip link"},
     {11, "ip link %s"},
     {20, "ip route"},
-    {30, "ip neigh"},
+    {21, "ip route4"},
+    {22, "ip route6"},
+    {30, "ip arp"},
+    {31, "ip neigh"},
     {40, "ip stats"},
     {41, "ip stats %d"},
     {-1, NULL}
@@ -576,32 +596,40 @@ cmd_ip(int argc, char **argv)
     struct cli_map *m;
     stk_t *stk   = NULL;
     uint32_t idx = 0;
+    char *iface  = NULL;
 
     m = cli_mapping(ip_map, argc, argv);
     if (!m)
-        return cli_cmd_error("Info command is invalid", "ip", argc, argv);
+        return cli_cmd_error("Command is invalid", "ip", argc, argv);
 
     switch (m->index) {
-    case 10:
-        if (cnet_ifshow(NULL) < 0)
-            return -1;
-        break;
     case 11:
-        if (cnet_ifshow(argv[2]) < 0)
+        iface = argv[2];
+        /* FALLTHRU */
+    case 10:
+        if (cnet_ifshow(iface) < 0)
             return -1;
         break;
     case 20:
-        if (cnet_rtshow(NULL, argc, argv) < 0)
+        if (cnet_rtshow(1, 1) < 0)
+            return -1;
+        break;
+    case 21:
+        if (cnet_rtshow(1, 0) < 0)
+            return -1;
+        break;
+    case 22:
+        if (cnet_rtshow(0, 1) < 0)
             return -1;
         break;
     case 30:
         if (cnet_arp_show() < 0)
             return -1;
         return 0;
-    case 40:
-        if (cnet_ipv4_stats_dump(stk) < 0)
+    case 31:
+        if (cnet_nd6_show() < 0)
             return -1;
-        break;
+        return 0;
     case 41:
         idx = atoi(argv[2]);
 
@@ -609,8 +637,11 @@ cmd_ip(int argc, char **argv)
             stk = vec_at_index(this_cnet->stks, idx);
         else
             CNE_WARN("Unknown stack index showing all\n");
-
+        /* FALLTHRU */
+    case 40:
         if (cnet_ipv4_stats_dump(stk) < 0)
+            return -1;
+        if (cnet_ipv6_stats_dump(stk) < 0)
             return -1;
         break;
     default:
@@ -679,7 +710,7 @@ cmd_tcp(int argc, char **argv)
 
     m = cli_mapping(tcp_map, argc, argv);
     if (!m)
-        return cli_cmd_error("Info command is invalid", "tcp", argc, argv);
+        return cli_cmd_error("Command is invalid", "tcp", argc, argv);
 
     switch (m->index) {
     case 10:
@@ -732,7 +763,7 @@ cmd_tcb(int argc, char **argv)
 
     m = cli_mapping(tcb_map, argc, argv);
     if (!m)
-        return cli_cmd_error("Info command is invalid", "tcb", argc, argv);
+        return cli_cmd_error("Command is invalid", "tcb", argc, argv);
 
     switch (m->index) {
     case 10:

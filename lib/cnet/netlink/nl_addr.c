@@ -21,6 +21,7 @@
 #include <cne_inet.h>
 #include <cnet_netif.h>
 #include <cnet_arp.h>
+#include <cnet_nd6.h>
 
 #include <netlink/route/addr.h>
 
@@ -33,6 +34,7 @@
 #include "cnet_netif.h"
 #include "cnet_netlink.h"
 #include "cnet_route4.h"
+#include "cnet_route6.h"
 #include "netlink_private.h"
 
 void
@@ -42,15 +44,16 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
     struct netif *netif;
     struct nl_addr *a;
     struct inet4_addr ip4 = {0};
+    struct inet6_addr ip6 = {0};
     struct ether_addr mac = {0};
-    int ifindex;
+    int ifindex, a_family;
 
     ifindex = rtnl_addr_get_ifindex(addr);
 
     if (!cnet_is_ifindex_valid(ifindex))
         return;
 
-    if (rtnl_addr_get_family(addr) != AF_INET)
+    if (rtnl_addr_get_family(addr) != AF_INET && rtnl_addr_get_family(addr) != AF_INET)
         return;
 
     netif = cnet_netif_find_by_ifindex(ifindex);
@@ -66,13 +69,24 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
     if (!a)
         CNE_RET("Failed to get local address\n");
 
-    memcpy(&ip4.ip.s_addr, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
-    ip4.ip.s_addr = be32toh(ip4.ip.s_addr);
+    a_family = nl_addr_get_family(a);
+    if (a_family == AF_INET6) {
+        memcpy(&ip6.ip, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
+        inet6_addr_ntoh(&ip6.ip, &ip6.ip);
+    } else /* IPv4 */ {
+        memcpy(&ip4.ip.s_addr, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
+        ip4.ip.s_addr = be32toh(ip4.ip.s_addr);
+    }
 
     a = rtnl_addr_get_broadcast(addr);
     if (a) {
-        memcpy(&ip4.broadcast.s_addr, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
-        ip4.broadcast.s_addr = be32toh(ip4.broadcast.s_addr);
+        if (nl_addr_get_family(a) == AF_INET6) {
+            memcpy(&ip6.broadcast, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
+            inet6_addr_ntoh(&ip6.broadcast, &ip6.broadcast);
+        } else /* IPv4 */ {
+            memcpy(&ip4.broadcast.s_addr, nl_addr_get_binary_addr(a), nl_addr_get_len(a));
+            ip4.broadcast.s_addr = be32toh(ip4.broadcast.s_addr);
+        }
     }
 
     switch (action) {
@@ -80,37 +94,67 @@ __nl_addr(struct netlink_info *info, struct nl_object *obj, int action)
         NL_DEBUG("New:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
-            CNE_WARN("Failed to set address for %s\n", netif->ifname);
+        if (a_family == AF_INET6) {
+            if (cnet_ipv6_ipaddr_add(netif, &ip6) < 0)
+                CNE_WARN("Unable to set address for %s\n", netif->ifname);
 
-        if (cnet_arp_add(netif->netif_idx, &ip4.ip, &mac, 1) == NULL)
-            CNE_WARN("Failed to set ARP for %s\n", netif->ifname);
+            if (cnet_nd6_add(netif->netif_idx, &ip6.ip, &mac, ND_REACHABLE) == NULL)
+                CNE_WARN("Unable to set ND6 entry for %s\n", netif->ifname);
 
-        ip4.netmask.s_addr = 0xFFFFFFFF;
-        if (cnet_route4_insert(netif->netif_idx, &ip4.ip, &ip4.netmask, NULL, 16, 0) < 0)
-            CNE_WARN("Failed to insert route for %s\n", netif->ifname);
+            __size_to_mask6(128, &ip6.netmask);
+            if (cnet_route6_insert(netif->netif_idx, &ip6.ip, &ip6.netmask, NULL, 16, 0) < 0)
+                CNE_WARN("Unable to insert route for %s\n", netif->ifname);
+
+        } else /* IPv4 */ {
+            if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
+                CNE_WARN("Unable to set address for %s\n", netif->ifname);
+
+            if (cnet_arp_add(netif->netif_idx, &ip4.ip, &mac, 1) == NULL)
+                CNE_WARN("Unable to set ARP for %s\n", netif->ifname);
+
+            ip4.netmask.s_addr = 0xFFFFFFFF;
+            if (cnet_route4_insert(netif->netif_idx, &ip4.ip, &ip4.netmask, NULL, 16, 0) < 0)
+                CNE_WARN("Unable to insert route for %s\n", netif->ifname);
+        }
         break;
 
     case NL_ACT_CHANGE:
         NL_DEBUG("Change:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
-            CNE_WARN("Failed to set address for %s\n", netif->ifname);
+        if (a_family == AF_INET6) {
+            if (cnet_ipv6_ipaddr_add(netif, &ip6) < 0)
+                CNE_WARN("Unable to set address for %s\n", netif->ifname);
+        } else /* IPv4 */ {
+            if (cnet_ipv4_ipaddr_add(netif, &ip4) < 0)
+                CNE_WARN("Unable to set address for %s\n", netif->ifname);
+        }
         break;
 
     case NL_ACT_DEL:
         NL_DEBUG("Delete:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_ipv4_ipaddr_delete(netif, &ip4.ip) < 0)
-            CNE_WARN("Failed to delete address for %s\n", netif->ifname);
+        if (a_family == AF_INET6) {
+            if (cnet_ipv6_ipaddr_delete(netif, &ip6.ip) < 0)
+                CNE_WARN("Unable to delete address for %s\n", netif->ifname);
 
-        if (cnet_arp_delete(&ip4.ip) < 0)
-            CNE_WARN("Failed to delete ARP for %s\n", netif->ifname);
+            if (cnet_nd6_delete(&ip6.ip) < 0)
+                CNE_WARN("Unable to delete ND6 entry for %s\n", netif->ifname);
 
-        if (cnet_route4_delete(&ip4.ip) < 0)
-            CNE_WARN("Failed to delete route for %s\n", netif->ifname);
+            if (cnet_route6_delete(&ip6.ip) < 0)
+                CNE_WARN("Unable to delete route for %s\n", netif->ifname);
+
+        } else /* IPv4 */ {
+            if (cnet_ipv4_ipaddr_delete(netif, &ip4.ip) < 0)
+                CNE_WARN("Unable to delete address for %s\n", netif->ifname);
+
+            if (cnet_arp_delete(&ip4.ip) < 0)
+                CNE_WARN("Unable to delete ARP for %s\n", netif->ifname);
+
+            if (cnet_route4_delete(&ip4.ip) < 0)
+                CNE_WARN("Unable to delete route for %s\n", netif->ifname);
+        }
         break;
     }
 }

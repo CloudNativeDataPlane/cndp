@@ -8,7 +8,7 @@
 
 /**
  * @file
- * This file contains definion of CNE pktmbuf structure itself,
+ * This file contains definiton of CNE pktmbuf structure itself,
  * packet offload flags and some related macros.
  * For majority of CNDP entities, it is not recommended to include
  * this file directly, use include <pktmbuf.h> instead.
@@ -383,7 +383,7 @@ extern "C" {
      CNE_MBUF_F_TX_SEC_OFFLOAD | CNE_MBUF_F_TX_UDP_SEG | CNE_MBUF_F_TX_OUTER_UDP_CKSUM)
 
 /**
- * Mbuf having an external buffer attached. shinfo in mbuf must be filled.
+ * Mbuf having an external buffer attached.
  */
 #define CNE_MBUF_F_EXTERNAL (1ULL << 61)
 

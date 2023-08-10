@@ -44,6 +44,7 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
     struct rtnl_nexthop *first;
     struct nl_addr *nexthop = NULL, *gate = NULL;
     struct in_addr ipaddr, netmask, gateway;
+    struct in6_addr ipaddr6, netmask6, gateway6;
     struct netif *netif;
     int ifindex = 0, rtype;
 
@@ -88,24 +89,43 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
                    nl_rtntype2str(typ, type_str, sizeof(type_str)), nl_addr_get_prefixlen(nexthop));
     }
 
-    ipaddr.s_addr  = 0;
-    gateway.s_addr = 0;
+    if (nl_addr_get_family(nexthop) == AF_INET6) {
+        inet6_addr_zero(&ipaddr6);
+        inet6_addr_zero(&gateway6);
 
-    netmask.s_addr = 0xFFFFFFFFUL << (32 - nl_addr_get_prefixlen(nexthop));
-    memcpy(&ipaddr.s_addr, nl_addr_get_binary_addr(nexthop), nl_addr_get_len(nexthop));
-    if (gate)
-        memcpy(&gateway.s_addr, nl_addr_get_binary_addr(gate), nl_addr_get_len(gate));
+        __size_to_mask6(nl_addr_get_prefixlen(nexthop), &netmask6);
+        memcpy(&ipaddr6, nl_addr_get_binary_addr(nexthop), nl_addr_get_len(nexthop));
+        if (gate)
+            memcpy(&gateway6, nl_addr_get_binary_addr(gate), nl_addr_get_len(gate));
 
-    ipaddr.s_addr  = be32toh(ipaddr.s_addr);
-    gateway.s_addr = be32toh(gateway.s_addr);
+        inet6_addr_ntoh(&ipaddr6, &ipaddr6);
+        inet6_addr_ntoh(&gateway6, &gateway6);
+    } else /* IPv4 */ {
+        ipaddr.s_addr  = 0;
+        gateway.s_addr = 0;
+
+        netmask.s_addr = 0xFFFFFFFFUL << (32 - nl_addr_get_prefixlen(nexthop));
+        memcpy(&ipaddr.s_addr, nl_addr_get_binary_addr(nexthop), nl_addr_get_len(nexthop));
+        if (gate)
+            memcpy(&gateway.s_addr, nl_addr_get_binary_addr(gate), nl_addr_get_len(gate));
+
+        ipaddr.s_addr  = be32toh(ipaddr.s_addr);
+        gateway.s_addr = be32toh(gateway.s_addr);
+    }
 
     switch (action) {
     case NL_ACT_NEW:
         NL_DEBUG("New:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, NULL, RTM_INFINITY, 0) < 0)
-            CNE_RET("Failed to insert route\n");
+        if (nl_addr_get_family(nexthop) == AF_INET6) {
+            if (cnet_route6_insert(netif->netif_idx, &ipaddr6, &netmask6, NULL, RTM_INFINITY, 0) <
+                0)
+                CNE_RET("Unable to insert route\n");
+        } else /* IPv4 */ {
+            if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, NULL, RTM_INFINITY, 0) < 0)
+                CNE_RET("Unable to insert route\n");
+        }
         break;
 
     case NL_ACT_CHANGE:
@@ -117,8 +137,13 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
         NL_DEBUG("Delete:\n   ");
         NL_OBJ_DUMP(obj);
 
-        if (cnet_route4_delete(&ipaddr) < 0)
-            CNE_RET("Failed to delete route\n");
+        if (nl_addr_get_family(nexthop) == AF_INET6) {
+            if (cnet_route6_delete(&ipaddr6) < 0)
+                CNE_RET("Unable to delete route\n");
+        } else /* IPv4 */ {
+            if (cnet_route4_delete(&ipaddr) < 0)
+                CNE_RET("Unable to delete route\n");
+        }
         break;
     }
     if (netlink_debug)

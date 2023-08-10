@@ -15,7 +15,6 @@
 #include "txgen.h"          // for COLUMN_WIDTH_1, COLUMN_WIDTH_0
 #include "display.h"        // for display_set_color, display_...
 #include "pcap.h"
-#include "cne_inet4.h"
 #include "cne_inet.h"                     // for pkt_hdr_t, inet_ntop4, pkt_hdr_s:...
 #include "_pcap.h"                        // for pcap_info_t, _pcap_read, _pcap_re...
 #include "cne_branch_prediction.h"        // for unlikely
@@ -47,7 +46,7 @@ txgen_print_pcap(uint16_t pid)
 {
     uint32_t i, row, col, max_pkts, len;
     uint16_t type, vlan, skip;
-    uint8_t proto;
+    uint8_t proto = 0;
     port_info_t *info;
     pkt_hdr_t *hdr;
     pcap_info_t *pcap;
@@ -119,23 +118,44 @@ txgen_print_pcap(uint16_t pid)
                        inet_mtoa(buff, sizeof(buff), &hdr->eth.s_addr));
         col += COLUMN_WIDTH_1;
 
-        type  = ntohs(hdr->eth.ether_type);
-        proto = hdr->ipv4.next_proto_id;
-        vlan  = 0;
+        type = ntohs(hdr->eth.ether_type);
+        vlan = 0;
         if (type == CNE_ETHER_TYPE_VLAN) {
-            vlan  = ntohs(((uint16_t *)&hdr->eth.ether_type)[1]);
-            type  = ntohs(((uint16_t *)&hdr->eth.ether_type)[2]);
-            proto = ((struct cne_ipv4_hdr *)((char *)&hdr->ipv4 + 4))->next_proto_id;
+            vlan = ntohs(((uint16_t *)&hdr->eth.ether_type)[1]);
+            type = ntohs(((uint16_t *)&hdr->eth.ether_type)[2]);
+            if (type == CNE_ETHER_TYPE_IPV6) {
+                /* Why offset 4, will it be different for ipv6 ? */
+                proto = ((struct cne_ipv6_hdr *)((char *)&hdr->ipv6 + 4))->proto;
+            } else
+                proto = ((struct cne_ipv4_hdr *)((char *)&hdr->ipv4 + 4))->next_proto_id;
         }
 
         if (type == CNE_ETHER_TYPE_IPV4) {
             struct in_addr mask = {.s_addr = 0xFFFFFFFF};
             char *b;
 
-            b = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.dst_addr, &mask);
+            proto = hdr->ipv4.next_proto_id;
+            b     = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.dst_addr, &mask);
             cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
             col += COLUMN_WIDTH_1;
             b = inet_ntop4(buff, sizeof(buff), (struct in_addr *)&hdr->ipv4.src_addr, &mask);
+            cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1 + 2, (b) ? b : "InvalidIP");
+            col += COLUMN_WIDTH_1 + 2;
+
+            snprintf(buff, sizeof(buff), "%d/%d", ntohs(hdr->uip.udp.src_port),
+                     ntohs(hdr->uip.udp.dst_port));
+            cne_printf_pos(row, col, "%*s", 12, buff);
+            col += 12;
+        } else if (type == CNE_ETHER_TYPE_IPV6) {
+            struct in6_addr mask;
+            char *b;
+
+            proto = hdr->ipv6.proto;
+            __size_to_mask6(128, &mask);
+            b = inet_ntop6(buff, sizeof(buff), (struct in6_addr *)&hdr->ipv6.dst_addr, &mask);
+            cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1, (b) ? b : "InvalidIP");
+            col += COLUMN_WIDTH_1;
+            b = inet_ntop6(buff, sizeof(buff), (struct in6_addr *)&hdr->ipv6.src_addr, &mask);
             cne_printf_pos(row, col, "%*s", COLUMN_WIDTH_1 + 2, (b) ? b : "InvalidIP");
             col += COLUMN_WIDTH_1 + 2;
 

@@ -29,7 +29,9 @@
 
 #include <cnet.h>
 #include <cnet_stk.h>
+#include <cnet_pcb.h>        // for pcb_entry (ptr only), pcb_hd
 #include <cnet_chnl.h>
+#include <chnl_priv.h>
 #include <cnet_chnl_opt.h>
 #include <cnet_ifshow.h>
 
@@ -93,11 +95,15 @@ initialize_graph(jcfg_thd_t *thd, graph_info_t *gi)
 
     if (cinfo->flags & FWD_DEBUG_STATS)
         cne_printf("  [magenta]Patterns[]: ");
+
     for (int i = 0; i < pattern_array->array_sz; i++) {
         char *pat = pattern_array->arr[i]->str;
 
         if ((CNET_ENABLE_TCP == 0) && !strncasecmp("tcp*", pat, 4))
             continue;
+        if ((CNET_ENABLE_IP6 == 0) && !strncasecmp("ip6*", pat, 4))
+            continue;
+
         if (cinfo->flags & FWD_DEBUG_STATS)
             cne_printf("'[orange]%s[]' ", pat);
 
@@ -180,8 +186,12 @@ tcp_accept(int cd)
     struct sockaddr addr = {0};
     socklen_t addr_len;
 
-    addr_len = sizeof(struct sockaddr_in);
-    ncd      = chnl_accept(cd, &addr, &addr_len);
+    if (is_ch_dom_inet6(ch_get(cd)))
+        addr_len = sizeof(struct sockaddr_in6);
+    else
+        addr_len = sizeof(struct sockaddr_in);
+
+    ncd = chnl_accept(cd, &addr, &addr_len);
     if (ncd < 0)
         CNE_ERR_RET("Accept returned an error from %d descriptor\n", cd);
     CNE_DEBUG("Accept new chnl %d\n", ncd);

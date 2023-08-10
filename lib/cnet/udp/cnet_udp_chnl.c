@@ -173,10 +173,17 @@ udp_chnl_create(void *_stk __cne_unused)
 {
     struct protosw_entry *psw;
 
-    psw = cnet_protosw_find(AF_INET, SOCK_DGRAM, 0);
+    psw = cnet_protosw_find(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (!psw)
         return -1;
     psw->funcs = &udpFuncs;
+
+    if (CNET_ENABLE_IP6) {
+        psw = cnet_protosw_find(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+        if (!psw)
+            return -1;
+        psw->funcs = &udpFuncs;
+    }
 
     return 0;
 }

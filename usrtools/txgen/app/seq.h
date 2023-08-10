@@ -8,6 +8,7 @@
 #include <cne_common.h>
 #include <net/cne_ether.h>
 #include <cne_inet.h>
+#include <pktmbuf.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,9 +21,18 @@ typedef struct pkt_seq_s {
     struct ether_addr eth_dst_addr; /**< Destination Ethernet address */
     struct ether_addr eth_src_addr; /**< Source Ethernet address */
 
-    struct in_addr ip_src_addr; /**< Source IPv4 address */
-    struct in_addr ip_dst_addr; /**< Destination IPv4 address */
-    uint32_t ip_mask;           /**< IPv4 Netmask value */
+    union {
+        struct in_addr ip_src_addr;   /**< Source IPv4 address */
+        struct in6_addr ip6_src_addr; /**< Source IPv6 address */
+    };
+    union {
+        struct in_addr ip_dst_addr;   /**< Destination IPv4 address */
+        struct in6_addr ip6_dst_addr; /**< Destination IPv6 address */
+    };
+    union {
+        uint32_t ip_mask;         /**< IPv4 Netmask value */
+        struct in6_addr ip6_mask; /**< IPv6 Netmask value */
+    };
 
     uint16_t sport;          /**< Source lport value */
     uint16_t dport;          /**< Destination lport value */
@@ -32,7 +42,7 @@ typedef struct pkt_seq_s {
 
     uint16_t pktSize;     /**< Size of packet in bytes not counting FCS */
     uint16_t lastPktSize; /**< Size of packet in bytes not counting FCS before latency timestamp */
-    uint8_t ttl;          /**< TTL value for IPv4 headers */
+    uint8_t ttl;          /**< TTL value for IPv4 headers & Hop Limit for IPv6 */
 
     pkt_hdr_t hdr __cne_cache_aligned; /**< Packet header data */
     uint8_t pad[DEFAULT_MBUF_SIZE - sizeof(pkt_hdr_t)];

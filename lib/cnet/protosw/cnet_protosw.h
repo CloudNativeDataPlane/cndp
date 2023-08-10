@@ -109,28 +109,6 @@ CNDP_API struct protosw_entry *cnet_protosw_find(uint16_t domain, uint16_t type,
 CNDP_API void cnet_protosw_dump(struct stk_s *stk);
 
 /**
- * @brief Set the IP proto value in the given protosw_entry pointer.
- *
- * @param ipproto
- *   The IP proto type value to be set in the structure.
- * @param psw
- *   The protosw_entry structure pointer.
- * @return
- *   -1 on error or 0 on success
- */
-CNDP_API int cnet_ipproto_set(uint8_t ipproto, struct protosw_entry *psw);
-
-/**
- * @brief Get the protosw_entry to locate using the IP proto type.
- *
- * @param ipproto
- *   The IP proto type value to be set in the structure.
- * @return
- *   NULL on error or a pointer to a protocol switch entry.
- */
-CNDP_API struct protosw_entry *cnet_ipproto_get(uint8_t ipproto);
-
-/**
  * @brief Find a protocol switch entry using the IP proto type.
  *
  * @param proto

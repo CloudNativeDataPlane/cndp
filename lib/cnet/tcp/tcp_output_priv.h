@@ -13,6 +13,9 @@ extern "C" {
 enum tcp_output_next_nodes {
     TCP_OUTPUT_NEXT_PKT_DROP,
     TCP_OUTPUT_NEXT_IP4_OUTPUT,
+#if CNET_ENABLE_IP6
+    TCP_OUTPUT_NEXT_IP6_OUTPUT,
+#endif
     TCP_OUTPUT_NEXT_MAX,
 };
 

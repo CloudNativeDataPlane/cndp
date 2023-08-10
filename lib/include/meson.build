@@ -13,6 +13,7 @@ headers = files(
     'cne_gettid.h',
     'cne_inet.h',
     'cne_inet4.h',
+    'cne_inet6.h',
     'cne_isa.h',
     'cne_lport.h',
     'cne_mutex_helper.h',

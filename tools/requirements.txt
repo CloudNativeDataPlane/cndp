@@ -1,5 +1,5 @@
 docutils==0.16
-Pygments==2.8.1
+Pygments==2.15.0
 Sphinx==3.5.3
 jsonc_parser==1.1.5
 jsonschema==4.4.0

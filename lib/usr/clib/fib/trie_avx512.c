@@ -5,14 +5,14 @@
 #include <cne_vect.h>         // for __cne_x86_zmm_t
 #include <immintrin.h>        // for __m512i, _mm512_set1_epi32, _mm512_loadu_s...
 
-#include "private_fib6.h"        // for CNE_FIB6_IPV6_ADDR_SIZE
+#include "private_fib6.h"        // for IPV6_ADDR_LEN
 #include "trie.h"                // for cne_trie_tbl, cne_trie_lookup_bulk_2b, cne...
 #include "trie_avx512.h"
 #include "cne_common.h"        // for __cne_always_inline
 
 static __cne_always_inline void
-transpose_x16(uint8_t ips[16][CNE_FIB6_IPV6_ADDR_SIZE], __m512i *first, __m512i *second,
-              __m512i *third, __m512i *fourth)
+transpose_x16(uint8_t ips[16][IPV6_ADDR_LEN], __m512i *first, __m512i *second, __m512i *third,
+              __m512i *fourth)
 {
     __m512i tmp1, tmp2, tmp3, tmp4;
     __m512i tmp5, tmp6, tmp7, tmp8;
@@ -48,7 +48,7 @@ transpose_x16(uint8_t ips[16][CNE_FIB6_IPV6_ADDR_SIZE], __m512i *first, __m512i 
 }
 
 static __cne_always_inline void
-transpose_x8(uint8_t ips[8][CNE_FIB6_IPV6_ADDR_SIZE], __m512i *first, __m512i *second)
+transpose_x8(uint8_t ips[8][IPV6_ADDR_LEN], __m512i *first, __m512i *second)
 {
     __m512i tmp1, tmp2, tmp3, tmp4;
     const __cne_x86_zmm_t perm_idxes = {
@@ -65,8 +65,7 @@ transpose_x8(uint8_t ips[8][CNE_FIB6_IPV6_ADDR_SIZE], __m512i *first, __m512i *s
 }
 
 static __cne_always_inline void
-trie_vec_lookup_x16x2(void *p, uint8_t ips[32][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops,
-                      int size)
+trie_vec_lookup_x16x2(void *p, uint8_t ips[32][IPV6_ADDR_LEN], uint64_t *next_hops, int size)
 {
     struct cne_trie_tbl *dp = (struct cne_trie_tbl *)p;
     const __m512i zero      = _mm512_set1_epi32(0);
@@ -182,7 +181,7 @@ trie_vec_lookup_x16x2(void *p, uint8_t ips[32][CNE_FIB6_IPV6_ADDR_SIZE], uint64_
 }
 
 static void
-trie_vec_lookup_x8x2_8b(void *p, uint8_t ips[16][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops)
+trie_vec_lookup_x8x2_8b(void *p, uint8_t ips[16][IPV6_ADDR_LEN], uint64_t *next_hops)
 {
     struct cne_trie_tbl *dp = (struct cne_trie_tbl *)p;
     const __m512i zero      = _mm512_set1_epi32(0);
@@ -263,7 +262,7 @@ trie_vec_lookup_x8x2_8b(void *p, uint8_t ips[16][CNE_FIB6_IPV6_ADDR_SIZE], uint6
 }
 
 void
-cne_trie_vec_lookup_bulk_2b(void *p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops,
+cne_trie_vec_lookup_bulk_2b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops,
                             const unsigned int n)
 {
     uint32_t i;
@@ -275,7 +274,7 @@ cne_trie_vec_lookup_bulk_2b(void *p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uin
 }
 
 void
-cne_trie_vec_lookup_bulk_4b(void *p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops,
+cne_trie_vec_lookup_bulk_4b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops,
                             const unsigned int n)
 {
     uint32_t i;
@@ -287,7 +286,7 @@ cne_trie_vec_lookup_bulk_4b(void *p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uin
 }
 
 void
-cne_trie_vec_lookup_bulk_8b(void *p, uint8_t ips[][CNE_FIB6_IPV6_ADDR_SIZE], uint64_t *next_hops,
+cne_trie_vec_lookup_bulk_8b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *next_hops,
                             const unsigned int n)
 {
     uint32_t i;

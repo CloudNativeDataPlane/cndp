@@ -69,7 +69,7 @@ static int
 test_fib6_perf(void)
 {
     struct cne_fib6 *fib = NULL;
-    struct cne_fib6_conf conf;
+    struct cne_fib_conf conf;
     uint64_t begin, total_time;
     unsigned int i, j;
     uint64_t next_hop_add;
@@ -78,10 +78,10 @@ test_fib6_perf(void)
     uint8_t ip_batch[NUM_IPS_ENTRIES][16];
     uint64_t next_hops[NUM_IPS_ENTRIES];
 
-    conf.type          = CNE_FIB6_TRIE;
+    conf.type          = CNE_FIB_TRIE;
     conf.default_nh    = 0;
     conf.max_routes    = 1000000;
-    conf.trie.nh_sz    = CNE_FIB6_TRIE_4B;
+    conf.trie.nh_sz    = CNE_FIB_TRIE_4B;
     conf.trie.num_tbl8 = CNE_MIN(get_max_nh(conf.trie.nh_sz), 1000000U);
 
     srand(cne_rdtsc());

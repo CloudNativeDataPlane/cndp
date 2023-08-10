@@ -24,6 +24,10 @@
 #define _L2_L3_IPV4_EXT     (CNE_PTYPE_L2_ETHER | CNE_PTYPE_L3_IPV4_EXT)
 #define _L2_L3_IPV4_EXT_UNK (CNE_PTYPE_L2_ETHER | CNE_PTYPE_L3_IPV4_EXT_UNKNOWN)
 
+#define _L2_L3_IPV6         (CNE_PTYPE_L2_ETHER | CNE_PTYPE_L3_IPV6)
+#define _L2_L3_IPV6_EXT     (CNE_PTYPE_L2_ETHER | CNE_PTYPE_L3_IPV6_EXT)
+#define _L2_L3_IPV6_EXT_UNK (CNE_PTYPE_L2_ETHER | CNE_PTYPE_L3_IPV6_EXT_UNKNOWN)
+
 /* Next node for each ptype, default is '0' is "pkt_drop" */
 static const uint8_t p_nxt[_PTYPE_MASK + 1] __cne_cache_aligned = {
     [CNE_PTYPE_L2_ETHER_ARP]                                 = PTYPE_NEXT_FRAME_PUNT,
@@ -32,6 +36,13 @@ static const uint8_t p_nxt[_PTYPE_MASK + 1] __cne_cache_aligned = {
     [_L2_L3_IPV4_EXT | CNE_PTYPE_L4_UDP]                     = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4_EXT_UNK | CNE_PTYPE_L4_UDP]                 = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4 | CNE_PTYPE_L4_UDP | CNE_PTYPE_TUNNEL_GTPU] = PTYPE_NEXT_GTPU_INPUT,
+#if CNET_ENABLE_IP6
+    [_L2_L3_IPV6 | CNE_PTYPE_L4_UDP]                         = PTYPE_NEXT_IP6_INPUT,
+    [_L2_L3_IPV6 | CNE_PTYPE_L4_TCP]                         = PTYPE_NEXT_IP6_INPUT,
+    [_L2_L3_IPV6_EXT | CNE_PTYPE_L4_UDP]                     = PTYPE_NEXT_IP6_INPUT,
+    [_L2_L3_IPV6_EXT_UNK | CNE_PTYPE_L4_UDP]                 = PTYPE_NEXT_IP6_INPUT,
+    [_L2_L3_IPV6 | CNE_PTYPE_L4_UDP | CNE_PTYPE_TUNNEL_GTPU] = PTYPE_NEXT_GTPU_INPUT,
+#endif
 };
 
 static uint16_t
@@ -207,10 +218,11 @@ struct cne_node_register ptype_node = {
     .next_nodes =
         {
             /* Pkt drop node starts at '0' */
-            [PTYPE_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
-            [PTYPE_NEXT_PKT_PUNT]   = PUNT_KERNEL_NODE_NAME,
-            [PTYPE_NEXT_FRAME_PUNT] = PUNT_ETHER_NODE_NAME,
-            [PTYPE_NEXT_IP4_INPUT]  = IP4_INPUT_NODE_NAME,
+            [PTYPE_NEXT_PKT_DROP]  = PKT_DROP_NODE_NAME,
+            [PTYPE_NEXT_IP4_INPUT] = IP4_INPUT_NODE_NAME,
+#if CNET_ENABLE_IP6
+            [PTYPE_NEXT_IP6_INPUT] = IP6_INPUT_NODE_NAME,
+#endif
             [PTYPE_NEXT_GTPU_INPUT] = GTPU_INPUT_NODE_NAME,
         },
 };

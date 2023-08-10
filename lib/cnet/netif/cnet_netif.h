@@ -13,7 +13,7 @@
 #include <net/if.h>
 #include <cne_atomic.h>
 #include <pktdev.h>
-#include <cne_inet.h>        // for inet_addr_mask_cmp, inet_ntop4
+#include <cne_inet.h>        // for _in_addr, _in6_addr, inet_addr_mask_cmp, inet_ntop4 etc.
 #include <stddef.h>          // for NULL
 #include <stdint.h>          // for uint64_t, uint8_t, uint16_t, uint32_t, int32_t
 
@@ -22,10 +22,10 @@
 #include "cne_lport.h"         // for lport_stats
 #include "cne_vec.h"           // for vec_at_index, vec_pool_free
 #include "cnet_const.h"        // for iofunc_t
-#include "cne_inet.h"          // for _in_addr, _in6_addr
 #include "cnet_stk.h"          // for stk_entry, per_thread_stk, this_stk
 #include "mempool.h"           // for mempool_get, mempool_obj_iter, mempool_put
 #include "pktmbuf.h"           // for pktmbuf_t
+#include "cnet_route6.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +72,15 @@ struct inet4_addr {
     struct in_addr broadcast;
 };
 
+/* Structure to contain all of the IPv6 Addresses */
+struct inet6_addr {
+    uint16_t valid;
+    uint16_t prefixlen;
+    struct in6_addr ip;
+    struct in6_addr netmask;
+    struct in6_addr broadcast;
+};
+
 struct netif {
     int16_t netif_idx;                         /**< Index number in cnet->netifs[] */
     uint16_t lpid;                             /**< logical port ID */
@@ -84,7 +93,9 @@ struct netif {
     char netdev_name[IF_NAMESIZE + 1];         /**< netdev name of interface */
     struct drv_entry *drv;                     /**< Driver interface structure */
     struct rt4_entry *rt_cached;               /**< Route Cache */
+    struct rt6_entry *rt6_cached;              /**< Route Cache */
     struct inet4_addr ip4_addrs[NUM_IP_ADDRS]; /**< Multiple IP addresses for Interface */
+    struct inet6_addr ip6_addrs[NUM_IP_ADDRS]; /**< Multiple IP addresses for Interface */
     struct ether_addr mac;                     /**< MAC address of interface */
 } __cne_cache_aligned;
 
@@ -136,12 +147,47 @@ cnet_ipv4_broadcast(struct netif *netif, struct in_addr *ip)
     return -1;
 }
 
+#define _ipv6_broadcast_compare(_i)                                  \
+    do {                                                             \
+        if (inet6_addr_is_non_zero(&netif->ip6_addrs[_i].ip)) {      \
+            if (inet6_addr_cmp(ip, &netif->ip6_addrs[_i].broadcast)) \
+                return _i;                                           \
+        }                                                            \
+    } while (/*CONSTCOND*/ 0)
+
+/**
+ * Check if an IPv6 address matches one of the netif subnets.
+ */
+static inline int
+cnet_ipv6_broadcast(struct netif *netif, struct in6_addr *ip)
+{
+    if (NUM_IP_ADDRS == 4) {
+        _ipv6_broadcast_compare(0);
+        _ipv6_broadcast_compare(1);
+        _ipv6_broadcast_compare(2);
+        _ipv6_broadcast_compare(3);
+        return -1;
+    }
+    for (int i = 0; i < NUM_IP_ADDRS; i++)
+        _ipv6_broadcast_compare(i);
+    return -1;
+}
+
 #define _ipv4_compare(_i)                         \
     do {                                          \
         struct in_addr *ip2, *mask;               \
         ip2  = &netif->ip4_addrs[_i].ip;          \
         mask = &netif->ip4_addrs[_i].netmask;     \
         if (inet_addr_mask_cmp(&addr, ip2, mask)) \
+            return _i;                            \
+    } while (/*CONSTCOND*/ 0)
+
+#define _ipv6_compare(_i)                         \
+    do {                                          \
+        struct in6_addr *ip2, *mask;              \
+        ip2  = &netif->ip6_addrs[_i].ip;          \
+        mask = &netif->ip6_addrs[_i].netmask;     \
+        if (inet6_addr_mask_cmp(addr, ip2, mask)) \
             return _i;                            \
     } while (/*CONSTCOND*/ 0)
 
@@ -160,6 +206,15 @@ cnet_ipv4_compare(struct netif *netif, struct in_addr *ip)
     }
     for (int i = 0; i < NUM_IP_ADDRS; i++)
         _ipv4_compare(i);
+
+    return -1;
+}
+
+static inline int
+cnet_ipv6_compare(struct netif *netif, struct in6_addr *addr)
+{
+    for (int i = 0; i < NUM_IP_ADDRS; i++)
+        _ipv6_compare(i);
 
     return -1;
 }
@@ -183,6 +238,21 @@ cnet_netif_match_subnet(struct in_addr *ipaddr)
 
     vec_foreach (netif, this_cnet->netifs) {
         if (cnet_ipv4_compare(*netif, ipaddr) != -1)
+            return *netif;
+    }
+    return NULL;
+}
+
+/**
+ * Locate the closest matching IP6 address in all of the netif structures.
+ */
+static inline struct netif *
+cnet6_netif_match_subnet(struct in6_addr *ipaddr)
+{
+    struct netif **netif;
+
+    vec_foreach (netif, this_cnet->netifs) {
+        if (cnet_ipv6_compare(*netif, ipaddr) != -1)
             return *netif;
     }
     return NULL;
@@ -308,6 +378,18 @@ CNDP_API int cnet_netif_foreach(int (*func)(struct netif *netif, void *arg), voi
 CNDP_API struct inet4_addr *cnet_ipv4_ipaddr_find(struct netif *netif, struct in_addr *ip);
 
 /**
+ * @brief Find the given IPv6 address in a given netif structure
+ *
+ * @param netif
+ *   The netif structure to search for the giben IPv6 address
+ * @param ip
+ *   The IPv6 address to search
+ * @return
+ *   NULL on error or pointer to inet6_addr structure
+ */
+CNDP_API struct inet6_addr *cnet_ipv6_ipaddr_find(struct netif *netif, struct in6_addr *ip);
+
+/**
  * @brief Delete the given IPv4 address from the given netif structure
  *
  * @param netif
@@ -320,6 +402,18 @@ CNDP_API struct inet4_addr *cnet_ipv4_ipaddr_find(struct netif *netif, struct in
 CNDP_API int cnet_ipv4_ipaddr_delete(struct netif *netif, struct in_addr *ip);
 
 /**
+ * @brief Delete the given IPv6 address from the given netif structure
+ *
+ * @param netif
+ *   The netif structure to search for the giben IPv6 address
+ * @param ip
+ *   The IPv6 address to search
+ * @return
+ *   -1 on error or 0 on success
+ */
+CNDP_API int cnet_ipv6_ipaddr_delete(struct netif *netif, struct in6_addr *ip);
+
+/**
  * @brief Add a new IPv4 address to the given netif structure
  *
  * @param netif
@@ -330,6 +424,18 @@ CNDP_API int cnet_ipv4_ipaddr_delete(struct netif *netif, struct in_addr *ip);
  *   -1 on error or 0 on success
  */
 CNDP_API int cnet_ipv4_ipaddr_add(struct netif *netif, struct inet4_addr *ip);
+
+/**
+ * @brief Add a new IPv6 address to the given netif structure
+ *
+ * @param netif
+ *   The netif structure to search for the giben IPv6 address
+ * @param ip
+ *   The IPv6 address to search
+ * @return
+ *   -1 on error or 0 on success
+ */
+CNDP_API int cnet_ipv6_ipaddr_add(struct netif *netif, struct inet6_addr *ip);
 
 /**
  * @brief Add flags or set the flags to a netif structure

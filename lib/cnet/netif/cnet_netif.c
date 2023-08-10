@@ -6,7 +6,6 @@
 #include <mempool.h>              // for mempool_cfg, mempool_create, mempool_obj_iter
 #include <cnet.h>                 // for cnet_add_instance, cnet_new_if_index, per_th...
 #include "cnet_reg.h"
-#include <cne_inet.h>        // for in_caddr_create, _in_addr, in_caddr
 #include <cnet_drv.h>        // for drv_entry
 #include <cnet_ip_common.h>
 #include <cnet_netif.h>
@@ -72,11 +71,36 @@ ipv4_ipaddr_alloc(struct netif *netif)
     return NULL;
 }
 
+static struct inet6_addr *
+ipv6_ipaddr_alloc(struct netif *netif)
+{
+    for (int i = 0; i < NUM_IP_ADDRS; i++) {
+        struct inet6_addr *net6 = &netif->ip6_addrs[i];
+
+        if (net6->valid == 0) {
+            net6->valid = 1;
+            return net6;
+        }
+    }
+
+    return NULL;
+}
+
 static int
 ipv4_ipaddr_free(struct netif *netif, struct inet4_addr *net)
 {
     if (netif && net && net->valid) {
         memset(net, 0, sizeof(struct inet4_addr));
+        return 0;
+    }
+    return -1;
+}
+
+static int
+ipv6_ipaddr_free(struct netif *netif, struct inet6_addr *net6)
+{
+    if (netif && net6 && net6->valid) {
+        memset(net6, 0, sizeof(struct inet6_addr));
         return 0;
     }
     return -1;
@@ -94,6 +118,18 @@ cnet_ipv4_ipaddr_find(struct netif *netif, struct in_addr *ip)
     return NULL;
 }
 
+struct inet6_addr *
+cnet_ipv6_ipaddr_find(struct netif *netif, struct in6_addr *ip)
+{
+    for (int i = 0; i < NUM_IP_ADDRS; i++) {
+        struct inet6_addr *net6 = &netif->ip6_addrs[i];
+
+        if (net6->valid && inet6_addr_cmp(&net6->ip, ip))
+            return net6;
+    }
+    return NULL;
+}
+
 int
 cnet_ipv4_ipaddr_delete(struct netif *netif, struct in_addr *ip)
 {
@@ -103,6 +139,19 @@ cnet_ipv4_ipaddr_delete(struct netif *netif, struct in_addr *ip)
         net = cnet_ipv4_ipaddr_find(netif, ip);
         if (net)
             return ipv4_ipaddr_free(netif, net);
+    }
+    return -1;
+}
+
+int
+cnet_ipv6_ipaddr_delete(struct netif *netif, struct in6_addr *ip)
+{
+    struct inet6_addr *net6;
+
+    if (ip) {
+        net6 = cnet_ipv6_ipaddr_find(netif, ip);
+        if (net6)
+            return ipv6_ipaddr_free(netif, net6);
     }
     return -1;
 }
@@ -126,6 +175,30 @@ cnet_ipv4_ipaddr_add(struct netif *netif, struct inet4_addr *ip)
             net->ip.s_addr        = ip->ip.s_addr;
             net->broadcast.s_addr = ip->broadcast.s_addr;
             net->netmask.s_addr   = ip->netmask.s_addr;
+        }
+    }
+    return -1;
+}
+
+int
+cnet_ipv6_ipaddr_add(struct netif *netif, struct inet6_addr *net6p)
+{
+    struct inet6_addr *net6l;
+
+    if (netif && net6p) {
+        net6l = cnet_ipv6_ipaddr_find(netif, &net6p->ip);
+        if (!net6l) {
+            net6l = ipv6_ipaddr_alloc(netif);
+            if (net6l) { /* Add the IP address information */
+                inet6_addr_copy(&net6l->ip, &net6p->ip);
+                inet6_addr_copy(&net6l->broadcast, &net6p->broadcast);
+                inet6_addr_copy(&net6l->netmask, &net6p->netmask);
+                return 0;
+            }
+        } else { /* Update the ip address information */
+            inet6_addr_copy(&net6l->ip, &net6p->ip);
+            inet6_addr_copy(&net6l->broadcast, &net6p->broadcast);
+            inet6_addr_copy(&net6l->netmask, &net6p->netmask);
         }
     }
     return -1;

@@ -95,8 +95,32 @@ create_chnl(int otype, int domain, int type, const char *name, int port, int fla
             if (chnl_connect(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)))
                 CNE_ERR_RET("chnl_connect() failed\n");
         }
-    } else if (domain == AF_INET6)
-        CNE_ERR_RET("IPv6 is not supported\n");
+    } else if (domain == AF_INET6) {
+        struct in_caddr addr;
+
+        if (!CNET_ENABLE_IP6)
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+
+        in_caddr_zero(&addr);
+
+        if (name && inet_pton(AF_INET6, name, (void *)&addr.cin6_addr.s6_addr) != 1)
+            CNE_ERR_RET("Unable to convert IP6 address to network order\n");
+        addr.cin_family = domain;
+        addr.cin_len    = sizeof(struct in6_addr);
+        addr.cin_port   = htobe16(port);
+
+        if (otype == TCP6_LISTEN || otype == UDP6_LISTEN) {
+            if (chnl_bind(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)) == -1)
+                CNE_ERR_RET("chnl_bind() failed for ip6\n");
+            if (type == SOCK_STREAM)
+                chnl_listen(cd, CNET_TCP_BACKLOG_COUNT);
+        } else if (otype == TCP6_CONNECT || otype == UDP6_CONNECT) {
+            if (chnl_connect(cd, (struct sockaddr *)&addr, sizeof(struct in_caddr)))
+                CNE_ERR_RET("chnl_connect() failed for ip6\n");
+        }
+
+    } else
+        CNE_ERR_RET("domain %d is not supported\n", domain);
 
     return cd;
 }
@@ -138,7 +162,9 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
     case UDP4_LISTEN:
     case UDP6_LISTEN:
         domain = (pt->otype == UDP4_LISTEN) ? AF_INET : AF_INET6;
-        typ    = SOCK_DGRAM;
+        if (!CNET_ENABLE_IP6 && domain == AF_INET6)
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+        typ = SOCK_DGRAM;
 
         if (pt->nb_fields == 2)
             pstr = info[1];
@@ -162,7 +188,9 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         if (!CNET_ENABLE_TCP)
             CNE_ERR_RET(" [cyan]TCP is disabled[]\n");
         domain = (pt->otype == TCP4_LISTEN) ? AF_INET : AF_INET6;
-        typ    = SOCK_STREAM;
+        if (!CNET_ENABLE_IP6 && domain == AF_INET6)
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+        typ = SOCK_STREAM;
 
         if (pt->nb_fields == 2)
             pstr = info[1];
@@ -177,7 +205,9 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
         if (!CNET_ENABLE_TCP)
             CNE_ERR_RET(" [cyan]TCP is disabled[]\n");
         domain = (pt->otype == TCP4_CONNECT) ? AF_INET : AF_INET6;
-        typ    = SOCK_STREAM;
+        if (!CNET_ENABLE_IP6 && domain == AF_INET6)
+            CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
+        typ = SOCK_STREAM;
 
         ipaddr = info[1];
         pstr   = info[2];
