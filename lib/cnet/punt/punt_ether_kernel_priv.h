@@ -6,7 +6,6 @@
 #define __INCLUDE_PUNT_ETHER_KERNEL_PRIV_H__
 
 #include <cne_common.h>
-#include <tun_alloc.h>
 
 #ifdef __cplusplus
 extern "C" {
