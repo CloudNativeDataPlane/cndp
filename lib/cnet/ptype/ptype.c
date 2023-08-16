@@ -220,10 +220,10 @@ struct cne_node_register ptype_node = {
     .next_nodes =
         {
             /* Pkt drop node starts at '0' */
-            [PTYPE_NEXT_PKT_DROP]  = PKT_DROP_NODE_NAME,
+            [PTYPE_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
             [PTYPE_NEXT_PKT_PUNT]   = PUNT_KERNEL_NODE_NAME,
             [PTYPE_NEXT_FRAME_PUNT] = PUNT_ETHER_NODE_NAME,
-            [PTYPE_NEXT_IP4_INPUT] = IP4_INPUT_NODE_NAME,
+            [PTYPE_NEXT_IP4_INPUT]  = IP4_INPUT_NODE_NAME,
 #if CNET_ENABLE_IP6
             [PTYPE_NEXT_IP6_INPUT] = IP6_INPUT_NODE_NAME,
 #endif
