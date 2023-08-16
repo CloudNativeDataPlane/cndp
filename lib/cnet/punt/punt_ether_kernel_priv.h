@@ -23,7 +23,6 @@ typedef struct punt_ether_kernel_node_elem punt_ether_kernel_node_elem_t;
  * PUNT Ether Kernel node context structure.
  */
 typedef struct punt_ether_kernel_node_ctx {
-    int sock;
     int lport;
     mmap_t *mmap;
 } punt_ether_kernel_node_ctx_t;
