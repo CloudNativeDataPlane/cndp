@@ -5,24 +5,6 @@
 
 #include <net/cne_ether.h>           // for ether_addr_copy, cne_ether_hdr, ether_ad...
 #include <cnet.h>                    // for cnet_add_instance, cnet, per_thread_cnet
-#include <cnet_stk.h>                // for proto_in_ifunc
-#include <cnet_drv.h>                // for drv_entry
-#include <cnet_route.h>              // for
-#include <cnet_arp.h>                // for arp_entry
-#include <netinet/in.h>              // for ntohs
-#include <netpacket/packet.h>        // for sockaddr_ll
-#include <net/if.h>
-#include <net/if_arp.h>
-#include <linux/if_tun.h>
-#include <linux/if_ether.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <stddef.h>        // for NULL
-#include <sys/types.h>
-#include <fcntl.h>
-#include <bsd/string.h>
-#include <sys/uio.h>
-
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
 #include <cne_log.h>                 // for CNE_LOG, CNE_LOG_DEBUG
@@ -31,13 +13,9 @@
 #include <xskdev.h>
 #include <pktmbuf.h>        // for pktmbuf_t, pktmbuf_data_len
 #include <pktmbuf_ptype.h>
-#include <cne_vec.h>        // for
-#include <cnet_eth.h>
-#include <hexdump.h>
-#include <cnet_netif.h>        // for
-#include <netinet/if_ether.h>
 #include <pmd_tap.h>
 #include <cnet_node_names.h>
+
 #include "punt_ether_kernel_priv.h"
 
 #define PREFETCH_CNT 6
@@ -47,14 +25,12 @@ punt_ether_kernel_process_mbuf(struct cne_node *node, pktmbuf_t **mbufs, uint16_
 {
     punt_ether_kernel_node_ctx_t *ctx = (punt_ether_kernel_node_ctx_t *)node->ctx;
 
-    if (ctx->sock >= 0) {
-        for (int i = 0; i < cnt; i++)
-            pktmbuf_adj_offset(mbufs[i], -(mbufs[i]->l2_len));
+    for (int i = 0; i < cnt; i++)
+        pktmbuf_adj_offset(mbufs[i], -(mbufs[i]->l2_len));
 
-        int nb = pktdev_tx_burst(ctx->lport, mbufs, cnt);
-        if (nb == PKTDEV_ADMIN_STATE_DOWN)
-            CNE_WARN("Failed to send packets: %s\n", strerror(errno));
-    }
+    int nb = pktdev_tx_burst(ctx->lport, mbufs, cnt);
+    if (nb == PKTDEV_ADMIN_STATE_DOWN)
+        CNE_WARN("Failed to send packets: %s\n", strerror(errno));
 }
 
 static uint16_t
@@ -160,11 +136,6 @@ punt_ether_kernel_node_fini(const struct cne_graph *graph __cne_unused, struct c
     if (pktdev_close(ctx->lport) < 0)
         CNE_WARN("pktdev_close(%d) failed\n", ctx->lport);
     mmap_free(ctx->mmap);
-
-    if (ctx->sock >= 0) {
-        close(ctx->sock);
-        ctx->sock = -1;
-    }
 }
 
 static struct cne_node_register punt_ether_kernel_node_base = {
