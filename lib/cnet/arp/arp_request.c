@@ -13,7 +13,10 @@
 #include <netinet/in.h>           // for ntohs
 #include <stddef.h>               // for NULL
 #include <sys/types.h>
+#include <netpacket/packet.h>        // for sockaddr_ll
 #include <sys/socket.h>
+// #include <linux/if_arp.h>
+#include <netinet/if_ether.h>
 
 #include <cne_graph.h>               // for
 #include <cne_graph_worker.h>        // for
@@ -39,22 +42,37 @@ arp_request_process_mbuf(struct cne_node *node, pktmbuf_t *mbuf)
     arp_request_node_ctx_t *ctx = (arp_request_node_ctx_t *)node->ctx;
 
     if (ctx->s >= 0) {
-        struct cne_ipv4_hdr *ip4;
-        char *buf;
-        size_t len;
-        struct sockaddr_in sin = {0};
+        struct netif *netif;
+        struct sockaddr_ll sll = {0};
+        struct ether_arp arp_req;
+        struct cne_ipv4_hdr *ip4 = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, mbuf->l2_len);
 
-        ip4 = pktmbuf_mtod_offset(mbuf, struct cne_ipv4_hdr *, mbuf->l2_len);
-        buf = (char *)ip4;
-        len = pktmbuf_data_len(mbuf);
+        sll.sll_family   = AF_PACKET;
+        sll.sll_protocol = htons(ETH_P_ARP);
+        sll.sll_halen    = ETHER_ADDR_LEN;
+        sll.sll_hatype   = htons(ARPHRD_ETHER);
+        sll.sll_pkttype  = (PACKET_BROADCAST);
+        memset(sll.sll_addr, 0xff, ETHER_ADDR_LEN);
 
-        sin.sin_family      = AF_INET;
-        sin.sin_port        = 0;
-        sin.sin_addr.s_addr = ip4->dst_addr;
+        arp_req.arp_hrd = htons(ARPHRD_ETHER);
+        arp_req.arp_pro = htons(ETH_P_IP);
+        arp_req.arp_hln = ETHER_ADDR_LEN;
+        arp_req.arp_pln = sizeof(in_addr_t);
+        arp_req.arp_op  = htons(ARPOP_REQUEST);
+        memcpy(&arp_req.arp_tpa, &ip4->dst_addr, sizeof(arp_req.arp_tpa));
 
-        if (sendto(ctx->s, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
-            CNE_WARN("Failed to send packets: %s\n", strerror(errno));
+        vec_foreach_ptr (netif, this_cnet->netifs) {
+            uint32_t sip = be32toh(netif->ip4_addrs->ip.s_addr);
+            memcpy(&arp_req.arp_spa, &sip, sizeof(arp_req.arp_spa));
+
+            sll.sll_ifindex = netif->ifindex;
+
+            if (sendto(ctx->s, &arp_req, sizeof(arp_req), 0, (struct sockaddr *)&sll, sizeof(sll)) <
+                0)
+                CNE_WARN("Failed to send packets: %s\n", strerror(errno));
+        }
     }
+
     return ARP_REQUEST_NEXT_PKT_DROP;
 }
 
@@ -204,7 +222,7 @@ arp_request_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
 {
     arp_request_node_ctx_t *ctx = (arp_request_node_ctx_t *)node->ctx;
 
-    ctx->s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    ctx->s = socket(AF_PACKET, SOCK_DGRAM, htons(ETH_P_ARP));
     if (ctx->s < 0)
         CNE_ERR_RET("Failed to open RAW socket\n");
 
