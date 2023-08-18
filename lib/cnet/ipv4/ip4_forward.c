@@ -58,15 +58,18 @@ ip4_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
     uint16_t n_left_from, held = 0, last_spec = 0;
     void **to_next, **from;
     struct netif *nif;
-    fib_info_t *fi;
+    fib_info_t *arp_fi;
+    fib_info_t *rt4_fi;
     struct cne_ether_hdr *eth[4];
-    struct arp_entry *arp[4];
+    struct arp_entry *arp_fib[4];
+    struct rt4_entry *ip_fib[4];
     uint32_t ip4[4];
 
     /* Speculative next as last next */
     n_index = IP4_FORWARD_NODE_LAST_NEXT(node->ctx);
 
-    fi          = cnet->arp_finfo;
+    arp_fi      = cnet->arp_finfo;
+    rt4_fi      = cnet->rt4_finfo;
     pkts        = (pktmbuf_t **)objs;
     from        = objs;
     n_left_from = nb_objs;
@@ -128,32 +131,78 @@ ip4_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
 
         n0 = n1 = n2 = n3 = NODE_IP4_FORWARD_ARP_REQUEST;
 
-        if (unlikely(fib_info_lookup(fi, ip4, (void **)arp, 4) > 0)) {
+        if (unlikely(fib_info_lookup(arp_fi, ip4, (void **)arp_fib, 4) > 0)) {
             struct netif *nif;
 
-            if (likely(arp[0])) {
-                nif = cnet_netif_from_index(arp[0]->netif_idx);
+            if (likely(arp_fib[0])) {
+                nif = cnet_netif_from_index(arp_fib[0]->netif_idx);
                 ether_addr_copy(&nif->mac, &eth[0]->s_addr);
-                ether_addr_copy(&arp[0]->ha, &eth[0]->d_addr);
-                n0 = arp[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                ether_addr_copy(&arp_fib[0]->ha, &eth[0]->d_addr);
+                n0 = arp_fib[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
             }
-            if (likely(arp[1])) {
-                nif = cnet_netif_from_index(arp[1]->netif_idx);
+            if (likely(arp_fib[1])) {
+                nif = cnet_netif_from_index(arp_fib[1]->netif_idx);
                 ether_addr_copy(&nif->mac, &eth[1]->s_addr);
-                ether_addr_copy(&arp[1]->ha, &eth[1]->d_addr);
-                n1 = arp[1]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                ether_addr_copy(&arp_fib[1]->ha, &eth[1]->d_addr);
+                n1 = arp_fib[1]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
             }
-            if (likely(arp[2])) {
-                nif = cnet_netif_from_index(arp[2]->netif_idx);
+            if (likely(arp_fib[2])) {
+                nif = cnet_netif_from_index(arp_fib[2]->netif_idx);
                 ether_addr_copy(&nif->mac, &eth[2]->s_addr);
-                ether_addr_copy(&arp[2]->ha, &eth[2]->d_addr);
-                n2 = arp[2]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                ether_addr_copy(&arp_fib[2]->ha, &eth[2]->d_addr);
+                n2 = arp_fib[2]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
             }
-            if (likely(arp[3])) {
-                nif = cnet_netif_from_index(arp[3]->netif_idx);
+            if (likely(arp_fib[3])) {
+                nif = cnet_netif_from_index(arp_fib[3]->netif_idx);
                 ether_addr_copy(&nif->mac, &eth[3]->s_addr);
-                ether_addr_copy(&arp[3]->ha, &eth[3]->d_addr);
-                n3 = arp[3]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                ether_addr_copy(&arp_fib[3]->ha, &eth[3]->d_addr);
+                n3 = arp_fib[3]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+            }
+        } else {
+            uint32_t gateway[4];
+            /* It's not a directly attached network, get the gateway */
+            if (unlikely(fib_info_lookup(rt4_fi, ip4, (void **)ip_fib, 4) > 0)) {
+                if (likely(ip_fib[0]))
+                    gateway[0] = ip_fib[0]->gateway.s_addr;
+
+                if (likely(ip_fib[1]))
+                    gateway[1] = ip_fib[1]->gateway.s_addr;
+
+                if (likely(ip_fib[2]))
+                    gateway[2] = ip_fib[2]->gateway.s_addr;
+
+                if (likely(ip_fib[3]))
+                    gateway[3] = ip_fib[3]->gateway.s_addr;
+
+                /* Check the gateway arp entry */
+                if (unlikely(fib_info_lookup(arp_fi, gateway, (void **)arp_fib, 4) > 0)) {
+                    struct netif *nif;
+
+                    if (likely(arp_fib[0])) {
+                        nif = cnet_netif_from_index(ip_fib[0]->netif_idx);
+                        ether_addr_copy(&nif->mac, &eth[0]->s_addr);
+                        ether_addr_copy(&arp_fib[0]->ha, &eth[0]->d_addr);
+                        n0 = ip_fib[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                    }
+                    if (likely(arp_fib[1])) {
+                        nif = cnet_netif_from_index(ip_fib[1]->netif_idx);
+                        ether_addr_copy(&nif->mac, &eth[1]->s_addr);
+                        ether_addr_copy(&arp_fib[0]->ha, &eth[1]->d_addr);
+                        n1 = ip_fib[1]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                    }
+                    if (likely(arp_fib[2])) {
+                        nif = cnet_netif_from_index(ip_fib[2]->netif_idx);
+                        ether_addr_copy(&nif->mac, &eth[2]->s_addr);
+                        ether_addr_copy(&arp_fib[0]->ha, &eth[2]->d_addr);
+                        n2 = ip_fib[2]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                    }
+                    if (likely(arp_fib[3])) {
+                        nif = cnet_netif_from_index(ip_fib[3]->netif_idx);
+                        ether_addr_copy(&nif->mac, &eth[3]->s_addr);
+                        ether_addr_copy(&arp_fib[0]->ha, &eth[3]->d_addr);
+                        n3 = ip_fib[3]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                    }
+                }
             }
         }
 
@@ -229,15 +278,29 @@ ip4_forward_node_process(struct cne_graph *graph, struct cne_node *node, void **
         ipv4_adjust_cksum(hdr);
         eth[0] = pktmbuf_adjust(mbuf0, struct cne_ether_hdr *, -mbuf0->l2_len);
 
-        /* Look up the destination IP address in the arp hash table */
+        /* Look up the destination IP address in the arp_fib hash table */
         ip4[0] = be32toh(hdr->dst_addr);
 
         n0 = NODE_IP4_FORWARD_ARP_REQUEST;
-        if (unlikely(fib_info_lookup(fi, ip4, (void **)arp, 1) > 0)) {
-            nif = cnet_netif_from_index(arp[0]->netif_idx);
+        if (unlikely(fib_info_lookup(arp_fi, ip4, (void **)arp_fib, 1) > 0)) {
+            nif = cnet_netif_from_index(arp_fib[0]->netif_idx);
             ether_addr_copy(&nif->mac, &eth[0]->s_addr);
-            ether_addr_copy(&arp[0]->ha, &eth[0]->d_addr);
-            n0 = arp[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+            ether_addr_copy(&arp_fib[0]->ha, &eth[0]->d_addr);
+            n0 = arp_fib[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+        } else {
+            if (unlikely(fib_info_lookup(rt4_fi, ip4, (void **)ip_fib, 1) > 0)) {
+                struct netif *nif;
+
+                if (likely(ip_fib[0])) {
+                    if (unlikely(fib_info_lookup(arp_fi, &ip_fib[0]->gateway.s_addr,
+                                                 (void **)arp_fib, 1) > 0)) {
+                        nif = cnet_netif_from_index(ip_fib[0]->netif_idx);
+                        ether_addr_copy(&nif->mac, &eth[0]->s_addr);
+                        ether_addr_copy(&arp_fib[0]->ha, &eth[0]->d_addr);
+                        n0 = ip_fib[0]->netif_idx + NODE_IP4_FORWARD_OUTPUT_OFFSET;
+                    }
+                }
+            }
         }
 
         if (unlikely(n_index ^ n0)) {

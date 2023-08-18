@@ -123,7 +123,8 @@ __nl_route(struct netlink_info *info, struct nl_object *obj, int action)
                 0)
                 CNE_RET("Unable to insert route\n");
         } else /* IPv4 */ {
-            if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, NULL, RTM_INFINITY, 0) < 0)
+            if (cnet_route4_insert(netif->netif_idx, &ipaddr, &netmask, &gateway, RTM_INFINITY, 0) <
+                0)
                 CNE_RET("Unable to insert route\n");
         }
         break;
