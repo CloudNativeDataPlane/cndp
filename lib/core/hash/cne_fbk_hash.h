@@ -325,9 +325,9 @@ struct cne_fbk_hash_table *cne_fbk_hash_find_existing(const char *name);
  *    - E_CNE_NO_CONFIG - function could not get pointer to cne_config structure
  *    - E_CNE_SECONDARY - function was called from a secondary process instance
  *    - EINVAL - invalid parameter value passed to function
- *    - ENOSPC - the maximum number of memzones has already been allocated
- *    - EEXIST - a memzone with the same name already exists
- *    - ENOMEM - no appropriate memory area found in which to create memzone
+ *    - ENOSPC - the maximum number of memory has already been allocated
+ *    - EEXIST - a mempool with the same name already exists
+ *    - ENOMEM - no appropriate memory area found in which to create memory
  */
 struct cne_fbk_hash_table *cne_fbk_hash_create(const struct cne_fbk_hash_params *params);
 

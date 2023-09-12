@@ -77,10 +77,8 @@ struct cne_tailq_elem {
  *   first parameter passed to TAILQ_HEAD macro)
  *
  * @return
- *   The return value, typecast to the appropriate
- *   structure pointer type.
- *   NULL on error, since the tailq_head is the first
- *   element in the cne_tailq_head structure.
+ *   The return value, typecast to the appropriate structure pointer type. NULL on error,
+ *   since the tailq_head is the first element in the cne_tailq_head structure.
  */
 #define CNE_TAILQ_LOOKUP(name, struct_name) CNE_TAILQ_CAST(cne_tailq_lookup(name), struct_name)
 
@@ -122,22 +120,6 @@ CNDP_API void cne_dump_tailq(void);
  *   A pointer to the tail queue head structure.
  */
 CNDP_API struct cne_tailq_head *cne_tailq_lookup(const char *name);
-
-/**
- * Register a tail queue.
- *
- * Register a tail queue from shared memory.
- * This function is mainly used by some, which is used to
- * register tailq from the different cndp libraries. Since this macro is a
- * constructor.
- *
- * @param t
- *   The tailq element which contains the name of the tailq you want to
- *   create (/retrieve when in secondary process).
- * @return
- *   0 on success or -1 in case of an error.
- */
-CNDP_API int cne_eal_tailq_register(struct cne_tailq_elem *t);
 
 /**
  * This macro permits both remove and free var within the loop safely.

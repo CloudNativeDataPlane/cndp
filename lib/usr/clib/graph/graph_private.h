@@ -266,7 +266,7 @@ int graph_fp_mem_create(struct graph *graph);
  *
  * @return
  *   - 0: Success.
- *   - <0: Graph memzone related error.
+ *   - <0: Graph memory related error.
  */
 int graph_fp_mem_destroy(struct graph *graph);
 

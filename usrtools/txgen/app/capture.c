@@ -45,7 +45,7 @@
  * storage.
  *
  * PARAMETERS:
- * capture: capture_t struct that will keep a pointer to the allocated memzone
+ * capture: capture_t struct that will keep a pointer to the allocated memory
  *
  * RETURNS: N/A
  *

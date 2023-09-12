@@ -30,7 +30,7 @@ a number of seconds equal to the philosopher's order number around the table
 The two solutions implemented here are 1) a ticket-based one, and 2) a
 claim-based one. The ticket-based solution is fair in the sense that all
 philosophers get to access the resource for the same amount of time in average
-whether they think quick (or shallowy...) or long. The drawback is that the
+whether they think quick (or shallow...) or long. The drawback is that the
 faster thinkers get to wait more for accessing the resource. The claim-based
 solution is addressing this by letting the faster thinkers access the resource
 as long as it is not claimed by another philosopher (in which case the
