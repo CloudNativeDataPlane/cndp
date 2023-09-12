@@ -93,9 +93,9 @@ struct cne_hash;
  *    - E_CNE_SECONDARY - function was called from a secondary process instance
  *    - ENOENT - missing entry
  *    - EINVAL - invalid parameter passed to function
- *    - ENOSPC - the maximum number of memzones has already been allocated
- *    - EEXIST - a memzone with the same name already exists
- *    - ENOMEM - no appropriate memory area found in which to create memzone
+ *    - ENOSPC - the maximum number of memory has already been allocated
+ *    - EEXIST - a mempool with the same name already exists
+ *    - ENOMEM - no appropriate memory area found in which to create memory
  */
 struct cne_hash *cne_hash_create(const struct cne_hash_parameters *params);
 

@@ -346,8 +346,8 @@ graph_init(const char *gname, uint8_t nb_srcs, uint8_t nb_sinks, uint32_t stages
     graph_data->node_data =
         malloc(sizeof(struct test_node_data) * (nb_srcs + nb_sinks + stages * nodes_per_stage));
     if (graph_data->node_data == NULL) {
-        tst_error("Failed to reserve memzone for graph data");
-        goto memzone_free;
+        tst_error("Failed to reserve memory for graph data");
+        goto memory_free;
     }
 
     node_patterns = calloc(1, sizeof(char *) * (nb_srcs + nb_sinks + stages * nodes_per_stage + 1));
@@ -621,7 +621,7 @@ pattern_free:
     free(node_patterns);
 data_free:
     free(graph_data->node_data);
-memzone_free:
+memory_free:
     free(graph_data);
     return -ENOMEM;
 }

@@ -35,7 +35,7 @@ cksum(void *pBuf, int32_t size, uint32_t cksum)
 }
 
 /**
- * cksumUpdate - Calaculate an 16 bit checksum and return the 32 bit value
+ * cksumUpdate - Calculate an 16 bit checksum and return the 32 bit value
  *
  * DESCRIPTION
  * Will need to call txgen_cksumDone to finish computing the checksum. The <cksum>

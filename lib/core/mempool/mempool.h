@@ -112,9 +112,9 @@ typedef struct mempool_cfg {
  * @return
  *   The pointer to the new allocated mempool, on success. NULL on error
  *   with errno set appropriately. Possible errno values include:
- *    - ENOSPC - the maximum number of memzones has already been allocated
- *    - EEXIST - a memzone with the same name already exists
- *    - ENOMEM - no appropriate memory area found in which to create memzone
+ *    - ENOSPC - the maximum number of mempools has already been allocated
+ *    - EEXIST - a mempool with the same name already exists
+ *    - ENOMEM - no appropriate memory area found in which to create mempool
  */
 CNDP_API mempool_t *mempool_create(struct mempool_cfg *cinfo);
 
