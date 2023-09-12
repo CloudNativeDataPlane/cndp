@@ -15,6 +15,7 @@ headers = files(
     'cne_inet4.h',
     'cne_inet6.h',
     'cne_isa.h',
+    'cne_lock_annotations.h',
     'cne_lport.h',
     'cne_mutex_helper.h',
     'cne_pause.h',
