@@ -47,7 +47,9 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
+#if 0
     uint16_t csum;
+#endif
     int a_family, a_len;
     struct pcb_entry *pcb2;
 
@@ -90,14 +92,14 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     pcb = cnet_pcb_lookup(hd, &key, BEST_MATCH);
     if (likely(pcb)) {
         int rc = TCP_INPUT_NEXT_PKT_DROP;
-
+#if 0        // Disable till cne_ipv4_udptcp_cksum_verify is fixed
         if (is_pcb_dom_inet6(pcb))
             csum = cne_ipv6_udptcp_cksum_verify(&tip->ip6, &tip->tcp);
         else
             csum = cne_ipv4_udptcp_cksum_verify(&tip->ip4, &tip->tcp);
         if (csum)
             return rc;
-
+#endif
         m->userptr = pcb;
         in_caddr_copy(&md->faddr, &key.faddr); /* Save the foreign address */
         in_caddr_copy(&md->laddr, &key.laddr); /* Save the local address */
