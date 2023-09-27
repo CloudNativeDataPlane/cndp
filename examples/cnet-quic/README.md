@@ -76,7 +76,7 @@ Edit the cndp/examples/quic.jsonc file to add your interfaces and other machine 
 % sudo ifconfig enp94s0f0 198.18.0.2/24 up
 % sudo ethtool -N enp94s0f0 flow-type udp4 action 11  # must match the qid in the jsonc file.
 %
-% ./tools/rcndp cnet-quic -c examples/cnet-quic/quic.jsonc -- -c examples/cnet-quic/server.crt -k examples/cnet-quic/server.key 0.0.0.0 4433
+% ./tools/rcndp cnet-quic -c examples/cnet-quic/quic.jsonc -- -c examples/cnet-quic/server.crt -k examples/cnet-quic/server.key 192.168.0.2 4433
 ```
 
 ``` console

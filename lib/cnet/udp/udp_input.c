@@ -46,10 +46,13 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
 {
     struct cnet *cnet = this_cnet;
     udpip_t2 *uip;
+
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
-    uint16_t csum;
+#if 0
+    int16_t csum;
+#endif
     int a_family, a_len;
     struct pcb_entry *pcb2;
 
@@ -58,7 +61,8 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
         return UDP_INPUT_NEXT_PKT_DROP;
 
     /* Assume we point to the L3 header here */
-    uip = pktmbuf_mtod(m, struct udpip_s2 *);
+    uip      = pktmbuf_mtod(m, struct udpip_s2 *);
+    uip->udp = *(pktmbuf_mtod_offset(m, struct cne_udp_hdr *, m->l3_len));
 
     pcb2 = m->userptr;
     if (pcb2 && pcb2->ch && pcb2->ch->ch_proto)
@@ -86,20 +90,22 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
     else
         key.laddr.cin_addr.s_addr = uip->ip4.dst_addr;
 
-    md->faddr.cin_port = be16toh(uip->udp.src_port);
-    md->laddr.cin_port = be16toh(uip->udp.dst_port);
+    key.faddr.cin_port = uip->udp.src_port;
+    key.laddr.cin_port = uip->udp.dst_port;
 
     /* Create a 4x PCB lookup routine */
     pcb = cnet_pcb_lookup(hd, &key, BEST_MATCH);
     if (likely(pcb)) {
+#if 0        // Disable till cne_ipv4_udptcp_cksum_verify is fixed
         if ((pcb->opt_flag & UDP_CHKSUM_FLAG) && uip->udp.dgram_cksum) {
             if (is_pcb_dom_inet6(pcb))
                 csum = cne_ipv6_udptcp_cksum_verify(&uip->ip6, &uip->udp);
             else
                 csum = cne_ipv4_udptcp_cksum_verify(&uip->ip4, &uip->udp);
-            if (csum)
+            if (csum < 0)
                 return UDP_INPUT_NEXT_PKT_DROP;
         }
+#endif
         m->userptr = pcb;
         in_caddr_copy(&md->faddr, &key.faddr); /* Save the foreign address */
         in_caddr_copy(&md->laddr, &key.laddr); /* Save the local address */
