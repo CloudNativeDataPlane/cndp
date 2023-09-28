@@ -96,9 +96,9 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     if (likely(pcb)) {
         int rc = TCP_INPUT_NEXT_PKT_DROP;
         if (is_pcb_dom_inet6(pcb))
-            csum = cne_ipv6_udptcp_cksum_verify(pktmbuf_mtod(m, void *), tcp);
+            csum = cne_ipv6_udptcp_cksum_verify(l3, tcp);
         else
-            csum = cne_ipv4_udptcp_cksum_verify(pktmbuf_mtod(m, void *), tcp);
+            csum = cne_ipv4_udptcp_cksum_verify(l3, tcp);
         if (csum < 0)
             return rc;
 
