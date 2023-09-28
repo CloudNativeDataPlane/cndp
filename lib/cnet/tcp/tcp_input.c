@@ -31,25 +31,24 @@
 #include "tcp_input_priv.h"
 
 /* The TCP/IP Pseudo header */
-typedef struct tcpip_s2 {
+typedef struct l3_s2 {
     union {
-        struct cne_ipv4_hdr ip4; /* IPv4 header */
-        struct cne_ipv6_hdr ip6; /* IPv6 header */
+        struct cne_ipv4_hdr *ip4; /* IPv4 header */
+        struct cne_ipv6_hdr *ip6; /* IPv6 header */
     };
-    struct cne_tcp_hdr tcp; /* TCP header */
-} __cne_packed tcpip_t2;
+} __cne_packed l3_t2;
 
 static inline uint16_t
 tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
 {
     struct cnet *cnet = this_cnet;
-    tcpip_t2 *tip;
+    struct cne_tcp_hdr *tcp; /* TCP header */
+    void *l3;
+    l3_t2 tip;
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
-#if 0
-    uint16_t csum;
-#endif
+    int16_t csum;
     int a_family, a_len;
     struct pcb_entry *pcb2;
 
@@ -57,7 +56,8 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     if (!md)
         return TCP_INPUT_NEXT_PKT_DROP;
 
-    tip = pktmbuf_mtod(m, struct tcpip_s2 *);
+    l3  = pktmbuf_mtod(m, void *);
+    tcp = pktmbuf_mtod_offset(m, struct cne_tcp_hdr *, m->l3_len);
 
     pcb2 = m->userptr;
     if (pcb2 && pcb2->ch && pcb2->ch->ch_proto)
@@ -68,38 +68,40 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     if (!CNET_ENABLE_IP6 && a_family == AF_INET6)
         CNE_ERR_RET(" [cyan]IPv6 is disabled[]\n");
 
-    if (a_family == AF_INET6)
-        a_len = sizeof(struct in6_addr);
-    else
-        a_len = sizeof(struct in_addr);
+    if (a_family == AF_INET6) {
+        a_len   = sizeof(struct in6_addr);
+        tip.ip6 = l3;
+    } else {
+        a_len   = sizeof(struct in_addr);
+        tip.ip4 = l3;
+    }
 
     /* Convert this into AVX instructions */
-    in_caddr_update(&key.faddr, a_family, a_len, tip->tcp.src_port);
+    in_caddr_update(&key.faddr, a_family, a_len, tcp->src_port);
     if (a_family == AF_INET6)
-        inet6_addr_copy_from_octs(&key.faddr.cin6_addr, tip->ip6.src_addr);
+        inet6_addr_copy_from_octs(&key.faddr.cin6_addr, tip.ip6->src_addr);
     else
-        key.faddr.cin_addr.s_addr = tip->ip4.src_addr;
-    in_caddr_update(&key.laddr, a_family, a_len, tip->tcp.dst_port);
+        key.faddr.cin_addr.s_addr = tip.ip4->src_addr;
+    in_caddr_update(&key.laddr, a_family, a_len, tcp->dst_port);
     if (a_family == AF_INET6)
-        inet6_addr_copy_from_octs(&key.laddr.cin6_addr, tip->ip6.dst_addr);
+        inet6_addr_copy_from_octs(&key.laddr.cin6_addr, tip.ip6->dst_addr);
     else
-        key.laddr.cin_addr.s_addr = tip->ip4.dst_addr;
+        key.laddr.cin_addr.s_addr = tip.ip4->dst_addr;
 
-    md->faddr.cin_port = be16toh(tip->tcp.src_port);
-    md->laddr.cin_port = be16toh(tip->tcp.dst_port);
+    md->faddr.cin_port = key.faddr.cin_port = tcp->src_port;
+    md->laddr.cin_port = key.laddr.cin_port = tcp->dst_port;
 
     /* Create a 4x PCB lookup routine */
     pcb = cnet_pcb_lookup(hd, &key, BEST_MATCH);
     if (likely(pcb)) {
         int rc = TCP_INPUT_NEXT_PKT_DROP;
-#if 0        // Disable till cne_ipv4_udptcp_cksum_verify is fixed
         if (is_pcb_dom_inet6(pcb))
-            csum = cne_ipv6_udptcp_cksum_verify(&tip->ip6, &tip->tcp);
+            csum = cne_ipv6_udptcp_cksum_verify(pktmbuf_mtod(m, void *), tcp);
         else
-            csum = cne_ipv4_udptcp_cksum_verify(&tip->ip4, &tip->tcp);
-        if (csum)
+            csum = cne_ipv4_udptcp_cksum_verify(pktmbuf_mtod(m, void *), tcp);
+        if (csum < 0)
             return rc;
-#endif
+
         m->userptr = pcb;
         in_caddr_copy(&md->faddr, &key.faddr); /* Save the foreign address */
         in_caddr_copy(&md->laddr, &key.laddr); /* Save the local address */
