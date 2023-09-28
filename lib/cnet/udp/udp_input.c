@@ -100,9 +100,9 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
     if (likely(pcb)) {
         if ((pcb->opt_flag & UDP_CHKSUM_FLAG) && udp->dgram_cksum) {
             if (is_pcb_dom_inet6(pcb))
-                csum = cne_ipv6_udptcp_cksum_verify(pktmbuf_mtod(m, void *), udp);
+                csum = cne_ipv6_udptcp_cksum_verify(l3, udp);
             else {
-                csum = cne_ipv4_udptcp_cksum_verify(pktmbuf_mtod(m, void *), udp);
+                csum = cne_ipv4_udptcp_cksum_verify(l3, udp);
             }
             if (csum < 0)
                 return UDP_INPUT_NEXT_PKT_DROP;
