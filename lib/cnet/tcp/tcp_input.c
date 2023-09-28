@@ -48,7 +48,7 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
-    int16_t csum;
+    int16_t verify;
     int a_family, a_len;
     struct pcb_entry *pcb2;
 
@@ -96,10 +96,10 @@ tcp_input_lookup(struct cne_node *node, pktmbuf_t *m, struct pcb_hd *hd)
     if (likely(pcb)) {
         int rc = TCP_INPUT_NEXT_PKT_DROP;
         if (is_pcb_dom_inet6(pcb))
-            csum = cne_ipv6_udptcp_cksum_verify(l3, tcp);
+            verify = cne_ipv6_udptcp_cksum_verify(l3, tcp);
         else
-            csum = cne_ipv4_udptcp_cksum_verify(l3, tcp);
-        if (csum < 0)
+            verify = cne_ipv4_udptcp_cksum_verify(l3, tcp);
+        if (verify < 0)
             return rc;
 
         m->userptr = pcb;

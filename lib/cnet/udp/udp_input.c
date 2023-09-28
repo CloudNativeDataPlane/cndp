@@ -50,7 +50,7 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
     struct pcb_key key = {0};
     struct pcb_entry *pcb;
     struct cnet_metadata *md;
-    int16_t csum;
+    int16_t verify;
     int a_family, a_len;
     struct pcb_entry *pcb2;
 
@@ -100,11 +100,11 @@ udp_input_lookup(pktmbuf_t *m, struct pcb_hd *hd)
     if (likely(pcb)) {
         if ((pcb->opt_flag & UDP_CHKSUM_FLAG) && udp->dgram_cksum) {
             if (is_pcb_dom_inet6(pcb))
-                csum = cne_ipv6_udptcp_cksum_verify(l3, udp);
+                verify = cne_ipv6_udptcp_cksum_verify(l3, udp);
             else {
-                csum = cne_ipv4_udptcp_cksum_verify(l3, udp);
+                verify = cne_ipv4_udptcp_cksum_verify(l3, udp);
             }
-            if (csum < 0)
+            if (verify < 0)
                 return UDP_INPUT_NEXT_PKT_DROP;
         }
         m->userptr = pcb;
