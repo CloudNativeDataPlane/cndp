@@ -196,7 +196,7 @@ struct cne_pktdev {
 
 extern struct cne_pktdev pktdev_devices[CNE_MAX_ETHPORTS];
 
-#define PKTDEV_NAME_MAX_LEN 16
+#define PKTDEV_NAME_MAX_LEN 32
 /**
  * @internal
  * The data part, with no function pointers, associated with each ethernet device.
