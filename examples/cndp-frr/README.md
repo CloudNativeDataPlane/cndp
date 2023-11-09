@@ -205,19 +205,6 @@ exit
 end
 ```
 
-### cndp-frr2 settings
-
-```cmd
-$ vtysh
-
-Hello, this is FRRouting (version 7.5_git).
-Copyright 1996-2005 Kunihiro Ishiguro, et al.
-
-frr1# show run
-```
-
-With the settings up to this point, if you enter frr1 and check the ip route, 172.21.0.0/16 is added in OSPF.
-
 ```cmd
 frr1# show ip route
 Codes: K - kernel route, C - connected, S - static, R - RIP,
@@ -227,21 +214,20 @@ Codes: K - kernel route, C - connected, S - static, R - RIP,
        > - selected route, * - FIB route, q - queued, r - rejected, b - backup
        t - trapped, o - offload failure
 
-K>* 0.0.0.0/0 [0/0] via 172.19.0.1, eth0, 00:02:13
-C>* 1.1.1.1/32 is directly connected, lo, 00:02:13
-O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1, 00:00:47
-C>* 172.19.0.0/16 is directly connected, eth0, 00:02:13
-O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1, 00:00:42
-C>* 172.20.0.0/16 is directly connected, eth1, 00:02:13
-O>* 172.21.0.0/16 [110/20] via 172.20.0.2, eth1, weight 1, 00:00:36
-The neighbour is also properly recognised.
+K>* 0.0.0.0/0 [0/0] via 172.19.0.1, eth0, 00:01:13
+C>* 1.1.1.1/32 is directly connected, lo, 00:01:13
+O   172.19.0.0/16 [110/10] is directly connected, eth0, weight 1, 00:01:13
+C>* 172.19.0.0/16 is directly connected, eth0, 00:01:13
+O   172.20.0.0/16 [110/10] is directly connected, eth1, weight 1, 00:00:28
+C>* 172.20.0.0/16 is directly connected, eth1, 00:01:13
+O>* 172.21.0.0/16 [110/20] via 172.20.0.2, eth1, weight 1, 00:00:18
 ```
 
 ```cmd
 frr1# show ip ospf neighbor
 
 Neighbor ID     Pri State           Up Time         Dead Time Address         Interface                        RXmtL RqstL DBsmL
-2.2.2.2           1 Full/DR         56.401s           38.597s 172.20.0.2      eth1:172.20.0.3                      0     0     0
+2.2.2.2           1 Full/DR         57.340s           32.664s 172.20.0.2      eth1:172.20.0.3                      0     0     0
 ```
 
 ## 9. Check the routes in the cnet-graph application on cndp-frr1
