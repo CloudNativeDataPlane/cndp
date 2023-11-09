@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) Red Hat Inc.
 
 docker network create net1 --subnet=172.19.0.0/16
 docker network create net2 --subnet=172.20.0.0/16

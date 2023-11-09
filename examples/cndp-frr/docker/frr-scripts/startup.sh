@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) Red Hat Inc.
 
 sysctl -p /etc/sysctl.d/90-routing-sysctl.conf
 source logging.sh
