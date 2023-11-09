@@ -1,6 +1,6 @@
-# CNDP-FRR
+# CNDP-FRR Demo
 
-This repo shows how to run a simple example of CNDP working with FRR. Two clients
+This directory shows how to run a simple example of CNDP working with FRR. Two clients
 reside in two different networks are interconnected via simple OSPF vRouters. One
 running cndp-frr and the other running vanilla frr.
 
@@ -85,7 +85,6 @@ Output should be something like:
 *** cnet-graph, PID: 57 lcore: 1
 
 ** Version: CNDP 23.11.0, Command Line Interface
-CNDP-cli:/> ip route
 ```
 
 Check the routing information:
@@ -124,7 +123,6 @@ Output should be something like:
 *** cnet-graph, PID: 57 lcore: 1
 
 ** Version: CNDP 23.11.0, Command Line Interface
-CNDP-cli:/> ip route
 ```
 
 Check the routing information:

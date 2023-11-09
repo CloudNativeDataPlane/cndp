@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) Red Hat Inc.
+
 log_success_msg() {
                  echo "$@"
 }
