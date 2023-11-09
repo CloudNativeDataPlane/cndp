@@ -123,6 +123,18 @@ endif
 	$(OCI-Builder) build -t cndp-fedora --build-arg http_proxy=${http_proxy} \
   --build-arg https_proxy=${http_proxy} -f containerization/docker/fedora/Dockerfile .
 
+cndp-frr-image: FORCE
+ifeq ($(OCI-Builder), docker)
+	@echo "docker selected"
+else ifeq ($(OCI-Builder), buildah)
+	@echo "buildah selected"
+else
+	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	exit 1
+endif
+	$(OCI-Builder) build -t cndp-frr --build-arg http_proxy=${http_proxy} \
+  --build-arg https_proxy=${http_proxy} -f examples/cndp-frr/docker/Dockerfile .
+
 rust-app: FORCE
 	${Build} rust-app
 
@@ -150,5 +162,13 @@ else
 	exit 1
 endif
 	$(ContainerEngine) run --privileged --network=host -it cndp-fedora bash
+
+cndp-frr-run: FORCE
+	@echo "Starting up cndp-frr example"
+	./examples/cndp-frr/scripts/setup-demo.sh
+
+cndp-frr-clean: FORCE
+	@echo "Cleaning up cndp-frr example"
+	./examples/cndp-frr/scripts/cleanup-demo.sh
 
 FORCE:
