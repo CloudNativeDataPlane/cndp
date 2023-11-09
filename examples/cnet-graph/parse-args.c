@@ -42,6 +42,7 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
     uint32_t total_region_cnt;
     char *umem_addr;
     size_t nlen;
+    jcfg_lport_t *lport;
 
     if (!_obj)
         return -1;
@@ -116,7 +117,7 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
 
     case JCFG_LPORT_TYPE:
         do {
-            jcfg_lport_t *lport = obj.lport;
+            lport = obj.lport;
             struct fwd_port *pd;
             mmap_t *mm;
             jcfg_umem_t *umem;
@@ -146,6 +147,11 @@ process_callback(jcfg_info_t *j, void *_obj, void *arg, int idx)
             pcfg.busy_budget  = lport->busy_budget;
             pcfg.flags        = lport->flags;
             pcfg.flags |= (umem->shared_umem == 1) ? LPORT_SHARED_UMEM : 0;
+
+            if (lport->xsk_map_path) {
+                cne_printf("[yellow]**** [green]PINNED_BPF_MAP is [red]enabled[]\n");
+                pcfg.xsk_map_path = lport->xsk_map_path;
+            }
 
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);
             if (!pcfg.addr) {

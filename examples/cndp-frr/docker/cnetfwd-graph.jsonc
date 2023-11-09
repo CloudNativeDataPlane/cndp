@@ -87,17 +87,19 @@
     "lports": {
         "eth0:0": {
             "pmd": "net_af_xdp",
-            "qid": 36,
+            "qid": 0,
             "umem": "umem0",
             "region": 0,
-            "description": "LAN 0 port"
+            "description": "LAN 0 port",
+            "xsk_pin_path": "/sys/fs/bpf/eth0/xsk_map"
         },
         "eth1:0": {
             "pmd": "net_af_xdp",
-            "qid": 37,
+            "qid": 0,
             "umem": "umem0",
             "region": 1,
-            "description": "LAN 1 port"
+            "description": "LAN 1 port",
+            "xsk_pin_path": "/sys/fs/bpf/eth1/xsk_map"
         }
     },
 
@@ -108,11 +110,11 @@
     // The initial group is for the main thread of the application.
     // The default group is special and is used if a thread if not assigned to a group.
     "lcore-groups": {
-        "initial": [35],
-        "timer": [34],
-        "group0": [38],
-        "group1": [39],
-        "default": ["38-39"]
+        "initial": [0],
+        "timer": [1],
+        "group0": [2],
+        "group1": [3],
+        "default": ["0"]
     },
 
     // (O) Set of common options application defined.
