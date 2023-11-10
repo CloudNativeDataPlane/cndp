@@ -12,7 +12,7 @@ pub fn get_cstring_from_str(s: &str) -> CString {
 }
 
 pub fn free_cchar_ptr(ptr: *mut i8) {
-    unsafe { CString::from_raw(ptr) };
+    unsafe { let _ = CString::from_raw(ptr); };
 }
 
 #[allow(dead_code)]

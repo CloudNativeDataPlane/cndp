@@ -27,6 +27,19 @@ jobs:
           libnl-3-dev libnl-cli-3-dev libnuma-dev libpcap-dev meson\
           pkg-config wget libbpf-dev llvm-dev libclang-dev clang
 
+    - name: Install libbpf and libxdp
+      run: |
+          sudo apt update
+          sudo apt install -y wget build-essential golang
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf1_1.1.0-1_amd64.deb
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf-dev_1.1.0-1_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libbpf1_1.1.0-1_amd64.deb
+          sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
+          sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+
     - name: Build and Install CNDP
       run: make; sudo CNE_DEST_DIR=/ make install
 
