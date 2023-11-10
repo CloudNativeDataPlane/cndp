@@ -1,8 +1,8 @@
 # CNDP-FRR Demo
 
 This directory shows how to run a simple example of CNDP working with FRR. Two clients
-reside in two different networks are interconnected via simple OSPF vRouters. One
-running cndp-frr and the other running vanilla frr.
+reside in two different networks are interconnected via simple OSPF vRouters. Both routers
+are running cnet+frr.
 
 ![CNDP FRR example](./images/cndp-frr-overview.png)
 
@@ -10,7 +10,8 @@ running cndp-frr and the other running vanilla frr.
 > **_NOTE:_** All container interfaces in this example are veth interfaces.
 
 This example loads a custom BPF program on the cndp-frr1 and the cndp-frr2
-veth interfaces to filter UDP traffic to CNDP and all other traffic to the kernel. As the ethtool filtering capability cannot be used with this type
+veth interfaces to filter UDP traffic to CNDP and all other traffic to the
+kernel. As the ethtool filtering capability cannot be used with this type
 of interface.
 
 > **_NOTE:_** CNDP is using the pinned map feature to access an xskmap loaded
@@ -22,7 +23,8 @@ The flow of traffic is shown in the diagram below:
 
 ## 1. Build cndp-frr image
 
-If you wish to build the CNDP-FRR docker images locally then in the top level directory of this repo run:
+If you wish to build the CNDP-FRR docker images locally then in the top level directory
+of this repo run:
 
 ```cmd
 [root@nfvsdn-06 cndp]# make cndp-frr-image
