@@ -430,8 +430,7 @@ __on_exit(int val, void *arg, int exit_type)
         break;
 
     case CNE_CALLED_EXIT:
-        cne_printf_pos(99, 1, "\n>>> [cyan]Terminating with status [green]%d[]\n", val);
-        break;
+        return;
 
     case CNE_USER_EXIT:
         cne_printf_pos(99, 1, "\n>>> [cyan]User called exit, with [red]%d[]\n", val);

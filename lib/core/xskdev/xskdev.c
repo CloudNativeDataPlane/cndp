@@ -932,23 +932,26 @@ xskdev_socket_destroy(xskdev_info_t *xi)
     if (xi) {
         CNE_DEBUG("ifindex %d, %s, prog_id %u\n", xi->if_index, xi->ifname, xi->prog_id);
         if (xi->if_index) {
-            if (xi->unprivileged == 0) {
+            if (!xi->xsk_map_fd) {        // Don't unload programs we didn't load.
+                if (xi->unprivileged == 0) {
 #if USE_LIBBPF_8
-                if (bpf_xdp_query_id(xi->if_index, xi->xdp_flags, &curr_prog_id))
+                    if (bpf_xdp_query_id(xi->if_index, xi->xdp_flags, &curr_prog_id))
 #else
-                if (bpf_get_link_xdp_id(xi->if_index, &curr_prog_id, xi->xdp_flags))
+                    if (bpf_get_link_xdp_id(xi->if_index, &curr_prog_id, xi->xdp_flags))
 #endif
-                    CNE_ERR("bpf_get_link_xdp_id failed\n");
-                else {
-                    /* Try to remove the bpf program */
-                    if (xi->prog_id == curr_prog_id)
+                        CNE_ERR("bpf_get_link_xdp_id failed\n");
+                    else {
+                        /* Try to remove the bpf program */
+                        if (xi->prog_id == curr_prog_id)
 #if USE_LIBBPF_8
-                        bpf_xdp_detach(xi->if_index, xi->xdp_flags, NULL);
+                            bpf_xdp_detach(xi->if_index, xi->xdp_flags, NULL);
 #else
-                        bpf_set_link_xdp_fd(xi->if_index, -1, xi->xdp_flags);
+                            bpf_set_link_xdp_fd(xi->if_index, -1, xi->xdp_flags);
 #endif
-                    else if (curr_prog_id)
-                        CNE_INFO("program on interface changed %d, not removing\n", curr_prog_id);
+                        else if (curr_prog_id)
+                            CNE_INFO("program on interface changed %d, not removing\n",
+                                     curr_prog_id);
+                    }
                 }
             }
             if (xi->rxq.xsk)
