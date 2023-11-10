@@ -124,7 +124,6 @@ cnet_stop(void)
         cnet_nd6_destroy(cnet);
         cnet_netlink_destroy(cnet);
 
-        vec_free(cnet->chnl_descriptors);
         vec_free(cnet->stks);
         vec_free(cnet->drvs);
         vec_free(cnet->netifs);
