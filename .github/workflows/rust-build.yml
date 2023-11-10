@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  PKG_CONFIG_PATH: "$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig"
+  PKG_CONFIG_PATH: "$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig"
   LD_LIBRARY_PATH: "$LD_LIBRARY_PATH:/usr/local/lib/x86_64-linux-gnu"
 
 jobs:
@@ -26,6 +26,7 @@ jobs:
           build-essential libbsd-dev libelf-dev libjson-c-dev\
           libnl-3-dev libnl-cli-3-dev libnuma-dev libpcap-dev meson\
           pkg-config wget libbpf-dev llvm-dev libclang-dev clang
+
 
     - name: Install libbpf and libxdp
       run: |
