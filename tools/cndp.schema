@@ -163,7 +163,7 @@
                             "default": false
                         },
                         "xsk_pin_path": {
-                            "description": "The path to which the BPF map has been pinned outside of cndp",
+                            "description": "The path to which the xskmap has been pinned outside of cndp",
                             "type": "string",
                             "default": false
                         }
@@ -341,7 +341,7 @@
                         "default": false
                     },
                     "xsk_pin_path": {
-                        "description": "The path to which the BPF map has been pinned outside of cndp",
+                        "description": "The path to which the xskmap has been pinned outside of cndp",
                         "type": "string",
                         "default": false
                     }
