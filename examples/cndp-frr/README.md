@@ -76,7 +76,7 @@ Connect to the docker container
 Navigate to the cnet-graph directory and run the application
 
 ```cmd
-# cd /cndp/builddir/examples/cnet-graph/;./cnet-graph -c cnetfwd-graph.jsonc
+# cd /cndp/builddir/examples/cnet-graph/;./cnet-graph -c cnetfrr-graph.jsonc
 ```
 
 Output should be something like:
@@ -114,7 +114,7 @@ Connect to the docker container
 Navigate to the cnet-graph directory and run the application
 
 ```cmd
-# cd /cndp/builddir/examples/cnet-graph/;./cnet-graph -c cnetfwd-graph.jsonc
+# cd /cndp/builddir/examples/cnet-graph/;./cnet-graph -c cnetfrr-graph.jsonc
 ```
 
 Output should be something like:

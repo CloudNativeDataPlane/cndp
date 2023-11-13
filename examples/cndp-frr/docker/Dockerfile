@@ -105,7 +105,7 @@ COPY usrtools usrtools
 COPY containerization containerization
 COPY VERSION Makefile meson.build meson_options.txt ./
 RUN make && make install
-COPY examples/cndp-frr/docker/cnetfwd-graph.jsonc /cndp/builddir/examples/cnet-graph
+COPY examples/cndp-frr/docker/cnetfrr-graph.jsonc /cndp/builddir/examples/cnet-graph
 WORKDIR /cndp/builddir/examples/cnet-graph
 
 WORKDIR /

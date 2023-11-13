@@ -161,6 +161,11 @@
                             "description": "Enable XDP_FLAGS_SKB_MODE to force copy mode",
                             "type": "boolean",
                             "default": false
+                        },
+                        "xsk_pin_path": {
+                            "description": "The path to which the BPF map has been pinned outside of cndp",
+                            "type": "string",
+                            "default": false
                         }
                     },
                     "patternProperties": {
@@ -333,6 +338,11 @@
                     "skb_mode": {
                         "description": "Enable XDP_FLAGS_SKB_MODE to force copy mode",
                         "type": "boolean",
+                        "default": false
+                    },
+                    "xsk_pin_path": {
+                        "description": "The path to which the BPF map has been pinned outside of cndp",
+                        "type": "string",
                         "default": false
                     }
                 },
