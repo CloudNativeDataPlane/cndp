@@ -9,8 +9,8 @@
     //    name        - (O) the name of the application
     //    description - (O) the description of the application
     "application": {
-        "name": "cnet-graph",
-        "description": "A simple network stack example using graph nodes for CNET"
+        "name": "cnet-frr",
+        "description": "A network stack example using CNET + FRR"
     },
 
     // (O) Default values
@@ -113,7 +113,6 @@
         "initial": [0],
         "timer": [1],
         "group0": [2],
-        "group1": [3],
         "default": ["0"]
     },
 
@@ -133,21 +132,14 @@
         "cli": true,
 
         // Optional example application options, note the key-name needs to match the thread name
-        "graph:0": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"],
-        "graph:1": ["ip4*", "udp*", "tcp*", "pkt_drop", "chnl*", "kernel_recv*"],
+        "graph:0": ["ip4*", "udp*", "pkt_drop", "chnl*", "kernel_recv*"],
 
         // Array of channels to open 'type:ipaddr:port'
         //   type   - udp4 | tcp4 | udp4-listen | tcp4-listen
         //   ipaddr - IPv4 address (0.0.0.0 for any)
         //   port   - protocol port ID (number or 0)
         "graph:0-chnl": [
-            "udp4-listen:5678",
-            "tcp4-listen:4433"
-        ],
-        "graph:1-chnl": [
-            "udp4-listen:5678",
-            "tcp4-listen:4433",
-            "tcp4-connect:198.18.2.1:2222"
+            "udp4-listen:5678"
         ]
     },
 
