@@ -4,7 +4,7 @@
 #########################################
 ############ Create networks ############
 #########################################
-if [ ! "$(docker network ls -q -f name=net1)"] || [ ! "$(docker network ls -q -f name=net2)"] || [ ! "$(docker network ls -q -f name=net3)"]; then
+if [ ! "$(docker network ls -q -f name=net1)" ] || [ ! "$(docker network ls -q -f name=net2)" ] || [ ! "$(docker network ls -q -f name=net3)" ]; then
 docker network create net1 --subnet=172.19.0.0/16
 docker network create net2 --subnet=172.20.0.0/16
 docker network create net3 --subnet=172.21.0.0/16
