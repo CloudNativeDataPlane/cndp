@@ -75,12 +75,6 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 if (f->test == UNKNOWN_TEST)
                     f->test = get_app_mode(f->opts.mode);
             }
-        } else if (!strncmp(obj.opt->name, UDS_PATH_TAG, nlen)) {
-            if (obj.opt->val.type == STRING_OPT_TYPE) {
-                f->xdp_uds = udsc_handshake(obj.opt->val.str);
-                if (f->xdp_uds == NULL)
-                    CNE_ERR_RET("UDS handshake failed %s\n", strerror(errno));
-            }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
                 f->fib_rules = calloc(obj.opt->val.array_sz, sizeof(char *));
@@ -201,10 +195,13 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 pcfg.xsk_map_path = lport->xsk_map_path;
             }
 
-            if (f->xdp_uds) {
+            if (lport->uds_path) {
                 cne_printf("[yellow]**** [green]UDS is [red]enabled[]\n");
-                pcfg.xsk_uds = f->xdp_uds;
-                pcfg.flags |= LPORT_UNPRIVILEGED;
+                pcfg.xsk_uds = f->xdp_uds = udsc_handshake(lport->uds_path);
+                if (pcfg.xsk_uds == NULL) {
+                    pd->xsk = NULL;
+                    CNE_ERR_RET("UDS handshake failed %s\n", strerror(errno));
+                }
             }
 
             pcfg.addr = jcfg_lport_region(lport, &pcfg.bufcnt);

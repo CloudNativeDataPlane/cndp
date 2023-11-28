@@ -166,6 +166,11 @@
                             "description": "The path to which the xskmap has been pinned outside of cndp",
                             "type": "string",
                             "default": false
+                        },
+                        "uds_path": {
+                            "description": "The path to socket cndp can connect to to retrieve the xskmap fd",
+                            "type": "string",
+                            "default": false
                         }
                     },
                     "patternProperties": {
@@ -342,6 +347,11 @@
                     },
                     "xsk_pin_path": {
                         "description": "The path to which the xskmap has been pinned outside of cndp",
+                        "type": "string",
+                        "default": false
+                    },
+                    "uds_path": {
+                        "description": "The path to socket cndp can connect to to retrieve the xskmap fd",
                         "type": "string",
                         "default": false
                     }
