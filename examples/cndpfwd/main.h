@@ -60,7 +60,6 @@ enum {
 #define NO_RESTAPI_TAG "no-restapi"      /**< json tag for no-restapi */
 #define ENABLE_CLI_TAG "cli"             /**< json tag to enable/disable CLI */
 #define MODE_TAG       "mode"            /**< json tag to set the mode flag */
-#define UDS_PATH_TAG   "uds_path"        /**< json tag for UDS to get xsk map fd */
 #define FIB_RULES_TAG  "l3fwd-fib-rules" /**< json tag to set up static FIB entries */
 #define HS_PATTERN_TAG "hs-patterns"     /**< json tag for Hyperscan patterns */
 

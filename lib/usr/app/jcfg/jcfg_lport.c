@@ -111,6 +111,9 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
         } else if (!strncmp(key, JCFG_PINNED_XSK_MAP_NAME, keylen)) {
             lport->xsk_map_path = strndup(json_object_get_string(obj), JCFG_MAX_STRING_SIZE);
             lport->flags |= LPORT_UNPRIVILEGED;
+        } else if (!strncmp(key, JCFG_UDS_NAME, keylen)) {
+            lport->uds_path = strndup(json_object_get_string(obj), JCFG_MAX_STRING_SIZE);
+            lport->flags |= LPORT_UNPRIVILEGED;
         } else if (!strncmp(key, JCFG_LPORT_FORCE_WAKEUP_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_FORCE_WAKEUP : 0;
         else if (!strncmp(key, JCFG_LPORT_SKB_MODE_NAME, keylen))

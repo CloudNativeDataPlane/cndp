@@ -106,6 +106,7 @@ udsc_handshake(const char *uds_name)
      * to register protocol commands with and process information
      * exchanged on the UDS.
      */
+
     info = uds_connect(uds_name, &err_msg, NULL);
     if (!info)
         return NULL;

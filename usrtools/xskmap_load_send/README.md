@@ -22,6 +22,7 @@ application to be used alongside this utility is shown below:
             "umem": "umem0",
             "region": 0,
             "description": "LAN 0 port",
+            "uds_path": "/var/run/cndp/app_socket.580113"
         }
     },
     ...
@@ -31,7 +32,6 @@ application to be used alongside this utility is shown below:
         "no-restapi": false,
         "cli": true,
         "mode": "drop",
-        "uds_path": "/var/run/cndp/app_socket.580113"
     },
     ...
 ```

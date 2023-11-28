@@ -90,6 +90,7 @@
     //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
     //    description   - (O) the description, 'desc' can be used as well
     //    xsk_pin_path  - (O) Path to pinned bpf map
+    //    uds_path      - (O) Path to unix domain socket to get xsk map fd
     "lports": {
     {% for i in range(num_lports) %}
         "{{iface}}:{{i}}": {
@@ -129,7 +130,6 @@
     //   no-restapi - (O) Disable RestAPI support
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
-    //   uds_path   - (O) Path to unix domain socket to get xsk map fd
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,

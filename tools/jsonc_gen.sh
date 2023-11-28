@@ -10,12 +10,14 @@
 # would populate the AFXDP_DEVICES environment variable.
 # The available cores to the application are determined by
 # the 'lscpu' command.
-
+num_of_devs=0
 KIND=false
 PINNED_BPF_MAP=false
-config_file=config.jsonc
-AFXDP_DEVICES=${AFXDP_DEVICES:-net1}
 AFXDP_COPY_MODE=${AFXDP_COPY_MODE:-false}
+config_file=config.jsonc
+declare -a AFXDP_DEVICES
+declare -a MAP_OR_UDS_PATH=()
+declare -a MAP_OR_UDS=()
 
 while getopts "kp" flag; do
   case $flag in
@@ -32,17 +34,32 @@ else
     DEFAULT_QID=0 # For kind using veth use queue 0
 fi
 
-if [ ${PINNED_BPF_MAP} = false ]  ; then
-    UDS_PATH="uds_path"
-    UDS="/tmp/afxdp.sock"
-    UDS_CFG=("\"$UDS_PATH\": \"$UDS\",")
-    unset "${MAP_CFG[@]}"
-else
-    MAP_PATH="xsk_pin_path"
-    MAP="/tmp/xsks_map"
-    MAP_CFG=("\"$MAP_PATH\": \"$MAP\",")
-    unset "${UDS_CFG[@]}"
+for device in "${!AFXDP_DEVICES_@}";
+do
+    AFXDP_DEVICES[$num_of_devs]="${!device}"
+    if [ ${PINNED_BPF_MAP} = false ] ; then
+        MAP_OR_UDS[$num_of_devs]="\"uds_path\""
+        MAP_OR_UDS_PATH[$num_of_devs]="\"/tmp/afxdp_dp/${!device}/afxdp.sock\""
+    else
+        MAP_OR_UDS[$num_of_devs]="\"xsk_pin_path\""
+        MAP_OR_UDS_PATH[$num_of_devs]="\"/tmp/afxdp_dp/${!device}/xsks_map\""
+    fi
+    num_of_devs=$((num_of_devs+1))
+done
+
+if [ $num_of_devs == 0 ] ; then
+    AFXDP_DEVICES+="net1"
+    if [ ${PINNED_BPF_MAP} = false ]  ; then
+        MAP_OR_UDS[$num_of_devs]="uds_path"
+        MAP_OR_UDS_PATH[$num_of_devs]="/tmp/afxdp_dp/${AFXDP_DEVICES}/afxdp.sock"
+    else
+        MAP_OR_UDS[$num_of_devs]="xsk_pin_path"
+        MAP_OR_UDS_PATH[$num_of_devs]="/tmp/afxdp_dp/${AFXDP_DEVICES}/xsks_map"
+    fi
 fi
+
+# echo "${MAP_OR_UDS[@]}"
+# echo "${MAP_OR_UDS_PATH[@]}"
 
 num_of_interfaces=0
 num_of_qids=0
@@ -54,7 +71,7 @@ declare -a num_of_cores_in_each_numa_node
 declare -a LCORE
 
 # get list of interfaces
-for net in $AFXDP_DEVICES
+for net in ${AFXDP_DEVICES[@]}
 do
     NET[num_of_interfaces++]=$net
 	QID[num_of_qids++]=${DEFAULT_QID}
@@ -129,7 +146,7 @@ EOF
             "umem": "umem0",
             "region": ${i},
             "skb_mode": ${AFXDP_COPY_MODE},
-            ${MAP_CFG[@]}
+            ${MAP_OR_UDS[i]} : ${MAP_OR_UDS_PATH[i]},
             "description": "LAN ${i} port"
         }
 EOF
@@ -273,13 +290,11 @@ cat <<-EOF > ${config_file}
     //   no-restapi - (O) Disable RestAPI support
     //   cli        - (O) Enable/Disable CLI supported
     //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, acl-strict, acl-permissive
-    //   uds_path   - (O) Path to unix domain socket to get xsk map fd
     "options": {
         "pkt_api": "xskdev",
         "no-metrics": false,
         "no-restapi": false,
         "cli": false,
-        ${UDS_CFG[@]}
         "mode": "drop",
         // FIB rules <IP Address>,<Destination MAC>,<destination port>
         "l3fwd-fib-rules": [
