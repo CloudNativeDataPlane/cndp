@@ -36,30 +36,27 @@ fi
 
 for device in "${!AFXDP_DEVICES_@}";
 do
-    AFXDP_DEVICES[$num_of_devs]="${!device}"
+    AFXDP_DEVICES[num_of_devs]="${!device}"
     if [ ${PINNED_BPF_MAP} = false ] ; then
-        MAP_OR_UDS[$num_of_devs]="\"uds_path\""
-        MAP_OR_UDS_PATH[$num_of_devs]="\"/tmp/afxdp_dp/${!device}/afxdp.sock\""
+        MAP_OR_UDS[num_of_devs]="\"uds_path\""
+        MAP_OR_UDS_PATH[num_of_devs]="\"/tmp/afxdp_dp/${!device}/afxdp.sock\""
     else
-        MAP_OR_UDS[$num_of_devs]="\"xsk_pin_path\""
-        MAP_OR_UDS_PATH[$num_of_devs]="\"/tmp/afxdp_dp/${!device}/xsks_map\""
+        MAP_OR_UDS[num_of_devs]="\"xsk_pin_path\""
+        MAP_OR_UDS_PATH[num_of_devs]="\"/tmp/afxdp_dp/${!device}/xsks_map\""
     fi
     num_of_devs=$((num_of_devs+1))
 done
 
 if [ $num_of_devs == 0 ] ; then
-    AFXDP_DEVICES+="net1"
+    AFXDP_DEVICES+=("net1")
     if [ ${PINNED_BPF_MAP} = false ]  ; then
-        MAP_OR_UDS[$num_of_devs]="uds_path"
-        MAP_OR_UDS_PATH[$num_of_devs]="/tmp/afxdp_dp/${AFXDP_DEVICES}/afxdp.sock"
+        MAP_OR_UDS[num_of_devs]="uds_path"
+        MAP_OR_UDS_PATH[num_of_devs]="/tmp/afxdp_dp/${AFXDP_DEVICES[num_of_devs]}/afxdp.sock"
     else
-        MAP_OR_UDS[$num_of_devs]="xsk_pin_path"
-        MAP_OR_UDS_PATH[$num_of_devs]="/tmp/afxdp_dp/${AFXDP_DEVICES}/xsks_map"
+        MAP_OR_UDS[num_of_devs]="xsk_pin_path"
+        MAP_OR_UDS_PATH[num_of_devs]="/tmp/afxdp_dp//${AFXDP_DEVICES[num_of_devs]}/xsks_map"
     fi
 fi
-
-# echo "${MAP_OR_UDS[@]}"
-# echo "${MAP_OR_UDS_PATH[@]}"
 
 num_of_interfaces=0
 num_of_qids=0
@@ -71,7 +68,7 @@ declare -a num_of_cores_in_each_numa_node
 declare -a LCORE
 
 # get list of interfaces
-for net in ${AFXDP_DEVICES[@]}
+for net in "${AFXDP_DEVICES[@]}"
 do
     NET[num_of_interfaces++]=$net
 	QID[num_of_qids++]=${DEFAULT_QID}
