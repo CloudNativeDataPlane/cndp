@@ -220,7 +220,6 @@ function emit_jsonc_lport_groups
             "threads": ["fwd:$i"],
             "pmd": "net_af_xdp",
             "skb_mode": $CNDP_COPY_MODE,
-            "uds_path": "/tmp/cndp.sock",
         }
 
 EOF
