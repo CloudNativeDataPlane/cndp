@@ -1,0 +1,30 @@
+# WARNING: This is an example definition only. Remove all comments before use.
+
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: afxdp-network                                                                    # Name of this network, pods will request this network by name
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: afxdp/myPool                                        # Needs to match the device plugin pool name / resource type
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "afxdp",                                                                   # CNI binary, leave as afxdp
+      "mode": "primary",                                                                 # CNI mode setting (required)
+      "logFile": "afxdp-cni.log",                                                        # CNI log file location (optional)
+      "logLevel": "debug",                                                               # CNI logging level (optional)
+      "ethtoolCmds" : ["-X -device- equal 5 start 3",                                    # CNI ethtool filters (optional)
+                       "--config-ntuple -device- flow-type udp4 dst-ip -ip- action"
+                      ],
+
+      "ipam": {                                                                          # CNI IPAM plugin and associated config (optional)
+        "type": "host-local",
+        "subnet": "192.168.1.0/24",
+        "rangeStart": "192.168.1.200",
+        "rangeEnd": "192.168.1.220",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }'
