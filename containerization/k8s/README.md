@@ -5,19 +5,19 @@ the CNDP cndpfwd example and another which runs the prometheus go agent to colle
 metrics from the CNDP cndpfwd container. The CNDP containers are interconnected via
 a unix domain socket.
 
-This guide will walk you through the setup of the CNDP pods.
+This guide will walk you through the setup of the CNDP pods and the AF_XDP Device
+Plugin (DP).
 
-## Setup K8s Env
+## 1. Setup a Kubernetes Cluster
 
-This guide will walk you through how to setup a single node cluster where you
-can launch a CNDP container. The example uses kubeadm to bootstrap the cluster.
-This is the setup for Ubuntu 21.04.
+This section will walk you through how to setup a single node cluster where you
+can launch a CNDP container. The example uses `kubeadm` to bootstrap the cluster.
 
 Start by setting the hostname for your platform and ensuring that there's a
 corresponding entry in /etc/hosts
 
 ```bash
-hostnamectl set-hostname silpixaXXXXXXX
+hostnamectl set-hostname <name>
 ```
 
 ```bash
@@ -35,53 +35,118 @@ no_proxy=HOST_IP,YOURHOSTNAME.com,localhost,127.0.0.1,10.96.0.0/12
 
 ### Prepare system to install containerd
 
+#### Ubuntu 21.04
+<!-- markdownlint-disable MD014 -->
+<!-- markdownlint-disable MD024 -->
 ```bash
-cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+$ cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
 overlay
 br_netfilter
 EOF
 
-sudo modprobe overlay
-sudo modprobe br_netfilter
+$ sudo modprobe overlay
+$ sudo modprobe br_netfilter
 
-cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+$ cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 EOF
 
-sudo sysctl --system
+$ sudo sysctl --system
+```
+
+#### Fedora 38
+
+```bash
+$ modprobe br_netfilter
+
+$ echo 1 > /proc/sys/net/ipv4/ip_forward
 ```
 
 ### Install containerd
 
+#### Ubuntu 21.04
+
 ```bash
-sudo apt-get update
+$ sudo apt-get update
 
-sudo apt-get install -y software-properties-common apt-transport-https ca-certificates curl gnupg
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-$(lsb_release -cs) \
-stable"
+$ sudo apt-get install -y software-properties-common apt-transport-https ca-certificates curl gnupg
+$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+$ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
-sudo apt-get update
-sudo apt-get install apparmor-utils containerd.io
+$ sudo apt-get update
+$ sudo apt-get install apparmor-utils containerd.io
+```
 
+#### Fedora 38
+
+```bash
+$ sudo setenforce 0
+$ sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+$ cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+EOF
+
+$ sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+$ sudo systemctl enable --now kubelet
+$ dnf install containerd
 ```
 
 ### Configure containerd
 
+#### Ubuntu 21.04
+
 ```bash
-sudo mkdir -p /etc/containerd
-containerd config default | sudo tee /etc/containerd/config.toml
+$ sudo mkdir -p /etc/containerd
+$ containerd config default | sudo tee /etc/containerd/config.toml
+```
+
+#### Fedora 38
+
+```bash
+$ sudo mkdir -p /etc/containerd
+$ containerd config default | sudo tee /etc/containerd/config.toml
+```
+
+On `Fedora 38` you also need to modify the `/etc/containerd/config.toml`
+file to change the value for `SystemCgroup` from `false` to `true`:
+
+```bash
+   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+        BinaryName = ""
+        CriuImagePath = ""
+        CriuPath = ""
+        CriuWorkPath = ""
+        IoGid = 0
+        IoUid = 0
+        NoNewKeyring = false
+        NoPivotRoot = false
+        Root = ""
+        ShimCgroup = ""
+        SystemdCgroup = false =====>>> change to true
+```
+
+Reload the containerd daemon
+
+```bash
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart containerd
 ```
 
 ### Setup proxies for containerd
 
 ```bash
-sudo mkdir -p /etc/systemd/system/containerd.service.d
+$ sudo mkdir -p /etc/systemd/system/containerd.service.d
 
-cat <<EOF | sudo tee /etc/systemd/system/containerd.service.d/proxy.conf
+$ cat <<EOF | sudo tee /etc/systemd/system/containerd.service.d/proxy.conf
 [Service]
 
 Environment="HTTP_PROXY=http://proxy.example.com:80/"
@@ -94,8 +159,10 @@ EOF
 
 ### Set Max Locked Memory Limit
 
+#### Ubuntu 21.04
+
 ```bash
-cat << EOF | sudo tee /etc/systemd/system/containerd.service.d/limits.conf
+$ cat << EOF | sudo tee /etc/systemd/system/containerd.service.d/limits.conf
 [Service]
 LimitMEMLOCK=infinity
 EOF
@@ -107,18 +174,20 @@ container does not error out with ENOBUFS on socket creation.
 ### Restart the containerd daemon
 
 ```bash
-sudo systemctl daemon-reload
+$ sudo systemctl daemon-reload
 
-sudo systemctl restart containerd
+$ sudo systemctl restart containerd
 ```
 
 Verify that the proxy settings have taken effect
 
 ```bash
-sudo systemctl show --property=Environment containerd
+$ sudo systemctl show --property=Environment containerd
 ```
 
 ### Install Kubeadm
+
+#### Ubuntu 21.04
 
 Add the kubeadm repo:
 
@@ -142,8 +211,15 @@ sudo apt-get install -y kubelet kubeadm kubectl
 Ensure swap is disabled:
 
 ```bash
-sudo swapoff -a
+$ sudo swapoff -a
 ```
+
+> **NOTE**: This step is required on both Ubuntu and Fedora
+> On `Fedora 38` you also need to disable zram:
+>
+>```bash
+> $ sudo touch /etc/systemd/zram-generator.conf
+>```
 
 And setup hugepages (used later by CNDP pod):
 
@@ -188,18 +264,26 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
-Install flannel
+Install flannel and all the default networking plugins
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/v0.15.1/Documentation/kube-flannel.yml
+$ git clone https://github.com/containernetworking/plugins.git
+$ cd plugins
+$./build_linux.sh
+$ ls bin/
+bandwidth  bridge  dhcp  dummy  firewall  host-device  host-local  ipvlan  loopback  macvlan  portmap  ptp  sbr  static  tap  tuning  vlan  vrf
+$ cp bin/* /opt/cni/bin/
 ```
 
-Untaint the controller node so you can schedule pods there and add a label to it:
+> **NOTE**: Compiling the network plugins requires golang to be installed.
+
+Un-taint the controller node so you can schedule pods there and add a label to it:
 Remember to change HOSTNAME to your actual hostname in the commands below:
 
 ```bash
-kubectl taint nodes --all node-role.kubernetes.io/master-
-kubectl label node HOSTNAME cndp="true"
+$ kubectl taint nodes --all node-role.kubernetes.io/master-
+$ kubectl label node HOSTNAME cndp="true"
 ```
 
 ### Setup Multus
@@ -207,77 +291,130 @@ kubectl label node HOSTNAME cndp="true"
 Setup Multus:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.8/images/multus-daemonset.yml
+$ kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v3.8/images/multus-daemonset.yml
 ```
 
-### CNDP environment setup
+## 2. Build the CNDP container image
 
-Refer to cndp/INSTALL.md and cndp/containerization/docker/README.md to setup the
-initial CNDP build environment. Follow the docker README.md to create the "cndp"
-container image used by the CNDP pod.
+In the top level CNDP directory run:
 
-### Build and deploy AF_XDP plugins for K8s
+```bash
+$ make oci-image
+```
+
+Push this image to a registry.
+
+### 3. Build and deploy AF_XDP plugin and CNI for K8s
 
 The source code is available [here](https://github.com/intel/afxdp-plugins-for-kubernetes).
 
 For detailed install instructions please refer to README.md in the device plugin repo.
 This section will provide a quick start for deploying the device plugin and CNI.
 
-Please ensure you have the dependencies installed.
+Please ensure you have the runtime dependencies installed.
 
-Clone the repo
-
-```bash
-git clone https://github.com/intel/afxdp-plugins-for-kubernetes
-```
-
-Move to the top level directory of the repo
+1. Clone the repo
 
 ```bash
-cd afxdp-plugins-for-kubernetes
+$ git clone https://github.com/intel/afxdp-plugins-for-kubernetes
 ```
 
-Edit the daemonset.yml
+2. Move to the top level directory of the repo
 
 ```bash
-vim deployments/daemonset.yml
+$ cd afxdp-plugins-for-kubernetes
 ```
 
-The edited daemonset.yml:
+#### AF_XDP DP UDS based deployment
+
+Edit the `deployments/daemonset.yml` file
 
 ```bash
-diff --git a/deployments/daemonset.yml b/deployments/daemonset.yml
-index 8465a21..774c6ca 100644
---- a/deployments/daemonset.yml
-+++ b/deployments/daemonset.yml
-@@ -6,12 +6,13 @@ metadata:
- data:
-   config.json: |
-     {
-        "clusterType": "physical",
-        "mode": "primary",
-        "logLevel": "debug",
-        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
-        "pools" : [
-            {
--              "name" : "e2e",
-+              "name" : "pool1",
-               "drivers" : ["i40e"]
-            }
-        ]
-
+$ vim deployments/daemonset.yml
 ```
 
-The device plugin can be either deployed as a daemonset or launched from the
-command line. In order to deploy the device plugin as a daemonset:
+Modify the ConfigMap to include the relevant drivers, also
+modify the af_xdp dp image to reference the registry used to
+store the image built in the previous step.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: afxdp-dp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+       "logLevel":"debug",
+       "logFile":"afxdp-dp.log",
+       "pools":[
+          {
+             "name":"myPool",
+             "mode":"primary",
+             "drivers":[
+                {
+                   "name":"i40e" ###### Modify the drivers you wish to add to the pool
+                },
+                {
+                   "name":"ice" ###### Modify the drivers you wish to add to the pool
+                }
+             ]
+          }
+       ]
+    }
+```
+
+#### AF_XDP DP xskmap pinning based deployment
+
+Edit the `deployments/daemonset-pinning.yml` file
 
 ```bash
-sudo make deploy
+vim deployments/daemonset-pinning.yml
 ```
 
-The above command also builds the CNDP device plugin docker image.
 
-### Import docker images
+Modify the ConfigMap to include the relevant drivers, also
+modify the af_xdp dp image to reference the registry used to
+store the image built in the previous step.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: afxdp-dp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+       "logLevel":"debug",
+       "logFile":"afxdp-dp.log",
+       "pools":[
+          {
+             "name":"myPool",
+             "mode":"primary",
+             "drivers":[
+                {
+                   "name":"i40e" ###### Modify the drivers you wish to add to the pool
+                },
+                {
+                   "name":"ice" ###### Modify the drivers you wish to add to the pool
+                }
+             ]
+          }
+       ]
+    }
+```
+
+#### Build the AF_XDP DP Daemonset and CNI
+
+Build the AF_XDP DP container image:
+
+```bash
+sudo make image
+```
+
+### 4. Import docker images
 
 Before importing docker images, the container images are built using docker. For more information on building the CNDP image using docker, please follow the instructions at containerization/docker/README.md.
 
@@ -301,7 +438,7 @@ ctr -n=k8s.io images import afxdp-device-plugin.tar
 
 ```
 
-### Verify that the image is now available to the container run-time
+#### Verify that the image is now available to the container run-time
 
 More information on how to install crictl can be found [here](https://kubernetes.io/docs/tasks/debug-application-cluster/crictl/).
 
@@ -309,25 +446,47 @@ More information on how to install crictl can be found [here](https://kubernetes
 sudo crictl images
 ```
 
-### Create Network attachment definition for AF_XDP interface
+### 5. Deploy the AF_XDP DP Daemonset and CNI
+
+To deploy the UDS based configuration run:
+
+```bash
+kubectl create -f ./deployments/daemonset.yml
+```
+
+To deploy the map pinning based configuration run:
+
+```bash
+kubectl create -f ./deployments/daemonset-pinning.yml
+```
+
+### 6. Modify the Network attachment definition for AF_XDP interface
 
 > **_NOTE:_** make sure any interfaces you wish to add to the Pod are in an UP state and do not have IP addresses configured.
 
-Ethtool filters are programmed on the interface by the CNI. Currently, the ethtool filter will be programmed on queue 4 and on.
+Ethtool filters are programmed on the interface by the CNI through the NAD. Currently, the ethtool filter will be programmed on queue 4 and on.
 
 The "queues" field in the network attachment definition decides how many queues are used for the ethtool filter setup.
 
 If `"queues":"1"` is set in the network attachment definition, the ethtool filter programmed by the CNI, will be of the form
 
 ```bash
-ethtool -X <interface_name> equal 1 start 4
+"ethtoolCmds" : ["-X -device- equal 1 start 4",                                    # CNI ethtool filters (optional)
+               "--config-ntuple -device- flow-type udp4 dst-ip -ip- action"
+              ],
 ```
 
 In order to create the network attachment definition:
 
 ```bash
-kubectl create -f containerization/k8s/networks/cndp-cni-nad.yaml
+kubectl create -f containerization/k8s/networks/uds-nad.yaml
 ```
+
+> Note: To deploy the map pinning based configuration run:
+
+  ```bash
+  kubectl create -f containerization/k8s/networks/map-pinning-nad.yaml
+  ```
 
 Check the definition was added:
 
@@ -357,7 +516,7 @@ An example to force copy-mode for all AF_XDP sockets:
         value: "true"
 ```
 
-Use the cndp-0-0.yaml to create the pod.
+Use the [cndp-0-0.yaml](../cndp-pods/cndp-0-0.yaml) to create the pod.
 
 ```bash
 kubectl create -f containerization/k8s/cndp-pods/cndp-0-0.yaml
@@ -449,9 +608,28 @@ instructions in [logging-README.md](logging-README.md).
 kubectl delete pods cndp-0-0
 ```
 
+## Resetting the Cluster
+
+```bash
+kubeadm reset
+unset KUBECONFIG
+rm -rf $HOME/.kube/
+systemctl daemon-reload
+systemctl restart kubelet
+systemctl restart containerd
+ls /etc/cni/net.d
+rm -rf /etc/cni/net.d/*
+swapoff -av
+free -h
+kubeadm init --pod-network-cidr=10.244.0.0/16
+```
+
 ### References
 
 - [Container-runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
 - [Kubeadm installation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 - [Kubeadm cluster creation](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 - [Multus Quickstart](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
+
+<!-- markdownlint-enable MD014 -->
+<!-- markdownlint-enable MD024 -->
