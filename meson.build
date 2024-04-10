@@ -168,7 +168,7 @@ if nl_cli_dep.found()
 endif
 
 nl_route_dep = dependency('libnl-route-3.0', required: true, method: 'pkg-config', static: use_static_libs)
-if nl_cli_dep.found()
+if nl_route_dep.found()
     add_project_link_arguments('-lnl-route-3', language: 'c')
     extra_ldflags += '-lnl-route-3'
 endif
