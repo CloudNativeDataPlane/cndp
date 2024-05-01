@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Check out repository code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install packages
       run: |
@@ -26,9 +26,9 @@ jobs:
     - name: Install libbpf
       run: |
         wget -q -O - https://github.com/libbpf/libbpf/archive/refs/tags/v0.5.0.tar.gz \
-        | tar -xzC ${GITHUB_WORKSPACE} \
-        && sudo make -j -C ${GITHUB_WORKSPACE}/libbpf-0.5.0/src install \
-        && sudo rm -rf ${GITHUB_WORKSPACE}/libbpf-0.5.0
+        | tar -xzC "${GITHUB_WORKSPACE}" \
+        && sudo make -j -C "${GITHUB_WORKSPACE}"/libbpf-0.5.0/src install \
+        && sudo rm -rf "${GITHUB_WORKSPACE}"/libbpf-0.5.0
 
     - name: Build
       run: make

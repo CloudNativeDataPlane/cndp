@@ -18,7 +18,7 @@ jobs:
 
     steps:
     - name: Check out repository code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install packages
       run: |
@@ -26,6 +26,8 @@ jobs:
           build-essential libbsd-dev libelf-dev libjson-c-dev\
           libnl-3-dev libnl-cli-3-dev libnuma-dev libpcap-dev meson\
           pkg-config wget libbpf-dev llvm-dev libclang-dev clang
+
+
 
     - name: Build and Install CNDP
       run: make; sudo CNE_DEST_DIR=/ make install
@@ -35,4 +37,4 @@ jobs:
 
     - name: Build
       working-directory: lang/rs
-      run: cargo build
+      run: CLANG_PATH=/usr/bin/clang-15 cargo build
