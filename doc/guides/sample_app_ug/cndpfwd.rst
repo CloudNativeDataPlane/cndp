@@ -161,6 +161,7 @@ The configuration json file is located in the ``cndpfwd`` example sub-directory
         //    skb_mode      - (O) Enable XDP_FLAGS_SKB_MODE when creating af_xdp socket, forces copy mode, default false
         //    description   - (O) the description, 'desc' can be used as well
 		//    xsk_pin_path  - (O) Path to pinned xsk map for this port
+        //    uds_path      - (0) Path to unix domain socket to get xsk map fd
         "lports": {
             "eth0:0": {
                 "pmd": "net_af_xdp",
@@ -200,8 +201,7 @@ The configuration json file is located in the ``cndpfwd`` example sub-directory
         //   no-restapi - (O) Disable RestAPI support
         //   cli        - (O) Enable/Disable CLI supported
         //   mode       - (O) Mode type [drop | rx-only], tx-only, [lb | loopback], fwd, tx-only-rx
-        //                    acl-strict, acl-permissive
-        //   uds_path   - (0) Path to unix domain socket to get xsk map fd
+        //                    acl-strict, acl-permissiv
         "options": {
             "pkt_api": "xskdev",
             "no-metrics": false,

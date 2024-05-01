@@ -111,7 +111,6 @@ function emit_jsonc_options
     cat <<-EOF >> $config_file
 
     "options": {
-        "uds_path": "/tmp/cndp.sock",
         "mode": "drop"
     }
 }

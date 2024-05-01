@@ -930,10 +930,11 @@ xskdev_socket_destroy(xskdev_info_t *xi)
     uint32_t curr_prog_id = 0;
 
     if (xi) {
-        CNE_DEBUG("ifindex %d, %s, prog_id %u\n", xi->if_index, xi->ifname, xi->prog_id);
         if (xi->if_index) {
             if (!xi->xsk_map_fd) {        // Don't unload programs we didn't load.
                 if (xi->unprivileged == 0) {
+                    CNE_DEBUG("ifindex %d, %s, prog_id %u\n", xi->if_index, xi->ifname,
+                              xi->prog_id);
 #if USE_LIBBPF_8
                     if (bpf_xdp_query_id(xi->if_index, xi->xdp_flags, &curr_prog_id))
 #else
