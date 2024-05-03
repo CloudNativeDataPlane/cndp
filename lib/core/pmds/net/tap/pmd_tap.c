@@ -402,7 +402,7 @@ pmd_tun_probe(lport_cfg_t *c)
     return _tap_probe(IFF_TUN, c);
 }
 
-CNE_INIT(vdrvinit_tuntap)
+CNE_INIT_PRIO(vdrvinit_tuntap, PMD)
 {
     pktdev_register(&tap_drv);
     pktdev_register(&tun_drv);

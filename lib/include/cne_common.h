@@ -160,6 +160,7 @@ typedef uint16_t unaligned_uint16_t;
 #define CNE_PRIORITY_STATE  110
 #define CNE_PRIORITY_CLASS  120
 #define CNE_PRIORITY_STACK  130
+#define CNE_PRIORITY_PMD    30000
 #define CNE_PRIORITY_LAST   65535
 
 #define CNE_PRIO(prio) CNE_PRIORITY_##prio
