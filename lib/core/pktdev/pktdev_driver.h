@@ -52,11 +52,11 @@ struct pktdev_driver {
  */
 void pktdev_register(struct pktdev_driver *driver);
 
-#define PMD_REGISTER_DEV(nm, vdrv) \
-    CNE_INIT_PRIO(vdrvinit_##vdrv, PMD)      \
-    {                              \
-        (vdrv).name = CNE_STR(nm); \
-        pktdev_register(&vdrv);    \
+#define PMD_REGISTER_DEV(nm, vdrv)      \
+    CNE_INIT_PRIO(vdrvinit_##vdrv, PMD) \
+    {                                   \
+        (vdrv).name = CNE_STR(nm);      \
+        pktdev_register(&vdrv);         \
     }
 
 /**
