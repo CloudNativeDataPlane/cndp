@@ -15,6 +15,7 @@
 #define MAX_LOG_BUF_SIZE 1024 /** The max size of internal buffers */
 
 static uint32_t cne_loglevel = CNE_LOG_INFO;
+static FILE *cne_logfile     = NULL;
 
 /* Set global log level */
 void
@@ -54,6 +55,20 @@ cne_log_get_level(void)
     return cne_loglevel;
 }
 
+/* Redirects the logs to a file */
+void
+cne_log_set_file(FILE *file)
+{
+    cne_logfile = file;
+}
+
+/* Returns the log file */
+FILE *
+cne_log_get_file(void)
+{
+    return cne_logfile != NULL ? cne_logfile : stdout;
+}
+
 /*
  * Generates a log message.
  */
@@ -81,7 +96,7 @@ cne_vlog(uint32_t level, const char *func, int line, const char *format, va_list
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif /* __clang__ */
-    return vprintf(buff, ap);
+    return vfprintf(cne_log_get_file(), buff, ap);
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif /* __clang__ */
