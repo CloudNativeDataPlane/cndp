@@ -84,6 +84,20 @@ CNDP_API int cne_log_set_level_str(char *log_level);
 CNDP_API uint32_t cne_log_get_level(void);
 
 /**
+ * Redirects the logs to a file
+ *
+ * @param file The target file
+ */
+CNDP_API void cne_log_set_file(FILE *file);
+
+/**
+ * Gets the log file
+ *
+ * @return It returns the file set by `cne_log_set_file`, otherwise it returns `stdout`
+ */
+CNDP_API FILE *cne_log_get_file(void);
+
+/**
  * Generates a log message.
  *
  * The message will be sent to stdout.
