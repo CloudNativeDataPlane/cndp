@@ -13,6 +13,12 @@
 #include "cne_tty.h"          // for tty_is_color_on
 #include "vt100_out.h"        // for vt_rgb_code_t, vt_attrs, vt_rgb_name_t, vt_...
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 static struct vt_attrs _attrs[] = VT_ATTRS;
 
 static vt_rgb_code_t _rgb_codes[] = RGB_COLOR_CODES;
@@ -165,3 +171,7 @@ vt_color_parse(char *buff, int len)
 
     return b - buff; /* True size of the string or data in buffer */
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
