@@ -249,6 +249,8 @@ int
 pktdev_close_all(void)
 {
     PKTDEV_FOREACH (i) {
+        if (pktdev_devices[i].state == PKTDEV_UNUSED)
+            continue;
         if (pktdev_close(i) < 0)
             return -1;
     }
