@@ -155,6 +155,8 @@ punt_kernel_node_init(const struct cne_graph *graph __cne_unused, struct cne_nod
     ctx->sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (ctx->sock < 0)
         CNE_ERR_RET("Unable to open IPv4 RAW socket\n");
+
+    ctx->sock6 = -1;
     if (CNET_ENABLE_IP6 && (ctx->sock6 = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW)) < 0)
         CNE_ERR_RET("Unable to open IPv6 RAW socket\n");
     return 0;
