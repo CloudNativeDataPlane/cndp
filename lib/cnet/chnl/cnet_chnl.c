@@ -483,10 +483,10 @@ chnl_connect(int cd, struct sockaddr *sa, int namelen)
     struct protosw_entry *psw;
     struct in_caddr faddr = {0};
 
-    if (!cd || this_stk == NULL)
+    if (!ch || this_stk == NULL)
         return __errno_set(EFAULT);
 
-    if (!name || (namelen > (int)sizeof(struct in_caddr)) || !ch || !ch->ch_proto)
+    if (!name || (namelen > (int)sizeof(struct in_caddr)) || !ch->ch_proto)
         CNE_ERR_RET_VAL(__errno_set(EINVAL), "Channel name %p or len %d != %ld\n", name, namelen,
                         sizeof(struct in_caddr));
 
