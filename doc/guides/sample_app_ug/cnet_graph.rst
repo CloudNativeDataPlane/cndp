@@ -219,13 +219,13 @@ The channel callback types are shown below:
 .. code-block:: c
 
     /** Channel callback types */
-    typedef enum {
-        CHNL_UDP_RECV_TYPE,   /**< Callback for receiving UDP packets */
-        CHNL_UDP_CLOSE_TYPE,  /**< Callback for UDP close */
-        CHNL_TCP_ACCEPT_TYPE, /**< Callback type for accepting TCP connection */
-        CHNL_TCP_RECV_TYPE,   /**< Callback for receiving TCP packets */
-        CHNL_TCP_CLOSE_TYPE,  /**< Callback for TCP close */
-        CHNL_CALLBACK_TYPES   /**< Maximum number of callback types */
+   typedef enum {
+        CHNL_UDP_RECV_TYPE,        /**< Callback for receiving UDP packets */
+        CHNL_UDP_CLOSE_TYPE,       /**< Callback for UDP close */
+        CHNL_TCP_ESTABLISHED_TYPE, /**< Callback for when TCP is established: `accept` or `connect` */
+        CHNL_TCP_RECV_TYPE,        /**< Callback for receiving TCP packets */
+        CHNL_TCP_CLOSE_TYPE,       /**< Callback for TCP close */
+        CHNL_CALLBACK_TYPES        /**< Maximum number of callback types */
     } chnl_type_t;
 
 Packet Forwarding using Graph Walk
