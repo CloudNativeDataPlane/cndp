@@ -585,7 +585,7 @@ Understanding the CLI system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The command line interface is defined as a fake directory tree with executables,
-directorys and files. The user uses shell like standard commands to move about
+directories and files. The user uses shell like standard commands to move about
 the directory and execute commands. The CLI is not a powerful as the
 Bash shell, but has a number of similar concepts.
 

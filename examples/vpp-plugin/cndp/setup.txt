@@ -2,4 +2,3 @@ create interface cndp name ens786f2 qs 2 offset 10
 set interface ip address ens786f2 48.0.0.154/24
 set interface state ens786f2 up
 set ip neighbor ens786f2 48.0.0.1 3c:fd:fe:9c:e7:22
-

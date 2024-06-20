@@ -18,9 +18,9 @@ index f390b63..d23f822 100644
 --- a/src/platform/linux/cndp/README.md
 +++ b/src/platform/linux/cndp/README.md
 @@ -14,6 +14,7 @@ Wireguard with CNDP is most recently tested on Ubuntu 21.04, 5.11.0-18-generic k
- 
+
  To build wireguard-rs with CNDP on Linux:
- 
+
 +0. Build and install CNDP in the system and also set PKG_CONFIG_PATH, LD_LIBRARY_PATH. Please refer steps 1-4 in this [link](https://github.com/CloudNativeDataPlane/cndp/tree/main/lang/rs)
  1. Obtain nightly `cargo` and `rustc` through [rustup](https://rustup.rs/). Need cargo version >= 1.63.0
  2. Clone the repository: `git clone https://github.com/intel-innersource/networking.dataplane.cndp.thirdparty.wireguard-rs.git`.
@@ -32,12 +32,11 @@ index ea8f231..3568c12 100755
 @@ -63,7 +63,7 @@ else
  	ARGS="--disable-drop-privileges rsuwg0"
  fi
- 
+
 -RUN="sudo -E LD_LIBRARY_PATH=$LD_LIBRARY_PATH LD_PRELOAD=$LD_LIBRARY_PATH/libpmd_af_xdp.so RUST_LOG=$RUST_LOG_VAL `which cargo` run --bin $RUST_EXE"
 +RUN="sudo -E LD_LIBRARY_PATH=$LD_LIBRARY_PATH RUST_LOG=$RUST_LOG_VAL `which cargo` run --bin $RUST_EXE"
  if [ "$BUILD" == "debug" ]; then
  	$RUN -- $ARGS
  else
--- 
+--
 2.34.1
-

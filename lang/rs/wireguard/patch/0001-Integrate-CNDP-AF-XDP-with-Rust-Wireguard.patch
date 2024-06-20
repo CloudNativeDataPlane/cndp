@@ -91,7 +91,7 @@ index 640d8cb..7cb769b 100644
 @@ -5,12 +5,22 @@ license = "MIT"
  name = "wireguard-rs"
  version = "0.1.4"
- 
+
 +[[bin]]
 +name = "cndp-ping"
 +path = "src/main_cndp_ping.rs"
@@ -124,12 +124,12 @@ index 640d8cb..7cb769b 100644
 +once_cell = {version = "^1.10", optional = true }
 +openssl = {version = "^0.10", optional = true, features = ["vendored"]  }
 +cndp-cne = {git = "https://github.com/CloudNativeDataPlane/cndp", branch = "main", optional = true }
- 
+
  [dependencies.treebitmap]
  package = "ip_network_table-deps-treebitmap"
 @@ -45,10 +62,34 @@ version = "^2.4"
  #features = ["nightly"]
- 
+
  [features]
 +default = ["cndp", "openssl_enc_dec"]
 +
@@ -144,7 +144,7 @@ index 640d8cb..7cb769b 100644
  start_up = []
 +openssl_enc_dec = ["openssl"]
 +cndp = ["pnet", "core_affinity", "toml", "clap", "once_cell", "cndp-cne"]
- 
+
  [dev-dependencies]
 -pnet = "^0.27"
 +pnet = "^0.28"
@@ -1359,7 +1359,7 @@ index 88630af..316e384 100644
 @@ -46,7 +46,7 @@ pub struct VoidBind {}
  impl Reader<UnitEndpoint> for VoidBind {
      type Error = BindError;
- 
+
 -    fn read(&self, _buf: &mut [u8]) -> Result<(usize, UnitEndpoint), Self::Error> {
 +    fn read(&mut self, _buf: &mut [u8]) -> Result<(usize, UnitEndpoint), Self::Error> {
          Ok((0, UnitEndpoint {}))
@@ -1368,14 +1368,14 @@ index 88630af..316e384 100644
 @@ -54,7 +54,7 @@ impl Reader<UnitEndpoint> for VoidBind {
  impl Writer<UnitEndpoint> for VoidBind {
      type Error = BindError;
- 
+
 -    fn write(&self, _buf: &[u8], _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
 +    fn write(&self, _buf:Vec<u8>, _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
          Ok(())
      }
  }
 @@ -84,7 +84,7 @@ pub struct PairReader<E> {
- 
+
  impl Reader<UnitEndpoint> for PairReader<UnitEndpoint> {
      type Error = BindError;
 -    fn read(&self, buf: &mut [u8]) -> Result<(usize, UnitEndpoint), Self::Error> {
@@ -1384,7 +1384,7 @@ index 88630af..316e384 100644
              .recv
              .lock()
 @@ -105,12 +105,12 @@ impl Reader<UnitEndpoint> for PairReader<UnitEndpoint> {
- 
+
  impl Writer<UnitEndpoint> for PairWriter<UnitEndpoint> {
      type Error = BindError;
 -    fn write(&self, buf: &[u8], _dst: &mut UnitEndpoint) -> Result<(), Self::Error> {
@@ -5032,7 +5032,7 @@ index d28391e..26e9b5f 100644
 --- a/src/platform/linux/mod.rs
 +++ b/src/platform/linux/mod.rs
 @@ -4,4 +4,11 @@ mod udp;
- 
+
  pub use tun::LinuxTun as Tun;
  pub use uapi::LinuxUAPI as UAPI;
 +#[cfg(all(target_os = "linux", not(feature = "cndp")))]
@@ -5050,7 +5050,7 @@ index 82fada1..062a4ae 100644
 @@ -114,7 +114,7 @@ impl Writer for LinuxTunWriter {
      }
  }
- 
+
 -fn get_ifindex(name: &[u8; libc::IFNAMSIZ]) -> i32 {
 +pub fn get_ifindex(name: &[u8; libc::IFNAMSIZ]) -> i32 {
      debug_assert_eq!(
@@ -5059,7 +5059,7 @@ index 82fada1..062a4ae 100644
 @@ -129,7 +129,7 @@ fn get_ifindex(name: &[u8; libc::IFNAMSIZ]) -> i32 {
      idx as i32
  }
- 
+
 -fn get_mtu(name: &[u8; libc::IFNAMSIZ]) -> Result<usize, LinuxTunError> {
 +pub fn get_mtu(name: &[u8; libc::IFNAMSIZ]) -> Result<usize, LinuxTunError> {
      #[repr(C)]
@@ -5068,7 +5068,7 @@ index 82fada1..062a4ae 100644
 @@ -267,7 +267,7 @@ impl LinuxTunStatus {
      const RTNLGRP_IPV4_IFADDR: libc::c_uint = 5;
      const RTNLGRP_IPV6_IFADDR: libc::c_uint = 9;
- 
+
 -    fn new(name: [u8; libc::IFNAMSIZ]) -> Result<LinuxTunStatus, LinuxTunError> {
 +    pub fn new(name: [u8; libc::IFNAMSIZ]) -> Result<LinuxTunStatus, LinuxTunError> {
          // create netlink socket
@@ -5081,7 +5081,7 @@ index b62d5bf..f953e2f 100644
 @@ -308,7 +308,7 @@ impl LinuxUDPReader {
  impl Reader<LinuxEndpoint> for LinuxUDPReader {
      type Error = io::Error;
- 
+
 -    fn read(&self, buf: &mut [u8]) -> Result<(usize, LinuxEndpoint), Self::Error> {
 +    fn read(&mut self, buf: &mut [u8]) -> Result<(usize, LinuxEndpoint), Self::Error> {
          match self {
@@ -5090,7 +5090,7 @@ index b62d5bf..f953e2f 100644
 @@ -451,10 +451,10 @@ impl LinuxUDPWriter {
  impl Writer<LinuxEndpoint> for LinuxUDPWriter {
      type Error = io::Error;
- 
+
 -    fn write(&self, buf: &[u8], dst: &mut LinuxEndpoint) -> Result<(), Self::Error> {
 +    fn write(&self, buf: Vec<u8>, dst: &mut LinuxEndpoint) -> Result<(), Self::Error> {
          match dst {
@@ -5108,18 +5108,18 @@ index 0b9c823..d8e5c24 100644
 @@ -4,13 +4,13 @@ use std::error::Error;
  pub trait Reader<E: Endpoint>: Send + Sync {
      type Error: Error;
- 
+
 -    fn read(&self, buf: &mut [u8]) -> Result<(usize, E), Self::Error>;
 +    fn read(&mut self, buf: &mut [u8]) -> Result<(usize, E), Self::Error>;
  }
- 
+
  pub trait Writer<E: Endpoint>: Send + Sync + 'static {
      type Error: Error;
- 
+
 -    fn write(&self, buf: &[u8], dst: &mut E) -> Result<(), Self::Error>;
 +    fn write(&self, buf: Vec<u8>, dst: &mut E) -> Result<(), Self::Error>;
  }
- 
+
  pub trait UDP: Send + Sync + 'static {
 diff --git a/src/wireguard/constants.rs b/src/wireguard/constants.rs
 index 4d89d46..e261f88 100644
@@ -5137,16 +5137,16 @@ index f4f5586..f2004dd 100644
 --- a/src/wireguard/handshake/macs.rs
 +++ b/src/wireguard/handshake/macs.rs
 @@ -9,7 +9,7 @@ use x25519_dalek::PublicKey;
- 
+
  // AEAD
- 
+
 -use aead::{Aead, NewAead, Payload};
 +use chacha20poly1305::aead::{Aead, NewAead, Payload};
  use chacha20poly1305::XChaCha20Poly1305;
- 
+
  // MAC
 @@ -56,7 +56,7 @@ macro_rules! MAC {
- 
+
  macro_rules! XSEAL {
      ($key:expr, $nonce:expr, $ad:expr, $pt:expr, $ct:expr) => {{
 -        let ct = XChaCha20Poly1305::new(GenericArray::from_slice($key))
@@ -5169,15 +5169,15 @@ index 92c8c5f..cb14ad1 100644
 +++ b/src/wireguard/handshake/noise.rs
 @@ -8,7 +8,7 @@ use blake2::Blake2s;
  use hmac::Hmac;
- 
+
  // AEAD
 -use aead::{Aead, NewAead, Payload};
 +use chacha20poly1305::aead::{Aead, NewAead, Payload};
  use chacha20poly1305::ChaCha20Poly1305;
- 
+
  use rand_core::{CryptoRng, RngCore};
 @@ -112,7 +112,7 @@ macro_rules! KDF3 {
- 
+
  macro_rules! SEAL {
      ($key:expr, $ad:expr, $pt:expr, $ct:expr) => {
 -        ChaCha20Poly1305::new(GenericArray::from_slice($key))
@@ -5186,7 +5186,7 @@ index 92c8c5f..cb14ad1 100644
              .map(|ct| $ct.copy_from_slice(&ct))
              .unwrap()
 @@ -121,7 +121,7 @@ macro_rules! SEAL {
- 
+
  macro_rules! OPEN {
      ($key:expr, $ad:expr, $pt:expr, $ct:expr) => {
 -        ChaCha20Poly1305::new(GenericArray::from_slice($key))
@@ -5203,12 +5203,12 @@ index eeae621..7aba22a 100644
  use super::types::{Callbacks, RouterError};
  use super::SIZE_MESSAGE_PREFIX;
 +use super::CAPACITY_MESSAGE_POSTFIX;
- 
+
  use super::receive::ReceiveJob;
  use super::route::RoutingTable;
 @@ -103,7 +104,11 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> Drop
  }
- 
+
  impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<E, C, T, B> {
 -    pub fn new(num_workers: usize, tun: T) -> DeviceHandle<E, C, T, B> {
 +    pub fn new(
@@ -5220,7 +5220,7 @@ index eeae621..7aba22a 100644
          let device = Device {
              inner: Arc::new(DeviceInner {
 @@ -117,8 +122,22 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<
- 
+
          // start worker threads
          let mut threads = Vec::with_capacity(num_workers);
 +        let mut core_id: usize = 0;
@@ -5246,7 +5246,7 @@ index eeae621..7aba22a 100644
 @@ -134,7 +153,7 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> DeviceHandle<
          }
      }
- 
+
 -    pub fn send_raw(&self, msg: &[u8], dst: &mut E) -> Result<(), B::Error> {
 +    pub fn send_raw(&self, msg: Vec<u8>, dst: &mut E) -> Result<(), B::Error> {
          let bind = self.state.outbound.read();
@@ -5263,12 +5263,12 @@ index eeae621..7aba22a 100644
 -            hex::encode(&msg[SIZE_MESSAGE_PREFIX..])
 +            hex::encode(&msg[SIZE_MESSAGE_PREFIX..(msg.len()-CAPACITY_MESSAGE_POSTFIX)])
          );
- 
+
 -        // ignore header prefix (for in-place transport message construction)
 -        let packet = &msg[SIZE_MESSAGE_PREFIX..];
 +        // ignore header prefix and postfix (for in-place transport message construction)
 +        let packet = &msg[SIZE_MESSAGE_PREFIX..(msg.len()-CAPACITY_MESSAGE_POSTFIX)];
- 
+
 -        // lookup peer based on IP packet destination address
          let peer = self
              .state
@@ -5278,12 +5278,12 @@ index 0803b13..5306f31 100644
 --- a/src/wireguard/router/peer.rs
 +++ b/src/wireguard/router/peer.rs
 @@ -8,6 +8,7 @@ use super::device::EncryptionState;
- 
+
  use super::constants::*;
  use super::types::{Callbacks, RouterError};
 +use super::CAPACITY_MESSAGE_POSTFIX;
  use super::SIZE_MESSAGE_PREFIX;
- 
+
  use super::queue::Queue;
 @@ -222,7 +223,7 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> PeerInner<E,
      /// # Returns
@@ -5295,7 +5295,7 @@ index 0803b13..5306f31 100644
          match self.endpoint.lock().as_mut() {
              Some(endpoint) => {
 @@ -499,7 +500,10 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> PeerHandle<E,
- 
+
      pub fn send_keepalive(&self) {
          log::trace!("peer.send_keepalive");
 -        self.peer.send(vec![0u8; SIZE_MESSAGE_PREFIX], false)
@@ -5304,7 +5304,7 @@ index 0803b13..5306f31 100644
 +            false,
 +        )
      }
- 
+
      /// Map a subnet to the peer
 diff --git a/src/wireguard/router/queue.rs b/src/wireguard/router/queue.rs
 index b266a57..6120575 100644
@@ -5313,7 +5313,7 @@ index b266a57..6120575 100644
 @@ -41,6 +41,7 @@ impl<J: SequentialJob> Queue<J> {
          self.queue.lock().push_back(job).is_ok()
      }
- 
+
 +    #[cfg(all(target_os = "linux", not(feature = "cndp")))]
      pub fn consume(&self) {
          // check if we are the first contender
@@ -5349,7 +5349,7 @@ index b266a57..6120575 100644
 +        }
 +    }
  }
- 
+
  #[cfg(test)]
 diff --git a/src/wireguard/router/receive.rs b/src/wireguard/router/receive.rs
 index 15eb8fb..2ce1adb 100644
@@ -5358,7 +5358,7 @@ index 15eb8fb..2ce1adb 100644
 @@ -13,6 +13,9 @@ use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, CHACHA20_POLY1305};
  use spin::Mutex;
  use zerocopy::{AsBytes, LayoutVerified};
- 
+
 +#[cfg(all(target_os = "linux", feature = "openssl"))]
 +use openssl::symm::{decrypt_aead, Cipher};
 +
@@ -5419,7 +5419,7 @@ index 15eb8fb..2ce1adb 100644
 +                        }
 +                    }
                  }
- 
+
                  // check that counter not after reject
 diff --git a/src/wireguard/router/send.rs b/src/wireguard/router/send.rs
 index 7e14209..88440a9 100644
@@ -5428,7 +5428,7 @@ index 7e14209..88440a9 100644
 @@ -14,9 +14,12 @@ use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, CHACHA20_POLY1305};
  use spin::Mutex;
  use zerocopy::{AsBytes, LayoutVerified};
- 
+
 +#[cfg(all(target_os = "linux", feature = "openssl"))]
 +use openssl::symm::{encrypt_aead, Cipher};
 +
@@ -5456,7 +5456,7 @@ index 7e14209..88440a9 100644
 -            msg.extend([0u8; SIZE_TAG].iter());
 +            // Move the vector out of job buffer (take ownership) to encrypt it.
 +            let mut msg = job.buffer.lock().take().unwrap();
- 
+
              // cast to header (should never fail)
              let (mut header, packet): (LayoutVerified<&mut [u8], TransportHeader>, &mut [u8]) =
 @@ -89,19 +92,53 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> ParallelJob
@@ -5524,18 +5524,18 @@ index 7e14209..88440a9 100644
 +            let mut data = job.buffer.lock();
 +            *data = Some(msg);
          }
- 
+
          // mark ready
 @@ -120,17 +157,18 @@ impl<E: Endpoint, C: Callbacks, T: tun::Writer, B: udp::Writer<E>> SequentialJob
          debug_assert_eq!(
              self.is_ready(),
              true,
--            "doing sequential work 
+-            "doing sequential work
 +            "doing sequential work
              on an incomplete job"
          );
          log::trace!("processing sequential send job");
- 
+
          // send to peer
          let job = &self.0;
 -        let msg = job.buffer.lock();
@@ -5543,7 +5543,7 @@ index 7e14209..88440a9 100644
 +        let msg = job.buffer.lock().take().unwrap();
 +        let msg_len = msg.len();
 +        let xmit = job.peer.send_raw(msg).is_ok();
- 
+
          // trigger callback (for timers)
 -        C::send(&job.peer.opaque, msg.len(), xmit, &job.keypair, job.counter);
 +        C::send(&job.peer.opaque, msg_len, xmit, &job.keypair, job.counter);
@@ -5554,7 +5554,7 @@ index c2334b3..579aa19 100644
 --- a/src/wireguard/router/tests/bench.rs
 +++ b/src/wireguard/router/tests/bench.rs
 @@ -101,8 +101,10 @@ fn bench_router_outbound(b: &mut Bencher) {
- 
+
      // create device
      let (_fake, _reader, tun_writer, _mtu) = dummy::TunTest::create(false);
 +    // Use one worker thread for benchmark.
@@ -5562,21 +5562,21 @@ index c2334b3..579aa19 100644
 -        Device::new(num_cpus::get_physical(), tun_writer);
 +        Device::new(1, tun_writer, None);
 +    //Device::new(num_cpus::get_physical(), tun_writer, None);
- 
+
      // add peer to router
      let opaque = Arc::new(TransmissionCounter::new());
 @@ -201,10 +203,10 @@ fn bench_router_bidirectional(b: &mut Bencher) {
      let (_fake, _, tun_writer1, _) = dummy::TunTest::create(false);
      let (_fake, _, tun_writer2, _) = dummy::TunTest::create(false);
- 
+
 -    let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1);
 +    let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1, None);
      router1.set_outbound_writer(bind_writer1);
- 
+
 -    let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2);
 +    let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2), None;
      router2.set_outbound_writer(bind_writer2);
- 
+
      // prepare opaque values for tracing callbacks
 @@ -398,7 +400,7 @@ fn bench_router_inbound(b: &mut Bencher) {
      // create device
@@ -5584,7 +5584,7 @@ index c2334b3..579aa19 100644
      let router: Device<_, BencherCallbacks, dummy::TunWriter, dummy::VoidBind> =
 -        Device::new(num_cpus::get_physical(), tun_writer);
 +        Device::new(num_cpus::get_physical(), tun_writer, None);
- 
+
      // add new peer
      let opaque = Arc::new(AtomicUsize::new(0));
 diff --git a/src/wireguard/router/tests/tests.rs b/src/wireguard/router/tests/tests.rs
@@ -5592,35 +5592,35 @@ index f6205d5..3fe067c 100644
 --- a/src/wireguard/router/tests/tests.rs
 +++ b/src/wireguard/router/tests/tests.rs
 @@ -124,7 +124,7 @@ fn test_outbound() {
- 
+
      // create device
      let (_fake, _reader, tun_writer, _mtu) = dummy::TunTest::create(false);
 -    let router: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer);
 +    let router: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer, None);
      router.set_outbound_writer(dummy::VoidBind::new());
- 
+
      let tests = vec![
 @@ -296,7 +296,7 @@ fn test_bidirectional() {
                  p1, p2, confirm_with_staged_packet
              );
- 
+
 -            let ((bind_reader1, bind_writer1), (bind_reader2, bind_writer2)) =
 +            let ((mut bind_reader1, bind_writer1), (mut bind_reader2, bind_writer2)) =
                  dummy::PairBind::pair();
- 
+
              let mut confirm_packet_size = SIZE_KEEPALIVE;
 @@ -305,10 +305,10 @@ fn test_bidirectional() {
              let (_fake, _, tun_writer1, _) = dummy::TunTest::create(false);
              let (_fake, _, tun_writer2, _) = dummy::TunTest::create(false);
- 
+
 -            let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1);
 +            let router1: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer1, None);
              router1.set_outbound_writer(bind_writer1);
- 
+
 -            let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2);
 +            let router2: Device<_, TestCallbacks, _, _> = Device::new(1, tun_writer2, None);
              router2.set_outbound_writer(bind_writer2);
- 
+
              // prepare opaque values for tracing callbacks
 diff --git a/src/wireguard/wireguard.rs b/src/wireguard/wireguard.rs
 index 44d698f..670201b 100644
@@ -5629,7 +5629,7 @@ index 44d698f..670201b 100644
 @@ -29,6 +29,9 @@ use hjul::Runner;
  use spin::{Mutex, RwLock};
  use x25519_dalek::{PublicKey, StaticSecret};
- 
+
 +#[cfg(all(target_os = "linux", feature = "cndp"))]
 +use toml::{map::Map, Value};
 +
@@ -5644,12 +5644,12 @@ index 44d698f..670201b 100644
 +    #[cfg(all(target_os = "linux", feature = "cndp"))]
 +    toml_map: Option<Map<String, Value>>,
  }
- 
+
  pub struct WireGuard<T: Tun, B: UDP> {
 @@ -254,8 +260,23 @@ impl<T: Tun, B: UDP> WireGuard<T, B> {
          // increment reader count
          wg.tun_readers.increase();
- 
+
 +        #[cfg(all(target_os = "linux", feature = "cndp"))]
 +        let toml_map = self.toml_map.clone();
 +
@@ -5672,7 +5672,7 @@ index 44d698f..670201b 100644
          });
 @@ -266,15 +287,36 @@ impl<T: Tun, B: UDP> WireGuard<T, B> {
      }
- 
+
      pub fn new(writer: T::Writer) -> WireGuard<T, B> {
 +        let mut worker_thread_base_coreid = None;
 +        let mut num_workers = NUM_WORKERS;
@@ -5696,18 +5696,18 @@ index 44d698f..670201b 100644
 +        // Commented legacy code for reference.
 +        // More worker threads can degrade performance in CPUs with may cores due to threading overhead.
 +        // let cpus = num_cpus::get();
- 
+
          // create handshake queue
 -        let (tx, mut rxs) = ParallelQueue::new(cpus, 128);
 +        // let (tx, mut rxs) = ParallelQueue::new(cpus, 128); // Commented legacy code for reference.
 +        let (tx, mut rxs) = ParallelQueue::new(num_workers, 128);
- 
+
          // create router
          let router: router::Device<B::Endpoint, PeerInner<T, B>, T::Writer, B::Writer> =
 -            router::Device::new(num_cpus::get(), writer);
 +            // router::Device::new(num_cpus::get(), writer); // Commented legacy code for reference.
 +            router::Device::new(num_workers, writer, worker_thread_base_coreid);
- 
+
          // create arc to state
          let wg = WireGuard {
 @@ -289,6 +331,8 @@ impl<T: Tun, B: UDP> WireGuard<T, B> {
@@ -5718,9 +5718,9 @@ index 44d698f..670201b 100644
 +                toml_map: toml_map,
              }),
          };
- 
+
 @@ -300,4 +344,40 @@ impl<T: Tun, B: UDP> WireGuard<T, B> {
- 
+
          wg
      }
 +
@@ -5773,7 +5773,7 @@ index 27acf2f..7619721 100644
 +        let size = mtu + SIZE_MESSAGE_PREFIX + 1 + CAPACITY_MESSAGE_POSTFIX;
 +        let mut msg: Vec<u8> = vec![0; size];
 +        let msg_len = msg.len();
- 
+
          // read a new IP packet
 -        let payload = match reader.read(&mut msg[..], SIZE_MESSAGE_PREFIX) {
 +        let payload = match reader.read(
@@ -5802,7 +5802,7 @@ index 27acf2f..7619721 100644
 @@ -100,7 +106,7 @@ pub fn tun_worker<T: Tun, B: UDP>(wg: &WireGuard<T, B>, reader: T::Reader) {
      }
  }
- 
+
 -pub fn udp_worker<T: Tun, B: UDP>(wg: &WireGuard<T, B>, reader: B::Reader) {
 +pub fn udp_worker<T: Tun, B: UDP>(wg: &WireGuard<T, B>, mut reader: B::Reader) {
      loop {
@@ -5826,6 +5826,5 @@ index 27acf2f..7619721 100644
                              debug!("{} : handshake worker, failed to send handshake initiation, error = {}", wg, e)
                          });
                          peer.opaque().sent_handshake_initiation();
--- 
+--
 2.34.1
-

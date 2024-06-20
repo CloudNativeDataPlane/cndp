@@ -175,5 +175,3 @@ A few examples of how the buffer management callbacks are invoked is shown below
     {
         return xi->buf_mgmt.buf_tx_burst(xi, bufs, nb_pkts);
     }
-
-

@@ -26,7 +26,7 @@ use pnet::packet::ethernet::MutableEthernetPacket;
 // to required n/w interface. The performance of CNE/libpnet echo server can be checked
 // at load generator end by observing packets per sec (pps) of echoed packets.
 // An example script run.sh is provided to build and run the application. Please refer
-// the script for descrption on how to run the application with command line parameters.
+// the script for description on how to run the application with command line parameters.
 fn main() {
     // Parse command line arguments.
     let matches = App::new("echo_server")

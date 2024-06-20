@@ -23,7 +23,7 @@ while getopts "kp" flag; do
   case $flag in
     k) KIND=true      ;;
     p) PINNED_BPF_MAP=true ;;
-    *) echo 'error unkown flag' >&2
+    *) echo 'error unknown flag' >&2
        exit 1
   esac
 done

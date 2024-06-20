@@ -120,7 +120,7 @@ func (te *EventTimers) doTimeout() {
 // Process an action when a timer event happens
 func (te *EventTimers) doAction(a *EventAction) {
 
-	// Covert the action to a string for the switch below
+	// Convert the action to a string for the switch below
 	action := strings.ToLower(a.Action)
 
 	te.lock.Lock()

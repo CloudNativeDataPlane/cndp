@@ -64,7 +64,7 @@ tcp_output_node_process(struct cne_graph *graph __cne_unused, struct cne_node *n
         if (!tcb)
             tcb = pcb->tcb;
         else if (tcb != pcb->tcb) {
-            CNE_DEBUG("TCB chagned from [orange]%p[] --> [orange]%p[]\n", tcb, pcb->tcb);
+            CNE_DEBUG("TCB changed from [orange]%p[] --> [orange]%p[]\n", tcb, pcb->tcb);
             cnet_tcp_output(tcb);
             tcb = pcb->tcb;
         }

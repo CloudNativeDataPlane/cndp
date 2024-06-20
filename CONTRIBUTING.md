@@ -6,7 +6,7 @@ This document outlines how to contribute code to the CNDP project.
 
 The CNDP code can be cloned from the repository on GitHub:
 
-``` bash
+```bash
 git clone https://github.com/CloudNativeDataPlane/cndp.git
 ```
 
@@ -20,42 +20,55 @@ C code should follow the CNDP coding standards.
 
 A .clang-format file is available in the CNDP repo and can be run with ninja:
 
-``` bash
+```bash
 ninja -C builddir clang-format
 ```
 
 Or with git-clang-format if it is installed:
 
-``` bash
+```bash
 git clang-format --diff
 ```
 
-Or a pre-commit hook is available and can be used to apply the clang format to
-modified files in a commit by doing the following before committing changes:
+Or a [Pre-commit](https://pre-commit.com/#install) hook is available and can be used
+to apply the linters to modified files in a commit. You can install pre-commit
+by running the following command:
 
-``` bash
-cp .githooks/pre-commit .git/hooks/
-chmod +x .git/hooks/pre-commit
+```bash
+pip install pre-commit
+```
+
+After installing pre-commit, you need to install the pre-commit hooks by
+running the following command:
+
+```bash
+pre-commit install
+```
+
+To run pre-commit manually
+
+```bash
+pre-commit run --all-files
 ```
 
 Guidelines for public or private APIs is to hide as much of the internal API
 from the developer. Which means we need to label function prototypes as public
 using the CNDP_API macro. The macro is defined as
 
-``` c
+```c
 #define CNDP_API __attribute__((visibility("default")))
 ```
 
 And used in this way:
 
-``` c
+```c
 CNDP_API int cne_init();
 ```
 
-We also use function versioning macros to allow for build time function
-linking using the following APIs:
+We also use function versioning macros to allow for build time function linking
+using the following APIs:
 
-``` c
+```c
 #ifdef CNE_BUILD_SHARED_LIBS
 #define FUNCTION_VERSION(internal, api, ver) __asm__(".symver " #internal ", " #api "@" #ver)
 #define DEFAULT_VERSION(internal, api, ver)  __asm__(".symver " #internal ", " #api "@@" #ver)
@@ -65,18 +78,18 @@ linking using the following APIs:
 #endif
 ```
 
-To hide internal APIs we have public and private headers. The public headers are installed
-in the system, but the private headers are not. The public headers should use typedefs
-to hide the internal structures by:
+To hide internal APIs we have public and private headers. The public headers are
+installed in the system, but the private headers are not. The public headers
+should use typedefs to hide the internal structures by:
 
-``` c
+```c
 typedef void foo_t;
 foo_t *foo;
 ```
 
 where the structure may be
 
-``` c
+```c
 struct foo {
   int bar;
 };
@@ -84,10 +97,11 @@ struct foo {
 
 Do not hide the '\*' type inside the typedef.
 
-This requires the public APIs to only return void pointers and the public functions are passed
-these void types and must cast the void pointer into the private structure pointer i.e.
+This requires the public APIs to only return void pointers and the public
+functions are passed these void types and must cast the void pointer into the
+private structure pointer i.e.
 
-``` c
+```c
 int foobar(foo_t *foo) {
     struct foo *f = foo;    // Cast of foo is not required as *foo is a void *
 
@@ -95,13 +109,14 @@ int foobar(foo_t *foo) {
 }
 ```
 
-Naming header files as xyz\_private.h and cne\_xyz.h is preferred. The .c files should be named
-xyz.c or cne\_xyz.c.
+Naming header files as xyz_private.h and cne_xyz.h is preferred. The .c files
+should be named xyz.c or cne_xyz.c.
 
 ### Braces for single line statements
+
 Do not use braces where a single statement (if, while, for, ...) will do:
 
-``` c
+```c
 if (foo)
     do_this();
 else
@@ -109,8 +124,11 @@ else
 ```
 
 ### Error message
-Avoid using "Unable to xxxx", use "Failed to xxx" instead for logging failed function calls:
-``` c
+
+Avoid using "Unable to xxxx", use "Failed to xxx" instead for logging failed
+function calls:
+
+```c
 CNE_ERR_GOTO(out, "Unable to init CNE\n");  // Do NOT use 'unable to' phase here
 
 CNE_ERR_GOTO(out, "Failed to init CNE\n");  // Use 'failed to' instead.
@@ -119,5 +137,6 @@ CNE_ERR_GOTO(out, "Failed to init CNE\n");  // Use 'failed to' instead.
 ## Maintainers
 
 The CNDP maintainers are as follows:
-* Jeff Shaw
-* Keith Wiles
+
+- Jeff Shaw
+- Keith Wiles

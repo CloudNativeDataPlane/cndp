@@ -4,8 +4,8 @@
 
 The "cndp" directory contains code which should be copied to src/plugins within
 the VPP software repo. Before building the plugin, you should ensure that CNDP
-is installed in a location which is searched by the compiler/linker. Do this
-by building CNDP normally, then install with "sudo CNE_DEST_DIR=/ make install".
+is installed in a location which is searched by the compiler/linker. Do this by
+building CNDP normally, then install with "sudo CNE_DEST_DIR=/ make install".
 
 ## Known limitations
 
@@ -17,21 +17,23 @@ using VPP version 22.02, they should be set to 0.
 The max number of devices supported right now is 6. This can be increased by
 increasing #define CNDP_MAX_DEVS 6 in cndp.h
 
-The max number of queues that can be configured for the single threaded
-VPP implementation is 30, this is hard coded in cndp.h and can be changed.
+The max number of queues that can be configured for the single threaded VPP
+implementation is 30, this is hard coded in cndp.h and can be changed.
 
 If using multiple workers with the CNDP plugin there are a few limitations:
+
 - The number of threads must match the number of queues.
 - The max number of threads/queues supported is 4.
 
 These queue limitations are related to the number of buffers supported in VPP.
-To support more lports make sure to configure the number of buffers per NUMA in the startup.conf:
+To support more lports make sure to configure the number of buffers per NUMA in
+the startup.conf:
 
-```
+```text
 buffers {
           ## Increase number of buffers allocated, needed only in scenarios with
           ## large number of interfaces and worker threads. Value is per numa node.
-          ## Default is 16384 (8192 if running unpriviledged)
+          ## Default is 16384 (8192 if running unprivileged)
           buffers-per-numa 128000
 
           ## Size of buffer data area
@@ -45,33 +47,38 @@ Please also make sure to modify the #define CNDP_MAX_DEVS 6 and #define CNDP_MAX
 ```
 
 ## RSS configuration
-Take note of what your interface is configured to use before modifying the configuration.
 
+Take note of what your interface is configured to use before modifying the
+configuration.
+
+```sh
+ethtool -x ens786f2
 ```
-$ ethtool -x ens786f2
-```
-Modify the RSS configuration to feed the queues you would like to use with the CNDP plugin
-```
-$ ethtool -X ens786f2 equal 2 start 10
+
+Modify the RSS configuration to feed the queues you would like to use with the
+CNDP plugin
+
+```sh
+ethtool -X ens786f2 equal 2 start 10
 ```
 
 ## Run VPP with CNDP plugin
 
-Once CNDP is installed, grab the VPP source code, copy the plugin, and build
-VPP normally, e.g.
+Once CNDP is installed, grab the VPP source code, copy the plugin, and build VPP
+normally, e.g.
 
 Be sure to checkout version 21.01.
 
-```
+```sh
 make install-dep
 make install-ext-dep
 make build-release
 ```
 
-Run vpp, then create a CNDP interface using the netdev name, and assign an
-IP address, e.g.
+Run vpp, then create a CNDP interface using the netdev name, and assign an IP
+address, e.g.
 
-```
+```sh
 make run-release
 vpp# create interface cndp name ens786f2 qs 1 offset 10
 vpp# set interface ip address ens786f2 48.0.0.154/24
@@ -79,30 +86,34 @@ vpp# set interface state ens786f2 up
 ```
 
 To trace packets through the cndp-input node, use:
-```
+
+```sh
 trace add cndp-input 10
 ... traffic running ...
 show trace
 ```
 
 To set a static arp entry use:
-```
+
+```sh
 set ip neighbor ens786f2 48.0.0.1 3c:fd:fe:9c:e7:22
 ```
 
 To enable/disable pcap capture use:
-```
+
+```sh
 pcap trace tx intfc ens786f2 file new.pcap
 pcap trace off
 ```
 
 ## Examples startup.conf
 
-There's an issue with a single worker threads that needs further investigation for the
-configuration below. No workers or workers > 1 works fine.
+There's an issue with a single worker threads that needs further investigation
+for the configuration below. No workers or workers > 1 works fine.
 
 A simple startup.conf would be:
-```
+
+```text
 unix {
   nodaemon
   interactive
@@ -147,11 +158,10 @@ cpu {
 ```
 
 where setup.txt is
-```
+
+```sh
 create interface cndp name ens786f2 qs 2 offset 10
 set interface ip address ens786f2 48.0.0.154/24
 set interface state ens786f2 up
 set ip neighbor ens786f2 48.0.0.1 3c:fd:fe:9c:e7:22
 ```
-
-

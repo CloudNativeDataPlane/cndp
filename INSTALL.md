@@ -2,14 +2,16 @@
 
 ## Ubuntu Installation Instructions
 
-This section assumes you are building on an Ubuntu 21.04 host. It provides minimal
-instructions to run CNDP applications. For more information, refer to the CNDP documentation.
+This section assumes you are building on an Ubuntu 21.04 host. It provides
+minimal instructions to run CNDP applications. For more information, refer to
+the CNDP documentation.
 
 ### Ubuntu Prerequisites
 
-If behind a proxy server you may need to setup a number of configurations to allow access via the server.
-Some commands i.e. apt-get, git, ssh, curl, wget and others will need configuration to work correctly.
-Please refer to apt-get, git and other documentations to enable access through a proxy server.
+If behind a proxy server you may need to setup a number of configurations to
+allow access via the server. Some commands i.e. apt-get, git, ssh, curl, wget
+and others will need configuration to work correctly. Please refer to apt-get,
+git and other documentations to enable access through a proxy server.
 
 ### Ubuntu Dependencies
 
@@ -23,11 +25,12 @@ sudo apt-get update && sudo apt-get install -y \
 
 ### Hyperscan support
 
-The cndpfwd example application supports a simple hyperscan forwarding type mode. The Hyperscan
-forwarding mode uses expressions in Hyperscan style in the jsonc file in options.hs_patterns array.
-The example can be expanded to be a DDOS or DPI or a load balancer using Hyperscan. If wanting to
-try Hyperscan you must install Hyperscan. Ubuntu has a package which can be installed to enable the
-build process to detect and use Hyperscan.
+The cndpfwd example application supports a simple hyperscan forwarding type
+mode. The Hyperscan forwarding mode uses expressions in Hyperscan style in the
+jsonc file in options.hs_patterns array. The example can be expanded to be a
+DDOS or DPI or a load balancer using Hyperscan. If wanting to try Hyperscan you
+must install Hyperscan. Ubuntu has a package which can be installed to enable
+the build process to detect and use Hyperscan.
 
 ```bash
 sudo apt-get install -y libhyperscan-dev # In Ubuntu 22.10 the Hyperscan version is 5.4.0
@@ -41,18 +44,19 @@ sudo apt-get install -y doxygen python3-sphinx
 
 ### libbpf
 
-The [libbpf](https://github.com/libbpf/libbpf) is a dependency of CNDP. Starting with Ubuntu 20.10
-it can be installed using apt. For earlier Ubuntu versions, or for users who want the latest code,
-it can be installed from source.
+The [libbpf](https://github.com/libbpf/libbpf) is a dependency of CNDP. Starting
+with Ubuntu 20.10 it can be installed using apt. For earlier Ubuntu versions, or
+for users who want the latest code, it can be installed from source.
 
-> **_NOTE:_**
-Newer versions of libbpf greater than or equal to v0.7.0 require _libxdp_ to be installed. For now we
-can checkout a previous version v0.5.0 or v0.6.1 instead of installing _libxdp_.
+> **_NOTE:_** Newer versions of libbpf greater than or equal to v0.7.0 require
+> _libxdp_ to be installed. For now we can checkout a previous version v0.5.0 or
+> v0.6.1 instead of installing _libxdp_.
 
 ### Install libbpf-dev from package manager
 
-Use the following command on Ubuntu 20.10 and later to install the headers and libraries to build
-and run CNDP applications. If using an earlier Ubuntu version, you need to build libbpf from source.
+Use the following command on Ubuntu 20.10 and later to install the headers and
+libraries to build and run CNDP applications. If using an earlier Ubuntu
+version, you need to build libbpf from source.
 
 ```bash
 sudo apt-get install -y libbpf-dev
@@ -63,12 +67,13 @@ sudo apt-get install -y libbpf-dev
 ```bash
 git clone https://github.com/libbpf/libbpf.git
 cd libbpf
-git checkout v0.5.0  # or v0.6.1 if needing a newer version
+git checkout v0.5.0 # or v0.6.1 if needing a newer version
 make -C src && sudo make -C src install
 ```
 
-The library and pkgconfig file is installed to /usr/lib64, which is not where the loader or
-pkg-config looks. Fix this by editing the ldconfig file as suggested below.
+The library and pkgconfig file is installed to /usr/lib64, which is not where
+the loader or pkg-config looks. Fix this by editing the ldconfig file as
+suggested below.
 
 ```bash
 sudo vim /etc/ld.so.conf.d/x86_64-linux-gnu.conf
@@ -76,7 +81,8 @@ sudo vim /etc/ld.so.conf.d/x86_64-linux-gnu.conf
 sudo ldconfig
 ```
 
-The following statement may be necessary if libbpf is installed from source instead of the package manager.
+The following statement may be necessary if libbpf is installed from source
+instead of the package manager.
 
 ```cmd
 export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
@@ -154,8 +160,9 @@ export PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
 ## Fedora Installation Instructions
 
-This section assumes you are building on a Fedora 35 host with a 5.17.5 Kernel version. It provides
-minimal instructions to run CNDP applications. For more information, refer to the CNDP documentation.
+This section assumes you are building on a Fedora 35 host with a 5.17.5 Kernel
+version. It provides minimal instructions to run CNDP applications. For more
+information, refer to the CNDP documentation.
 
 ### Fedora dependencies
 
@@ -170,7 +177,9 @@ sudo dnf update && sudo dnf -y install \
 
 ## Hugepage Configuration
 
-Hugepage support is optional, but preferred as it provides a performance boost. Details of Hugepage Configuration can be found [here](https://github.com/CloudNativeDataPlane/cndp/blob/9fa83c17c75930eee2355476e23cf786a533756c/doc/guides/linux_gsg/linux_gsg.rst)
+Hugepage support is optional, but preferred as it provides a performance boost.
+Details of Hugepage Configuration can be found
+[here](https://github.com/CloudNativeDataPlane/cndp/blob/9fa83c17c75930eee2355476e23cf786a533756c/doc/guides/linux_gsg/linux_gsg.rst)
 
 ## Build CNDP
 
@@ -210,12 +219,12 @@ Ctrl-C to exit
 
 ### cndpfwd
 
-An example that uses networking is `cndpfwd`. It requires the underlying network interface
-uses, e.g. AF_XDP sockets. Make sure the kernel on which you intend to run the application
-supports AF_XDP sockets, i.e. CONFIG_XDP_SOCKETS=y.
+An example that uses networking is `cndpfwd`. It requires the underlying network
+interface uses, e.g. AF_XDP sockets. Make sure the kernel on which you intend to
+run the application supports AF_XDP sockets, i.e. CONFIG_XDP_SOCKETS=y.
 
 ```bash
-grep XDP_SOCKETS= /boot/config-`uname -r`
+grep XDP_SOCKETS= /boot/config-$(uname -r)
 ```
 
 Configure an ethtool filter to steer packets to a specific queue.
@@ -225,11 +234,12 @@ sudo ethtool -N <devname> flow-type udp4 dst-port <dport> action <qid>
 sudo ip link set dev <devname> up
 ```
 
-Instruct `cndpfwd` to receive, count, and drop all packets on the previously configured
-queue. To configure `cndpfwd`, edit the examples/cndpfwd/fwd.jsonc configuration file. Make
-sure the "lports" section has the same netdev name and queue id for which the ethtool filter
-is configured. Make sure the "threads" section has the correct "lports" configured. Then
-launch the application, specifying the updated configuration file.
+Instruct `cndpfwd` to receive, count, and drop all packets on the previously
+configured queue. To configure `cndpfwd`, edit the examples/cndpfwd/fwd.jsonc
+configuration file. Make sure the "lports" section has the same netdev name and
+queue id for which the ethtool filter is configured. Make sure the "threads"
+section has the correct "lports" configured. Then launch the application,
+specifying the updated configuration file.
 
 ```bash
 sudo ./builddir/examples/cndpfwd/cndpfwd -c examples/cndpfwd/fwd.jsonc drop
@@ -237,10 +247,12 @@ sudo ./builddir/examples/cndpfwd/cndpfwd -c examples/cndpfwd/fwd.jsonc drop
 
 ### XDP Packet Capture
 
-Packets processed at the XDP hook can't be captured using tcpdump. Instead,
-it's recommended to use [xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump).
+Packets processed at the XDP hook can't be captured using tcpdump. Instead, it's
+recommended to use
+[xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump).
 
-The following example shows how to redirect a capture file from xdpdump to tcpdump for real-time packet decoding:
+The following example shows how to redirect a capture file from xdpdump to
+tcpdump for real-time packet decoding:
 
 ```bash
 xdpdump -i eno1 -w - | tcpdump -r - -n
@@ -255,7 +267,8 @@ Silent packet drops for AF_XDP can be debugged using:
 
 #### bpftrace
 
-The following `bpftrace` command can be used to capture and count all XDP tracepoints:
+The following `bpftrace` command can be used to capture and count all XDP
+tracepoints:
 
 ```bash
 sudo bpftrace -e 'tracepoint:xdp:* { @cnt[probe] = count(); }'
@@ -267,18 +280,19 @@ Attaching 12 probes...
 @cnt[tracepoint:xdp:xdp_exception]: 19605
 @cnt[tracepoint:xdp:xdp_devmap_xmit]: 1393604
 @cnt[tracepoint:xdp:xdp_redirect]: 22292200
-
 ```
 
-> **_NOTE:_** The various xdp tracepoints can be found in [xdp.h](https://github.com/torvalds/linux/blob/master/include/trace/events/xdp.h) in the kernel source tree.
+> **_NOTE:_** The various xdp tracepoints can be found in
+> [xdp.h](https://github.com/torvalds/linux/blob/master/include/trace/events/xdp.h)
+> in the kernel source tree.
 
-The following `bpftrace` command can be used to extract the ERRNO being returned as part of the err parameter:
+The following `bpftrace` command can be used to extract the ERRNO being returned
+as part of the err parameter:
 
 ```bash
 sudo bpftrace -e \
-'tracepoint:xdp:xdp_redirect*_err {@redir_errno[-args->err] = count();}
+    'tracepoint:xdp:xdp_redirect*_err {@redir_errno[-args->err] = count();}
 tracepoint:xdp:xdp_devmap_xmit {@devmap_errno[-args->err] = count();}'
-
 ```
 
 #### perf record

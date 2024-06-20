@@ -74,7 +74,7 @@ allocate and free buffers to get the best performance, which means each AF_XDP s
 its own mempool set of buffers in the UMEM buffer space.
 
 A multiple AF_XDP sockets could share a single mempool, but a socket could starve other sockets of
-buffers if some type of limit is put into place. We use a mempool per socket to achive this type of
+buffers if some type of limit is put into place. We use a mempool per socket to achieve this type of
 limiting of a single socket consuming all of the buffers.
 
 .. _multiple_mempools_umem:

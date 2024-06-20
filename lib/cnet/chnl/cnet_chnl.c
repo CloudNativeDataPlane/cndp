@@ -725,7 +725,7 @@ sendit(int cd, struct sockaddr *sa, pktmbuf_t **mbufs, uint16_t nb_mbufs)
         return __errno_set(EFAULT);
 
     if (chnl_state_tst(ch, _CHNL_FREE) || is_set(ch->ch_state, _CANTSENDMORE))
-        CNE_ERR_RET_VAL(__errno_set(EPIPE), "State is free or cant sent more\n");
+        CNE_ERR_RET_VAL(__errno_set(EPIPE), "State is free or can't sent more\n");
 
     if (nb_mbufs == 0)
         return 0;

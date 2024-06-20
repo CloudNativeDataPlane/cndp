@@ -807,7 +807,7 @@ txgen_launch_one_lcore(void *arg)
     jcfg_thd_t *thd = arg;
     jcfg_lport_t *lport;
     port_info_t *info;
-    void (*func)(port_info_t * info);
+    void (*func)(port_info_t *info);
     struct {
         void (*func)(port_info_t *info);
     } thread_types[] = {{NULL}, {txgen_rxtx}, {txgen_rx}, {txgen_tx}};

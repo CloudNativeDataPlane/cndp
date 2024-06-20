@@ -8,7 +8,7 @@
 
 /**
  * @file
- * This file contains definiton of CNE pktmbuf structure itself,
+ * This file contains definition of CNE pktmbuf structure itself,
  * packet offload flags and some related macros.
  * For majority of CNDP entities, it is not recommended to include
  * this file directly, use include <pktmbuf.h> instead.

@@ -1,8 +1,8 @@
 name: Docker Image Build
 
-on:
+on: # yamllint disable-line rule:truthy
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out repository code
-      uses: actions/checkout@v4
+      - name: Check out repository code
+        uses: actions/checkout@v4
 
-    - name: Build Docker Image
-      run: make oci-image
+      - name: Build Docker Image
+        run: make oci-image

@@ -29,4 +29,3 @@
         apply:
           delegate_to: localhost
       tags: 03_install_libxdp
-

@@ -193,7 +193,7 @@ int hsfwd_test(jcfg_lport_t *lport, struct fwd_info *fwd);
  * @param type
  *   The string mode type used to compare to known modes
  * @return
- *   The index value of the mode or UNKNOW value is returned.
+ *   The index value of the mode or UNKNOWN value is returned.
  */
 static inline uint8_t
 get_app_mode(const char *type)
@@ -238,7 +238,7 @@ get_app_mode(const char *type)
  * @param type
  *   The string packet API type used to compare to known modes
  * @return
- *   The index value of the mode or UNKNOW value is returned.
+ *   The index value of the mode or UNKNOWN value is returned.
  */
 static inline uint8_t
 get_pkt_api(const char *type)

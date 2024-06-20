@@ -70,7 +70,7 @@ struct ipv4_entry {
 } __cne_cache_aligned;
 
 #define IPv4(a, b, c, d) \
-    ((uint32_t)(((a)&0xff) << 24) | (((b)&0xff) << 16) | (((c)&0xff) << 8) | ((d)&0xff))
+    ((uint32_t)(((a) & 0xff) << 24) | (((b) & 0xff) << 16) | (((c) & 0xff) << 8) | ((d) & 0xff))
 
 /* Internet protocol header structure */
 /* Basic IPv4 packet header

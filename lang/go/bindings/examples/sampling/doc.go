@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2023 Intel Corporation
 
-// Brief Description about Sampling Go Apllication
+// Brief Description about Sampling Go Application
 // 1. Go Sampling Application maintains.
 //    Context information using 3 tuples (src ip, dst ip, protocol)
 //    of a receiving packet. One of the pieces of information included in this context is

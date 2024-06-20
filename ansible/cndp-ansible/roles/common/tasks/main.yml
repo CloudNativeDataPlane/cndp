@@ -4,7 +4,7 @@
 ---
 # This role installs all the packages needed for CNDP
 # Template for installing packages
-#- name: install
+# - name: install
 #  package:
 #     name:
 #     state: present
@@ -15,14 +15,13 @@
   tags:
      - cache_update
   package:
-     update_cache: yes
+     update_cache: yes # yamllint disable-line rule:truthy
   environment: "{{ proxy_env }}"
 
 - name: install packages
   package:
-    name: "{{ item }}"
-    state: present
+     name: "{{ item }}"
+     state: present
   environment: "{{ proxy_env }}"
   tags: install_pkgs
   with_items: "{{ common_pkgs[required_dist | lower] }}"
-

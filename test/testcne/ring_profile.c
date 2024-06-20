@@ -73,7 +73,7 @@ ring_profile(int argc, char **argv)
                                                                * creating ring
                                                                */
         {"sp", no_argument, &single_producer, RING_F_SP_ENQ}, /**
-                                                               * use signle producer ring
+                                                               * use single producer ring
                                                                */
         {"sc", no_argument, &single_consumer, RING_F_SC_DEQ}, /**
                                                                * use single consumer ring

@@ -113,12 +113,12 @@ function build_rust_apps() {
 function cargo_build_rust_app() {
     if [ "$buildtype" == "release" ]; then
         if ! cargo build --release; then
-            echo "Cargo builld rust app failed"
+            echo "Cargo build rust app failed"
             return 1
         fi
     else
         if ! cargo build; then
-            echo "Cargo builld rust app failed"
+            echo "Cargo build rust app failed"
             return 1
         fi
     fi

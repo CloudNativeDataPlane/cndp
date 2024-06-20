@@ -116,7 +116,7 @@ typedef struct icmp6ip_s {
 #define ICMP6_MEMBERSHIP_REDUCTION 132 /* group membership termination */
 
 #ifndef _KERNEL
-/* the followings are for backward compatibility to old KAME apps. */
+/* the following are for backward compatibility to old KAME apps. */
 #define MLD6_LISTENER_QUERY  MLD_LISTENER_QUERY
 #define MLD6_LISTENER_REPORT MLD_LISTENER_REPORT
 #define MLD6_LISTENER_DONE   MLD_LISTENER_DONE
@@ -570,13 +570,13 @@ struct icmp6_filter {
 #endif /* _KERNEL */
 
 #define ICMP6_FILTER_SETPASS(type, filterp) \
-    (((filterp)->icmp6_filt[(type) >> 5]) |= (1 << ((type)&31)))
+    (((filterp)->icmp6_filt[(type) >> 5]) |= (1 << ((type) & 31)))
 #define ICMP6_FILTER_SETBLOCK(type, filterp) \
-    (((filterp)->icmp6_filt[(type) >> 5]) &= ~(1 << ((type)&31)))
+    (((filterp)->icmp6_filt[(type) >> 5]) &= ~(1 << ((type) & 31)))
 #define ICMP6_FILTER_WILLPASS(type, filterp) \
-    ((((filterp)->icmp6_filt[(type) >> 5]) & (1 << ((type)&31))) != 0)
+    ((((filterp)->icmp6_filt[(type) >> 5]) & (1 << ((type) & 31))) != 0)
 #define ICMP6_FILTER_WILLBLOCK(type, filterp) \
-    ((((filterp)->icmp6_filt[(type) >> 5]) & (1 << ((type)&31))) == 0)
+    ((((filterp)->icmp6_filt[(type) >> 5]) & (1 << ((type) & 31))) == 0)
 
 /*
  * Variables related to this implementation
