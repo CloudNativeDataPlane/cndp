@@ -1389,8 +1389,10 @@ tcp_do_state_change(struct pcb_entry *pcb, int32_t new_state)
                     cnet_tcp_abort(pcb);
                     CNE_ERR("Failed to enqueue PCB to backlog queue\n");
                 }
-                pcb->ch->ch_callback(CHNL_TCP_ACCEPT_TYPE, tcb->ppcb->ch->ch_cd);
+                pcb->ch->ch_callback(CHNL_TCP_ESTABLISHED_TYPE, tcb->ppcb->ch->ch_cd);
             }
+        } else {
+            pcb->ch->ch_callback(CHNL_TCP_ESTABLISHED_TYPE, pcb->ch->ch_cd);
         }
 
         tcb->idle              = 0;
