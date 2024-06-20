@@ -10,4 +10,3 @@ broker = executable('ibroker',
     c_args: cflags,
     install: true,
     dependencies: deps)
-

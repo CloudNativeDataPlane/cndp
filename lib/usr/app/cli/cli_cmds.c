@@ -598,7 +598,7 @@ static int
 mkdir_cmd(int argc, char **argv)
 {
     if (argc != 2) {
-        cne_printf("Must have at least one path/driectory\n");
+        cne_printf("Must have at least one path/directory\n");
         return -1;
     }
 

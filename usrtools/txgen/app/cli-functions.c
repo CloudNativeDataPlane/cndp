@@ -564,7 +564,7 @@ static const char *misc_help[] = {
     "save <path-to-file>                - Save a configuration file using the filename",
     "load <path-to-file>                - Load a command/script file from the given path",
     "clear <portlist> stats             - Clear the statistics",
-    "clr                                - Clear all Statistices",
+    "clr                                - Clear all statistics",
     "reset <portlist>                   - Reset the configuration the lports to the default",
     "rst                                - Reset the configuration for all lports",
     "lports per page [1-6]               - Set the number of lports displayed per page",

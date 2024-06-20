@@ -159,7 +159,7 @@ test_crc32_hash_alg_equiv(void)
 {
     uint32_t hash_val;
     uint32_t init_val;
-    uint64_t data64[CRC32_DWORDS];
+    uint64_t data64[CRC32_DWORDS] = {0};
     unsigned i, j;
     size_t data_len;
 

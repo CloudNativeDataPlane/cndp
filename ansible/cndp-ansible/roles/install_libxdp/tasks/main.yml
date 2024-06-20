@@ -9,68 +9,68 @@
   tags:
      - cache_update
   package:
-     update_cache: yes
+     update_cache: yes # yamllint disable-line rule:truthy
   environment: "{{ proxy_env }}"
 
 - name: install packages
   package:
-    name: "{{ item }}"
-    state: present
+     name: "{{ item }}"
+     state: present
   environment: "{{ proxy_env }}"
   tags: install_pkgs
   with_items: "{{ clang_pkgs[required_dist | lower] }}"
 
 - name: check if libxdp shared lib is already installed
   stat:
-    path: /usr/lib/libxdp.so
+     path: /usr/lib/libxdp.so
   register: xdp_shared_installed
   tags:
-    - check_libxdp
+     - check_libxdp
 
 - name: check if libxdp static lib is already installed
   stat:
-    path: /usr/lib/libxdp.a
+     path: /usr/lib/libxdp.a
   register: xdp_static_installed
   tags:
-    - check_libxdp
+     - check_libxdp
 
 - name: libxdp installed check result
   debug:
-    msg: libxdp already installed
+     msg: libxdp already installed
   when: xdp_static_installed.stat.exists == True or xdp_shared_installed.stat.exists == True
   tags:
-    - check_libxdp
+     - check_libxdp
 
 - name: Unarchive libxdp
   unarchive:
-    src: https://github.com/xdp-project/xdp-tools/releases/download/v1.3.1/xdp-tools-1.3.1.tar.gz
-    dest: /tmp
-    remote_src: yes
+     src: https://github.com/xdp-project/xdp-tools/releases/download/v1.3.1/xdp-tools-1.3.1.tar.gz
+     dest: /tmp
+     remote_src: yes # yamllint disable-line rule:truthy
   when: xdp_static_installed.stat.exists == False or xdp_shared_installed.stat.exists == False
   environment: "{{ proxy_env }}"
   tags:
-    - unarchive_libxdp
+     - unarchive_libxdp
 
 - name: Install libxdp
   make:
-    chdir: /tmp/xdp-tools-1.3.1
-    target: install
-    params:
-      NUM_THREADS: "{{ num_threads }}"
-      LIBDIR: /usr/lib
+     chdir: /tmp/xdp-tools-1.3.1
+     target: install
+     params:
+        NUM_THREADS: "{{ num_threads }}"
+        LIBDIR: /usr/lib
   when: xdp_static_installed.stat.exists == False or xdp_shared_installed.stat.exists == False
   tags:
-    - install_libxdp
+     - install_libxdp
 
 - name: check xsk_socket__create_shared
   shell: nm /usr/lib/libxdp.so.1 | grep -q xsk_socket__create_shared && echo "FOUND" || echo "NOT FOUND"
   register: xsk_shared_check_output
   tags:
-    - check_xsk_shared
+     - check_xsk_shared
 
 - name: Print xsk_socket__create_shared result
   debug:
-    msg: xsk_socket__create_shared check result {{ xsk_shared_check_output.stdout }}
+     msg: xsk_socket__create_shared check result {{ xsk_shared_check_output.stdout }}
   when: xsk_shared_check_output.stdout != "FOUND"
   tags:
      - check_xsk_shared

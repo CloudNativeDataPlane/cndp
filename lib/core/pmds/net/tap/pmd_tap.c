@@ -50,7 +50,7 @@ struct pmd_lport {
     struct tap_info *ti;           /**< Pointer for tun/tap setup */
     struct ether_addr eth_addr;    /**< MAC address of the interface */
     struct tap_rx_q *rxq;          /**< Receive queue pointer */
-    struct tap_tx_q *txq;          /*<< Tranmit queue pointer */
+    struct tap_tx_q *txq;          /*<< Transmit queue pointer */
 };
 
 static inline pktmbuf_t *

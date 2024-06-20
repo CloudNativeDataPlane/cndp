@@ -334,7 +334,7 @@ The **stk_id** is used to denote which stack structure the **chnl** structure is
 **ch_options** is a bit field of values to a channel instanace. The some of the flags are *SO_BROADCAST*,
 *SO_REUSEADDR*, *SO_REUSEPORT* and some others. The **ch_state** is the current state of channel, which
 includes *ISCONNECTED*, *ISCONNECTING*, *_ISDISCONNECTING* and other internal flags. The **ch_error** value is
-the error that occured previously and was not reported. The value is then reported in other calls or request in
+the error that occurred previously and was not reported. The value is then reported in other calls or request in
 the *chnl_opt_get** request. The **ch_cd** is the channel descriptor associated with this channel structure.
 
 The **ch_pcb** is the PCB (Process Control Block) attached to this channel structure. The *PCB* structure will

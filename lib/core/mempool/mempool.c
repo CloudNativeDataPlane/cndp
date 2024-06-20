@@ -20,7 +20,7 @@
 #include "cne_stdio.h"              // for cne_fprintf
 
 #define CACHE_FLUSHTHRESH_MULTIPLIER 1.5
-#define CALC_CACHE_FLUSHTHRESH(c)    ((typeof(c))((c)*CACHE_FLUSHTHRESH_MULTIPLIER))
+#define CALC_CACHE_FLUSHTHRESH(c)    ((typeof(c))((c) * CACHE_FLUSHTHRESH_MULTIPLIER))
 
 static void
 mempool_add_elem(struct cne_mempool *mp, __cne_unused void *opaque, void *obj __cne_unused)

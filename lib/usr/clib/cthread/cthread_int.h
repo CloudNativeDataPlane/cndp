@@ -145,7 +145,7 @@ enum join_st {
 };
 
 /**
- * defnition of an cthread stack object
+ * definition of an cthread stack object
  */
 struct cthread_stack {
     struct cthread_sched *sched;

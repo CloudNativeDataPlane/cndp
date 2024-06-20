@@ -64,8 +64,9 @@ deployments/daemonset.yaml for ``logFile``.
 
 .. note::
 
-   The network attachment definition and pod spec below request a resource named cndp/pool1. The device plugin config would need to specify a pool called pool1 with atleast one device. If not, you may run into a pod failed scheduling warning:
-   1 insufficient cndp/pool1.
+   The network attachment definition and pod spec below request a resource named cndp/pool1. The device plugin
+   config would need to specify a pool called pool1 with at least one device. If not, you may run into a pod
+   failed scheduling warning: 1 insufficient cndp/pool1.
 
 From the top level directory of the CNDP repo, create the network attachment definition
 

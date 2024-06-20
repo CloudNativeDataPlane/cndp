@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -10,8 +11,8 @@ spec:
   nodeSelector:
     cndp: "true"
   volumes:
-  - name: shared-data
-    emptyDir: {}
+    - name: shared-data
+      emptyDir: {}
   containers:
     - name: cndp-0
       command: ["/bin/bash"]
@@ -27,8 +28,8 @@ spec:
             - IPC_LOCK
             # - BPF # Enable if running in a kind cluster as the default kernel used is 5.15, BPF map support without privilege is only supported from 5.19.
       ports:
-      - containerPort: 8094
-        hostPort: 8094
+        - containerPort: 8094
+          hostPort: 8094
       resources:
         requests:
           afxdp/myPool: '1'
@@ -44,8 +45,8 @@ spec:
       image: cndp
       imagePullPolicy: Never
       ports:
-      - containerPort: 2112
-        hostPort: 2112
+        - containerPort: 2112
+          hostPort: 2112
       volumeMounts:
         - name: shared-data
           mountPath: /var/run/cndp/

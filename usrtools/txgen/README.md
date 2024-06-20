@@ -1,21 +1,14 @@
 # TXGen - Traffic Generator powered by CNDP
 
-=====================================================
-
-**TXGen is a traffic generator powered by CNDP at wire rate traffic with 64 byte frames.**
-
-## (TXGen) Sounds like 'Packet-Gen'
-
----
+TXGen is a traffic generator powered by CNDP at wire rate traffic with 64 byte
+frames. TXGen Sounds like 'Packet-Gen'
 
 ```console
 SPDX-License-Identifier: BSD-3-Clause
 Copyright (c) 2019-2023 Intel Corporation.
 ```
 
----
-
-## TXGen command line directory format ***
+## TXGen command line directory format
 
 ```console
     -- TXGen Ver: 20.11.0 (CNDP 20.11.0)  Powered by CNDP ---------------
@@ -109,15 +102,19 @@ Usage: ./builddir/txgen/app [-h] [-c json_file]
 ```
 
 ## Building TXGen
+
 TXgGen is built by default when CNDP is built
 
 ## Running TXGen
+
 Running TXGen is similar to running any of the applications.
 
-1. Start with the provided txgen.json.c and modify it to include appropriate configurations: such as interface names...
+1. Start with the provided txgen.json.c and modify it to include appropriate
+   configurations: such as interface names...
 
-NOTE: that the threads roles for TXGen are different to thread roles from the simple examples.
+NOTE: that the threads roles for TXGen are different to thread roles from the
+simple examples.
 
-2. Create appropriate ethtool filters if you plan on Receiving Traffic.
+1. Create appropriate ethtool filters if you plan on Receiving Traffic.
 
-3. Run the TXGen application
+1. Run the TXGen application

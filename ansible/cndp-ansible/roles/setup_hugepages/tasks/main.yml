@@ -22,7 +22,7 @@
 - name: Configure Persistent 2MB Hugepages if missing in /etc/sysctl.conf
   lineinfile:
     path: /etc/sysctl.conf
-    backup: yes
+    backup: yes # yamllint disable-line rule:truthy
     regexp: 'vm.nr_hugepages = [0-9]+'
     state: absent
     insertafter: 'EOF'
@@ -30,19 +30,19 @@
   when:
     - hugepages_2MB_check.stdout == "FOUND" and hugepages_2MB|int > 0
   tags:
-     - hugepages_2MB_config
+    - hugepages_2MB_config
 
 - name: Edit Persistent 2MB Hugepages if it already exists
   lineinfile:
     path: /etc/sysctl.conf
-    backup: yes
+    backup: yes # yamllint disable-line rule:truthy
     regexp: 'vm.nr_hugepages = [0-9]+'
     state: present
     line: 'vm.nr_hugepages = {{ hugepages_2MB }}'
   when:
     - hugepages_2MB_check.stdout == "FOUND" and hugepages_2MB|int > 0
   tags:
-     - hugepages_2MB_config
+    - hugepages_2MB_config
 
 
 ################################################################

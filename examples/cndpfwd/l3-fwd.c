@@ -37,7 +37,7 @@ l3fwd_fib_populate(struct fwd_info *fwd, struct cne_fib *fib)
         uint64_t nexthop;
         int tx_port;
 
-        /* Parse the comma seperated FIB entry */
+        /* Parse the comma separated FIB entry */
         if (cne_strtok(fwd->fib_rules[i], ",", entry, cne_countof(entry)) != 3)
             CNE_ERR_RET("invalid number of fields for entry [orange]%u[]\n", i);
 

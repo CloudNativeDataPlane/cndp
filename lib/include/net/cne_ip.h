@@ -46,7 +46,7 @@ struct cne_ipv4_hdr {
 
 /** Create IPv4 address */
 #define CNE_IPV4(a, b, c, d) \
-    ((uint32_t)(((a)&0xff) << 24) | (((b)&0xff) << 16) | (((c)&0xff) << 8) | ((d)&0xff))
+    ((uint32_t)(((a) & 0xff) << 24) | (((b) & 0xff) << 16) | (((c) & 0xff) << 8) | ((d) & 0xff))
 
 /** Maximal IPv4 packet length (including a header) */
 #define CNE_IPV4_MAX_PKT_LEN 65535
@@ -470,10 +470,11 @@ cne_ipv6_udptcp_cksum_verify(const struct cne_ipv6_hdr *ipv6_hdr, const void *l4
 
 #define CNE_IPV6_FRAG_USED_MASK (CNE_IPV6_EHDR_MF_MASK | CNE_IPV6_EHDR_FO_MASK)
 
-#define CNE_IPV6_GET_MF(x) ((x)&CNE_IPV6_EHDR_MF_MASK)
+#define CNE_IPV6_GET_MF(x) ((x) & CNE_IPV6_EHDR_MF_MASK)
 #define CNE_IPV6_GET_FO(x) ((x) >> CNE_IPV6_EHDR_FO_SHIFT)
 
-#define CNE_IPV6_SET_FRAG_DATA(fo, mf) (((fo)&CNE_IPV6_EHDR_FO_MASK) | ((mf)&CNE_IPV6_EHDR_MF_MASK))
+#define CNE_IPV6_SET_FRAG_DATA(fo, mf) \
+    (((fo) & CNE_IPV6_EHDR_FO_MASK) | ((mf) & CNE_IPV6_EHDR_MF_MASK))
 
 struct cne_ipv6_fragment_ext {
     uint8_t next_header;  /**< Next header type */

@@ -1,21 +1,23 @@
 # CNDP with CRI-O Container Runtime
 
-Kubernetes expects a Container Runtime to implement its Container Runtime Interface (CRI). The
-CRI-O runtime is built specifically for this purpose. It is a lightweight alternative to containerd.
-For more information, refer to the [CRI-O website](https://cri-o.io/). To build containers, this
-document uses [podman](https://podman.io/).
+Kubernetes expects a Container Runtime to implement its Container Runtime
+Interface (CRI). The CRI-O runtime is built specifically for this purpose. It is
+a lightweight alternative to containerd. For more information, refer to the
+[CRI-O website](https://cri-o.io/). To build containers, this document uses
+[podman](https://podman.io/).
 
 ## References
 
 The information in this document is sourced from the Kubernetes documentation.
 
-* [Container-runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
-* [Install kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+- [Container-runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/)
+- [Install kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
 ## Install CRI and Kubernetes
 
-This document assumes a fresh install of Ubuntu 21.04 as the base OS where Kubernetes runs. It
-describes one way to setup a single node cluster to test and develop applications.
+This document assumes a fresh install of Ubuntu 21.04 as the base OS where
+Kubernetes runs. It describes one way to setup a single node cluster to test and
+develop applications.
 
 ### Install packages
 
@@ -28,7 +30,7 @@ sudo apt-get install -y apt-transport-https ca-certificates curl
 
 ### Configure CRI-O pre-requisites
 
-Create the .conf file to load the modules at bootup.
+Create the .conf file to load the modules at boot up.
 
 ```bash
 cat <<EOF | sudo tee /etc/modules-load.d/crio.conf
@@ -69,7 +71,8 @@ Environment="NO_PROXY=$no_proxy,10.96.0.0/12,10.244.0.0/16"
 EOF
 ```
 
-Increase locked memory limit so containers have enough memory for packet buffers.
+Increase locked memory limit so containers have enough memory for packet
+buffers.
 
 ```bash
 cat <<EOF | sudo tee /etc/systemd/system/crio.service.d/limits.conf >/dev/null
@@ -80,8 +83,8 @@ EOF
 
 ### Install CRI-O
 
-Set environment variables for the host OS and the CRI-O version. The CRI-O version must match the
-version of Kubernetes that is installed.
+Set environment variables for the host OS and the CRI-O version. The CRI-O
+version must match the version of Kubernetes that is installed.
 
 ```bash
 export OS=xUbuntu_21.04
@@ -89,12 +92,13 @@ export VERSION=1.22
 ```
 
 Setup repos and keys.
+<!-- markdownlint-disable MD013  -->
 
 ```bash
-curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key |\
+curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key |
  sudo tee /usr/share/keyrings/libcontainers.asc >/dev/null
 
-curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key |\
+curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key |
  sudo tee /usr/share/keyrings/libcontainers-cri-o.asc >/dev/null
 
 cat <<EOF | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
@@ -105,6 +109,8 @@ cat <<EOF | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cr
 deb [signed-by=/usr/share/keyrings/libcontainers-cri-o.asc] http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /
 EOF
 ```
+
+<!-- markdownlint-enable MD013  -->
 
 Install CRI-O.
 
@@ -134,7 +140,7 @@ sudo systemctl enable crio --now
 Setup repos and keys.
 
 ```bash
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg |\
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg |
  sudo tee /usr/share/keyrings/kubernetes-archive-keyring.gpg >/dev/null
 
 cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
@@ -142,9 +148,10 @@ deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.k
 EOF
 ```
 
-Check which versions of Kubernetes are available. Install one that matches the CRI-O version.
+Check which versions of Kubernetes are available. Install one that matches the
+CRI-O version.
 
-```
+```bash
 sudo apt-get update
 sudo apt-cache madison kubelet | grep $VERSION
 ```
@@ -175,7 +182,7 @@ EOF
 Create a cluster.
 
 ```bash
-sudo kubeadm init --v 99 --pod-network-cidr=10.244.0.0/16  --ignore-preflight-errors=all
+sudo kubeadm init --v 99 --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=all
 ```
 
 Configure access to the cluster.
@@ -239,8 +246,8 @@ Install podman.
 sudo apt-get install -y podman
 ```
 
-Build the CNDP container. The docker.io prefix is used so the pod-spec can reference "image: cndp"
-instead of "image: localhost/cndp".
+Build the CNDP container. The docker.io prefix is used so the pod-spec can
+reference "image: cndp" instead of "image: localhost/cndp".
 
 ```bash
 sudo -E podman build -t docker.io/cndp --format docker -f containerization/docker/ubuntu/Dockerfile .
@@ -258,7 +265,7 @@ Allow CNDP pods to be scheduled on the control-plane node.
 
 ```bash
 kubectl taint nodes --all node-role.kubernetes.io/master-
-kubectl label node <HOST NAME> cndp="true"
+kubectl label node NAME <HOST >cndp="true"
 ```
 
 Deploy the CNDP pod.

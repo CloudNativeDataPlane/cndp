@@ -108,7 +108,7 @@ int cne_fib6_lookup_bulk(struct cne_fib6 *fib, uint8_t ips[][IPV6_ADDR_LEN], uin
  *   FIB6 object handle
  * @return
  *   Pointer on the dataplane struct on success
- *   NULL othervise
+ *   NULL otherwise
  */
 void *cne_fib6_get_dp(struct cne_fib6 *fib);
 
@@ -119,7 +119,7 @@ void *cne_fib6_get_dp(struct cne_fib6 *fib);
  *   FIB object handle
  * @return
  *   Pointer on the RIB6 on success
- *   NULL othervise
+ *   NULL otherwise
  */
 struct cne_rib6 *cne_fib6_get_rib(struct cne_fib6 *fib);
 

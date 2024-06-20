@@ -105,7 +105,7 @@ ifeq ($(OCI-Builder), docker)
 else ifeq ($(OCI-Builder), buildah)
 	@echo "buildah selected"
 else
-	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	@echo "UNKNOWN OCI IMAGE builder $(OCI-Builder)"
 	exit 1
 endif
 	${OCI-Builder} build -t cndp --build-arg http_proxy=${http_proxy} \
@@ -117,7 +117,7 @@ ifeq ($(OCI-Builder), docker)
 else ifeq ($(OCI-Builder), buildah)
 	@echo "buildah selected"
 else
-	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	@echo "UNKNOWN OCI IMAGE builder $(OCI-Builder)"
 	exit 1
 endif
 	$(OCI-Builder) build -t cndp-fedora --build-arg http_proxy=${http_proxy} \
@@ -129,7 +129,7 @@ ifeq ($(OCI-Builder), docker)
 else ifeq ($(OCI-Builder), buildah)
 	@echo "buildah selected"
 else
-	@echo "UNKOWN OCI IMAGE builder $(OCI-Builder)"
+	@echo "UNKNOWN OCI IMAGE builder $(OCI-Builder)"
 	exit 1
 endif
 	$(OCI-Builder) build -t cndp-frr --build-arg http_proxy=${http_proxy} \
@@ -147,7 +147,7 @@ ifeq ($(ContainerEngine), docker)
 else ifeq ($(ContainerEngine), podman)
 	@echo "podman selected"
 else
-	@echo "UNKOWN Container Engine $(ContainerEngine)"
+	@echo "UNKNOWN Container Engine $(ContainerEngine)"
 	exit 1
 endif
 	$(ContainerEngine) run --privileged --network=host -it cndp bash
@@ -158,7 +158,7 @@ ifeq ($(ContainerEngine), docker)
 else ifeq ($(ContainerEngine), podman)
 	@echo "podman selected"
 else
-	@echo "UNKOWN Container Engine $(ContainerEngine)"
+	@echo "UNKNOWN Container Engine $(ContainerEngine)"
 	exit 1
 endif
 	$(ContainerEngine) run --privileged --network=host -it cndp-fedora bash

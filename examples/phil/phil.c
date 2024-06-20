@@ -34,7 +34,7 @@ whether they think quick (or shallow...) or long. The drawback is that the
 faster thinkers get to wait more for accessing the resource. The claim-based
 solution is addressing this by letting the faster thinkers access the resource
 as long as it is not claimed by another philosopher (in which case the
-requestor still has to wait until the other philosopher has gotten a chance to
+requester still has to wait until the other philosopher has gotten a chance to
 use the resource).
 
 INCLUDE FILES: N/A

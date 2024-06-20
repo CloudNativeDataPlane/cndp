@@ -182,9 +182,6 @@ void add_test_command(struct test_command *t);
         .command  = CNE_STR(cmd),                    \
         .callback = func,                            \
     };                                               \
-    CNE_INIT(test_register_##cmd)                    \
-    {                                                \
-        add_test_command(&test_struct_##cmd);        \
-    }
+    CNE_INIT(test_register_##cmd) { add_test_command(&test_struct_##cmd); }
 
 #endif

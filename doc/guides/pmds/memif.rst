@@ -172,4 +172,3 @@ region n:
 +-----------------+
 
 Buffers are dequeued and enqueued as needed. Offset descriptor field is calculated at tx.
-

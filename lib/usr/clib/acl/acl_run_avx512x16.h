@@ -239,7 +239,7 @@ _F_(gather_bytes)(__m512i zero, const __m512i p[2], const uint32_t m[2], uint32_
 }
 
 /*
- * Resolve matches for multiple categories (GT 8, use 512b instuctions/regs)
+ * Resolve matches for multiple categories (GT 8, use 512b instructions/regs)
  */
 static inline void
 resolve_mcgt8_avx512x1(uint32_t result[], const struct cne_acl_match_results pr[],

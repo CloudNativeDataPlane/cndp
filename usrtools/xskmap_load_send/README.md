@@ -1,17 +1,17 @@
 # xsk_map load and send utility
 
-This is a simple utility that loads a pinned xsk_map fd and sends it to
-a CNDP application that's configured to work in unprivileged mode. It
-allows the end user to load their own custom BPF programs besides the
-default AF_XDP redirect program provided by the kernel. For
+This is a simple utility that loads a pinned xsk_map fd and sends it to a CNDP
+application that's configured to work in unprivileged mode. It allows the end
+user to load their own custom BPF programs besides the default AF_XDP redirect
+program provided by the kernel. For
 [example](https://github.com/maryamtahhan/xdp-progs/blob/main/xdp-filter-udp/xdp_prog_kern.c).
 
-> **_NOTE_** The loading is left outside the scope of CNDP as there are
-many options available for use.
+> **_NOTE_** The loading is left outside the scope of CNDP as there are many
+> options available for use.
 
-Running the application will create a UDS named `app_socket.{proc_id}`
-in the path `/var/run/cndp/`. An example configuration for the `cndpfwd`
-application to be used alongside this utility is shown below:
+Running the application will create a UDS named `app_socket.{proc_id}` in the
+path `/var/run/cndp/`. An example configuration for the `cndpfwd` application to
+be used alongside this utility is shown below:
 
 ```json
     ...

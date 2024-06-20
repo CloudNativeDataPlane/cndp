@@ -1,0 +1,3 @@
+[tool.codespell]
+skip = "./.*,lang/rs/wireguard/patch/*,doc/guides/prog_guide/img/cnet_overview.svg"
+ignore-words-list = "quicly,thirdparty,te,parms,CRATE,crate,systm,keep-alives,ans,tolen,nd,ND,fo"

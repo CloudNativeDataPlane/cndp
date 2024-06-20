@@ -58,7 +58,7 @@ enum {
  * Test to see if a CLI node is a file type
  *
  * @param opt
- *   The option flags read/write/excutable/...
+ *   The option flags read/write/executable/...
  * @param cmpflags
  *   The option flags to compare with
  * @return

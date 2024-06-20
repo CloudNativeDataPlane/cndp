@@ -1259,7 +1259,7 @@ CNDP_API int cthread_once_reset(struct cthread_once *once);
  * @param once
  *   Pointer to pointer of a cthread_once structure
  * @param func
- *   The function to call only once passsing the argument value.
+ *   The function to call only once passing the argument value.
  * @param arg
  *   The opaque data to pass to \p func.
  * @return
