@@ -1,5 +1,5 @@
 # WARNING: This is an example definition only. Remove all comments before use.
-
+---
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:

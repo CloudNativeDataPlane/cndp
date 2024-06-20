@@ -128,7 +128,7 @@ impl CneInstance {
     /// Returns an id or error in case of failure.
     ///
     /// # Arguments
-    /// * `s` - Thread name to be regsitered with CNE.
+    /// * `s` - Thread name to be registered with CNE.
     ///
     /// # Errors
     /// Returns [CneError::RegisterError] if an error is encountered.

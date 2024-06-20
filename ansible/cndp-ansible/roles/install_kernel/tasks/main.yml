@@ -11,7 +11,7 @@
   when:
     - ansible_kernel is version ( installed_kernel, '>=')
   tags:
-     - check_kernel
+    - check_kernel
 
 - name: Kernel Version Needs update
   debug:
@@ -19,7 +19,7 @@
   when:
     - ansible_kernel is version ( installed_kernel, '<')
   tags:
-     - check_kernel
+    - check_kernel
 
 - name: install kernel for ubuntu
   package:
@@ -46,7 +46,7 @@
 - name: Reboot the host after kernel installation
   reboot:
     reboot_timeout: 3600
-#    pre_reboot_delay: 60
+    # pre_reboot_delay: 60
   when:
     - ansible_kernel is version ( installed_kernel, '<') and localhost_install != true
   tags:

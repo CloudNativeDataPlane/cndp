@@ -39,7 +39,7 @@ struct cli_map {
  *   %4 - IPv4 address
  *   %6 - IPv6 address
  *   %k - kvargs list of \<key\>=\<value\>[,...] strings
- *   %l - list format, if constains space then quote the string first
+ *   %l - list format, if contains space then quote the string first
  *   %|<fixed-list> - Fixed list of valid strings
  * @param argc
  *   Number of arguments in \p argv

@@ -437,7 +437,7 @@ __on_exit(int val, void *arg, int exit_type)
         break;
 
     default:
-        cne_printf_pos(99, 1, "\n>>> [cyan]Unknow Exit type %d[]\n", exit_type);
+        cne_printf_pos(99, 1, "\n>>> [cyan]Unknown Exit type %d[]\n", exit_type);
         break;
     }
     my_quit(ci);

@@ -29,7 +29,7 @@
   unarchive:
     src: https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.0.tar.gz
     dest: /tmp
-    remote_src: yes
+    remote_src: yes # yamllint disable-line rule:truthy
   when: bpf_static_installed.stat.exists == False or bpf_shared_installed.stat.exists == False
   environment: "{{ proxy_env }}"
   tags:
@@ -45,4 +45,3 @@
   when: bpf_static_installed.stat.exists == False or bpf_shared_installed.stat.exists == False
   tags:
     - install_libbpf
-

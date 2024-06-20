@@ -350,7 +350,7 @@ test_fib_perf(void)
     fib = cne_fib_create(__func__, &config);
     TEST_FIB_ASSERT(fib != NULL);
 
-    /* Measue add. */
+    /* Measure add. */
     begin = cne_rdtsc();
 
     for (i = 0; i < NUM_ROUTE_ENTRIES; i++) {

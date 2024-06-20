@@ -103,7 +103,7 @@ trie_vec_lookup_x16x2(void *p, uint8_t ips[32][IPV6_ADDR_LEN], uint64_t *next_ho
 
     /**
      * lookup in tbl24
-     * Put it inside branch to make compiller happy with -O0
+     * Put it inside branch to make compiler happy with -O0
      */
     if (size == sizeof(uint16_t)) {
         res_1 = _mm512_i32gather_epi32(idxes_1, (const int *)dp->tbl24, 2);

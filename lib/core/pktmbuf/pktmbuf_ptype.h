@@ -691,14 +691,14 @@ struct cne_net_hdr_lens {
  * one, bit 4 is selected to be used for IPv4 only. Then checking bit 4 can
  * determine if it is an IPV4 packet.
  */
-#define CNE_ETH_IS_IPV4_HDR(ptype) ((ptype)&CNE_PTYPE_L3_IPV4)
+#define CNE_ETH_IS_IPV4_HDR(ptype) ((ptype) & CNE_PTYPE_L3_IPV4)
 
 /**
  * Check if the (outer) L3 header is IPv6. To avoid comparing IPv6 types one by
  * one, bit 6 is selected to be used for IPv6 only. Then checking bit 6 can
  * determine if it is an IPV6 packet.
  */
-#define CNE_ETH_IS_IPV6_HDR(ptype) ((ptype)&CNE_PTYPE_L3_IPV6)
+#define CNE_ETH_IS_IPV6_HDR(ptype) ((ptype) & CNE_PTYPE_L3_IPV6)
 
 /* Check if it is a tunneling packet */
 #define CNE_ETH_IS_TUNNEL_PKT(ptype)                                                        \

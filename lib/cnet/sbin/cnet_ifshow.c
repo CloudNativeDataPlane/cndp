@@ -117,7 +117,7 @@ netif_show(struct netif *netif, char *ifname)
     cne_printf("\n");
 
     cne_printf("%9s[magenta]RXE[]:[red]%'16" PRIu64 "[] [magenta]TXE[]:[red]%'16" PRIu64
-               "[] [magenta]MIS[]:[red]%'16" PRIu64 "[] \n",
+               "[] [magenta]MISS[]:[red]%'16" PRIu64 "[] \n",
                "", ps->ierrors, ps->oerrors, ps->imissed);
 }
 

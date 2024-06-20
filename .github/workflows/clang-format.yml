@@ -1,18 +1,18 @@
 name: clang-format
 
-on:
+on: # yamllint disable-line rule:truthy
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: DoozyX/clang-format-lint-action@v0.15
-      with:
-        source: '.'
-        exclude: './examples/vpp-plugin'
-        extensions: 'c,h,cc,cpp'
-        clangFormatVersion: 15.0.2
+      - uses: actions/checkout@v2
+      - uses: DoozyX/clang-format-lint-action@v0.17
+        with:
+          source: '.'
+          exclude: 'examples/vpp-plugin'
+          extensions: 'h,cpp,c,cc'
+          clangFormatVersion: 17

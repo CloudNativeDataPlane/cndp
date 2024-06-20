@@ -5,9 +5,11 @@
 Add the docker repo:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg2
+sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl \
+   software-properties-common gnupg2
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+sudo add-apt-repository "deb [arch=amd64] \
+  https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) \
   stable"
 ```
@@ -18,8 +20,8 @@ Install docker-ce:
 sudo apt-get install -y docker-ce docker-ce-cli
 ```
 
-Ensure that the overlay driver is what's used for docker-ce and memlock limit
-is removed:
+Ensure that the overlay driver is what's used for docker-ce and memlock limit is
+removed:
 
 ```bash
 cat <<EOF | sudo tee /etc/docker/daemon.json
@@ -44,8 +46,8 @@ EOF
 For more info, please follow the following instructions :
 
 1. [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-2. [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/)
-3. [CentOS](https://docs.docker.com/install/linux/docker-ce/centos/)
+1. [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/)
+1. [CentOS](https://docs.docker.com/install/linux/docker-ce/centos/)
 
 > **Note:** Only Ubuntu 21.04 is tested with the included Dockerfile.
 
@@ -60,8 +62,8 @@ configuration in the Docker systemd service file.
 sudo mkdir -p /etc/systemd/system/docker.service.d
 ```
 
-- Create a file called /etc/systemd/system/docker.service.d/http-proxy.conf
-  that adds the HTTP_PROXY environment variable:
+- Create a file called /etc/systemd/system/docker.service.d/http-proxy.conf that
+  adds the HTTP_PROXY environment variable:
 
 ```bash
 [Service]
@@ -114,8 +116,8 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-The `newgrp` command activates the group changes immediately. Without it you must logout
-and login again for new groups to take effect.
+The `newgrp` command activates the group changes immediately. Without it you
+must logout and login again for new groups to take effect.
 
 ## Step 4: Testing Docker Installation
 
@@ -144,39 +146,46 @@ to your terminal.
 
 ## Step 5: Build the cndp container
 
-> **Note:** Follow INSTALL.md in the CNDP top level directory if CNDP dependencies are not installed
+> **Note:** Follow INSTALL.md in the CNDP top level directory if CNDP
+> dependencies are not installed
 
-To build the container image using `docker` from the top level CNDP directory call:
+To build the container image using `docker` from the top level CNDP directory
+call:
 
 ```cmd
 make oci-image
 ```
 
-To build the container image using `buildah` from the top level CNDP directory call:
+To build the container image using `buildah` from the top level CNDP directory
+call:
 
 ```cmd
 make Builder=buildah oci-image
 ```
 
-To run the container Ubuntu image using `docker` from the top level CNDP directory call:
+To run the container Ubuntu image using `docker` from the top level CNDP
+directory call:
 
 ```cmd
 make ce-run
 ```
 
-To run the container Ubuntu image using `podman` from the top level CNDP directory call:
+To run the container Ubuntu image using `podman` from the top level CNDP
+directory call:
 
 ```cmd
 make CE=podman ce-run
 ```
 
-To run the container Fedora image using `docker` from the top level CNDP directory call:
+To run the container Fedora image using `docker` from the top level CNDP
+directory call:
 
 ```cmd
 make ce-fed-run
 ```
 
-To run the container Fedora image using `podman` from the top level CNDP directory call:
+To run the container Fedora image using `podman` from the top level CNDP
+directory call:
 
 ```cmd
 make CE=podman ce-fed-run

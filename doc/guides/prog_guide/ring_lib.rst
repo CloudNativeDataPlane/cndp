@@ -65,7 +65,7 @@ Additional Features
 Name
 ~~~~
 
-A ring is identified by a unique name. It's imporant that the application maintains
+A ring is identified by a unique name. It's important that the application maintains
 the current rings and their names in order to avoid creating rings with a duplicate
 name.
 

@@ -1,0 +1,40 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v17.0.6
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+        args: [-i, --style=file]
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.59.1
+    hooks:
+      - id: golangci-lint
+  - repo: https://github.com/markdownlint/markdownlint.git
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint_docker
+    name: Markdownlint Docker
+    description: Run markdown lint on your Markdown files using the project docker image
+    language: docker_image
+    files: \.(md|mdown|markdown)$
+    entry: markdownlint/markdownlint -c .mdlrc
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: [--toml, cndp-codespell.precommit-toml]
+        additional_dependencies:
+          - tomli
+exclude: doc/api/doxy-api-index.md|lang/rs/wireguard/patch/*

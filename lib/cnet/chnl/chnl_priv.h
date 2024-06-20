@@ -101,7 +101,7 @@ enum {
  * Return the current channel state value
  *
  * @param ch
- *   The channel stucture pointer
+ *   The channel structure pointer
  * @return
  *   Channel state or _NOSTATE is returned for invalid channel
  */

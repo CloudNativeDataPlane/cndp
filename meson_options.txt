@@ -91,4 +91,3 @@ option('quicly_path', type: 'string', value: '/work/projects/intel/networking.da
 
 option('verbose', type: 'boolean', value: false,
     description: 'Verbose build messages')
-

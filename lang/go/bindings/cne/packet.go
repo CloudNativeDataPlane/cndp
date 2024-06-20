@@ -24,10 +24,10 @@ ipv6_phdr_cksum(const struct cne_ipv6_hdr *hdr)
 */
 import "C"
 import (
-	"fmt"
-	"unsafe"
 	"encoding/binary"
+	"fmt"
 	"hash/fnv"
+	"unsafe"
 )
 
 type Packet C.pktmbuf_t // Packet is the interface type for C.pktmbuf_t structure
@@ -312,7 +312,7 @@ func GetHash(pkt *Packet) uint32 {
 		copy(t3Tuple[IPv6AddrLen:], ipv6.DstAddr[:IPv6AddrLen])
 		t3Tuple = append(t3Tuple, ipv6.Proto)
 	}
-	var hash uint32 
+	var hash uint32
 	if ipv4 != nil || ipv6 != nil {
 		h := fnv.New32a()
 		h.Write(t3Tuple)
@@ -320,4 +320,3 @@ func GetHash(pkt *Packet) uint32 {
 	}
 	return hash
 }
-

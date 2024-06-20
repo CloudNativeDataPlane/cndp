@@ -2079,7 +2079,7 @@ _process_data(struct seg_entry *seg, struct tcb_entry *tcb __cne_unused)
      * every second full-sized segment is listed in [Bra89] in one
      * place as a SHOULD and another as a MUST. Here we unambiguously
      * state it is a SHOULD. We also emphasize that this is a SHOULD,
-     * meaning that an implementor should indeed only deviate from
+     * meaning that an implementer should indeed only deviate from
      * this requirement after careful consideration of the
      * implications. See the discussion of "Stretch ACK violation"
      * in [PAD+98] and the references therein for a discussion of

@@ -178,7 +178,7 @@ closest_gte(lcore_t *lc, lcore_t *sel, unsigned v, getter_fn get)
 
 /*
  * Makes the property returned and set by 'get'/'set' start from zero
- * and increase by one for each unique value that propery has.
+ * and increase by one for each unique value that property has.
  * Ex: core id "0,1,4,5,0,1,4,5" -> "0,1,2,3,0,1,2,3"
  */
 static void
