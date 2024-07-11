@@ -96,7 +96,7 @@ CNDP_API struct protosw_entry *cnet_protosw_add(const char *name, uint16_t domai
  * @return
  *   NULL on error or a pointer to a protocol switch entry.
  */
-CNDP_API struct protosw_entry *cnet_protosw_find(uint16_t domain, uint16_t type, uint16_t proto);
+CNDP_API struct protosw_entry *cnet_protosw_find(int domain, int type, int proto);
 
 /**
  * @brief Dump out the list of protocol switch values.
