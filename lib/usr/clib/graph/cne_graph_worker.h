@@ -520,7 +520,7 @@ cne_node_next_stream_move(struct cne_graph *graph, struct cne_node *src, cne_edg
 {
     struct cne_node *dst = __cne_node_next_node_get(src, next);
 
-    CNE_DEBUG("Src %-16s', Dst '%-16s' next %d\n", src->name, dst->name, next);
+    CNE_DEBUG("Src '%-16s', Dst '%-16s' next %d\n", src->name, dst->name, next);
 
     /* Swap the pointers if dst doesn't have valid objs */
     if (likely(dst->idx == 0)) {
