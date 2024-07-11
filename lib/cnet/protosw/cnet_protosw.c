@@ -35,7 +35,7 @@ cnet_protosw_match(uint16_t domain, uint16_t type, uint16_t proto)
 }
 
 struct protosw_entry *
-cnet_protosw_find(uint16_t domain, uint16_t type, uint16_t proto)
+cnet_protosw_find(int domain, int type, int proto)
 {
     struct protosw_entry *p;
 
