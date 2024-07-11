@@ -3515,7 +3515,7 @@ cnet_tcp_input(struct pcb_entry *pcb, pktmbuf_t *mbuf)
 
 free_seg:
     free_seg(seg);
-    CNE_DEBUG("Leave\n\n");
+    CNE_DEBUG("Leave\n");
     return rc;
 }
 

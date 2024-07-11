@@ -249,7 +249,7 @@ initialize_chnl(struct chnl *ch, int typ)
             pcb->opt_flag |= UDP_CHKSUM_FLAG;
 
         ch->ch_proto->proto = IPPROTO_UDP;
-    } else {
+    } else if (typ == SOCK_STREAM) {
         rb->cb_size = rb->cb_hiwat = stk->tcp->rcv_size;
         sb->cb_size = sb->cb_hiwat = stk->tcp->snd_size;
         rb->cb_lowat = sb->cb_lowat = 1;
@@ -258,7 +258,8 @@ initialize_chnl(struct chnl *ch, int typ)
             return __errno_set(ENOBUFS);
 
         ch->ch_proto->proto = IPPROTO_TCP;
-    }
+    } else
+        return __errno_set(EPROTONOSUPPORT);
 
     pcb->ch    = ch;
     ch->ch_pcb = pcb;
