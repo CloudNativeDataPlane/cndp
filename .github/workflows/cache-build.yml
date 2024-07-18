@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-single-buildx
 
       - name: Build production image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
