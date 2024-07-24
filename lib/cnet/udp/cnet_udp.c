@@ -59,10 +59,6 @@ udp_destroy(void *_stk)
     stk_t *stk = _stk;
 
     if (stk->udp) {
-        struct pcb_entry *p;
-
-        vec_foreach_ptr (p, stk->udp->udp_hd.vec)
-            free(p);
         vec_free(stk->udp->udp_hd.vec);
         stk->udp->udp_hd.vec = NULL;
         free(stk->udp);
