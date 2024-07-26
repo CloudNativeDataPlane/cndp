@@ -1,7 +1,7 @@
 # CNDP - Cloud Native Data Plane
 
-![GitHub Workflow Status (event)](https://img.shields.io/github/actions/workflow/status/CloudNativeDataPlane/cndp/smoke.yml)
-
+![Smoke Test](https://img.shields.io/github/actions/workflow/status/CloudNativeDataPlane/cndp/smoke.yml?label=smoke-test)
+![cppcheck](https://img.shields.io/github/actions/workflow/status/CloudNativeDataPlane/cndp/cppcheck.yaml?branch=main&label=CI)
 [![License](https://img.shields.io/badge/license-BSD3-blue.svg?style=flat)](https://opensource.org/licenses/BSD-3-Clause)
 
 ## Overview
