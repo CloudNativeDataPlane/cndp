@@ -14,8 +14,9 @@ this test we are going to use 4433 instead.
 Use two machines to make it easy to setup and configure, plus connect the
 machines back to back with a cable.
 
+<!-- markdownlint-disable MD013 -->
 ## Remote machine setup, this machine will not run CNDP, but use the quicly example applications
-
+<!-- markdownlint-enable MD013 -->
 Setup the interface connected to the other machine, use your own netdev
 interface name
 
