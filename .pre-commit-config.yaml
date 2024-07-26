@@ -17,10 +17,6 @@ repos:
       - id: clang-format
         types_or: [c++, c]
         args: [-i, --style=file]
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v1.59.1
-    hooks:
-      - id: golangci-lint
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.9.2
     hooks:
@@ -32,4 +28,4 @@ repos:
         args: [--toml, cndp-codespell.precommit-toml]
         additional_dependencies:
           - tomli
-exclude: doc/api/doxy-api-index.md|lang/rs/wireguard/patch/*
+exclude: doc/api/doxy-api-index.md|lang/rs/wireguard/patch/000*.*
