@@ -1,4 +1,3 @@
-
 # CNDP - Cloud Native Data Plane
 
 ![GitHub Workflow Status (event)](https://img.shields.io/github/actions/workflow/status/CloudNativeDataPlane/cndp/smoke.yml)
