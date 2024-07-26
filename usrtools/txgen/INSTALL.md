@@ -5,7 +5,7 @@ frames.**
 
 \*\* (TXGen) Sounds like 'Packet-Gen'\*\*
 
-______________________________________________________________________
+---
 
 **Copyright © \\2019-2022\\ Intel Corporation. All rights reserved.**
 
@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 SPDX-License-Identifier: BSD-3-Clause
 
-______________________________________________________________________
+---
 
 ## Installation
 
