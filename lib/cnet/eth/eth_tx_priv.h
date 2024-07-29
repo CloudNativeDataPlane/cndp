@@ -13,6 +13,7 @@ struct eth_tx_node_ctx;
 typedef struct eth_tx_node_ctx eth_tx_node_ctx_t;
 
 enum eth_tx_next_nodes {
+    ETH_TX_NEXT_PKT_CALLBACK,
     ETH_TX_NEXT_MAX,
 };
 

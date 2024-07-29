@@ -503,7 +503,6 @@ xskdev_tx_burst_locked(xskdev_info_t *xi, void **bufs, uint16_t nb_pkts)
     xsk_ring_prod__submit(&txq->tx, nb_free);
 
     pull_umem_cq(xi);
-
     xi->stats.opackets += nb_free;
     xi->stats.obytes += tx_bytes;
 
