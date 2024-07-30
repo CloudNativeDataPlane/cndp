@@ -958,6 +958,21 @@ chnl_connect_common(struct chnl *ch, struct in_caddr *to, int32_t tolen __cne_un
     return 0;
 }
 
+/*
+ * Gets lport ID from channel descriptor. A use case is to allocate pktmbufs
+ * directly from the port mempool using `pktdev_buf_alloc`
+ */
+int
+chnl_port(int cd)
+{
+    struct chnl *ch = ch_get(cd);
+
+    if (!ch || !ch->ch_pcb || !ch->ch_pcb->netif)
+        return __errno_set(EFAULT);
+
+    return ch->ch_pcb->netif->lpid;
+}
+
 int
 chnl_validate_cb(const char *msg, struct chnl_buf *cb)
 {

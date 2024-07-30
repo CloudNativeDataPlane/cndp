@@ -84,6 +84,16 @@ typedef enum {
 CNDP_API void chnl_dump(const char *msg, struct chnl *ch);
 
 /**
+ * @brief Gets port of connect'd or bind'd channel
+ *
+ * @param cd
+ *   Channel descriptor
+ * @return
+ *   -1 on error or pktdev port ID on success
+ */
+CNDP_API int chnl_port(int cd);
+
+/**
  * @brief Common channel connect routine used by protocols.
  *
  * @param ch
