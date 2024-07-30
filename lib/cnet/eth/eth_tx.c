@@ -16,6 +16,7 @@
 
 #include <cnet_node_names.h>
 #include "eth_tx_priv.h"        // for eth_tx_node_ctx_t, ETH_TX_NEXT_MAX
+#include "chnl_callback_priv.h"
 
 static struct eth_tx_node_main eth_tx_main;
 
@@ -30,16 +31,19 @@ eth_tx_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
 
     if (nb_objs) {
         do {
-            int cnt;
-
-            cnt = pktdev_tx_burst(port, (pktmbuf_t **)objs, nb_objs);
+            int cnt = pktdev_tx_burst(port, (pktmbuf_t **)objs, nb_objs);
             if (cnt == PKTDEV_ADMIN_STATE_DOWN)
                 return cnt;
 
             objs += cnt;
             nb_objs -= cnt;
         } while (nb_objs);
+
+        struct cne_node *next = __cne_node_next_node_get(node, ETH_TX_NEXT_PKT_CALLBACK);
+        chnl_callback_node_set_source(next, CHNL_CALLBACK_SOURCE_ETH_TX);
+        cne_node_next_stream_move(graph, node, ETH_TX_NEXT_PKT_CALLBACK);
     }
+
     return count;
 }
 
@@ -74,13 +78,14 @@ eth_tx_node_data_get(void)
 }
 
 static struct cne_node_register eth_tx_node_base = {
-    .process = eth_tx_node_process,
-    .name    = ETH_TX_NODE_NAME,
-
-    .init = eth_tx_node_init,
-
-    .nb_edges   = ETH_TX_NEXT_MAX,
-    .next_nodes = {},
+    .process  = eth_tx_node_process,
+    .name     = ETH_TX_NODE_NAME,
+    .init     = eth_tx_node_init,
+    .nb_edges = ETH_TX_NEXT_MAX,
+    .next_nodes =
+        {
+            [ETH_TX_NEXT_PKT_CALLBACK] = CHNL_CALLBACK_NODE_NAME,
+        },
 };
 
 struct cne_node_register *

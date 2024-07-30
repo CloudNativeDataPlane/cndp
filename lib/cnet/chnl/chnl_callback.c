@@ -27,29 +27,45 @@
 #include "chnl_priv.h"
 #include <cnet_chnl.h>        // for cnet_chnl_get
 #include <cnet_node_names.h>
+#include "chnl_callback_priv.h"
+
+inline void
+chnl_callback_node_set_source(struct cne_node *node, chnl_callback_source_node_t source)
+{
+    chnl_callback_node_ctx_t *ctx = (chnl_callback_node_ctx_t *)node->ctx;
+    ctx->source                   = source;
+}
 
 static inline void
-__callback(struct pcb_entry *pcb)
+__callback(struct pcb_entry *pcb, chnl_callback_source_node_t source)
 {
     if (pcb->ch->ch_callback) {
-        chnl_type_t ctype = (pcb->ip_proto == IPPROTO_TCP) ? CHNL_TCP_RECV_TYPE
-                                                           : CHNL_UDP_RECV_TYPE;
+        chnl_type_t ctype;
+
+        if (source == CHNL_CALLBACK_SOURCE_CHNL_RECV)
+            ctype = (pcb->ip_proto == IPPROTO_TCP) ? CHNL_TCP_RECV_TYPE : CHNL_UDP_RECV_TYPE;
+        else if (source == CHNL_CALLBACK_SOURCE_ETH_TX)
+            ctype = (pcb->ip_proto == IPPROTO_TCP) ? CHNL_TCP_SENT_TYPE : CHNL_UDP_SENT_TYPE;
+        else
+            return;
 
         pcb->ch->ch_callback(ctype, pcb->ch->ch_cd);
     }
 }
 
 static uint16_t
-chnl_callback_node_process(struct cne_graph *graph __cne_unused, struct cne_node *node __cne_unused,
-                           void **objs, uint16_t nb_objs)
+chnl_callback_node_process(struct cne_graph *graph __cne_unused, struct cne_node *node, void **objs,
+                           uint16_t nb_objs)
 {
     pktmbuf_t *mbuf, **pkts;
     struct pcb_entry *pcb, *ppcb = NULL;
     uint16_t n_left_from;
     struct chnl_buf *cb;
 
-    pkts        = (pktmbuf_t **)objs;
-    n_left_from = nb_objs;
+    pkts                               = (pktmbuf_t **)objs;
+    n_left_from                        = nb_objs;
+    chnl_callback_node_ctx_t *ctx      = (chnl_callback_node_ctx_t *)node->ctx;
+    chnl_callback_source_node_t source = ctx->source;
 
     if (n_left_from >= 4) {
         cne_prefetch0(pkts[0]);
@@ -73,20 +89,23 @@ chnl_callback_node_process(struct cne_graph *graph __cne_unused, struct cne_node
             CNE_ERR("PCB or Chnl pointer is NULL\n");
             continue;
         }
+
         if (!ppcb)
             ppcb = pcb;
         else if (ppcb != pcb) {
-            __callback(ppcb);
+            __callback(ppcb, source);
             ppcb = pcb;
         }
 
-        cb = &pcb->ch->ch_rcv;
-        vec_add(cb->cb_vec, mbuf);
-        cb->cb_cc += pktmbuf_data_len(mbuf);
+        if (source == CHNL_CALLBACK_SOURCE_CHNL_RECV) {
+            cb = &pcb->ch->ch_rcv;
+            vec_add(cb->cb_vec, mbuf);
+            cb->cb_cc += pktmbuf_data_len(mbuf);
+        }
     }
 
     if (ppcb)
-        __callback(ppcb);
+        __callback(ppcb, source);
 
     return nb_objs;
 }

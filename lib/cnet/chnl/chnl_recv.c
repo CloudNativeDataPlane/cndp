@@ -29,6 +29,18 @@
 
 #include <cnet_node_names.h>
 #include "chnl_recv_priv.h"
+#include "chnl_callback_priv.h"
+
+static inline cne_edge_t
+chnl_recv_set_next(struct cne_node *node, pktmbuf_t *mbuf)
+{
+    if (!mbuf->userptr)
+        return CHNL_RECV_NEXT_PKT_DROP;
+
+    struct cne_node *next = __cne_node_next_node_get(node, CHNL_RECV_NEXT_PKT_CALLBACK);
+    chnl_callback_node_set_source(next, CHNL_CALLBACK_SOURCE_CHNL_RECV);
+    return CHNL_RECV_NEXT_PKT_CALLBACK;
+}
 
 static uint16_t
 chnl_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **objs,
@@ -71,10 +83,10 @@ chnl_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 4;
         n_left_from -= 4;
 
-        next0 = (mbuf0->userptr) ? CHNL_RECV_NEXT_PKT_CALLBACK : CHNL_RECV_NEXT_PKT_DROP;
-        next1 = (mbuf1->userptr) ? CHNL_RECV_NEXT_PKT_CALLBACK : CHNL_RECV_NEXT_PKT_DROP;
-        next2 = (mbuf2->userptr) ? CHNL_RECV_NEXT_PKT_CALLBACK : CHNL_RECV_NEXT_PKT_DROP;
-        next3 = (mbuf3->userptr) ? CHNL_RECV_NEXT_PKT_CALLBACK : CHNL_RECV_NEXT_PKT_DROP;
+        next0 = chnl_recv_set_next(node, mbuf0);
+        next1 = chnl_recv_set_next(node, mbuf1);
+        next2 = chnl_recv_set_next(node, mbuf2);
+        next3 = chnl_recv_set_next(node, mbuf3);
 
         /* Enqueue four to next node */
         cne_edge_t fix_spec = (next_index ^ next0) | (next_index ^ next1) | (next_index ^ next2) |
@@ -132,7 +144,7 @@ chnl_recv_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 1;
         n_left_from -= 1;
 
-        next0 = (mbuf0->userptr) ? CHNL_RECV_NEXT_PKT_CALLBACK : CHNL_RECV_NEXT_PKT_DROP;
+        next0 = chnl_recv_set_next(node, mbuf0);
 
         if (unlikely(next_index ^ next0)) {
             /* Copy things successfully speculated till now */

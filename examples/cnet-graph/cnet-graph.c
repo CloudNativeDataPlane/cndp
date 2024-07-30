@@ -266,10 +266,24 @@ tcp_close(int cd __cne_unused)
 }
 
 static int
+udp_sent(int cd)
+{
+    CNE_INFO("UDP Sending was complete on Channel=%d\n", cd);
+    return 0;
+}
+
+static int
+tcp_sent(int cd)
+{
+    CNE_INFO("TCP Sending was complete on Channel=%d\n", cd);
+    return 0;
+}
+
+static int
 proto_callback(int ctype, int cd)
 {
     static cb_types_t funcs[CHNL_CALLBACK_TYPES] = {
-        udp_recv, udp_close, tcp_accept, tcp_recv, tcp_close,
+        udp_sent, udp_recv, udp_close, tcp_sent, tcp_accept, tcp_recv, tcp_close,
     };
 
     if (ctype >= 0 && ctype < CHNL_CALLBACK_TYPES)
