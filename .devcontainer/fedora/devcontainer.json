@@ -1,0 +1,46 @@
+{
+    "name": "cndp-fedora",
+    "build": {
+      "dockerfile": "Dockerfile",
+    },
+    "remoteUser": "${localEnv:USER}",
+    "containerUser": "${localEnv:USER}",
+    // Add the IDs of extensions you want installed when the container is created.
+    "customizations": {
+      "vscode": {
+        "extensions": [
+            "766b.go-outliner",
+            "aldijav.golangwithdidi",
+            "bierner.github-markdown-preview",
+            "bierner.markdown-checkbox",
+            "bierner.markdown-emoji",
+            "bierner.markdown-footnotes",
+            "bierner.markdown-mermaid",
+            "bierner.markdown-preview-github-styles",
+            "bierner.markdown-yaml-preamble",
+            "davidanson.vscode-markdownlint",
+            "github.vscode-github-actions",
+            "golang.go",
+            "ms-vscode.cmake-tools",
+            "ms-vscode.cpptools",
+            "ms-vscode.cpptools-extension-pack",
+            "ms-vscode.cpptools-themes",
+            "ms-vscode.makefile-tools",
+            "msyrus.go-doc",
+            "neonxp.gotools",
+            "streetsidesoftware.code-spell-checker",
+            "twxs.cmake",
+        ]
+      }
+    },
+    "postStartCommand": "${containerWorkspaceFolder}/.devcontainer/fedora/postStartCommand.sh",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace",
+    "hostRequirements": {
+      "cpus": 4
+    },
+    "runArgs": [
+      "--privileged",
+      "--network=host"
+    ]
+}
