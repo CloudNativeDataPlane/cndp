@@ -47,9 +47,11 @@ struct cthread_cond {
     char name[MAX_COND_NAME_SIZE]; /**< Name of the condition variable */
 } __cne_cache_aligned;
 
-#define CTHREAD_COND_INIT(name)                        \
-    {                                                  \
-        .name = #name, .blocked = NULL, .sched = NULL, \
+#define CTHREAD_COND_INIT(name) \
+    {                           \
+        .name    = #name,       \
+        .blocked = NULL,        \
+        .sched   = NULL,        \
     }
 
 #ifdef __cplusplus

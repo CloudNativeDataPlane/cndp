@@ -149,7 +149,7 @@ typedef uint16_t unaligned_uint16_t;
  */
 #define CNE_SET_USED(x) (void)(x)
 
-#define cne_roundup(_x, _y) ((((_x) + ((_y)-1)) / (_y)) * (_y))
+#define cne_roundup(_x, _y) ((((_x) + ((_y) - 1)) / (_y)) * (_y))
 #define cne_ctz(_v)         __builtin_ctz(_v)
 #define cne_prefixbits(_v)  ((__typeof__(_v))(sizeof(_v) * 8) - cne_ctz(_v))
 #define cne_numbytes(_v)    ((cne_prefixbits(_v) + 7) / 8)
@@ -269,7 +269,7 @@ typedef uint16_t unaligned_uint16_t;
  * bigger than the first parameter. Second parameter must be a
  * power-of-two value.
  */
-#define CNE_ALIGN_FLOOR(val, align) (typeof(val))((val) & (~((typeof(val))((align)-1))))
+#define CNE_ALIGN_FLOOR(val, align) (typeof(val))((val) & (~((typeof(val))((align) - 1))))
 
 /**
  * Macro to align a pointer to a given power-of-two. The resultant
@@ -278,7 +278,7 @@ typedef uint16_t unaligned_uint16_t;
  * must be a power-of-two value.
  */
 #define CNE_PTR_ALIGN_CEIL(ptr, align) \
-    CNE_PTR_ALIGN_FLOOR((typeof(ptr))CNE_PTR_ADD(ptr, (align)-1), align)
+    CNE_PTR_ALIGN_FLOOR((typeof(ptr))CNE_PTR_ADD(ptr, (align) - 1), align)
 
 /**
  * Macro to align a value to a given power-of-two. The resultant value
@@ -286,7 +286,7 @@ typedef uint16_t unaligned_uint16_t;
  * than the first parameter. Second parameter must be a power-of-two
  * value.
  */
-#define CNE_ALIGN_CEIL(val, align) CNE_ALIGN_FLOOR(((val) + ((typeof(val))(align)-1)), align)
+#define CNE_ALIGN_CEIL(val, align) CNE_ALIGN_FLOOR(((val) + ((typeof(val))(align) - 1)), align)
 
 /**
  * Macro to align a pointer to a given power-of-two. The resultant
@@ -312,7 +312,7 @@ typedef uint16_t unaligned_uint16_t;
  * than the first parameter.
  */
 #define CNE_ALIGN_MUL_CEIL(v, mul) \
-    (((v + (typeof(v))(mul)-1) / ((typeof(v))(mul))) * (typeof(v))(mul))
+    (((v + (typeof(v))(mul) - 1) / ((typeof(v))(mul))) * (typeof(v))(mul))
 
 /**
  * Macro to align a value to the multiple of given value. The resultant
@@ -397,7 +397,7 @@ __extension__ typedef uint64_t CNE_MARKER64[0];
 
 /** Physical address */
 typedef uint64_t phys_addr_t;
-#define CNE_BAD_PHYS_ADDR ((phys_addr_t)-1)
+#define CNE_BAD_PHYS_ADDR ((phys_addr_t) - 1)
 
 /**
  * IO virtual address type.
@@ -407,7 +407,7 @@ typedef uint64_t phys_addr_t;
  * Otherwise, in virtual mode (IOVA as VA), an IOMMU may do the translation.
  */
 typedef uint64_t cne_iova_t;
-#define CNE_BAD_IOVA ((cne_iova_t)-1)
+#define CNE_BAD_IOVA ((cne_iova_t) - 1)
 
 /**
  * Combines 32b inputs most significant set bits into the least
@@ -459,7 +459,7 @@ cne_combine64ms1b(uint64_t v)
 /**
  * Macro to return 1 if n is a power of 2, 0 otherwise
  */
-#define CNE_IS_POWER_OF_2(n) ((n) && !(((n)-1) & (n)))
+#define CNE_IS_POWER_OF_2(n) ((n) && !(((n) - 1) & (n)))
 
 /**
  * Returns true if n is a power of 2
@@ -773,7 +773,9 @@ cne_log2_u64(uint64_t v)
 #define CNE_FMT_TAIL(fmt, ...) __VA_ARGS__
 
 /** Mask value of type "tp" for the first "ln" bit set. */
-#define CNE_LEN2MASK(ln, tp) ((tp)((uint64_t)-1 >> (sizeof(uint64_t) * CHAR_BIT - (ln))))
+// clang-format off
+#define CNE_LEN2MASK(ln, tp) ((tp)((uint64_t) - 1 >> (sizeof(uint64_t) * CHAR_BIT - (ln))))
+// clang-format on
 
 /** Number of elements in the array. */
 #define CNE_DIM(a)     (int)(sizeof(a) / sizeof((a)[0]))

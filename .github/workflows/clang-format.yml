@@ -10,9 +10,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: DoozyX/clang-format-lint-action@v0.18
+      - uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: '.'
           exclude: 'examples/vpp-plugin'
           extensions: 'h,cpp,c,cc'
-          clangFormatVersion: 17
+          clangFormatVersion: 18.1.8

@@ -63,10 +63,7 @@ typedef enum {
 } node_type_t;
 
 /* Keep this list in sync with the node_type_t enum above */
-#define CLI_NODE_TYPES                                                     \
-    {                                                                      \
-        "Unknown", "Directory", "Command", "File", "Alias", "String", NULL \
-    }
+#define CLI_NODE_TYPES {"Unknown", "Directory", "Command", "File", "Alias", "String", NULL}
 
 enum {
     CLI_EXE_TYPE   = (CLI_CMD_NODE | CLI_ALIAS_NODE),
@@ -203,25 +200,25 @@ struct cli_cmd {
     const char *name;       /**< Name of command */
     cli_cfunc_t cfunc;      /**< Function pointer */
     const char *short_desc; /**< Short description */
-};                          /**< List of commands for cli_add_cmds() */
+}; /**< List of commands for cli_add_cmds() */
 
 struct cli_alias {
     const char *name;       /**< Name of command */
     const char *alias_atr;  /**< Alias string */
     const char *short_desc; /**< Short description */
-};                          /**< List of alias for cli_add_aliases() */
+}; /**< List of alias for cli_add_aliases() */
 
 struct cli_file {
     const char *name;       /**< Name of command */
     cli_ffunc_t ffunc;      /**< Read/Write function pointer */
     const char *short_desc; /**< Short description */
-};                          /**< List of alias for cli_add_aliases() */
+}; /**< List of alias for cli_add_aliases() */
 
 struct cli_str {
     const char *name;   /**< Name of command */
     cli_sfunc_t sfunc;  /**< Function pointer */
     const char *string; /**< Default string */
-};                      /**< List of commands for cli_add_str() */
+}; /**< List of commands for cli_add_str() */
 
 struct cli_tree {
     node_type_t type; /**< type of node to create */

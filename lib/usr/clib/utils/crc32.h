@@ -43,8 +43,8 @@
 extern const uint32_t crc32_tab[];
 
 #define rounddown(x, y)  (((x) / (y)) * (y))
-#define rounddown2(x, y) ((x) & (~((y)-1)))             /* if y is power of two */
-#define roundup2(x, y)   (((x) + ((y)-1)) & (~((y)-1))) /* if y is power of two */
+#define rounddown2(x, y) ((x) & (~((y) - 1)))               /* if y is power of two */
+#define roundup2(x, y)   (((x) + ((y) - 1)) & (~((y) - 1))) /* if y is power of two */
 
 static __inline uint32_t
 crc32_raw(const void *buf, size_t size, uint32_t crc)
