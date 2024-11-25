@@ -98,6 +98,40 @@ To run pre-commit manually
 pre-commit run --all-files
 ```
 
+### Development Container (Dev Container)
+
+This project includes a **Dev Container** specification that provides a
+consistent, isolated development environment. With this setup, you can
+develop and build CNDP as well as run its tutorials seamlessly.
+
+#### Key Benefits
+
+- **Consistency**: All developers can work with the same development
+  environment, ensuring uniform behavior across different systems.
+- **Isolation**: The container prevents potential conflicts with software
+  installed on your local machine.
+- **Portability**: Easily share the development environment with team members,
+  minimizing onboarding time and setup issues.
+
+#### How to Use the Dev Container
+
+1. **Visual Studio Code (Locally)**:
+   - Open the project in VS Code and use the *Dev Containers* extension to
+     launch the environment.
+   - Simply choose **“Reopen in Container”**, and VS Code will build and
+     attach the container for you.
+
+2. **GitHub Codespaces**:
+  If you prefer working in the cloud, the Dev Container is compatible with
+  [GitHub Codespaces](https://docs.github.com/en/codespaces/overview), allowing
+  you to develop directly in your browser with minimal local setup.
+
+#### More Information
+
+For further details, refer to the [GSG](./.devcontainer/gsg/devcontainer.md) or
+the [introduction to Dev Containers](https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/adding-a-dev-container-configuration/introduction-to-dev-containers)
+provided by GitHub.
+
 ## CNDP notable directories
 
 The following shows a subset of the directory structure.
