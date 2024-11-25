@@ -168,7 +168,8 @@ _qnode_pool_insert(struct qnode_pool *p, struct qnode *n)
  * @return
  *   NULL on error or qnode pointer
  */
-static inline struct qnode *__attribute__((always_inline)) _pool_remove(struct qnode_pool *p)
+static inline struct qnode *__attribute__((always_inline))
+_pool_remove(struct qnode_pool *p)
 {
     struct qnode *head;
     struct qnode *tail = p->tail;
@@ -212,7 +213,8 @@ static inline struct qnode *__attribute__((always_inline)) _pool_remove(struct q
  * @return
  *   The qnode removed from queue or NULL on error
  */
-static inline struct qnode *__attribute__((always_inline)) _qnode_pool_remove(struct qnode_pool *p)
+static inline struct qnode *__attribute__((always_inline))
+_qnode_pool_remove(struct qnode_pool *p)
 {
     struct qnode *n;
 
@@ -230,7 +232,8 @@ static inline struct qnode *__attribute__((always_inline)) _qnode_pool_remove(st
  * Allocate a node from the pool
  * If the pool is empty add mode nodes
  */
-static inline struct qnode *__attribute__((always_inline)) _qnode_alloc(void)
+static inline struct qnode *__attribute__((always_inline))
+_qnode_alloc(void)
 {
     struct qnode_pool *p = (THIS_SCHED)->qnode_pool;
     int prealloc_size    = p->pre_alloc;
@@ -263,7 +266,8 @@ static inline struct qnode *__attribute__((always_inline)) _qnode_alloc(void)
 /*
  * free a queue node to the per scheduler pool from which it came
  */
-static inline void __attribute__((always_inline)) _qnode_free(struct qnode *n)
+static inline void __attribute__((always_inline))
+_qnode_free(struct qnode *n)
 {
     struct qnode_pool *p = n->pool;
 

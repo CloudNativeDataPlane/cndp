@@ -101,14 +101,16 @@ _sched_now(void)
     return 1;
 }
 
-static inline void __attribute__((always_inline)) _affinitize(void)
+static inline void __attribute__((always_inline))
+_affinitize(void)
 {
     struct cthread *ct = THIS_CTHREAD;
 
     cthread_switch(&(THIS_SCHED)->ctx, &ct->ctx);
 }
 
-static inline void __attribute__((always_inline)) _suspend(void)
+static inline void __attribute__((always_inline))
+_suspend(void)
 {
     struct cthread *ct = THIS_CTHREAD;
 
@@ -117,7 +119,8 @@ static inline void __attribute__((always_inline)) _suspend(void)
     (THIS_SCHED)->nb_blocked_threads--;
 }
 
-static inline void __attribute__((always_inline)) _reschedule(void)
+static inline void __attribute__((always_inline))
+_reschedule(void)
 {
     struct cthread *ct = THIS_CTHREAD;
 
