@@ -27,7 +27,7 @@
 #include "ring_private.h"                 // for cne_ring, cne_ring_headtail, CNE_...
 
 /* true if x is a power of 2 */
-#define POWEROF2(x)       ((((x)-1) & (x)) == 0)
+#define POWEROF2(x)       ((((x) - 1) & (x)) == 0)
 #define RING_DFLT_ELEM_SZ sizeof(void *) /** The default ring element size*/
 
 ssize_t

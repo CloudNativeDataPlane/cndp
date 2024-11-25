@@ -296,7 +296,7 @@ static const uint32_t crc32c_tables[8][256] = {{
 // clang-format on
 
 #define CRC32_UPD(crc, n) \
-    (crc32c_tables[(n)][(crc) & 0xFF] ^ crc32c_tables[(n)-1][((crc) >> 8) & 0xFF])
+    (crc32c_tables[(n)][(crc) & 0xFF] ^ crc32c_tables[(n) - 1][((crc) >> 8) & 0xFF])
 
 static inline uint32_t
 crc32c_1byte(uint8_t data, uint32_t init_val)
