@@ -465,7 +465,7 @@ tcp_chnl_opt_get(struct chnl *ch, int level, int optname, void *optval, uint32_t
             *resI = ch->ch_pcb->opt_flag & TCP_NOPUSH_FLAG;
             break;
         case TCP_CONGESTION:
-            resP = (void *)(uintptr_t) "reno";
+            resP = (void *)(uintptr_t)"reno";
             len  = 5;
             break;
         case TCP_INFO:
