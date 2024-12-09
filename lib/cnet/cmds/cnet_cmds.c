@@ -351,8 +351,7 @@ _node_style(char *name, int src)
         { 0,                    "tcp_*",                 "[fillcolor=lightpink]" },
         { CNE_NODE_SOURCE_F,    NULL,                    "[fillcolor=cyan]" },
         { CNE_NODE_INPUT_F,     NULL,                    "[fillcolor=lightskyblue]" },
-        { 0,                    NULL,                    "[fillcolor=lightgrey]" }
-        // clang-format on
+        { 0,                    NULL,                    "[fillcolor=lightgrey]" }        // clang-format on
     };
 
     for (int i = 0; i < cne_countof(styles); i++) {
