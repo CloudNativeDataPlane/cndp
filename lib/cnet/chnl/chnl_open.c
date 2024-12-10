@@ -156,7 +156,7 @@ chnl_open(const char *str, int flags, chnl_cb_t fn)
 
     domain = AF_UNSPEC;
     typ    = 0;
-    ipaddr = (char *)(uintptr_t)"0.0.0.0";
+    ipaddr = (char *)(uintptr_t) "0.0.0.0";
 
     switch (pt->otype) {
     case UDP4_LISTEN:
