@@ -161,7 +161,7 @@ loop_main(int argc, char **argv)
     lport = 0;
 
     optind = 0;
-    ifname = (char *)(uintptr_t) "Unknown";
+    ifname = (char *)(uintptr_t)"Unknown";
     while ((opt = getopt_long(argc, argvopt, "Vi:d:DLT2", lgopts, &option_index)) != EOF) {
         switch (opt) {
         case 'V':
