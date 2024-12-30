@@ -3,7 +3,7 @@
 
 # Please keep the options sorted alphabetically.
 
-option('coverity', type: 'boolean', value: 'false',
+option('coverity', type: 'boolean', value: false,
     description: 'build for coverity')
 
 option('enable_asserts', type: 'boolean', value: false,
@@ -15,37 +15,37 @@ option('enable_docs', type: 'boolean', value: false,
 # ----
 # CNET Configuration
 #
-option('enable_ip4_dump', type: 'boolean', value: 'false',
+option('enable_ip4_dump', type: 'boolean', value: false,
     description: 'enable IPv4 dump header')
 
-option('enable_ip6', type: 'boolean', value: 'false',
+option('enable_ip6', type: 'boolean', value: false,
     description: 'enable IPv6 in CNET (experimental)')
 
-option('enable_ip6_dump', type: 'boolean', value: 'false',
+option('enable_ip6_dump', type: 'boolean', value: false,
     description: 'enable IPv6 dump header')
 
-option('enable_tcp', type: 'boolean', value: 'false',
+option('enable_tcp', type: 'boolean', value: false,
     description: 'enable TCP in CNET (experimental)')
 
-option('enable_punting', type: 'boolean', value: 'true',
+option('enable_punting', type: 'boolean', value: true,
     description: 'enable punting to Linux kernel stack')
 
-option('enable_tcp_dump', type: 'boolean', value: 'false',
+option('enable_tcp_dump', type: 'boolean', value: false,
     description: 'enable TCP dump header')
 
-option('cnet_num_tcbs', type: 'integer', value: '512',
+option('cnet_num_tcbs', type: 'integer', value: 512,
     description: 'Max number of TCBs')
 
-option('cnet_num_channels', type: 'integer', value: '512',
+option('cnet_num_channels', type: 'integer', value: 512,
     description: 'Max number of Channels')
 
-option('cnet_num_routes', type: 'integer', value: '512',
+option('cnet_num_routes', type: 'integer', value: 512,
     description: 'Max number of IPv4 Routes')
 
-option('cnet_num_6routes', type: 'integer', value: '512',
+option('cnet_num_6routes', type: 'integer', value: 512,
     description: 'Max number of IPv6 Routes')
 
-option('cnet_num_segs', type: 'integer', value: '8192',
+option('cnet_num_segs', type: 'integer', value: 8192,
     description: 'Max number of TCB segments')
 
 # ------
