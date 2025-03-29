@@ -36,8 +36,6 @@
 #define POLL_TIMEOUT       0
 #define MAX_NUM_TRIES      1000
 
-static bool xskdev_use_tx_lock = true;
-
 static TAILQ_HEAD(cne_xskdev_list, xskdev_info) xskdev_list;
 static pthread_mutex_t xskdev_list_mutex;
 
@@ -57,6 +55,26 @@ xskdev_list_unlock(void)
 
     if (ret)
         CNE_WARN("failed: %s\n", strerror(ret));
+}
+
+static inline void
+xskdev_tx_lock(xskdev_info_t *xi)
+{
+    int err;
+
+    err = pthread_mutex_lock(&xi->tx_lock);
+    if (err)
+        CNE_ERR("Failed to lock xskdev TX path: %d: %s\n", err, strerror(err));
+}
+
+static inline void
+xskdev_tx_unlock(xskdev_info_t *xi)
+{
+    int err;
+
+    err = pthread_mutex_unlock(&xi->tx_lock);
+    if (err)
+        CNE_ERR("Failed to unlock xskdev TX path: %d: %s\n", err, strerror(err));
 }
 
 /**
@@ -515,24 +533,11 @@ xskdev_tx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
     xskdev_info_t *xi = (xskdev_info_t *)_xi;
     uint16_t ret;
 
-    if (xskdev_use_tx_lock) {
-        int err;
+    xskdev_tx_lock(xi);
 
-        err = pthread_mutex_lock(&xi->tx_lock);
-        if (err) {
-            CNE_ERR("Failed to lock xskdev: %d: %s\n", err, strerror(err));
-            return 0;
-        }
+    ret = xskdev_tx_burst_locked(xi, bufs, nb_pkts);
 
-        ret = xskdev_tx_burst_locked(xi, bufs, nb_pkts);
-
-        err = pthread_mutex_unlock(&xi->tx_lock);
-        if (err)
-            CNE_ERR("Failed to unlock xskdev: %d: %s\n", err, strerror(err));
-    } else {
-        /* Lock is disabled, call tx_burst function directly. */
-        ret = xskdev_tx_burst_locked(xi, bufs, nb_pkts);
-    }
+    xskdev_tx_unlock(xi);
 
     return ret;
 }
@@ -761,11 +766,9 @@ xskdev_socket_create(struct lport_cfg *c)
         CNE_DEBUG("xi->xsk_map_fd = %d\n", xi->xsk_map_fd);
     }
 
-    if (xskdev_use_tx_lock) {
-        ret = cne_mutex_create(&xi->tx_lock, 0);
-        if (ret)
-            CNE_ERR_GOTO(err, "Failed to initialize xskdev tx lock: %s\n", strerror(errno));
-    }
+    ret = cne_mutex_create(&xi->tx_lock, 0);
+    if (ret)
+        CNE_ERR_GOTO(err, "Failed to initialize xskdev tx lock: %s\n", strerror(errno));
 
     xi->if_index = if_index;
 
@@ -962,12 +965,10 @@ xskdev_socket_destroy(xskdev_info_t *xi)
                 xi->rxq.ux->umem = NULL;
             }
 
-            if (xskdev_use_tx_lock) {
-                int err = cne_mutex_destroy(&xi->tx_lock);
+            int err = cne_mutex_destroy(&xi->tx_lock);
+            if (err)
+                CNE_ERR("Failed to destroy xskdev tx lock: %s\n", strerror(errno));
 
-                if (err)
-                    CNE_ERR("Failed to destroy xskdev tx lock: %s\n", strerror(errno));
-            }
             xskdev_list_lock();
             if (xi->next.tqe_prev)
                 TAILQ_REMOVE(&xskdev_list, xi, next);
