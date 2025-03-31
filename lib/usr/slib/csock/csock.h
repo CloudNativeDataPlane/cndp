@@ -55,7 +55,7 @@ typedef void csock_t; /**< Forward declarations */
  * @return
  *   NULL on success or a value for pthread_exit() call failure
  */
-typedef void *(csock_client_fn_t)(csock_t *c);
+typedef void *(csock_client_fn_t)(csock_t * c);
 
 /**
  * Template for the write function

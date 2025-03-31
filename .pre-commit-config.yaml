@@ -8,21 +8,21 @@ repos:
       - id: end-of-file-fixer
       - id: check-added-large-files
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.37.0
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v19.1.5
+    rev: v20.1.0
     hooks:
       - id: clang-format
         types_or: [c++, c]
         args: [-i, --style=file]
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.17.0
+    rev: v0.17.2
     hooks:
       - id: markdownlint-cli2-rules-docker
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: [--toml, cndp-codespell.precommit-toml]
