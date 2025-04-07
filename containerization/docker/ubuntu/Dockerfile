@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2023 Intel Corporation.
 
-FROM ubuntu:22.04 AS build
+FROM ubuntu:24.04 AS build
 
 # Setup container to build CNDP applications
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     golang \
     libelf-dev \
-    meson \
+    python3-pip \
     pkg-config \
     libbsd-dev \
     libjson-c-dev \
@@ -29,8 +29,10 @@ RUN apt-get update && apt-get install -y \
     m4 \
     linux-tools-common \
     libbpf-dev \
+    ninja-build \
+    && apt-get remove -y meson \
+    && pip install --no-cache-dir meson --break-system-packages \
     && rm -rf /var/lib/apt/lists/*
-
 # Install libxdp
 RUN git clone https://github.com/xdp-project/xdp-tools.git
 WORKDIR /xdp-tools/
@@ -71,7 +73,7 @@ ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
 RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Ubuntu 20.04 has libjson-c4 but Ubuntu 21.04 has libjson-c5. Try either.
 ENV DEBIAN_FRONTEND=noninteractive
