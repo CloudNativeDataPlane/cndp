@@ -28,10 +28,12 @@ jobs:
 
       - name: Upgrade all Cargo.toml dependencies
         run: |
-          find . -name Cargo.toml -execdir bash -c '
-            # shellcheck disable=SC2086
-            cargo upgrade || true
-          ' \;
+          find . -name "Cargo.toml" -print0 | while IFS= read -r -d '' file; do
+            dir="$(dirname "$file")"
+            if cd "$dir"; then
+              cargo upgrade || true
+            fi
+          done
 
       - name: Check if anything changed
         id: git-check
@@ -39,7 +41,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [[ -n $(git status --porcelain) ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push changes
