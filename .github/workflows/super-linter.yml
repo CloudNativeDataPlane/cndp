@@ -8,12 +8,18 @@ name: Lint Code Base
 
 on: # yamllint disable-line rule:truthy
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
+
 jobs:
   run-lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

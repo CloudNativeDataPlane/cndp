@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2023 Intel Corporation.
 
-FROM ubuntu:22.04 AS build
+FROM public.ecr.aws/ubuntu/ubuntu:24.04 AS build
 
 # Setup container to build CNDP applications
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     golang \
     libelf-dev \
-    meson \
+    python3-pip \
     pkg-config \
     libbsd-dev \
     libjson-c-dev \
@@ -29,8 +29,10 @@ RUN apt-get update && apt-get install -y \
     m4 \
     linux-tools-common \
     libbpf-dev \
+    ninja-build \
+    && apt-get remove -y meson \
+    && pip install --no-cache-dir meson --break-system-packages \
     && rm -rf /var/lib/apt/lists/*
-
 # Install libxdp
 RUN git clone https://github.com/xdp-project/xdp-tools.git
 WORKDIR /xdp-tools/
@@ -41,10 +43,10 @@ RUN make -j; PREFIX=/usr make -j install
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
 # Install Rust and Cargo.
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+# RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 # Set Cargo path.
-ENV PATH="/root/.cargo/bin:${PATH}"
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp
@@ -64,14 +66,22 @@ RUN make && make install
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
-# Build and install Rust packet fwd example application.
-WORKDIR /cndp/lang/rs
-# Set PKG_CONFIG_PATH to resolve libbpf dependency for Rust library build.
-ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
-RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
+# RUN apt-get update && apt-get install -y \
+#     llvm-17 clang-17 libclang-17-dev \
+#     && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100 \
+#     && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-17 100
+
+# ENV LIBCLANG_PATH=/usr/lib/llvm-17/lib
+# ENV CLANG_PATH=/usr/bin/clang-17
+
+# # Build and install Rust packet fwd example application.
+# WORKDIR /cndp/lang/rs
+# # Set PKG_CONFIG_PATH to resolve libbpf dependency for Rust library build.
+# ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
+# RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
-FROM ubuntu:22.04
+FROM public.ecr.aws/ubuntu/ubuntu:24.04
 
 # Ubuntu 20.04 has libjson-c4 but Ubuntu 21.04 has libjson-c5. Try either.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -88,10 +98,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
-COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
+#COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
-COPY --from=build /lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
+COPY --from=build /usr/lib*/libbpf.so* /usr/lib/
 COPY --from=build /lib/libxdp.so.1 /usr/lib/
 
 # Copy configurations from the host
