@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0  # Needed for commits
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@v1.0.7
         with:
           toolchain: stable
           override: true
@@ -28,7 +28,7 @@ jobs:
 
       - name: Upgrade all Cargo.toml dependencies
         run: |
-          find . -name Cargo.toml -execdir bash -c 'cargo upgrade || true' \;
+         find . -name Cargo.toml -execdir bash -c "cargo upgrade || true" \;
 
       - name: Check if anything changed
         id: git-check
