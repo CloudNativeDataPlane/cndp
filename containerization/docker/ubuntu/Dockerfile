@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2023 Intel Corporation.
 
-FROM ubuntu:24.04 AS build
+FROM public.ecr.aws/ubuntu/ubuntu:24.04 AS build
 
 # Setup container to build CNDP applications
 ENV DEBIAN_FRONTEND=noninteractive
@@ -43,10 +43,10 @@ RUN make -j; PREFIX=/usr make -j install
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
 # Install Rust and Cargo.
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+# RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 # Set Cargo path.
-ENV PATH="/root/.cargo/bin:${PATH}"
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy CNDP sources, build, and install
 RUN mkdir /cndp
@@ -81,7 +81,7 @@ RUN go build prometheus.go
 # RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
-FROM ubuntu:24.04
+FROM public.ecr.aws/ubuntu/ubuntu:24.04
 
 # Ubuntu 20.04 has libjson-c4 but Ubuntu 21.04 has libjson-c5. Try either.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -101,7 +101,7 @@ COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
 #COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
-COPY --from=build /usr/lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
+COPY --from=build /usr/lib*/libbpf.so* /usr/lib/
 COPY --from=build /lib/libxdp.so.1 /usr/lib/
 
 # Copy configurations from the host
