@@ -66,11 +66,19 @@ RUN make && make install
 WORKDIR /cndp/lang/go/stats/prometheus
 RUN go build prometheus.go
 
-# Build and install Rust packet fwd example application.
-WORKDIR /cndp/lang/rs
-# Set PKG_CONFIG_PATH to resolve libbpf dependency for Rust library build.
-ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
-RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
+# RUN apt-get update && apt-get install -y \
+#     llvm-17 clang-17 libclang-17-dev \
+#     && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100 \
+#     && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-17 100
+
+# ENV LIBCLANG_PATH=/usr/lib/llvm-17/lib
+# ENV CLANG_PATH=/usr/bin/clang-17
+
+# # Build and install Rust packet fwd example application.
+# WORKDIR /cndp/lang/rs
+# # Set PKG_CONFIG_PATH to resolve libbpf dependency for Rust library build.
+# ENV PKG_CONFIG_PATH="/usr/lib64/pkgconfig"
+# RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
 FROM ubuntu:24.04
@@ -90,10 +98,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy artifacts from the build container
 COPY --from=build /cndp/usr/local/bin/cndpfwd /usr/bin/
-COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
+#COPY --from=build /cndp/usr/local/bin/fwd /usr/bin
 COPY --from=build /cndp/usr/local/lib/x86_64-linux-gnu/*.so /usr/lib/
 COPY --from=build /cndp/lang/go/stats/prometheus/prometheus /usr/bin/
-COPY --from=build /lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
+COPY --from=build /usr/lib/x86_64-linux-gnu/libbpf.so.0 /usr/lib/
 COPY --from=build /lib/libxdp.so.1 /usr/lib/
 
 # Copy configurations from the host
