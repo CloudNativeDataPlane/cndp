@@ -28,7 +28,10 @@ jobs:
 
       - name: Upgrade all Cargo.toml dependencies
         run: |
-         find . -name Cargo.toml -execdir bash -c "cargo upgrade || true" \;
+          find . -name Cargo.toml -execdir bash -c '
+            # shellcheck disable=SC2086
+            cargo upgrade || true
+          ' \;
 
       - name: Check if anything changed
         id: git-check
