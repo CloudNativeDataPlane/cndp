@@ -38,7 +38,13 @@ RUN git clone https://github.com/xdp-project/xdp-tools.git
 WORKDIR /xdp-tools/
 RUN git checkout v1.2.2
 RUN ./configure
-WORKDIR /xdp-tools/
+# FIX error: 'calloc' sizes specified with 'sizeof' in the earlier argument and not in the later argument [-Werror=calloc-transposed-args]
+RUN grep -q 'calloc.*shb_length' lib/util/xpcapng.c && \
+    sed -i -E \
+    -e 's/calloc\((shb_length),[[:space:]]*1\)/calloc(1, \1)/' \
+    -e 's/calloc\((idb_length),[[:space:]]*1\)/calloc(1, \1)/' \
+    -e 's/calloc\(\s*sizeof\(\*pd\),[[:space:]]*1\)/calloc(1, sizeof(*pd))/' \
+    lib/util/xpcapng.c || echo "Patch already applied or file missing"
 RUN make -j; PREFIX=/usr make -j install
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
