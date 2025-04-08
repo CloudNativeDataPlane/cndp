@@ -1,8 +1,23 @@
 name: Docker Image Build
 
 on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/docker.yml
+      - containerization/docker/fedora/Dockerfile
+      - containerization/docker/ubuntu/Dockerfile
+      - containerization/docker/ubuntu/fwd.jsonc
   pull_request:
-    branches: [main]
+    paths:
+      - .github/workflows/docker.yml
+      - containerization/docker/fedora/Dockerfile
+      - containerization/docker/ubuntu/Dockerfile
+      - containerization/docker/ubuntu/fwd.jsonc
+  schedule:
+    - cron: '0 0 * * 0' # Runs every Sunday at midnight UTC
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
