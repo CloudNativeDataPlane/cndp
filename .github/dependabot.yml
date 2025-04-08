@@ -12,3 +12,15 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  - package-ecosystem: "docker"
+    directory: "/containerization/docker/fedora"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+
+  - package-ecosystem: "docker"
+    directory: "/containerization/docker/ubuntu"
+    schedule:
+      interval: "weekly"
+      day: "monday"
