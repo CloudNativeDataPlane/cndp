@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2023 Intel Corporation.
 
-FROM fedora:41 AS build
+FROM fedora:42 AS build
 
 # Setup container to build CNDP applications
 RUN dnf -y upgrade && dnf -y install \
