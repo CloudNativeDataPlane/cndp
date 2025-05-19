@@ -121,8 +121,8 @@ struct st_stream_data_t {
     FILE *outfp;
 };
 
-static void on_stop_sending(quicly_stream_t *stream, int err);
-static void on_receive_reset(quicly_stream_t *stream, int err);
+static void on_stop_sending(quicly_stream_t *stream, quicly_error_t err);
+static void on_receive_reset(quicly_stream_t *stream, quicly_error_t err);
 static void server_on_receive(quicly_stream_t *stream, size_t off, const void *src, size_t len);
 static void client_on_receive(quicly_stream_t *stream, size_t off, const void *src, size_t len);
 
@@ -218,7 +218,7 @@ send_header(quicly_stream_t *stream, int is_http1, int status, const char *mime_
     send_str(stream, buf);
 }
 
-static int
+static quicly_error_t
 flatten_file_vec(quicly_sendbuf_vec_t *vec, void *dst, size_t off, size_t len)
 {
     int fd = (intptr_t)vec->cbdata;
@@ -266,7 +266,7 @@ send_file(quicly_stream_t *stream, int is_http1, const char *fn, const char *mim
  * This function is an implementation of the quicly_sendbuf_flatten_vec_cb callback.  Refer to the
  * doc-comments of the callback type for the API.
  */
-static int
+static quicly_error_t
 flatten_sized_text(quicly_sendbuf_vec_t *vec, void *dst, size_t off, size_t len)
 {
     static const char pattern[] =
@@ -338,17 +338,17 @@ send_sized_text(quicly_stream_t *stream, const char *path, int is_http1)
 }
 
 static void
-on_stop_sending(quicly_stream_t *stream, int err)
+on_stop_sending(quicly_stream_t *stream, quicly_error_t err)
 {
     assert(QUICLY_ERROR_IS_QUIC_APPLICATION(err));
-    fprintf(stderr, "received STOP_SENDING: %" PRIu16 "\n", QUICLY_ERROR_GET_ERROR_CODE(err));
+    fprintf(stderr, "received STOP_SENDING: %" PRIu64 "\n", QUICLY_ERROR_GET_ERROR_CODE(err));
 }
 
 static void
-on_receive_reset(quicly_stream_t *stream, int err)
+on_receive_reset(quicly_stream_t *stream, quicly_error_t err)
 {
     assert(QUICLY_ERROR_IS_QUIC_APPLICATION(err));
-    fprintf(stderr, "received RESET_STREAM: %" PRIu16 "\n", QUICLY_ERROR_GET_ERROR_CODE(err));
+    fprintf(stderr, "received RESET_STREAM: %" PRIu64 "\n", QUICLY_ERROR_GET_ERROR_CODE(err));
 }
 
 static void
@@ -429,7 +429,7 @@ client_on_receive(quicly_stream_t *stream, size_t off, const void *src, size_t l
     }
 }
 
-static int
+static quicly_error_t
 on_stream_open(quicly_stream_open_t *self, quicly_stream_t *stream)
 {
     int ret;
@@ -445,26 +445,26 @@ on_stream_open(quicly_stream_open_t *self, quicly_stream_t *stream)
 static quicly_stream_open_t stream_open = {&on_stream_open};
 
 static void
-on_closed_by_remote(quicly_closed_by_remote_t *self, quicly_conn_t *conn, int err,
+on_closed_by_remote(quicly_closed_by_remote_t *self, quicly_conn_t *conn, quicly_error_t err,
                     uint64_t frame_type, const char *reason, size_t reason_len)
 {
     if (QUICLY_ERROR_IS_QUIC_TRANSPORT(err))
-        fprintf(stderr, "transport close:code=0x%" PRIx16 ";frame=%" PRIu64 ";reason=%.*s\n",
+        fprintf(stderr, "transport close:code=0x%" PRIx64 ";frame=%" PRIu64 ";reason=%.*s\n",
                 QUICLY_ERROR_GET_ERROR_CODE(err), frame_type, (int)reason_len, reason);
     else if (QUICLY_ERROR_IS_QUIC_APPLICATION(err))
-        fprintf(stderr, "application close:code=0x%" PRIx16 ";reason=%.*s\n",
+        fprintf(stderr, "application close:code=0x%" PRIx64 ";reason=%.*s\n",
                 QUICLY_ERROR_GET_ERROR_CODE(err), (int)reason_len, reason);
     else if (err == QUICLY_ERROR_RECEIVED_STATELESS_RESET)
         fprintf(stderr, "stateless reset\n");
     else if (err == QUICLY_ERROR_NO_COMPATIBLE_VERSION)
         fprintf(stderr, "no compatible version\n");
     else
-        fprintf(stderr, "unexpected close:code=%d\n", err);
+        fprintf(stderr, "unexpected close:code=%" PRIu64 "\n", err);
 }
 
 static quicly_closed_by_remote_t closed_by_remote = {&on_closed_by_remote};
 
-static int
+static quicly_error_t
 on_generate_resumption_token(quicly_generate_resumption_token_t *self, quicly_conn_t *conn,
                              ptls_buffer_t *buf, quicly_address_token_plaintext_t *token)
 {
@@ -788,7 +788,7 @@ run_server(int cd, pktmbuf_t *mbuf)
 
             if (packet.token.len != 0) {
                 const char *err_desc = NULL;
-                int ret =
+                quicly_error_t ret =
                     quicly_decrypt_address_token(address_token_aead.dec, &token_buf,
                                                  packet.token.base, packet.token.len, 0, &err_desc);
                 if (ret == 0 && validate_token(&remote.sa, packet.cid.src,
@@ -972,7 +972,7 @@ save_session_ticket_cb(ptls_save_ticket_t *_self, ptls_t *tls, ptls_iovec_t src)
     return save_session(quicly_get_remote_transport_parameters(conn));
 }
 
-static int
+static quicly_error_t
 save_resumption_token_cb(quicly_save_resumption_token_t *_self, quicly_conn_t *conn,
                          ptls_iovec_t token)
 {

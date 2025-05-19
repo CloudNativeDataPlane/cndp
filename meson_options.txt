@@ -84,9 +84,9 @@ option('machine', type: 'string', value: 'native',
 
 # The path below can't be a relative path, must be absolute path to quicly source code.
 # Follow the quicly build process to get the libquicly.a and picotls code.
-option('picotls_path', type: 'string', value: '/work/projects/intel/networking.dataplane/picotls',
+option('picotls_path', type: 'string', value: '/work/projects/intel/io-engines/picotls',
 	description: 'set the path to picotls directory')
-option('quicly_path', type: 'string', value: '/work/projects/intel/networking.dataplane/quicly',
+option('quicly_path', type: 'string', value: '/work/projects/intel/io-engines/quicly',
 	description: 'set the path to quicly directory')
 
 option('verbose', type: 'boolean', value: false,
