@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2020-2023 Intel Corporation.
 
-FROM public.ecr.aws/ubuntu/ubuntu:24.10 AS build
+FROM public.ecr.aws/ubuntu/ubuntu:25.04 AS build
 
 # Setup container to build CNDP applications
 ENV DEBIAN_FRONTEND=noninteractive
@@ -87,7 +87,7 @@ RUN go build prometheus.go
 # RUN CNDP_INSTALL_PATH="/cndp" cargo install --root /cndp/usr/local/ --path examples/fwd
 
 # Setup container to run CNDP applications
-FROM public.ecr.aws/ubuntu/ubuntu:24.10
+FROM public.ecr.aws/ubuntu/ubuntu:25.04
 
 # Ubuntu 20.04 has libjson-c4 but Ubuntu 21.04 has libjson-c5. Try either.
 ENV DEBIAN_FRONTEND=noninteractive
