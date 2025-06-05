@@ -12,10 +12,10 @@
 mkfile_path=$(abspath $(lastword $(MAKEFILE_LIST)))
 source_dir=$(shell dirname "$(mkfile_path)")
 Build="${source_dir}/tools/cne-build.sh"
-Builder?=docker #OCI Image Builder
 CE?=docker #Container Engine
-OCI-Builder=$(shell echo $(Builder) | tr A-Z a-z)
 ContainerEngine=$(shell echo $(CE) | tr A-Z a-z)
+Builder := $(shell which docker 2>/dev/null || which podman)
+OCI-Builder ?= $(shell basename ${Builder})
 
 # Use V=1 on the make line to enable verbose output
 ifeq ($V,1)
@@ -104,6 +104,8 @@ ifeq ($(OCI-Builder), docker)
 	@echo "docker selected"
 else ifeq ($(OCI-Builder), buildah)
 	@echo "buildah selected"
+else ifeq ($(OCI-Builder), podman)
+	@echo "podman selected"
 else
 	@echo "UNKNOWN OCI IMAGE builder $(OCI-Builder)"
 	exit 1
