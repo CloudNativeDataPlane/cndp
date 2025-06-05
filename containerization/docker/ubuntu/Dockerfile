@@ -19,8 +19,6 @@ RUN apt-get update && apt-get install -y \
     libpcap-dev \
     wget \
     llvm-dev \
-    libclang-dev \
-    clang \
     curl \
     git \
     gcc-multilib \
@@ -29,10 +27,26 @@ RUN apt-get update && apt-get install -y \
     m4 \
     linux-tools-common \
     libbpf-dev \
-    ninja-build \
-    && apt-get remove -y meson \
-    && pip install --no-cache-dir meson --break-system-packages \
-    && rm -rf /var/lib/apt/lists/*
+    ninja-build
+
+# Add LLVM key securely and install Clang 15 from Jammy repo
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o /etc/apt/keyrings/llvm.asc && \
+    echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main" \
+        > /etc/apt/sources.list.d/llvm.list
+
+
+# Install Clang 15
+RUN apt-get update && apt-get install -y clang-15 llvm-15 libclang-15-dev && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
+
+# Install Meson via pip and cleanup
+RUN apt-get remove -y meson || true && \
+    pip install --no-cache-dir meson --break-system-packages && \
+    rm -rf /var/lib/apt/lists/*
+
+
 # Install libxdp
 RUN git clone https://github.com/xdp-project/xdp-tools.git
 WORKDIR /xdp-tools/
