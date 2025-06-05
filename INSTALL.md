@@ -177,9 +177,9 @@ sudo dnf update && sudo dnf -y install \
 
 ## Hugepage Configuration
 
-Hugepage support is optional, but preferred as it provides a performance boost.
-Details of Hugepage Configuration can be found
-[here](https://github.com/CloudNativeDataPlane/cndp/blob/9fa83c17c75930eee2355476e23cf786a533756c/doc/guides/linux_gsg/linux_gsg.rst)
+Hugepage support is optional but recommended, as it can significantly improve
+performance. For detailed instructions on configuring Hugepages, refer to the
+[Linux Getting Started Guide](./doc/guides/linux_gsg/linux_gsg.rst)
 
 ## Build CNDP
 
