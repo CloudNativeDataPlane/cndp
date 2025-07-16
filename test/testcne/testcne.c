@@ -4,7 +4,7 @@
 
 // IWYU pragma: no_include <bits/getopt_core.h>
 
-#include <stdlib.h>             // for exit, free, EXIT_FAILURE, EXIT_SUCCESS
+#include <stdlib.h>             // for exit, free, EXIT_SUCCESS
 #include <signal.h>             // for signal, SIGUSR1, SIGSEGV, SIGTERM
 #include <execinfo.h>           // for backtrace, backtrace_symbols
 #include <cne.h>                // for cne_dump, cne_init, cne_unregister

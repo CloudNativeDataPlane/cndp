@@ -282,7 +282,7 @@ txgen_pkt_stats(int lport, pkt_stats_t *pstats)
  * SEE ALSO:
  */
 int
-txgen_port_stats(int lport, const char *name, eth_stats_t *pstats)
+txgen_port_stats(int lport, const char *name, lport_stats_t *pstats)
 {
     port_info_t *info = &txgen.info[lport];
 
@@ -514,8 +514,8 @@ txgen_clear_stats(port_info_t *info)
 
     /* curr_stats are reset each time the stats are read */
     memset(&info->sizes, 0, sizeof(port_sizes_t));
-    memset(&info->prev_stats, 0, sizeof(eth_stats_t));
-    memset(&info->rate_stats, 0, sizeof(eth_stats_t));
+    memset(&info->prev_stats, 0, sizeof(lport_stats_t));
+    memset(&info->rate_stats, 0, sizeof(lport_stats_t));
 
     /* Normalize the stats to a zero base line */
     pktdev_stats_get(pid, &info->prev_stats);
@@ -538,7 +538,7 @@ txgen_clear_stats(port_info_t *info)
     info->avg_latency        = 0;
     info->jitter_count       = 0;
 
-    memset(&txgen.cumm_rate_totals, 0, sizeof(eth_stats_t));
+    memset(&txgen.cumm_rate_totals, 0, sizeof(lport_stats_t));
 }
 
 /**
