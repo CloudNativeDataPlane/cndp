@@ -20,7 +20,7 @@
 #include <net/cne_ether.h>        // for inet_mtoa
 #include "cne_lport.h"            // for lport_stats_t
 #include "cne_log.h"
-#include "ether.h"               // for eth_stats_t
+#include "ether.h"               // for lport_stats_t
 #include "jcfg.h"                // for jcfg_lport_t
 #include "netdev_funcs.h"        // for netdev_link, netdev_get_link
 #include "port-cfg.h"            // for port_info_t, port_sizes_t, ABC_FILL_PATTERN
@@ -239,7 +239,7 @@ txgen_page_stats(void)
         txgen_print_static_data();
 
     cumm = &txgen.cumm_rate_totals;
-    memset(cumm, 0, sizeof(eth_stats_t));
+    memset(cumm, 0, sizeof(lport_stats_t));
 
     /* Calculate the total values */
     PKTDEV_FOREACH (pid) {

@@ -14,7 +14,7 @@
 #include <stdint.h>        // for uint32_t, uint16_t, uint8_t
 
 #include "txgen.h"
-#include "ether.h"           // for eth_stats_t
+#include "ether.h"           // for lport_stats_t
 #include "port-cfg.h"        // for port_info_t, port_sizes_t
 #include "stats.h"           // for pkt_stats_t
 
@@ -32,7 +32,7 @@ char *txgen_link_state(int lport, char *buff, int len);
 char *txgen_transmit_count(int lport, char *buff, int len);
 char *txgen_transmit_rate(int lport, char *buff, int len);
 int txgen_pkt_stats(int lport, pkt_stats_t *pstats);
-int txgen_port_stats(int lport, const char *name, eth_stats_t *pstats);
+int txgen_port_stats(int lport, const char *name, lport_stats_t *pstats);
 int txgen_port_sizes(int lport, port_sizes_t *psizes);
 
 /* Global commands */

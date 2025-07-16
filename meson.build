@@ -145,6 +145,12 @@ if pcap_dep.found()
     extra_ldflags += '-lpcap'
 endif
 
+mqtt_dep = dependency('libmosquitto', required: true, static: use_static_libs)
+if mqtt_dep.found()
+    add_project_link_arguments('-lmosquitto', language: 'c')
+    extra_ldflags += '-lmosquitto'
+endif
+
 # Check for libhs (hyperscan) for cndpfwd
 hs_dep = dependency('libhs', required: false, static: use_static_libs)
 if hs_dep.found()

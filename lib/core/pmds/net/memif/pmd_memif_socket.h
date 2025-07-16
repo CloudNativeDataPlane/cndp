@@ -112,7 +112,7 @@ struct cne_memif_queue {
     uint16_t last_head; /**< last ring head */
     uint16_t last_tail; /**< last ring tail */
 
-    struct cne_mbuf **buffers;
+    pktmbuf_t **buffers;
     /**< Stored mbufs. Used in zero-copy tx. Client stores transmitted
      * mbufs to free them once server has received them.
      */

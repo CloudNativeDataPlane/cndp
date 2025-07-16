@@ -16,7 +16,7 @@
 
 #include <getopt.h>            // for getopt_long, no_argument, option
 #include <stdio.h>             // for printf, NULL
-#include <stdlib.h>            // for exit, EXIT_FAILURE, EXIT_SUCCESS
+#include <stdlib.h>            // for exit, EXIT_SUCCESS
 #include <string.h>            // for memset, strnlen
 #include <unistd.h>            // for STDIN_FILENO, read, write, STDOUT_FILENO
 #include <signal.h>            // for sigaction, sa_handler, SIGTERM, SIGWINCH

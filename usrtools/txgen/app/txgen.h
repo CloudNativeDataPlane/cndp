@@ -65,7 +65,7 @@
 #include "seq.h"
 #include "version.h"        // for TXGEN_VERSION
 #include "capture.h"        // for capture_t
-#include "ether.h"          // for eth_stats_t
+#include "ether.h"          // for lport_stats_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -194,7 +194,7 @@ typedef struct txgen_s {
     uint16_t eth_max_pkt;               /* Max packet size, could be jumbo or not */
     uint64_t hz;                        /**< Number of events per seconds */
     port_info_t info[CNE_MAX_ETHPORTS]; /**< Port information */
-    eth_stats_t cumm_rate_totals;       /**< lport rates total values */
+    lport_stats_t cumm_rate_totals;     /**< lport rates total values */
     struct app_options opts;
     uint64_t max_total_ipackets; /**< Total Max seen input packet rate */
     uint64_t max_total_opackets; /**< Total Max seen output packet rate */

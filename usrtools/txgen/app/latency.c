@@ -179,7 +179,7 @@ txgen_page_latency(void)
         txgen_print_latency();
 
     cumm = &txgen.cumm_rate_totals;
-    memset(cumm, 0, sizeof(eth_stats_t));
+    memset(cumm, 0, sizeof(lport_stats_t));
 
     /* Calculate the total values */
     PKTDEV_FOREACH (pid) {
