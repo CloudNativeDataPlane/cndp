@@ -35,6 +35,12 @@ enum thread_quit_state {
     THD_DONE,    /**< Thread should set this state when done */
 };
 
+static uint8_t frame_data[] = {
+    0x3c, 0xfd, 0xfe, 0xe4, 0x34, 0xc0, 0x3c, 0xfd, 0xfe, 0xe4, 0x38, 0x40, 0x08, 0x00, 0x45,
+    0x00, 0x00, 0x2e, 0x60, 0xac, 0x00, 0x00, 0x40, 0x11, 0x8c, 0xec, 0xc6, 0x12, 0x00, 0x01,
+    0xc6, 0x12, 0x01, 0x01, 0x04, 0xd2, 0x16, 0x2e, 0x00, 0x1a, 0x93, 0xc6, 0x6b, 0x6c, 0x6d,
+    0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x30, 0x31};
+
 static __cne_always_inline int
 __rx_burst(pkt_api_t api, struct fwd_port *pd, pktmbuf_t **mbufs, int n_pkts)
 {
@@ -293,14 +299,7 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
              * 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e6f70
              * 0030   7172 7374 7576 7778 797a 3031
              */
-            p[0]                 = 0x3cfdfee434c03cfd;
-            p[1]                 = 0xfee4384008004500;
-            p[2]                 = 0x002e60ac00004011;
-            p[3]                 = 0x8cecc6120001c612;
-            p[4]                 = 0x010104d2162e001a;
-            p[5]                 = 0x93c66b6c6d6e6f70;
-            p[6]                 = 0x7172737475767778;
-            p[7]                 = 0x797a3031;
+            memcpy(p, frame_data, sizeof(frame_data));
             pktmbuf_data_len(xb) = 60;
         }
 
@@ -356,14 +355,7 @@ _txonly_rx_test(jcfg_lport_t *lport, struct fwd_info *fwd)
              * 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e6f70
              * 0030   7172 7374 7576 7778 797a 3031
              */
-            p[0]                 = 0x3cfdfee434c03cfd;
-            p[1]                 = 0xfee4384008004500;
-            p[2]                 = 0x002e60ac00004011;
-            p[3]                 = 0x8cecc6120001c612;
-            p[4]                 = 0x010104d2162e001a;
-            p[5]                 = 0x93c66b6c6d6e6f70;
-            p[6]                 = 0x7172737475767778;
-            p[7]                 = 0x797a3031;
+            memcpy(p, frame_data, sizeof(frame_data));
             pktmbuf_data_len(xb) = 60;
         }
 

@@ -11,8 +11,7 @@ dirs = [
     'helloworld',
     'l3fwd-graph',
     'timer',
-    'phil',
-    'rtc-m2'
+    'phil'
 ]
 
 if cne_conf.get('HAS_UINTR_SUPPORT')
