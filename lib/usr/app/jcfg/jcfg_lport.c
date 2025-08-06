@@ -158,7 +158,6 @@ _lport_obj(struct json_object *obj, int flags, struct json_object *parent __cne_
             lport->netdev = strdup(key);
             if (c && lport->netdev) /* Trim the name to remove ':' and other characters */
                 lport->netdev[c - key] = '\0';
-            printf("Netdev: %s\n", lport->netdev);
             netdev_get_mac_addr(lport->netdev, &lport->mac_addr);
 
             idx = jcfg_list_add(&data->lport_list, lport);
