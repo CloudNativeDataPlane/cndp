@@ -359,33 +359,7 @@ xskdev_rx_burst_default(void *_xi, void **bufs, uint16_t nb_pkts)
 
     umem_addr = ux->umem_addr;
 
-    rx_bytes = 0;
-    switch (rcvd) {
-    case 512:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 512);
-        break;
-    case 256:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 256);
-        break;
-    case 128:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 128);
-        break;
-    case 64:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 64);
-        break;
-    case 32:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 32);
-        break;
-    case 16:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 16);
-        break;
-    case 8:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, 8);
-        break;
-    default:
-        rx_bytes += __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, rcvd);
-        break;
-    }
+    rx_bytes = __rx_burst(xi, rxq, umem_addr, idx_rx, bufs, rcvd);
 
     xi->stats.ipackets += rcvd;
     xi->stats.ibytes += rx_bytes;
@@ -858,7 +832,8 @@ xskdev_socket_create(struct lport_cfg *c)
     xi->xdp_flags    = XDP_FLAGS_UPDATE_IF_NOEXIST;
     xi->xdp_flags    = ((xi->skb_mode) ? XDP_FLAGS_SKB_MODE : XDP_FLAGS_DRV_MODE) | xi->xdp_flags;
     cfg.xdp_flags    = xi->xdp_flags;
-    cfg.bind_flags   = (xi->skb_mode) ? XDP_COPY | XDP_USE_NEED_WAKEUP : XDP_USE_NEED_WAKEUP;
+    cfg.bind_flags   = (xi->skb_mode) ? XDP_COPY | XDP_USE_NEED_WAKEUP
+                                      : XDP_ZEROCOPY | XDP_USE_NEED_WAKEUP;
     cfg.rx_size      = c->rx_nb_desc;
     cfg.tx_size      = c->tx_nb_desc;
     cfg.libbpf_flags = xi->unprivileged ? XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD : 0;

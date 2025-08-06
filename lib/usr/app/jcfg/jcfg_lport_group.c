@@ -237,7 +237,8 @@ setup_lport(jcfg_data_t *data, jcfg_lport_group_t *lpg, const char *netdev, uint
     lport->cbtype = JCFG_LPORT_TYPE;
     lport->qid    = qid;
     lport->netdev = strdup(netdev);
-    lport->name   = strdup(name);
+    netdev_get_mac_addr(lport->netdev, &lport->mac_addr);
+    lport->name = strdup(name);
 
     if (lpg->pmd_name)
         lport->pmd_name = strdup(lpg->pmd_name);

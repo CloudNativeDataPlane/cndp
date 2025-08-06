@@ -10,7 +10,8 @@
 #include <unistd.h>            // for gethostname
 
 #include <cne_lport.h>        // for lport_stats_t
-#include <jcfg.h>             // for jcfg_lport_t, jcfg_info_t, jcfg_lport_foreach
+#include <net/cne_ether.h>
+#include <jcfg.h>        // for jcfg_lport_t, jcfg_info_t, jcfg_lport_foreach
 
 #include "main.h"        // for fwd_info, fwd_port, FWD_DEBUG_STATS, enable_...
 
@@ -44,21 +45,23 @@ prt_cnt(int skip, int width, uint64_t cnt, int type)
 }
 
 static void
-print_port_stats(int lport_id, struct fwd_port *p, struct fwd_info *fwd)
+print_port_stats(jcfg_lport_t *lport, struct fwd_port *p, struct fwd_info *fwd)
 {
     lport_stats_t stats = {0};
     uint64_t rx_pps, tx_pps;
     uint64_t acl_permit_pps, acl_deny_pps, acl_prefilter_pps;
+    char buff[32];
     int skip, col;
 
     vt_restore();
     cne_printf("\n\n");
 
     col  = COLUMN_WIDTH;
-    skip = (lport_id + 1) * (col + 2);
+    skip = (lport->lpid + 1) * (col + 2);
     vt_cnright(skip);
 
-    cne_printf("[cyan]%*d[] [yellow]|[]\n", col, lport_id);
+    snprintf(buff, sizeof(buff) - 1, "%s:%u", lport->name, lport->qid);
+    cne_printf("[cyan]%*s[] [yellow]|[]\n", col, buff);
 
     switch (fwd->pkt_api) {
     case XSKDEV_PKT_API:
@@ -139,6 +142,13 @@ print_port_stats(int lport_id, struct fwd_port *p, struct fwd_info *fwd)
         prt_cnt(skip, col, stats.cq_empty, MAGENTA_TYPE);
         prt_cnt(skip, col, stats.cq_buf_freed, MAGENTA_TYPE);
     }
+    char str[18];
+    inet_mtoa(str, sizeof(str), &fwd->dst_mac);
+    vt_cnright(skip);
+    cne_printf("[yellow]%*s [yellow]|[]\n", col, str);
+    inet_mtoa(str, sizeof(str), &lport->mac_addr);
+    vt_cnright(skip);
+    cne_printf("[yellow]%*s [yellow]|[]\n", col, str);
 
     p->ipackets                          = stats.ipackets;
     p->opackets                          = stats.opackets;
@@ -154,7 +164,7 @@ _print_stats(jcfg_info_t *j __cne_unused, void *obj, void *arg, int idx __cne_un
     struct fwd_port *pd  = lport->priv_;
     struct fwd_info *fwd = (struct fwd_info *)arg;
 
-    print_port_stats(lport->lpid, pd, fwd);
+    print_port_stats(lport, pd, fwd);
 
     return 0;
 }
@@ -178,7 +188,7 @@ struct stats_line {
     {DFLT_LINE, "\n"},
     {TICK_LINE, "[cyan:-:italic]Running:  [yellow:-:bold]%c[]\n", ""},
 
-    {COL_LINE, "[cyan:-:bold]%-*s [yellow:-:-]|[]\n", "lport ID"},
+    {COL_LINE, "[cyan:-:bold]%-*s [yellow:-:-]|[]\n", "LPort ID"},
     {COL_LINE, "[yellow]%-*s [yellow]+[]\n", COLUMN_SEPARATOR},
     {HDR_LINE, "[yellow:-:italic]%-*s [green:-:-]%-*s [yellow]|[]\n", "Pkts/s", "RX"},
     {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Total Pkts"},
@@ -232,6 +242,8 @@ struct stats_line {
     {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Copied"},
     {HDR_LINE | DBG_LINE, "[yellow:-:italic]%-*s [cyan:-:-]%-*s [yellow]|[]\n", "Empty", "CQ"},
     {COL_LINE | DBG_LINE, "[green]%-*s [yellow]|[]\n", "   Buf Freed"},
+    {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Dst MAC Address"},
+    {COL_LINE, "[green]%-*s [yellow]|[]\n", "   Src MAC Address"},
     {DFLT_LINE, "[]\n"}};
 
 static void

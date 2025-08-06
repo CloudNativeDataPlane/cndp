@@ -494,6 +494,8 @@ cne_ether_aton(const char *a, struct ether_addr *e)
 CNDP_API __cne_always_inline char *
 inet_mtoa(char *buff, int len, struct ether_addr *eaddr)
 {
+    if (len < 18)
+        return NULL;
     snprintf(buff, len, "%02x:%02x:%02x:%02x:%02x:%02x", eaddr->ether_addr_octet[0],
              eaddr->ether_addr_octet[1], eaddr->ether_addr_octet[2], eaddr->ether_addr_octet[3],
              eaddr->ether_addr_octet[4], eaddr->ether_addr_octet[5]);
