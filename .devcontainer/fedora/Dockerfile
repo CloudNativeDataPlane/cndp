@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 20205 Intel Corporation
+# Copyright (c) 2020-2025 Intel Corporation
 # Copyright (c) 2024 Red Hat Inc.
 
 FROM fedora:40 AS build

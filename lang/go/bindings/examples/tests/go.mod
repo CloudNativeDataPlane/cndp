@@ -11,5 +11,5 @@ require (
 
 require (
 	github.com/tidwall/jsonc v0.3.2 // indirect
-	golang.org/x/sys v0.0.0-20250829200755-d48e67d00261 // indirect
+	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261 // indirect
 )
