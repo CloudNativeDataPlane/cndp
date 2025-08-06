@@ -16,8 +16,6 @@ struct cne_ether_hdr;
 extern "C" {
 #endif
 
-typedef lport_stats_t lport_stats_t;
-
 struct port_info_s;
 
 char *txgen_ether_hdr_ctor(struct port_info_s *info, pkt_seq_t *pkt, struct cne_ether_hdr *eth);

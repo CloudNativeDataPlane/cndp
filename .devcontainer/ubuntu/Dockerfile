@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     libbpf-dev \
     python3-pip \
     python3.12-venv \
+    libmosquitto-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install libxdp

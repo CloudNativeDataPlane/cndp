@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y \
     m4 \
     linux-tools-common \
     libbpf-dev \
+    libmosquitto-dev \
     ninja-build
 
 # Add LLVM key securely and install Clang 15 from Jammy repo
@@ -114,6 +115,7 @@ RUN apt-get update && apt-get install -y \
     libnl-cli-3-200 \
     libnuma1 \
     libpcap0.8 \
+    libmosquitto-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy artifacts from the build container
