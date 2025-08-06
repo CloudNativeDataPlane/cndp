@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2023 Intel Corporation
+ * Copyright (c) 2016-2025 Intel Corporation
  */
 
 #include <net/cne_ether.h>        // for CNE_ETHER_TYPE_ARP, CNE_ETHER_TYPE_IPV4, CNE...

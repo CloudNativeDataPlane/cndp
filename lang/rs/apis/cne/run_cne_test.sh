@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2023 Intel Corporation
+# Copyright (c) 2019-2025 Intel Corporation
 
 # Build CNDP and install (sudo CNE_DEST_DIR=/ make install) before running this script.
 

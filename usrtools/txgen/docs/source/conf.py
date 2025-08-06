@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2010-2023 Intel Corporation.
+# Copyright (c) 2010-2025 Intel Corporation.
 
 from sphinx.highlighting import PygmentsBridge
 from pygments.formatters.latex import LatexFormatter
 
 
 project = 'TXGen'
-copyright = '2010-2022'
+copyright = '2010-2025'
 
 version = '3.2.4'
 release = version

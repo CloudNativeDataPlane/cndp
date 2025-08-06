@@ -28,7 +28,7 @@ require (
 	github.com/CloudNativeDataPlane/cndp/lang/go/tools/pkgs/utils v0.0.0-00010101000000-000000000000
 	github.com/gdamore/tcell/v2 v2.5.1
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/rivo/tview v0.0.0-20220307222120-9994674d60a8
+	github.com/rivo/tview v0.0.0-20250307222120-9994674d60a8
 	github.com/shirou/gopsutil v3.21.11+incompatible
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/sys v0.0.0-20250722155257-8c9f86f7a55f // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.8 // indirect
 )

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2023 Intel Corporation
+ * Copyright (c) 2019-2025 Intel Corporation
  */
 
 // IWYU pragma: no_include "cne_private.h"
@@ -45,8 +45,8 @@ enum {
 typedef void (*on_exit_fn_t)(int sig, void *arg, int exit_type);
 #endif
 
-#define COPYRIGHT_MSG       "Copyright (c) 2020-2023 Intel Corporation. All rights reserved."
-#define COPYRIGHT_MSG_SHORT "Copyright (c) 2020-2023 Intel Corporation"
+#define COPYRIGHT_MSG       "Copyright (c) 2020-2025 Intel Corporation. All rights reserved."
+#define COPYRIGHT_MSG_SHORT "Copyright (c) 2020-2025 Intel Corporation"
 #define POWERED_BY_CNDP     "Powered by CNDP"
 
 /**

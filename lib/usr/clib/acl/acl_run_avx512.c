@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2020-2023 Intel Corporation
+ * Copyright (c) 2020-2025 Intel Corporation
  */
 
 #include <emmintrin.h>        // for _mm_loadu_si128, _mm_storeu_si128

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2020 Marvell International Ltd.
- * Copyright (c) 2019-2023 Intel Corporation.
+ * Copyright (c) 2019-2025 Intel Corporation.
  */
 
 #include <arpa/inet.h>                    // for inet_ntop

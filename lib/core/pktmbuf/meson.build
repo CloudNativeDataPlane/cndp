@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2023 Intel Corporation
+# Copyright (c) 2019-2025 Intel Corporation
 
 sources = files('pktmbuf.c', 'pktmbuf_ops.c', 'pktmbuf_ptype.c')
 headers = files('pktmbuf.h', 'pktmbuf_ops.h', 'pktmbuf_ptype.h', 'pktmbuf_offload.h')

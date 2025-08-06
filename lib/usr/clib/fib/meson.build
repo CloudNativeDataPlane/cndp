@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2018 Vladimir Medvedkin <medvedkinv@gmail.com>
-# Copyright (c) 2019-2023 Intel Corporation
+# Copyright (c) 2019-2025 Intel Corporation
 
 sources = files('cne_fib.c', 'cne_fib6.c', 'dir24_8.c', 'trie.c')
 headers = files('cne_fib.h', 'cne_fib6.h')

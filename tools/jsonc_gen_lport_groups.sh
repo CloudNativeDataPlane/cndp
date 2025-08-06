@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2022-2023 Intel Corporation
+# Copyright (c) 2022-2025 Intel Corporation
 
 
 #
