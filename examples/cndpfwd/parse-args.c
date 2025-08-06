@@ -137,7 +137,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             region_info_t *ri               = &obj.umem->rinfo[i];
             char name[PKTMBUF_INFO_NAME_SZ] = {0};
 
-            /* Find the starting memory address in UMEM for the pktmbuf_t buffers */
+            /* Find the starting memory address in UMEM for the pktmbuf_t buffers per region */
             ri->addr = umem_addr;
             umem_addr += (ri->bufcnt * obj.umem->bufsz);
 
@@ -291,6 +291,7 @@ print_usage(char *prog_name)
                "  -b <burst>     Burst size. If not present default burst size %d max %d.\n"
                "  -c <json-file> The JSON configuration file\n"
                "  -C             Wait on unix domain socket for JSON or JSON-C file\n"
+               "  -M <mac_addr>  Destination MAC address (default: Broadcast address)\n"
                "  -d             More debug stats are displayed\n"
                "  -D             JCFG debug decoding\n"
                "  -V             JCFG information verbose\n"
@@ -370,53 +371,55 @@ parse_args(int argc, char **argv, struct fwd_info *fwd)
     // Set default burst size to BURST_SIZE.
     fwd->burst = BURST_SIZE;
 
+    cne_ether_aton("FF:FF:FF:FF:FF:FF", &fwd->dst_mac);
+
     /* Parse the input arguments. */
     for (;;) {
-        opt = getopt_long(argc, argv, "ha:b:c:dCDPVL:", lgopts, &option_index);
+        opt = getopt_long(argc, argv, "ha:b:c:dCDPVL:M:", lgopts, &option_index);
         if (opt == EOF)
             break;
 
         switch (opt) {
-        case 'h':
+        case 'h':        // Display the help information
             print_usage(argv[0]);
             return -1;
 
-        case 'a':
+        case 'a':        // Select API
             fwd->pkt_api = get_pkt_api(optarg);
             break;
 
-        case 'b':
+        case 'b':        // Set burst size
             fwd->burst = atoi(optarg);
             if (fwd->burst <= 0 || fwd->burst > MAX_BURST_SIZE)
                 fwd->burst = BURST_SIZE;
             break;
 
-        case 'c':
+        case 'c':        // Configuration file
             strlcpy(json_file, optarg, sizeof(json_file));
             flags |= JCFG_PARSE_FILE;
             break;
 
-        case 'd':
+        case 'd':        // Debug stats
             fwd->flags |= FWD_DEBUG_STATS;
             break;
 
-        case 'C':
+        case 'C':        // Parse JSON over Unix domain socket
             flags |= JCFG_PARSE_SOCKET;
             break;
 
-        case 'D':
+        case 'D':        // Debug decoding
             flags |= JCFG_DEBUG_DECODING;
             break;
 
-        case 'P':
+        case 'P':        // Debug parsing
             flags |= JCFG_DEBUG_PARSING;
             break;
 
-        case 'V':
+        case 'V':        // Info verbose
             flags |= JCFG_INFO_VERBOSE;
             break;
 
-        case 'L':
+        case 'L':        // Enable logging level
             strlcpy(log_level, optarg, sizeof(log_level));
             if (cne_log_set_level_str(log_level)) {
                 CNE_ERR("Invalid command option\n");
@@ -425,7 +428,12 @@ parse_args(int argc, char **argv, struct fwd_info *fwd)
             }
             break;
 
-        case OPT_NO_COLOR_NUM:
+        case 'M':        // Destination MAC address
+            printf("Dst MAC: %s\n", optarg);
+            cne_ether_aton(optarg, &fwd->dst_mac);
+            break;
+
+        case OPT_NO_COLOR_NUM:        // No color display
             tty_disable_color();
             break;
 

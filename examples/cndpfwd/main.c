@@ -36,9 +36,9 @@ enum thread_quit_state {
 };
 
 static uint8_t frame_data[] = {
-    0x3c, 0xfd, 0xfe, 0xe4, 0x34, 0xc0, 0x3c, 0xfd, 0xfe, 0xe4, 0x38, 0x40, 0x08, 0x00, 0x45,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x45,
     0x00, 0x00, 0x2e, 0x60, 0xac, 0x00, 0x00, 0x40, 0x11, 0x8c, 0xec, 0xc6, 0x12, 0x00, 0x01,
-    0xc6, 0x12, 0x01, 0x01, 0x04, 0xd2, 0x16, 0x2e, 0x00, 0x1a, 0x93, 0xc6, 0x6b, 0x6c, 0x6d,
+    0xc6, 0x12, 0x01, 0x01, 0x04, 0xd2, 0x16, 0x2e, 0x00, 0x1a, 0x00, 0x00, 0x6b, 0x6c, 0x6d,
     0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x30, 0x31};
 
 static __cne_always_inline int
@@ -50,6 +50,7 @@ __rx_burst(pkt_api_t api, struct fwd_port *pd, pktmbuf_t **mbufs, int n_pkts)
     case PKTDEV_PKT_API:
         return pktdev_rx_burst(pd->lport, mbufs, n_pkts);
     default:
+        fprintf(stderr, "Error: Invalid packet API: %d\n", api);
         break;
     }
     return 0;
@@ -64,6 +65,7 @@ __tx_burst(pkt_api_t api, struct fwd_port *pd, pktmbuf_t **mbufs, int n_pkts)
     case PKTDEV_PKT_API:
         return pktdev_tx_burst(pd->lport, mbufs, n_pkts);
     default:
+        fprintf(stderr, "Error: Invalid packet API: %d\n", api);
         break;
     }
     return 0;
@@ -128,7 +130,8 @@ _fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
             /* Cannot forward to non-existing port, so echo back on incoming interface */
             dst = lport;
 
-        MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], void *));
+        MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], char *));
+
         (void)txbuff_add(txbuff[dst->lpid], pd->rx_mbufs[i]);
     }
 
@@ -178,6 +181,23 @@ ipv4_adjust_cksum(struct cne_ipv4_hdr *hdr)
     hdr->hdr_checksum = ~(cksum + (cksum >> 16));
 }
 
+static inline uint16_t
+__buf_alloc_bulk(pkt_api_t api, jcfg_lport_t *lport, pktmbuf_t **tx_mbufs, uint16_t burst)
+{
+    uint16_t n_pkts;
+
+    if (api == PKTDEV_PKT_API) {
+        struct fwd_port *pd = lport->priv_;
+
+        n_pkts = pktdev_buf_alloc(pd->lport, tx_mbufs, burst);
+    } else {
+        region_info_t *ri = &lport->umem->rinfo[lport->region_idx];
+
+        n_pkts = pktmbuf_alloc_bulk(ri->pool, tx_mbufs, burst);
+    }
+    return n_pkts;
+}
+
 static int
 _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 {
@@ -216,7 +236,7 @@ _l3fwd_test(jcfg_lport_t *lport, struct fwd_info *fwd)
         if (!dst) {
             /* Cannot forward to non-existing port, so echo back on incoming interface */
             dst = lport;
-            MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], void *));
+            MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[i], char *));
         } else
             MAC_REWRITE(pktmbuf_mtod(pd->rx_mbufs[i], void *), &eaddr[i]);
 
@@ -253,7 +273,7 @@ _loopback_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 
     if (n_pkts) {
         for (int j = 0; j < n_pkts; j++)
-            MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[j], void *));
+            MAC_SWAP(pktmbuf_mtod(pd->rx_mbufs[j], char *));
 
         n = __tx_flush(pd, fwd->pkt_api, pd->rx_mbufs, n_pkts);
         if (n == PKTDEV_ADMIN_STATE_DOWN)
@@ -273,33 +293,14 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     if (!pd)
         CNE_ERR_RET("fwd_port passed in lport private data is NULL\n");
 
-    if (fwd->pkt_api == PKTDEV_PKT_API)
-        n_pkts = pktdev_buf_alloc(pd->lport, tx_mbufs, fwd->burst);
-    else {
-        region_info_t *ri = &lport->umem->rinfo[lport->region_idx];
-
-        n_pkts = pktmbuf_alloc_bulk(ri->pool, tx_mbufs, fwd->burst);
-    }
+    n_pkts = __buf_alloc_bulk(fwd->pkt_api, lport, tx_mbufs, fwd->burst);
 
     if (n_pkts > 0) {
         for (int j = 0; j < n_pkts; j++) {
             pktmbuf_t *xb = tx_mbufs[j];
             uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
 
-            /*
-             * IPv4/UDP 64 byte packet
-             * Port Src/Dest       :           1234/ 5678
-             * Pkt Type            :           IPv4 / UDP
-             * IP  Destination     :           198.18.1.1
-             *     Source          :        198.18.0.1/24
-             * MAC Destination     :    3c:fd:fe:e4:34:c0
-             *     Source          :    3c:fd:fe:e4:38:40
-             * 0000   3cfd fee4 34c0 3cfd fee4 3840 08004500
-             * 0010   002e 60ac 0000 4011 8cec c612 0001c612
-             * 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e6f70
-             * 0030   7172 7374 7576 7778 797a 3031
-             */
-            memcpy(p, frame_data, sizeof(frame_data));
+            memcpy(p, lport->frame_data, lport->frame_len);
             pktmbuf_data_len(xb) = 60;
         }
 
@@ -329,33 +330,14 @@ _txonly_rx_test(jcfg_lport_t *lport, struct fwd_info *fwd)
 
     pktmbuf_free_bulk(pd->rx_mbufs, n_pkts);
 
-    if (fwd->pkt_api == PKTDEV_PKT_API)
-        n_pkts = pktdev_buf_alloc(pd->lport, tx_mbufs, fwd->burst);
-    else {
-        region_info_t *ri = &lport->umem->rinfo[lport->region_idx];
-
-        n_pkts = pktmbuf_alloc_bulk(ri->pool, tx_mbufs, fwd->burst);
-    }
+    n_pkts = __buf_alloc_bulk(fwd->pkt_api, lport, tx_mbufs, fwd->burst);
 
     if (n_pkts > 0) {
         for (int j = 0; j < n_pkts; j++) {
             pktmbuf_t *xb = tx_mbufs[j];
             uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
 
-            /*
-             * IPv4/UDP 64 byte packet
-             * Port Src/Dest       :           1234/ 5678
-             * Pkt Type            :           IPv4 / UDP
-             * IP  Destination     :           198.18.1.1
-             *     Source          :        198.18.0.1/24
-             * MAC Destination     :    3c:fd:fe:e4:34:c0
-             *     Source          :    3c:fd:fe:e4:38:40
-             * 0000   3cfd fee4 34c0 3cfd fee4 3840 08004500
-             * 0010   002e 60ac 0000 4011 8cec c612 0001c612
-             * 0020   0101 04d2 162e 001a 93c6 6b6c 6d6e6f70
-             * 0030   7172 7374 7576 7778 797a 3031
-             */
-            memcpy(p, frame_data, sizeof(frame_data));
+            memcpy(p, lport->frame_data, lport->frame_len);
             pktmbuf_data_len(xb) = 60;
         }
 
@@ -537,6 +519,14 @@ thread_func(void *arg)
             if (idlemgr_add(imgr, fd, 0) < 0)
                 goto leave;
         }
+    }
+
+    // Construct the transmit frame
+    foreach_thd_lport (thd, lport) {
+        lport->frame_len = sizeof(frame_data);
+        memcpy(lport->frame_data, frame_data, lport->frame_len);
+        memcpy(lport->frame_data, &fwd->dst_mac, ETH_ALEN);
+        memcpy(lport->frame_data + ETH_ALEN, &lport->mac_addr, ETH_ALEN);
     }
 
     for (;;) {

@@ -23,6 +23,7 @@
 #include <json-c/json_visit.h>        // for json_c_visit_userfunc
 #include <json-c/linkhash.h>
 #include <cne_common.h>        // for CNDP_API, CNE_STD_C11
+#include <net/cne_ether.h>
 #include <cne_log.h>
 #include <cne_mmap.h>        // for mmap_t
 #include <cne_thread.h>
@@ -171,9 +172,12 @@ typedef struct jcfg_lport {
     uint16_t qid;                /**< The queue ID number */
     uint16_t busy_timeout;       /**< busy timeout value in milliseconds */
     uint16_t busy_budget;        /**< busy budget 0xFFFF disabled, 0 use default, >0 budget */
-    uint16_t flags;     /**< Flags to configure lport in lport_cfg_t.flags in cne_lport.h */
-    char *xsk_map_path; /**< The path to the pinned xsk_map for this port */
-    char *uds_path;     /**< The path to the pinned xsk_map for this port */
+    uint16_t flags;             /**< Flags to configure lport in lport_cfg_t.flags in cne_lport.h */
+    char *xsk_map_path;         /**< The path to the pinned xsk_map for this port */
+    char *uds_path;             /**< The path to the pinned xsk_map for this port */
+    struct ether_addr mac_addr; /**< MAC address */
+    char frame_data[128];       /**< Frame data for TX packets */
+    uint16_t frame_len;         /**< Length of frame data */
 } jcfg_lport_t;
 
 /** JCFG lport configuration names */

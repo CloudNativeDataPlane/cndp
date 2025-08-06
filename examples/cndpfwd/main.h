@@ -156,6 +156,7 @@ struct fwd_info {
     char **hs_expressions;     /**< List of parsed hyperscan regex expressions */
     unsigned int *hs_flags;    /**< List of hyperscan flags */
     unsigned int *hs_ids;      /**< List of hyperscan IDs */
+    struct ether_addr dst_mac; /**< Destination MAX address for TX packets */
 #ifdef ENABLE_HYPERSCAN
     hs_database_t *hs_database; /**< Hyperscan database pointer */
     hs_scratch_t *hs_scratch;   /**< Scratch per thread for Hyperscan */

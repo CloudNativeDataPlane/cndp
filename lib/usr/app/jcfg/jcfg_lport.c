@@ -15,9 +15,11 @@
 #include "jcfg_private.h"        // for jcfg
 #include "jcfg_decode.h"         // for jcfg_list_add, _decode_lports
 #include "cne_common.h"          // for __cne_unused
-#include "cne_log.h"             // for CNE_LOG_ERR, CNE_ERR, CNE_ERR_RET
+#include "net/cne_ether.h"
+#include "cne_log.h"        // for CNE_LOG_ERR, CNE_ERR, CNE_ERR_RET
 #include "cne_strings.h"
 #include "cne_lport.h"
+#include "netdev_funcs.h"
 
 struct json_object;
 
@@ -156,6 +158,8 @@ _lport_obj(struct json_object *obj, int flags, struct json_object *parent __cne_
             lport->netdev = strdup(key);
             if (c && lport->netdev) /* Trim the name to remove ':' and other characters */
                 lport->netdev[c - key] = '\0';
+            printf("Netdev: %s\n", lport->netdev);
+            netdev_get_mac_addr(lport->netdev, &lport->mac_addr);
 
             idx = jcfg_list_add(&data->lport_list, lport);
             if (idx < 0)
