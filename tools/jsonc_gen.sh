@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2021-2023 Intel Corporation
+# Copyright (c) 2021-2025 Intel Corporation
 
 # Bash script to generate jsonc file to be used with cndpfwd app
 # This script is dependent on these environment variables being set:

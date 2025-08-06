@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2023 Intel Corporation.
+ * Copyright (c) 2019-2025 Intel Corporation.
  */
 
 // IWYU pragma: no_include "generic/cne_cycles.h"
@@ -479,7 +479,7 @@ path_cmd(int argc __cne_unused, char **argv __cne_unused)
 static const char *copyright =
     "   BSD LICENSE\n"
     "\n"
-    "   Copyright (c) 2019-2023 Intel Corporation. All rights reserved.\n"
+    "   Copyright (c) 2019-2025 Intel Corporation. All rights reserved.\n"
     "\n"
     "   Redistribution and use in source and binary forms, with or without\n"
     "   modification, are permitted provided that the following conditions\n"

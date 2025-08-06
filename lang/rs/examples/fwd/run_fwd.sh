@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2019-2023 Intel Corporation
+# Copyright (c) 2019-2025 Intel Corporation
 
 # Usage: ./run_fwd.sh <json config file (optional)> [[drop | rx-only], tx-only, [fwd | forward], [lb | loopback]]
 # eg 1: ./run_fwd.sh -> Run using default values

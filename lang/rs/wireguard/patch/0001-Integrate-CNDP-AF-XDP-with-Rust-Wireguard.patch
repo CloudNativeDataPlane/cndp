@@ -170,7 +170,7 @@ index 0000000..7273b92
 +++ b/src/main_cndp_packet.rs
 @@ -0,0 +1,403 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +#![cfg_attr(feature = "unstable", feature(test))]
@@ -579,7 +579,7 @@ index 0000000..c0d206b
 +++ b/src/main_cndp_ping.rs
 @@ -0,0 +1,774 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +#![cfg_attr(feature = "unstable", feature(test))]
@@ -1478,7 +1478,7 @@ index 0000000..17292c2
 +++ b/src/platform/linux/cndp/cndp_error.rs
 @@ -0,0 +1,37 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +use std::error::Error;
@@ -1715,7 +1715,7 @@ index 0000000..ea8f231
 @@ -0,0 +1,95 @@
 +#!/bin/bash
 +# SPDX-License-Identifier: BSD-3-Clause
-+# Copyright(c) 2019-2021 Intel Corporation.
++# Copyright(c) 2019-2025 Intel Corporation.
 +
 +# Run this script as sudo
 +# Usage: ./cndprustwg.sh [debug|release] [cndp-packet|cndp-ping|wireguard-rs].
@@ -1815,7 +1815,7 @@ index 0000000..d5fe10e
 +++ b/src/platform/linux/cndp/endpoint.rs
 @@ -0,0 +1,43 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +use pnet::datalink::MacAddr;
@@ -1864,7 +1864,7 @@ index 0000000..a2e22d5
 +++ b/src/platform/linux/cndp/eth_packet_rw.rs
 @@ -0,0 +1,867 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +use hjul::{Runner, Timer};
@@ -2900,7 +2900,7 @@ index 0000000..d36d650
 +++ b/src/platform/linux/cndp/mod.rs
 @@ -0,0 +1,10 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +pub mod cndp_error;
@@ -2916,7 +2916,7 @@ index 0000000..fa01a5c
 +++ b/src/platform/linux/cndp/packet.rs
 @@ -0,0 +1,727 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +use pnet::datalink::{channel, Channel, MacAddr, NetworkInterface};
 +use pnet::packet::arp::{ArpHardwareTypes, ArpOperations};
@@ -3711,7 +3711,7 @@ index 0000000..f91cfc9
 @@ -0,0 +1,140 @@
 +#
 +# Pktgen 21.03.1 (DPDK 21.05.0-rc1)
-+# Copyright(c) <2010-2021>, Intel Corporation. All rights reserved., Powered by DPDK
++# Copyright(c) <2010-2025>, Intel Corporation. All rights reserved., Powered by DPDK
 +
 +# Command line arguments: (DPDK args are defaults)
 +# ./usr/local/bin/pktgen -c 7c -n 3 -m 512 --proc-type primary -- -v -T -P -j -m [3:4].0 -m [5:6].1 -f themes/black-yellow.theme
@@ -3856,7 +3856,7 @@ index 0000000..37bc404
 +++ b/src/platform/linux/cndp/tun_channel.rs
 @@ -0,0 +1,245 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +use super::super::super::tun::*; // platform tun
 +use super::super::tun::*; // linux tun
@@ -4107,7 +4107,7 @@ index 0000000..42440e1
 +++ b/src/platform/linux/cndp/udp.rs
 @@ -0,0 +1,883 @@
 +/* SPDX-License-Identifier: BSD-3-Clause
-+ * Copyright(c) 2019-2021 Intel Corporation.
++ * Copyright(c) 2019-2025 Intel Corporation.
 + */
 +
 +use pnet::datalink::MacAddr;
@@ -4996,7 +4996,7 @@ index 0000000..4c42b12
 +++ b/src/platform/linux/cndp/wg_cndp.toml
 @@ -0,0 +1,32 @@
 +# SPDX-License-Identifier: BSD-3-Clause
-+# Copyright(c) 2019-2021 Intel Corporation.
++# Copyright(c) 2019-2025 Intel Corporation.
 +
 +# jsonc absolute file path to configure CNDP.
 +#jsonc = "/home/manoj/wireguard/cndp/networking.dataplane.cndp.thirdparty.wireguard-rs/src/platform/linux/cndp/fwd.jsonc"

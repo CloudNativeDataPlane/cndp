@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2019-2023 Intel Corp, Inc.
+ * Copyright (c) 2019-2025 Intel Corp, Inc.
  */
 #include <stdio.h>             // for EOF, NULL
 #include <stdint.h>            // for uint32_t

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2010-2023 Intel Corporation
+ * Copyright (c) 2010-2025 Intel Corporation
  */
 
 #include <cne.h>               // for cne_id, cne_max_threads, cne_unregister, cne...

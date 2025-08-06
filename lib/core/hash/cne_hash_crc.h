@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2010-2023 Intel Corporation
+ * Copyright (c) 2010-2025 Intel Corporation
  */
 
 #ifndef _CNE_HASH_CRC_H_

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright 2018-2021 Cisco Systems, Inc.  All rights reserved.
+ * Copyright 2018-2025 Cisco Systems, Inc.  All rights reserved.
  */
 
 #ifndef _MEMIF_SOCKET_H_

@@ -3,7 +3,7 @@ API {#index}
 
 <!--
   SPDX-License-Identifier: BSD-3-Clause
-  Copyright (c) 2020-2023 Intel Corporation.
+  Copyright (c) 2020-2025 Intel Corporation.
 -->
 
 The API headers are grouped by topic:

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2016-2023 Intel Corporation
+ * Copyright (c) 2016-2025 Intel Corporation
  */
 
 #ifndef __CNET_TCP_H

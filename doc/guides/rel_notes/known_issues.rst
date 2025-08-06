@@ -1,5 +1,5 @@
 ..  SPDX-License-Identifier: BSD-3-Clause
-    Copyright (c) 2010-2024 Intel Corporation.
+    Copyright (c) 2010-2025 Intel Corporation.
 
 Known Issues and Limitations in Legacy Releases
 ===============================================

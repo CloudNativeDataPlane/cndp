@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright (c) 2019-2023 Intel Corporation
+// Copyright (c) 2019-2025 Intel Corporation
 
 package main
 
@@ -16,13 +16,13 @@ func CloudMonInfo(color bool) string {
 	if !color {
 		return fmt.Sprintf("%s, Version: %s Pid: %d %s",
 			"CNDP Monitor Tool", Version(), os.Getpid(),
-			"Copyright (c) 2019-2023 Intel Corporation")
+			"Copyright (c) 2019-2025 Intel Corporation")
 	}
 
 	return fmt.Sprintf("[%s, Version: %s Pid: %s %s]",
 		cz.Yellow("CNDP Monitor Tool"), cz.Green(Version()),
 		cz.Red(os.Getpid()),
-		cz.SkyBlue("Copyright (c) 2019-2023 Intel Corporation"))
+		cz.SkyBlue("Copyright (c) 2019-2025 Intel Corporation"))
 }
 
 func sprintf(msg string, w ...interface{}) string {

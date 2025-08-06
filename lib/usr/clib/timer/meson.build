@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2017-2023 Intel Corporation
+# Copyright (c) 2017-2025 Intel Corporation
 
 sources = files('cne_timer.c')
 headers = files('cne_timer.h')
