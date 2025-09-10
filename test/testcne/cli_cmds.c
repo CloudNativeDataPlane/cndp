@@ -50,6 +50,7 @@
 #include "msgchan_test.h"
 #include "tailqs_test.h"
 #include "idlemgr_test.h"
+#include "txbuff_test.h"
 
 struct struct_sizes {
     const char *name;
@@ -138,6 +139,7 @@ all_tests(int argc, char **argv)
     tailqs_main(argc, argv);
     thread_main(argc, argv);
     timer_main(argc, argv);
+    txbuff_main(argc, argv);
     uid_main(argc, argv);
     vec_main(argc, argv);
     xskdev_main(argc, argv);
@@ -189,6 +191,7 @@ static struct cli_tree default_tree[] = {
     c_cmd("sizeof", sizeof_cmd, "Size of structures"),
     c_cmd("thread", thread_main, "Run the Thread test"),
     c_cmd("timer", timer_main, "Run the Timer test"),
+    c_cmd("txbuff", txbuff_main, "Run the TXBUFF (packet transmission buffer) test"),
     c_cmd("uid", uid_main, "Run the User ID Allocator test"),
     c_cmd("vec", vec_main, "Run the vec routine test"),
     c_cmd("xdpdev", xskdev_main, "Run the xdpdev API test (deprecated)"),

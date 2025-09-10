@@ -39,6 +39,7 @@ typedef struct myargs {
 #include "kvargs_test.h"
 #include "xskdev_test.h"
 #include "ring_profile.h"
+#include "txbuff_test.h"
 
 #define SIZE_1MB (1024L * 1024L)
 #define SIZE_1BB (1024L * 1024L * 1024L)
