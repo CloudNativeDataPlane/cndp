@@ -116,35 +116,17 @@ struct unit_test_case {
     unsigned enabled;
 };
 
-#define TEST_CASE(fn)          \
-    {                          \
-        NULL, NULL, fn, #fn, 1 \
-    }
+#define TEST_CASE(fn) {NULL, NULL, fn, #fn, 1}
 
-#define TEST_CASE_NAMED(name, fn) \
-    {                             \
-        NULL, NULL, fn, name, 1   \
-    }
+#define TEST_CASE_NAMED(name, fn) {NULL, NULL, fn, name, 1}
 
-#define TEST_CASE_ST(setup, teardown, testcase) \
-    {                                           \
-        setup, teardown, testcase, #testcase, 1 \
-    }
+#define TEST_CASE_ST(setup, teardown, testcase) {setup, teardown, testcase, #testcase, 1}
 
-#define TEST_CASE_DISABLED(fn) \
-    {                          \
-        NULL, NULL, fn, #fn, 0 \
-    }
+#define TEST_CASE_DISABLED(fn) {NULL, NULL, fn, #fn, 0}
 
-#define TEST_CASE_ST_DISABLED(setup, teardown, testcase) \
-    {                                                    \
-        setup, teardown, testcase, #testcase, 0          \
-    }
+#define TEST_CASE_ST_DISABLED(setup, teardown, testcase) {setup, teardown, testcase, #testcase, 0}
 
-#define TEST_CASES_END()          \
-    {                             \
-        NULL, NULL, NULL, NULL, 0 \
-    }
+#define TEST_CASES_END() {NULL, NULL, NULL, NULL, 0}
 
 static inline void
 debug_hexdump(FILE *file, const char *title, const void *buf, size_t len)

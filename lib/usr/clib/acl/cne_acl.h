@@ -96,7 +96,7 @@ enum {
 };
 
 #define CNE_ACL_MASKLEN_TO_BITMASK(v, s) \
-    ((v) == 0 ? (v) : (typeof(v))((uint64_t) - 1 << ((s) * CHAR_BIT - (v))))
+    ((v) == 0 ? (v) : (typeof(v))((uint64_t)-1 << ((s) * CHAR_BIT - (v))))
 
 /**
  * Miscellaneous data for ACL rule.

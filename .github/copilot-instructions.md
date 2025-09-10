@@ -57,7 +57,7 @@ export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:$PKG_CONFIG_PATH"
 
 ### Build Variations
 - `make rebuild` - Clean and rebuild (takes ~38 seconds)
-- `make clean` - Clean build artifacts (takes ~1 second)  
+- `make clean` - Clean build artifacts (takes ~1 second)
 - `make debug` - Build debug version with -O0
 - `make static_build=1` - Build static libraries
 - `make tcp=1` - Enable TCP support
@@ -158,7 +158,7 @@ pkg-config --modversion libbpf
 - **Documentation:** ~1 second (if sphinx/doxygen installed)
 
 ### Build Artifacts Location
-- Executables: `builddir/examples/*/` 
+- Executables: `builddir/examples/*/`
 - Libraries: `builddir/lib/`
 - Test logs: `builddir/meson-logs/testlog.txt`
 
@@ -187,7 +187,7 @@ sudo ip link set dev <devname> up
 1. Make changes to source code
 2. Run `ninja -C builddir clang-format` to format code
 3. Run `make` to build (NEVER CANCEL - wait 45+ seconds)
-4. Run `meson test -C builddir --suite short` to test (NEVER CANCEL - wait 5+ seconds) 
+4. Run `meson test -C builddir --suite short` to test (NEVER CANCEL - wait 5+ seconds)
 5. Test relevant examples manually
 6. Commit changes
 

@@ -63,10 +63,7 @@ typedef enum {
 } node_type_t;
 
 /* Keep this list in sync with the node_type_t enum above */
-#define CLI_NODE_TYPES                                                     \
-    {                                                                      \
-        "Unknown", "Directory", "Command", "File", "Alias", "String", NULL \
-    }
+#define CLI_NODE_TYPES {"Unknown", "Directory", "Command", "File", "Alias", "String", NULL}
 
 enum {
     CLI_EXE_TYPE   = (CLI_CMD_NODE | CLI_ALIAS_NODE),

@@ -267,10 +267,10 @@ cne_trie_vec_lookup_bulk_2b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *nex
 {
     uint32_t i;
     for (i = 0; i < (n / 32); i++) {
-        trie_vec_lookup_x16x2(p, (uint8_t(*)[16]) & ips[i * 32][0], next_hops + i * 32,
+        trie_vec_lookup_x16x2(p, (uint8_t (*)[16]) & ips[i * 32][0], next_hops + i * 32,
                               sizeof(uint16_t));
     }
-    cne_trie_lookup_bulk_2b(p, (uint8_t(*)[16]) & ips[i * 32][0], next_hops + i * 32, n - i * 32);
+    cne_trie_lookup_bulk_2b(p, (uint8_t (*)[16]) & ips[i * 32][0], next_hops + i * 32, n - i * 32);
 }
 
 void
@@ -279,10 +279,10 @@ cne_trie_vec_lookup_bulk_4b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *nex
 {
     uint32_t i;
     for (i = 0; i < (n / 32); i++) {
-        trie_vec_lookup_x16x2(p, (uint8_t(*)[16]) & ips[i * 32][0], next_hops + i * 32,
+        trie_vec_lookup_x16x2(p, (uint8_t (*)[16]) & ips[i * 32][0], next_hops + i * 32,
                               sizeof(uint32_t));
     }
-    cne_trie_lookup_bulk_4b(p, (uint8_t(*)[16]) & ips[i * 32][0], next_hops + i * 32, n - i * 32);
+    cne_trie_lookup_bulk_4b(p, (uint8_t (*)[16]) & ips[i * 32][0], next_hops + i * 32, n - i * 32);
 }
 
 void
@@ -291,7 +291,7 @@ cne_trie_vec_lookup_bulk_8b(void *p, uint8_t ips[][IPV6_ADDR_LEN], uint64_t *nex
 {
     uint32_t i;
     for (i = 0; i < (n / 16); i++) {
-        trie_vec_lookup_x8x2_8b(p, (uint8_t(*)[16]) & ips[i * 16][0], next_hops + i * 16);
+        trie_vec_lookup_x8x2_8b(p, (uint8_t (*)[16]) & ips[i * 16][0], next_hops + i * 16);
     }
-    cne_trie_lookup_bulk_8b(p, (uint8_t(*)[16]) & ips[i * 16][0], next_hops + i * 16, n - i * 16);
+    cne_trie_lookup_bulk_8b(p, (uint8_t (*)[16]) & ips[i * 16][0], next_hops + i * 16, n - i * 16);
 }
