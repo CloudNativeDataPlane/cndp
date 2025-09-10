@@ -55,6 +55,7 @@ sources = files(
     'testcne.c',
     'thread_test.c',
     'timer_test.c',
+    'txbuff_test.c',
     'uid_test.c',
     'vec_test.c',
     'xskdev_test.c',
@@ -101,6 +102,7 @@ deps = [
     timer,
     tst_common,
     tun,
+    txbuff,
     utils,
     xskdev,
 ]
@@ -142,6 +144,7 @@ test_names = [
     'sizeof',
     'tailqs',
     'thread',
+    'txbuff',
     'uid',
     'vec',
 ]
