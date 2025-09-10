@@ -14,8 +14,10 @@
 extern "C" {
 #endif
 
-#define DUMP_PARAMS_INIT(info, dump) \
-    {.dp_type = dump, .dp_fd = stdout, .dp_dump_msgtype = 1, .dp_data = info}
+#define DUMP_PARAMS_INIT(info, dump)                                            \
+    {                                                                           \
+        .dp_type = dump, .dp_fd = stdout, .dp_dump_msgtype = 1, .dp_data = info \
+    }
 
 #define NL_DEBUG(...)              \
     do {                           \

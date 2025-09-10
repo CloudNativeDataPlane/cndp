@@ -137,7 +137,7 @@ my_prompt(int cont __cne_unused)
     char *p = cli_path_string(NULL, NULL);
 
     if (!p)
-        p = (char *)(uintptr_t)"PathError";
+        p = (char *)(uintptr_t) "PathError";
 
     cne_printf("[orange]cli[]:[magenta]%s[yellow]>[] ", p);
 

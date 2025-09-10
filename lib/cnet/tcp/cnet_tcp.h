@@ -135,9 +135,11 @@ typedef enum {
     TCPS_TIME_WAIT    /**< Connection is in time wait state */
 } tcb_state_t;
 
-#define TCP_INPUT_STATES                                                               \
-    {"Free", "Closed",  "Listen",  "SYN Sent", "SYN Rcvd", "Established", "CloseWait", \
-     "Fin1", "Closing", "LastAck", "Fin2",     "TimeWait", "DeleteTCB"}
+#define TCP_INPUT_STATES                                                                        \
+    {                                                                                           \
+        "Free", "Closed", "Listen", "SYN Sent", "SYN Rcvd", "Established", "CloseWait", "Fin1", \
+            "Closing", "LastAck", "Fin2", "TimeWait", "DeleteTCB"                               \
+    }
 
 #define TCPS_HAVE_RCVD_SYN(s) ((s) >= TCPS_SYN_RCVD)
 #define TCPS_HAVE_ESTABLISHED (s)((s) >= TCPS_ESTABLISHED)
@@ -161,7 +163,10 @@ enum {
 };
 
 /* Keep in bit order with above enums */
-#define TCP_FLAGS {"FIN", "SYN", "RST", "PSH", "ACK", "URG"}
+#define TCP_FLAGS                                \
+    {                                            \
+        "FIN", "SYN", "RST", "PSH", "ACK", "URG" \
+    }
 
 // clang-format off
 /* State of the flags for all possible states in TCP */
@@ -185,7 +190,10 @@ enum {
 /* TCP Output Events to drive the output Finite State Machine. */
 enum { SEND_EVENT, PERSIST_EVENT, RETRANSMIT_EVENT, DELETE_EVENT };
 
-#define TCP_OUTPUT_EVENTS {"Send", "Persist", "Rexmit", "Delete"}
+#define TCP_OUTPUT_EVENTS                     \
+    {                                         \
+        "Send", "Persist", "Rexmit", "Delete" \
+    }
 
 /* TCP Option values */
 enum {

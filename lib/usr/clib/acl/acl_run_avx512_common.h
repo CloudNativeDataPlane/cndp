@@ -36,7 +36,7 @@ _F_(calc_addr)(_T_simd index_mask, _T_simd next_input, _T_simd shuffle_input, _T
 
     /* Calc node type and node addr */
     node_type = _M_SI_(andnot)(index_mask, tr_lo);
-    addr      = _M_SI_ (and)(index_mask, tr_lo);
+    addr      = _M_SI_(and)(index_mask, tr_lo);
 
     /* mask for DFA type(0) nodes */
     dfa_msk = _M_I_(cmpeq_epi32_mask)(node_type, t);
@@ -112,7 +112,7 @@ _F_(first_trans)(const struct acl_flow_avx512 *flow, _T_simd next_input, _T_mask
     addr = _M_I_(set1_epi32)(UINT8_MAX);
     root = _M_I_(set1_epi32)(flow->root_index);
 
-    addr = _M_SI_ (and)(next_input, addr);
+    addr = _M_SI_(and)(next_input, addr);
     addr = _M_I_(add_epi32)(root, addr);
 
     /* load lower 32 bits of _N_ transactions at once. */
@@ -231,7 +231,7 @@ _F_(match_process)(struct acl_flow_avx512 *flow, uint32_t *fmsk, uint32_t *rmsk,
         return 0;
 
     /* extract match indexes */
-    res = _M_SI_ (and)(tr_lo[0], _SV_(index_mask));
+    res = _M_SI_(and)(tr_lo[0], _SV_(index_mask));
 
     /* mask  matched transitions to nop */
     tr_lo[0] = _M_I_(mask_mov_epi32)(tr_lo[0], rmsk[0], _SV_(trlo_idle));

@@ -57,10 +57,10 @@ struct json_object;
  *
  * @note: make sure this matches the jcfg_cb_type_t enum order.
  */
-#define JCFG_TAG_NAMES                                                 \
-    {                                                                  \
-        APP_TAG,    DEFAULT_TAG, OPTION_TAG,      UMEM_TAG, LPORT_TAG, \
-        LGROUP_TAG, THREAD_TAG,  LPORT_GROUP_TAG, USER_TAG,            \
+#define JCFG_TAG_NAMES                                                                 \
+    {                                                                                  \
+        APP_TAG, DEFAULT_TAG, OPTION_TAG, UMEM_TAG, LPORT_TAG, LGROUP_TAG, THREAD_TAG, \
+            LPORT_GROUP_TAG, USER_TAG,                                                 \
     }
 
 /**

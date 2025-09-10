@@ -62,7 +62,10 @@ typedef struct __cne_lockable {
 /**
  * A static rwlock initializer.
  */
-#define CNE_RWLOCK_INITIALIZER {0}
+#define CNE_RWLOCK_INITIALIZER \
+    {                          \
+        0                      \
+    }
 
 /**
  * Initialize the rwlock to an unlocked state.

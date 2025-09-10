@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 #ifndef __APPLE__
-#define CNE_PER_CTHREAD_SECTION_SIZE ((uintptr_t)&__stop_per_dt - (uintptr_t)&__start_per_dt)
+#define CNE_PER_CTHREAD_SECTION_SIZE ((uintptr_t) & __stop_per_dt - (uintptr_t) & __start_per_dt)
 #else
 #define CNE_PER_CTHREAD_SECTION_SIZE 0
 #endif

@@ -47,7 +47,10 @@ typedef struct {
 /**
  * A static spinlock initializer.
  */
-#define CNE_SPINLOCK_INITIALIZER {0}
+#define CNE_SPINLOCK_INITIALIZER \
+    {                            \
+        0                        \
+    }
 
 /**
  * Initialize the spinlock to an unlocked state.
@@ -186,7 +189,10 @@ typedef struct {
 /**
  * A static recursive spinlock initializer.
  */
-#define CNE_SPINLOCK_RECURSIVE_INITIALIZER {CNE_SPINLOCK_INITIALIZER, -1, 0}
+#define CNE_SPINLOCK_RECURSIVE_INITIALIZER \
+    {                                      \
+        CNE_SPINLOCK_INITIALIZER, -1, 0    \
+    }
 
 /**
  * Initialize the recursive spinlock to an unlocked state.
