@@ -20,19 +20,19 @@
 
 #include "txbuff_test.h"
 
-#define MAX_PKTS           1024
-#define TXBUFF_SIZE_TEST   64
-#define PERF_ITERATIONS    100000
-#define PERF_BURST_SIZE    32
-#define TEST_MBUF_COUNT    2048
-#define TEST_MBUF_SIZE     CNE_MBUF_DEFAULT_BUF_SIZE
+#define MAX_PKTS         1024
+#define TXBUFF_SIZE_TEST 64
+#define PERF_ITERATIONS  100000
+#define PERF_BURST_SIZE  32
+#define TEST_MBUF_COUNT  2048
+#define TEST_MBUF_SIZE   CNE_MBUF_DEFAULT_BUF_SIZE
 
 static mempool_t *mbuf_pool = NULL;
-static pktmbuf_info_t *pi = NULL;
+static pktmbuf_info_t *pi   = NULL;
 
 // Test statistics
 static uint64_t error_count = 0;
-static uint64_t sent_count = 0;
+static uint64_t sent_count  = 0;
 
 // Error callback for counting dropped packets
 static void
@@ -62,8 +62,7 @@ test_txbuff_create_free(void)
 
     // Verify buffer properties
     if (buffer->size != TXBUFF_SIZE_TEST) {
-        tst_error("Buffer size mismatch: expected %d, got %d\n", 
-                  TXBUFF_SIZE_TEST, buffer->size);
+        tst_error("Buffer size mismatch: expected %d, got %d\n", TXBUFF_SIZE_TEST, buffer->size);
         ret = -1;
     }
 
@@ -228,10 +227,10 @@ test_txbuff_add_flush(void)
             ret = -1;
             goto cleanup_pkts;
         }
-        
+
         if (txbuff_count(buffer) != (i + 1)) {
-            tst_error("Buffer count mismatch at iteration %d: expected %d, got %d\n", 
-                      i, i + 1, txbuff_count(buffer));
+            tst_error("Buffer count mismatch at iteration %d: expected %d, got %d\n", i, i + 1,
+                      txbuff_count(buffer));
             ret = -1;
             goto cleanup_pkts;
         }
@@ -239,9 +238,9 @@ test_txbuff_add_flush(void)
 
     // Test manual flush - this will call the error callback since no real device is configured
     error_count = 0;
-    sent_count = 0;
-    sent = txbuff_flush(buffer);
-    
+    sent_count  = 0;
+    sent        = txbuff_flush(buffer);
+
     // Buffer should be empty after flush regardless of transmission result
     if (txbuff_count(buffer) != 0) {
         tst_error("Buffer should be empty after flush\n");
@@ -256,9 +255,9 @@ test_txbuff_add_flush(void)
             ret = -1;
             goto cleanup_pkts;
         }
-        
+
         sent = txbuff_add(buffer, pkts[i]);
-        
+
         // When buffer reaches capacity, it should auto-flush
         if (i == TXBUFF_SIZE_TEST - 1) {
             // Buffer should be empty after auto-flush
@@ -332,22 +331,22 @@ test_txbuff_performance(void)
 
     // Measure txbuff_add performance
     start_tsc = __builtin_ia32_rdtsc();
-    
+
     for (i = 0; i < PERF_ITERATIONS; i++) {
         for (j = 0; j < PERF_BURST_SIZE; j++) {
             txbuff_add(buffer, pkts[j]);
         }
         txbuff_flush(buffer);
     }
-    
-    end_tsc = __builtin_ia32_rdtsc();
+
+    end_tsc      = __builtin_ia32_rdtsc();
     total_cycles = end_tsc - start_tsc;
 
     cne_printf("  TXBUFF Add+Flush Performance:\n");
     cne_printf("    Iterations: %u\n", PERF_ITERATIONS);
     cne_printf("    Burst size: %u\n", PERF_BURST_SIZE);
     cne_printf("    Total cycles: %lu\n", total_cycles);
-    cne_printf("    Cycles per operation: %.2f\n", 
+    cne_printf("    Cycles per operation: %.2f\n",
                (double)total_cycles / (PERF_ITERATIONS * PERF_BURST_SIZE));
     cne_printf("    Operations per second: %.2f M\n",
                (double)(PERF_ITERATIONS * PERF_BURST_SIZE) * 2400.0 / total_cycles);
@@ -378,10 +377,10 @@ setup_test_env(void)
     }
 
     // Setup mempool configuration
-    mp_cfg.addr      = mmap_addr(mm);
-    mp_cfg.objcnt    = TEST_MBUF_COUNT;
-    mp_cfg.objsz     = TEST_MBUF_SIZE;
-    mp_cfg.cache_sz  = MEMPOOL_CACHE_MAX_SIZE;
+    mp_cfg.addr     = mmap_addr(mm);
+    mp_cfg.objcnt   = TEST_MBUF_COUNT;
+    mp_cfg.objsz    = TEST_MBUF_SIZE;
+    mp_cfg.cache_sz = MEMPOOL_CACHE_MAX_SIZE;
 
     // Create mempool
     mbuf_pool = mempool_create(&mp_cfg);
@@ -392,8 +391,8 @@ setup_test_env(void)
     }
 
     // Create pktmbuf info
-    pi = pktmbuf_pool_create(mmap_addr(mm), TEST_MBUF_COUNT, TEST_MBUF_SIZE,
-                             MEMPOOL_CACHE_MAX_SIZE, NULL);
+    pi = pktmbuf_pool_create(mmap_addr(mm), TEST_MBUF_COUNT, TEST_MBUF_SIZE, MEMPOOL_CACHE_MAX_SIZE,
+                             NULL);
     if (!pi) {
         cne_printf("Failed to create pktmbuf info\n");
         mempool_destroy(mbuf_pool);
@@ -412,7 +411,7 @@ cleanup_test_env(void)
         pktmbuf_destroy(pi);
         pi = NULL;
     }
-    
+
     if (mbuf_pool) {
         mempool_destroy(mbuf_pool);
         mbuf_pool = NULL;
