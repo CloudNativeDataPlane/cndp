@@ -15,7 +15,7 @@ jobs:
   cache_build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Prepare
         id: prep
