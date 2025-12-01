@@ -18,7 +18,7 @@ name = "cne_sys"
 
 [build-dependencies]
 bindgen = "^0.59"
-cc = "^1.0.0"
+cc = "^1.2.48"
 pkg-config = "^0.3"
-os_info = "^3.5.0"
+os_info = "^3.13.0"
 shellexpand = "^2.1"

@@ -10,9 +10,9 @@ edition = "2021"
 # cndp-cne package is in cndp repo.
 # Cargo will crawl the entire cndp repo looking for cndp-cne package.
 cndp-cne = {git = "https://github.com/CloudNativeDataPlane/cndp", branch = "main" }
-crossbeam-channel = "0.5.4"
-clap = "3.2.11"
-ctrlc = "3.2.2"
-env_logger = "0.9.0"
+crossbeam-channel = "0.5.15"
+clap = "3.2.25"
+ctrlc = "3.5.1"
+env_logger = "0.9.3"
 log = "0.4"
 pnet ="0.30.0"

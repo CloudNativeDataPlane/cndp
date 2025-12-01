@@ -10,9 +10,9 @@ license = "BSD-3-Clause"
 [dependencies]
 cndp-cne = { path = "../.." }
 core_affinity = "0.5.10"
-crossbeam-channel = "0.5.4"
-clap = "3.2.11"
-ctrlc = "3.2.2"
+crossbeam-channel = "0.5.15"
+clap = "3.2.25"
+ctrlc = "3.5.1"
 etherparse = "0.10.1"
-env_logger = "0.9.0"
+env_logger = "0.9.3"
 log = "0.4"
