@@ -30,9 +30,9 @@ Or with git-clang-format if it is installed:
 git clang-format --diff
 ```
 
-Or a [Pre-commit](https://pre-commit.com/#install) hook is available and can be used
-to apply the linters to modified files in a commit. You can install pre-commit
-by running the following command:
+Or a [Pre-commit](https://pre-commit.com/#install) hook is available and can be
+used to apply the linters to modified files in a commit. You can install
+pre-commit by running the following command:
 
 ```bash
 pip install pre-commit

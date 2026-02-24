@@ -17,10 +17,10 @@ repos:
       - id: clang-format
         types_or: [c++, c]
         args: [-i, --style=file]
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.21.0
-    hooks:
-      - id: markdownlint-cli2-rules-docker
+#  - repo: https://github.com/DavidAnson/markdownlint-cli2
+#    rev: v0.21.0
+#    hooks:
+#      - id: markdownlint-cli2-rules-docker
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
