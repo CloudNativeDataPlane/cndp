@@ -38,37 +38,39 @@ ones own RX/TX function is also available should one prefer to provide their own
 
 .. code-block:: C
 
-    typedef int (*buf_alloc_t)(void *arg, void **bufs, uint16_t nb_pkts);
-    typedef void (*buf_free_t)(void **bufs, uint16_t nb_pkts);
-    typedef void (*buf_set_len_t)(void *buf, int len);
-    typedef void (*buf_set_data_len_t)(void *buf, int len);
-    typedef void (*buf_set_data_t)(void *buf, uint64_t off);
-    typedef void **(*buf_inc_ptr_t)(void **buf);
-    typedef uint16_t (*buf_get_len_t)(void *buf);
-    typedef uint16_t (*buf_get_data_len_t)(void *buf);
-    typedef uint64_t (*buf_get_data_t)(void *buf);
-    typedef uint64_t (*buf_get_addr_t)(void *buf);
-    typedef uint16_t (*buf_rx_burst_t)(void *arg, void **bufs, uint16_t nb_pkts);
-    typedef uint16_t (*buf_tx_burst_t)(void *arg, void **bufs, uint16_t nb_pkts);
+    typedef int (*buf_alloc_t)(xinfo_t *arg, mbuf_t **bufs, uint16_t nb_pkts);
+    typedef void (*buf_free_t)(xinfo_t *arg, mbuf_t **bufs, uint16_t nb_pkts);
+    typedef void (*buf_reset_t)(mbuf_t *buf, uint16_t buf_len, uint16_t headroom);
+    typedef void (*buf_set_len_t)(mbuf_t *buf, uint16_t len);
+    typedef void (*buf_set_data_len_t)(mbuf_t *buf, uint16_t len);
+    typedef void (*buf_set_data_off_t)(mbuf_t *buf, uint16_t off);
+    typedef void **(*buf_inc_ptr_t)(mbuf_t **buf);
+    typedef uint16_t (*buf_get_data_len_t)(mbuf_t *buf);
+    typedef uint16_t (*buf_get_data_off_t)(mbuf_t *buf);
+    typedef uint64_t (*buf_get_data_ptr_t)(mbuf_t *buf);
+    typedef uint64_t (*buf_get_base_ptr_t)(mbuf_t *buf);
+    typedef uint16_t (*buf_rx_burst_t)(xinfo_t *arg, mbuf_t **bufs, uint16_t nb_pkts);
+    typedef uint16_t (*buf_tx_burst_t)(xinfo_t *arg, mbuf_t **bufs, uint16_t nb_pkts);
 
     typedef struct lport_buf_mgmt {
+        void *buf_arg;                           /**< Argument for the buffer mgmt routines */
         buf_alloc_t buf_alloc;                   /**< Allocate buffer routine */
         buf_free_t buf_free;                     /**< Free buffer routine */
-        buf_set_len_t buf_set_len;               /**< Set buffer length routine */
-        buf_set_data_len_t buf_set_data_len;     /**< Set buffer data length routine */
-        buf_set_data_t buf_set_data;             /**< Set buffer data pointer routine*/
-        buf_get_len_t buf_get_len;               /**< Get buffer length routine */
-        buf_get_data_len_t buf_get_data_len;     /**< Get buffer data length routine */
-        buf_get_data_t buf_get_data;             /**< Get buffer data pointer routine */
-        buf_get_addr_t buf_get_addr;             /**< Get buffer base address routine */
+        buf_reset_t buf_reset;                   /**< Buffer reset function */
+        buf_set_len_t buf_set_len;               /**< Set total buffer length routine */
         buf_inc_ptr_t buf_inc_ptr;               /**< Increment the buffer pointer */
-        uint32_t frame_size;                     /**< Frame size in umem */
-        size_t buf_headroom;                     /**< Buffer headroom size */
-        size_t pool_header_sz;                   /**< Pool header size for external buffer pool*/
-        void    *buf_arg;                        /**< Argument for the buffer alloc/free routines */
         buf_rx_burst_t buf_rx_burst;             /**< RX burst callback */
         buf_tx_burst_t buf_tx_burst;             /**< TX burst callback */
-        bool unaligned_buff;                     /**< Unaligned buffer support */
+        buf_get_base_ptr_t buf_get_base_ptr;     /**< Get buffer base address routine */
+        buf_set_data_len_t buf_set_data_len;     /**< Set buffer data length routine */
+        buf_set_data_off_t buf_set_data_off;     /**< Set buffer data offset routine */
+        buf_get_data_len_t buf_get_data_len;     /**< Get buffer data length routine */
+        buf_get_data_off_t buf_get_data_off;     /**< Get buffer data offset routine */
+        buf_get_data_ptr_t buf_get_data_ptr;     /**< Get buffer data pointer address routine */
+        uint32_t frame_size;                     /**< Frame size in umem */
+        uint32_t buf_header_sz;                  /**< Buffer headroom size */
+        uint32_t pool_header_sz;                 /**< Pool header size for external buffer pool*/
+        uint32_t reserved;                       /**< Reserved space for alignment */
     } lport_buf_mgmt_t;
 
 These functions are set in the xskdev_info_t during the call to xskdev_socket_create()
@@ -85,10 +87,26 @@ These functions are shown below:
 .. code-block:: C
 
     if (c->flags & LPORT_USER_MANAGED_BUFFERS) {
-        if (!c->buf_mgmt.buf_arg || !c->buf_mgmt.buf_alloc || !c->buf_mgmt.buf_free ||
-            !c->buf_mgmt.buf_set_len || !c->buf_mgmt.buf_set_data || !c->buf_mgmt.buf_get_len ||
-            !c->buf_mgmt.buf_get_data || c->buf_mgmt.buf_headroom == 0 || !c->buf_mgmt.buf_get_addr)
-            CNE_ERR_GOTO(err, "Buffer alloc/free pointers are not set\n");
+        if (!c->buf_mgmt.buf_arg || !c->buf_mgmt.buf_alloc || !c->buf_mgmt.buf_free)
+            CNE_ERR_GOTO(err, "Buffer management alloc/free/arg pointers are not set\n");
+
+        if (!c->buf_mgmt.buf_set_data_off || !c->buf_mgmt.buf_set_data_len)
+            CNE_ERR_GOTO(err, "Buffer management to set data len/offset are not set\n");
+
+        if (!c->buf_mgmt.buf_get_data_off || !c->buf_mgmt.buf_get_data_len)
+            CNE_ERR_GOTO(err, "Buffer management pointers to get data are not set\n");
+
+        if (!c->buf_mgmt.buf_reset || !c->buf_mgmt.buf_inc_ptr)
+            CNE_ERR_GOTO(err, "Buffer management pointers to reset/inc buffer are not set\n");
+
+        if (!c->buf_mgmt.buf_get_base_ptr)
+            CNE_ERR_GOTO(err, "Buffer management pointer to get buffer base address is not set\n");
+
+        if (c->buf_mgmt.frame_size == 0)
+            CNE_ERR_GOTO(err, "Buffer management invalid frame size\n");
+
+        if (c->buf_mgmt.buf_header_sz == 0)
+            CNE_ERR_GOTO(err, "Buffer management invalid headroom size\n");
 
         xskdev_buf_set_buf_mgmt_ops(&xi->buf_mgmt, &c->buf_mgmt);
     } else {
@@ -97,15 +115,16 @@ These functions are shown below:
         xi->buf_mgmt.buf_free         = xskdev_buf_free_default;
         xi->buf_mgmt.buf_set_len      = xskdev_buf_set_len_default;
         xi->buf_mgmt.buf_set_data_len = xskdev_buf_set_data_len_default;
-        xi->buf_mgmt.buf_set_data     = xskdev_buf_set_data_default;
+        xi->buf_mgmt.buf_set_data_off = xskdev_buf_set_data_off_default;
         xi->buf_mgmt.buf_get_data_len = xskdev_buf_get_data_len_default;
-        xi->buf_mgmt.buf_get_len      = xskdev_buf_get_len_default;
-        xi->buf_mgmt.buf_get_data     = xskdev_buf_get_data_default;
+        xi->buf_mgmt.buf_get_data_off = xskdev_buf_get_data_off_default;
+        xi->buf_mgmt.buf_get_data_ptr = xskdev_buf_get_data_ptr_default;
         xi->buf_mgmt.buf_inc_ptr      = xskdev_buf_inc_ptr_default;
-        xi->buf_mgmt.buf_headroom     = sizeof(pktmbuf_t);
-        xi->buf_mgmt.buf_get_addr     = xskdev_buf_get_addr_default;
+        xi->buf_mgmt.buf_get_base_ptr = xskdev_buf_get_base_ptr_default;
+        xi->buf_mgmt.buf_reset        = xskdev_buf_reset_default;
         xi->buf_mgmt.frame_size       = c->bufsz;
         xi->buf_mgmt.pool_header_sz   = 0;
+        xi->buf_mgmt.buf_header_sz    = sizeof(pktmbuf_t);
     }
 
 .. note::
@@ -130,7 +149,6 @@ support of an unaligned memory model.
         xi->__pull_cq_addr = __pull_cq_addr_aligned;
         xi->__get_mbuf_rx =  __get_mbuf_rx_aligned;
     } else {
-        xi->buf_mgmt.unaligned_buff = true;
         xi->__get_mbuf_addr_tx = __get_mbuf_addr_tx_unaligned;
         xi->__pull_cq_addr =  __pull_cq_addr_unaligned;
         xi->__get_mbuf_rx =  __get_mbuf_rx_unaligned;

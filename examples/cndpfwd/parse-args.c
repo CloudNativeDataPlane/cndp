@@ -177,6 +177,8 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
                 cne_printf("[yellow]**** [green]SKB_MODE is [red]enabled[]\n");
             if (lport->flags & LPORT_BUSY_POLLING)
                 cne_printf("[yellow]**** [green]BUSY_POLLING is [red]enabled[]\n");
+            if (lport->flags & LPORT_UMEM_UNALIGNED_BUFFERS)
+                cne_printf("[yellow]**** [green]UMEM_UNALIGNED_BUFFERS is [red]enabled[]\n");
 
             pcfg.qid          = lport->qid;
             pcfg.bufsz        = umem->bufsz;
@@ -189,6 +191,7 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.busy_budget  = lport->busy_budget;
             pcfg.flags        = lport->flags;
             pcfg.flags |= (umem->shared_umem == 1) ? LPORT_SHARED_UMEM : 0;
+            pcfg.buf_mgmt.pool_header_sz = sizeof(pktmbuf_t);
 
             if (lport->xsk_map_path) {
                 cne_printf("[yellow]**** [green]PINNED_BPF_MAP is [red]enabled[]\n");

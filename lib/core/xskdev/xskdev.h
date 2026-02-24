@@ -71,12 +71,12 @@ extern "C" {
 #endif
 
 typedef void *(*xskdev_pull_cq_addr_t)(uint64_t addr, uint64_t umem_addr, uint64_t mask,
-                                       uint64_t pool_header_sz);
-typedef uint64_t (*xskdev_get_mbuf_addr_tx_t)(void *xi, void *mb, uint64_t umem_addr);
+                                       uint32_t pool_header_sz);
+typedef uint64_t (*xskdev_get_mbuf_addr_tx_t)(void *xi, mbuf_t *mb, uint64_t umem_addr);
 typedef uint16_t (*xskdev_get_mbuf_t)(void *xi, void *umem_addr, const struct xdp_desc *d,
-                                      void *buf);
+                                      mbuf_t *buf);
 typedef uint16_t (*xskdev_get_mbuf_rx_t)(void *xi, void *umem_addr, const struct xdp_desc *d,
-                                         void **buf);
+                                         mbuf_t **buf);
 
 struct xskdev_umem {
     struct xsk_ring_prod fq; /**< The Fill Queue XSK structure */
@@ -153,42 +153,6 @@ CNDP_API xskdev_info_t *xskdev_socket_create(struct lport_cfg *c);
 CNDP_API void xskdev_socket_destroy(xskdev_info_t *xi);
 
 /**
- * Receive packets from the interface
- *
- * @param xi
- *   The void * type of xskdev_info_t structure
- * @param bufs
- *   The list or vector or pktmbufs structures to send on the interface.
- * @param nb_pkts
- *   The number of pktmbuf_t pointers in the list or vector bufs
- * @return
- *   The number of packet sent to the interface or 0 if RX is empty.
- */
-CNDP_API __cne_always_inline uint16_t
-xskdev_rx_burst(xskdev_info_t *xi, void **bufs, uint16_t nb_pkts)
-{
-    return xi->buf_mgmt.buf_rx_burst(xi, bufs, nb_pkts);
-}
-
-/**
- * Send buffers to be transmitted
- *
- * @param xi
- *   The void * type of xskdev_info_t structure
- * @param bufs
- *   The list or vector or pktmbufs structures to send on the interface.
- * @param nb_pkts
- *   The number of pktmbuf_t pointers in the list or vector bufs
- * @return
- *   The number of packet sent to the interface or 0 if RX is empty.
- */
-CNDP_API __cne_always_inline uint16_t
-xskdev_tx_burst(xskdev_info_t *xi, void **bufs, uint16_t nb_pkts)
-{
-    return xi->buf_mgmt.buf_tx_burst(xi, bufs, nb_pkts);
-}
-
-/**
  * Get the stats for the interface
  *
  * @param xi
@@ -256,6 +220,12 @@ xskdev_arg_get(xskdev_info_t *xi)
     return xi->buf_mgmt.buf_arg;
 }
 
+CNDP_API __cne_always_inline uint32_t
+xskdev_buf_get_pool_hdr_sz(xskdev_info_t *xi)
+{
+    return xi->buf_mgmt.pool_header_sz;
+}
+
 /**
  * Allocate the number of buffers requested.
  *
@@ -269,7 +239,7 @@ xskdev_arg_get(xskdev_info_t *xi)
  *    The number of bufs allocated in the bufs array.
  */
 CNDP_API __cne_always_inline int
-xskdev_buf_alloc(xskdev_info_t *xi, void **bufs, uint16_t nb_bufs)
+xskdev_buf_alloc(xskdev_info_t *xi, mbuf_t **bufs, uint16_t nb_bufs)
 {
     return xi->buf_mgmt.buf_alloc(xskdev_arg_get(xi), bufs, nb_bufs);
 }
@@ -285,121 +255,9 @@ xskdev_buf_alloc(xskdev_info_t *xi, void **bufs, uint16_t nb_bufs)
  *    The max number of xbuf pointers to free in the array.
  */
 CNDP_API __cne_always_inline void
-xskdev_buf_free(xskdev_info_t *xi, void **bufs, uint16_t nb_bufs)
+xskdev_buf_free(xskdev_info_t *xi, mbuf_t **bufs, uint16_t nb_bufs)
 {
     xi->buf_mgmt.buf_free(xskdev_arg_get(xi), bufs, nb_bufs);
-}
-
-/**
- * Set the buffer Length.
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer to set the length of.
- * @param len
- *    The length to set the buffer length to.
- */
-
-CNDP_API __cne_always_inline void
-xskdev_buf_set_len(xskdev_info_t *xi, void *buf, int len)
-{
-    xi->buf_mgmt.buf_set_len(buf, len);
-}
-
-/**
- * Set the buffer data Length.
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer to set the data length of.
- * @param len
- *    The length to set the buffer data length to.
- */
-
-CNDP_API __cne_always_inline void
-xskdev_buf_set_data_len(xskdev_info_t *xi, void *buf, int len)
-{
-    xi->buf_mgmt.buf_set_data_len(buf, len);
-}
-
-/**
- * Set the buffer data pointer
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer to set the data pointer of.
- * @param off
- *    The offset to set the data pointer to.
- */
-CNDP_API __cne_always_inline void
-xskdev_buf_set_data(xskdev_info_t *xi, void *buf, uint64_t off)
-{
-    xi->buf_mgmt.buf_set_data(buf, off);
-}
-
-/**
- * Get the buffer data length.
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer to get the data length of.
- * @return
- *   The data length of the buffer.
- */
-CNDP_API __cne_always_inline uint16_t
-xskdev_buf_get_data_len(xskdev_info_t *xi, void *buf)
-{
-    return xi->buf_mgmt.buf_get_data_len(buf);
-}
-
-/**
- * Get the buffer data pointer.
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The array of xbuf pointers to free.
- * @return
- *   The address of the data pointer.
- */
-CNDP_API __cne_always_inline uint64_t
-xskdev_buf_get_data(xskdev_info_t *xi, void *buf)
-{
-    return xi->buf_mgmt.buf_get_data(buf);
-}
-
-/**
- * Get the virtual address of the segment buffer.
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer to get the address of.
- * @return
- *   The the virtual address of the segment buffer.
- */
-CNDP_API __cne_always_inline uint64_t
-xskdev_buf_get_addr(xskdev_info_t *xi, void *buf)
-{
-    return xi->buf_mgmt.buf_get_addr(buf);
-}
-
-/**
- * Increment the buffer array pointer
- *
- * @param xi
- *    The pointer to the xskdev_info struct.
- * @param buf
- *    The buffer ptr to increment.
- */
-CNDP_API __cne_always_inline void **
-xskdev_buf_inc_ptr(xskdev_info_t *xi, void **buf)
-{
-    return xi->buf_mgmt.buf_inc_ptr(buf);
 }
 
 /**
@@ -417,9 +275,173 @@ xskdev_buf_inc_ptr(xskdev_info_t *xi, void **buf)
  *    The buffer headroom to offset the data pointer by (if needed).
  */
 CNDP_API __cne_always_inline void
-xskdev_buf_reset(xskdev_info_t *xi, void *buf, uint32_t buf_len, size_t headroom)
+xskdev_buf_reset(xskdev_info_t *xi, mbuf_t *buf, uint16_t buf_len, uint16_t headroom)
 {
     xi->buf_mgmt.buf_reset(buf, buf_len, headroom);
+}
+
+/**
+ * Set the buffer Length.
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to set the length of.
+ * @param len
+ *    The length to set the buffer length to.
+ */
+
+CNDP_API __cne_always_inline void
+xskdev_buf_set_len(xskdev_info_t *xi, mbuf_t *buf, uint16_t len)
+{
+    xi->buf_mgmt.buf_set_len(buf, len);
+}
+
+/**
+ * Increment the buffer array pointer
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer ptr to increment.
+ */
+CNDP_API __cne_always_inline void **
+xskdev_buf_inc_ptr(xskdev_info_t *xi, mbuf_t **buf)
+{
+    return xi->buf_mgmt.buf_inc_ptr(buf);
+}
+
+/**
+ * Get the base address of the data buffer
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to get the address of.
+ * @return
+ *   The the base address of the data buffer
+ */
+CNDP_API __cne_always_inline uint64_t
+xskdev_buf_get_base_ptr(xskdev_info_t *xi, mbuf_t *buf)
+{
+    return xi->buf_mgmt.buf_get_base_ptr(buf);
+}
+
+/**
+ * Receive packets from the interface
+ *
+ * @param xi
+ *   The void * type of xskdev_info_t structure
+ * @param bufs
+ *   The list or vector or pktmbufs structures to send on the interface.
+ * @param nb_pkts
+ *   The number of pktmbuf_t pointers in the list or vector bufs
+ * @return
+ *   The number of packet sent to the interface or 0 if RX is empty.
+ */
+CNDP_API __cne_always_inline uint16_t
+xskdev_rx_burst(xskdev_info_t *xi, mbuf_t **bufs, uint16_t nb_pkts)
+{
+    return xi->buf_mgmt.buf_rx_burst(xi, bufs, nb_pkts);
+}
+
+/**
+ * Send buffers to be transmitted
+ *
+ * @param xi
+ *   The void * type of xskdev_info_t structure
+ * @param bufs
+ *   The list or vector or pktmbufs structures to send on the interface.
+ * @param nb_pkts
+ *   The number of pktmbuf_t pointers in the list or vector bufs
+ * @return
+ *   The number of packet sent to the interface or 0 if RX is empty.
+ */
+CNDP_API __cne_always_inline uint16_t
+xskdev_tx_burst(xskdev_info_t *xi, mbuf_t **bufs, uint16_t nb_pkts)
+{
+    return xi->buf_mgmt.buf_tx_burst(xi, bufs, nb_pkts);
+}
+
+/**
+ * Set the buffer data Length.
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to set the data length of.
+ * @param len
+ *    The length to set the buffer data length to.
+ */
+
+CNDP_API __cne_always_inline void
+xskdev_buf_set_data_len(xskdev_info_t *xi, mbuf_t *buf, uint16_t len)
+{
+    xi->buf_mgmt.buf_set_data_len(buf, len);
+}
+
+/**
+ * Set the buffer data pointer
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to set the data pointer of.
+ * @param off
+ *    The offset to set the data pointer to.
+ */
+CNDP_API __cne_always_inline void
+xskdev_buf_set_data_off(xskdev_info_t *xi, mbuf_t *buf, uint64_t off)
+{
+    xi->buf_mgmt.buf_set_data_off(buf, off);
+}
+
+/**
+ * Get the buffer data length.
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to get the data length of.
+ * @return
+ *   The data length of the buffer.
+ */
+CNDP_API __cne_always_inline uint16_t
+xskdev_buf_get_data_len(xskdev_info_t *xi, mbuf_t *buf)
+{
+    return xi->buf_mgmt.buf_get_data_len(buf);
+}
+
+/**
+ * Get the buffer data offset.
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The array of xbuf pointers to free.
+ * @return
+ *   The data offset within the buffer.
+ */
+CNDP_API __cne_always_inline uint16_t
+xskdev_buf_get_data_off(xskdev_info_t *xi, mbuf_t *buf)
+{
+    return xi->buf_mgmt.buf_get_data_off(buf);
+}
+
+/**
+ * Get the pointer to the data inside the buffer
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to get the address of.
+ * @return
+ *   The the virtual address of the segment buffer.
+ */
+CNDP_API __cne_always_inline uint64_t
+xskdev_buf_get_data_ptr(xskdev_info_t *xi, mbuf_t *buf)
+{
+    return xi->buf_mgmt.buf_get_data_ptr(buf);
 }
 
 /**
@@ -437,13 +459,14 @@ xskdev_buf_reset(xskdev_info_t *xi, void *buf, uint32_t buf_len, size_t headroom
 CNDP_API __cne_always_inline int
 xskdev_get_fd(xskdev_info_t *xi, int *rx_fd, int *tx_fd)
 {
-    if (!xi)
-        return -1;
-    if (rx_fd)
-        *rx_fd = xi->rxq.fds.fd;
-    if (tx_fd)
-        *tx_fd = xi->txq.fds.fd;
-    return 0;
+    if (xi) {
+        if (rx_fd)
+            *rx_fd = xi->rxq.fds.fd;
+        if (tx_fd)
+            *tx_fd = xi->txq.fds.fd;
+        return 0;
+    }
+    return -1;
 }
 
 #ifdef __cplusplus
