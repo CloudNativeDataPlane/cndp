@@ -824,7 +824,7 @@ pktmbuf_free_bulk(pktmbuf_t **mbufs, unsigned int count)
  * set of mbufs. The private data are is not copied.
  *
  * @param m
- *   The packet mbuf to be copiedd.
+ *   The packet mbuf to be copied.
  * @param pi
  *   The pktmbuf_info_t from which the "clone" mbufs are allocated.
  * @param offset
