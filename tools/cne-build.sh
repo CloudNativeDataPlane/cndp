@@ -59,18 +59,21 @@ echo ""
 
 function run_meson() {
     btype="-Dbuildtype=$buildtype"
-    meson $configure $static $coverity $btype $tcp $ipv6 --prefix="/$target_dir" "$build_path" "$sdk_dir"
+    if [[ -n "$CNE_VERBOSE" ]]; then
+        echo "meson $configure $static $coverity $btype $tcp $ipv6 --prefix=\"/$target_dir\" \"$build_path\" $sdk_dir"
+    fi
+    meson $configure $static $coverity $btype $tcp $ipv6 --prefix="/$target_dir" "$build_path" $sdk_dir
     configure=""
 }
 
 function ninja_build() {
-    echo ">>> Ninja build in $build_path buildtype= $buildtype"
+    echo ">>> Ninja build in $build_path buildtype=$buildtype"
 
     if [[ -d $build_path ]] || [[ -f $build_path/build.ninja ]]; then
         # add reconfigure command if meson dir already exists
         configure="configure"
         # sdk_dir must be empty if we're reconfiguring
-        sdk_dir=""
+        sdk_dir=
     else
         configure="setup"
     fi

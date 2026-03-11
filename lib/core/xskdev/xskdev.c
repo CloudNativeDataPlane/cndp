@@ -246,10 +246,10 @@ fq_add(xskdev_info_t *xi, int times)
 
         for (uint32_t i = 0; i < nb_bufs; i++) {
             void *buf       = bufs[i];
-            uint64_t offset = (uint64_t)xskdev_buf_get_addr(xi, buf) - (uint64_t)ux->umem_addr -
+            uint64_t offset = (uint64_t)xskdev_buf_get_data_ptr(xi, buf) - (uint64_t)ux->umem_addr -
                               (uint64_t)xi->buf_mgmt.pool_header_sz;
 
-            xskdev_buf_reset(xi, buf, ux->obj_sz, xi->buf_mgmt.buf_headroom);
+            xskdev_buf_reset(xi, buf, ux->obj_sz, xi->buf_mgmt.buf_header_sz);
 
             *xsk_ring_prod__fill_addr(fq, pos++) = offset;
         }
@@ -274,13 +274,13 @@ __get_mbuf_rx_unaligned(void *_xi, void *umem_addr, const struct xdp_desc *d, vo
     *bufs = (void *)xsk_umem__get_data(umem_addr, addr + xi->buf_mgmt.pool_header_sz);
 
     xskdev_buf_set_data_len(xi, *bufs, d->len);
-    xskdev_buf_set_data(xi, *bufs, offset - xi->buf_mgmt.buf_headroom);
+    xskdev_buf_set_data_off(xi, *bufs, offset - xi->buf_mgmt.buf_header_sz);
 
     return d->len;
 }
 
 static __cne_always_inline uint16_t
-__get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, void **bufs)
+__get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, mbuf_t **bufs)
 {
     xskdev_info_t *xi = _xi;
     void *addr;
@@ -294,7 +294,7 @@ __get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, void
     *bufs = xsk_umem__get_data(umem_addr, (uint64_t)addr + xi->buf_mgmt.pool_header_sz);
 
     xskdev_buf_set_data_len(xi, *bufs, d->len);
-    xskdev_buf_set_data(xi, *bufs, offset - xi->buf_mgmt.buf_headroom);
+    xskdev_buf_set_data_off(xi, *bufs, offset - xi->buf_mgmt.buf_header_sz);
 
     return d->len;
 }
@@ -396,18 +396,25 @@ kick_tx(xskdev_info_t *xi)
 
 static __cne_always_inline void *
 __pull_cq_addr_unaligned(uint64_t addr, uint64_t umem_addr, __cne_unused uint64_t mask,
-                         uint64_t pool_header_sz)
+                         uint32_t pool_header_sz)
 {
-    return (void *)(umem_addr + xsk_umem__extract_addr(addr) + pool_header_sz);
+    void *buf = NULL;
+
+    buf = (void *)(umem_addr + xsk_umem__extract_addr(addr) + pool_header_sz);
+
+    return buf;
 }
 
 static __cne_always_inline void *
-__pull_cq_addr_aligned(uint64_t addr, uint64_t umem_addr, uint64_t mask,
-                       __cne_unused uint64_t pool_header_sz)
+__pull_cq_addr_aligned(uint64_t addr, uint64_t umem_addr, uint64_t mask, uint32_t pool_header_sz)
 {
+    void *buf;
+
     /* Trim off the lower bits of offset to get the mbuf offset in umem.
      * Add the offset to the umem start address to find the umem address. */
-    return (void *)(umem_addr + (addr & mask) + pool_header_sz);
+    buf = (void *)(umem_addr + (addr & mask) + pool_header_sz);
+
+    return buf;
 }
 
 static void
@@ -430,10 +437,10 @@ pull_umem_cq(xskdev_info_t *xi)
     }
 
     for (uint32_t i = 0; i < n && i < mbuf_cnt; i++) {
-        uint64_t offset = *xsk_ring_cons__comp_addr(cq, idx_cq++);
+        uint64_t offset_addr = *xsk_ring_cons__comp_addr(cq, idx_cq++);
 
-        mbufs[i] = xi->__pull_cq_addr(offset, umem_addr, mask, xi->buf_mgmt.pool_header_sz);
-        xskdev_buf_reset(xi, mbufs[i], xi->rxq.ux->obj_sz, xi->buf_mgmt.buf_headroom);
+        mbufs[i] = xi->__pull_cq_addr(offset_addr, umem_addr, mask, xi->buf_mgmt.pool_header_sz);
+        xskdev_buf_reset(xi, mbufs[i], xi->rxq.ux->obj_sz, xi->buf_mgmt.buf_header_sz);
     }
 
     xsk_ring_cons__release(cq, n);
@@ -447,15 +454,17 @@ static __cne_always_inline uint64_t
 __get_mbuf_addr_tx_unaligned(void *_xi, void *mb, uint64_t umem_addr)
 {
     xskdev_info_t *xi = _xi;
-    uint64_t addr, offset;
+    uint64_t addr, offset, buf_addr, headroom;
 
-    addr   = xskdev_buf_get_addr(xi, mb) - umem_addr - (uint64_t)xi->buf_mgmt.pool_header_sz;
-    addr   = xsk_umem__extract_addr((uint64_t)addr);
-    offset = xskdev_buf_get_data(xi, mb) - xskdev_buf_get_addr(xi, mb) +
-             (uint64_t)xi->buf_mgmt.pool_header_sz;
-    offset = offset << XSK_UNALIGNED_BUF_OFFSET_SHIFT;
+    headroom = (uint64_t)(xi->buf_mgmt.buf_header_sz + xi->buf_mgmt.pool_header_sz);
+    buf_addr = xskdev_buf_get_base_ptr(xi, mb);
+    addr     = (buf_addr - umem_addr) - headroom;
+    addr     = xsk_umem__extract_addr((uint64_t)addr);
+    offset   = (xskdev_buf_get_data_ptr(xi, mb) - buf_addr) + headroom;
+    offset   = offset << XSK_UNALIGNED_BUF_OFFSET_SHIFT;
+    addr     = addr | offset;
 
-    return addr | offset;
+    return addr;
 }
 
 static __cne_always_inline uint64_t
@@ -463,8 +472,8 @@ __get_mbuf_addr_tx_aligned(void *_xi, void *mb, uint64_t umem_addr)
 {
     xskdev_info_t *xi = _xi;
 
-    return (xskdev_buf_get_addr(xi, mb) - umem_addr - xi->buf_mgmt.pool_header_sz) +
-           xskdev_buf_get_data(xi, mb);
+    return (xskdev_buf_get_base_ptr(xi, mb) - umem_addr - xskdev_buf_get_pool_hdr_sz(xi)) +
+           xskdev_buf_get_data_off(xi, mb);
 }
 
 static uint16_t
@@ -545,7 +554,7 @@ umem_create(lport_cfg_t *cfg)
     umem_cfg.fill_size      = (cfg->rx_nb_desc * 2);
     umem_cfg.comp_size      = cfg->tx_nb_desc;
     umem_cfg.frame_size     = cfg->bufsz;
-    umem_cfg.frame_headroom = cfg->buf_mgmt.buf_headroom;
+    umem_cfg.frame_headroom = (cfg->buf_mgmt.buf_header_sz + cfg->buf_mgmt.pool_header_sz);
 
     if (cfg->flags & LPORT_UMEM_UNALIGNED_BUFFERS)
         umem_cfg.flags = XDP_UMEM_UNALIGNED_CHUNK_FLAG;
@@ -612,7 +621,7 @@ xskdev_recv_xsk_fd(xskdev_info_t *xi)
 }
 
 static __cne_always_inline int
-xskdev_buf_alloc_default(void *arg, void **bufs, uint16_t nb_bufs)
+xskdev_buf_alloc_default(void *arg, mbuf_t **bufs, uint16_t nb_bufs)
 {
     pktmbuf_info_t *pi = (pktmbuf_info_t *)arg;
     pktmbuf_t **mbs    = (pktmbuf_t **)bufs;
@@ -621,13 +630,13 @@ xskdev_buf_alloc_default(void *arg, void **bufs, uint16_t nb_bufs)
 }
 
 static __cne_always_inline void
-xskdev_buf_free_default(__cne_unused void *arg, void **bufs, uint16_t nb_bufs)
+xskdev_buf_free_default(__cne_unused void *arg, mbuf_t **bufs, uint16_t nb_bufs)
 {
     pktmbuf_free_bulk((pktmbuf_t **)bufs, nb_bufs);
 }
 
 static __cne_always_inline void
-xskdev_buf_set_data_len_default(void *mb, int len)
+xskdev_buf_set_data_len_default(mbuf_t *mb, uint16_t len)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
@@ -635,7 +644,7 @@ xskdev_buf_set_data_len_default(void *mb, int len)
 }
 
 static __cne_always_inline void
-xskdev_buf_set_len_default(void *mb, int len)
+xskdev_buf_set_len_default(mbuf_t *mb, uint16_t len)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
@@ -643,7 +652,7 @@ xskdev_buf_set_len_default(void *mb, int len)
 }
 
 static __cne_always_inline void
-xskdev_buf_set_data_default(void *mb, uint64_t off)
+xskdev_buf_set_data_off_default(mbuf_t *mb, uint16_t off)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
@@ -651,7 +660,7 @@ xskdev_buf_set_data_default(void *mb, uint64_t off)
 }
 
 static __cne_always_inline void
-xskdev_buf_reset_default(void *mb, uint32_t buf_len, size_t headroom)
+xskdev_buf_reset_default(mbuf_t *mb, uint16_t buf_len, uint16_t headroom)
 {
     /* Buffer reset of data is done in pktmbuf_alloc() */
     CNE_SET_USED(mb);
@@ -660,15 +669,15 @@ xskdev_buf_reset_default(void *mb, uint32_t buf_len, size_t headroom)
 }
 
 static __cne_always_inline uint16_t
-xskdev_buf_get_data_len_default(void *mb)
+xskdev_buf_get_data_len_default(mbuf_t *mb)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
     return pktmbuf_data_len(p);
 }
 
-static __cne_always_inline uint64_t
-xskdev_buf_get_data_default(void *mb)
+static __cne_always_inline uint16_t
+xskdev_buf_get_data_off_default(mbuf_t *mb)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
@@ -676,7 +685,18 @@ xskdev_buf_get_data_default(void *mb)
 }
 
 static __cne_always_inline uint64_t
-xskdev_buf_get_addr_default(void *mb)
+xskdev_buf_get_data_ptr_default(mbuf_t *mb)
+{
+    pktmbuf_t *p = (pktmbuf_t *)mb;
+    uint64_t addr;
+
+    addr = (uint64_t)CNE_PTR_ADD(pktmbuf_buf_addr(p), pktmbuf_data_off(p));
+
+    return addr;
+}
+
+static __cne_always_inline uint64_t
+xskdev_buf_get_base_ptr_default(mbuf_t *mb)
 {
     pktmbuf_t *p = (pktmbuf_t *)mb;
 
@@ -684,7 +704,7 @@ xskdev_buf_get_addr_default(void *mb)
 }
 
 static __cne_always_inline void **
-xskdev_buf_inc_ptr_default(void **mb)
+xskdev_buf_inc_ptr_default(mbuf_t **mb)
 {
     pktmbuf_t **p = (pktmbuf_t **)mb;
 
@@ -762,22 +782,22 @@ xskdev_socket_create(struct lport_cfg *c)
         if (!c->buf_mgmt.buf_arg || !c->buf_mgmt.buf_alloc || !c->buf_mgmt.buf_free)
             CNE_ERR_GOTO(err, "Buffer management alloc/free/arg pointers are not set\n");
 
-        if (!c->buf_mgmt.buf_set_data || !c->buf_mgmt.buf_set_data_len)
-            CNE_ERR_GOTO(err, "Buffer management pointers to set data are not set\n");
+        if (!c->buf_mgmt.buf_set_data_off || !c->buf_mgmt.buf_set_data_len)
+            CNE_ERR_GOTO(err, "Buffer management to set data len/offset are not set\n");
 
-        if (!c->buf_mgmt.buf_get_data || !c->buf_mgmt.buf_get_data_len)
+        if (!c->buf_mgmt.buf_get_data_off || !c->buf_mgmt.buf_get_data_len)
             CNE_ERR_GOTO(err, "Buffer management pointers to get data are not set\n");
 
         if (!c->buf_mgmt.buf_reset || !c->buf_mgmt.buf_inc_ptr)
-            CNE_ERR_GOTO(err, "Buffer management pointers to reset/inc buffer a are not set\n");
+            CNE_ERR_GOTO(err, "Buffer management pointers to reset/inc buffer are not set\n");
 
-        if (!c->buf_mgmt.buf_get_addr)
-            CNE_ERR_GOTO(err, "Buffer management pointers to get buffer addr is are not set\n");
+        if (!c->buf_mgmt.buf_get_base_ptr)
+            CNE_ERR_GOTO(err, "Buffer management pointer to get buffer base address is not set\n");
 
         if (c->buf_mgmt.frame_size == 0)
             CNE_ERR_GOTO(err, "Buffer management invalid frame size\n");
 
-        if (c->buf_mgmt.buf_headroom == 0)
+        if (c->buf_mgmt.buf_header_sz == 0)
             CNE_ERR_GOTO(err, "Buffer management invalid headroom size\n");
 
         xskdev_buf_set_buf_mgmt_ops(&xi->buf_mgmt, &c->buf_mgmt);
@@ -787,15 +807,16 @@ xskdev_socket_create(struct lport_cfg *c)
         xi->buf_mgmt.buf_free         = xskdev_buf_free_default;
         xi->buf_mgmt.buf_set_len      = xskdev_buf_set_len_default;
         xi->buf_mgmt.buf_set_data_len = xskdev_buf_set_data_len_default;
-        xi->buf_mgmt.buf_set_data     = xskdev_buf_set_data_default;
+        xi->buf_mgmt.buf_set_data_off = xskdev_buf_set_data_off_default;
         xi->buf_mgmt.buf_get_data_len = xskdev_buf_get_data_len_default;
-        xi->buf_mgmt.buf_get_data     = xskdev_buf_get_data_default;
+        xi->buf_mgmt.buf_get_data_off = xskdev_buf_get_data_off_default;
+        xi->buf_mgmt.buf_get_data_ptr = xskdev_buf_get_data_ptr_default;
         xi->buf_mgmt.buf_inc_ptr      = xskdev_buf_inc_ptr_default;
-        xi->buf_mgmt.buf_headroom     = sizeof(pktmbuf_t);
-        xi->buf_mgmt.buf_get_addr     = xskdev_buf_get_addr_default;
+        xi->buf_mgmt.buf_get_base_ptr = xskdev_buf_get_base_ptr_default;
         xi->buf_mgmt.buf_reset        = xskdev_buf_reset_default;
         xi->buf_mgmt.frame_size       = c->bufsz;
         xi->buf_mgmt.pool_header_sz   = 0;
+        xi->buf_mgmt.buf_header_sz    = sizeof(pktmbuf_t);
     }
 
     if (!c->buf_mgmt.buf_rx_burst || !c->buf_mgmt.buf_tx_burst) {
@@ -809,10 +830,9 @@ xskdev_socket_create(struct lport_cfg *c)
         xi->__pull_cq_addr     = __pull_cq_addr_aligned;
         xi->__get_mbuf_rx      = __get_mbuf_rx_aligned;
     } else {
-        xi->buf_mgmt.unaligned_buff = true;
-        xi->__get_mbuf_addr_tx      = __get_mbuf_addr_tx_unaligned;
-        xi->__pull_cq_addr          = __pull_cq_addr_unaligned;
-        xi->__get_mbuf_rx           = __get_mbuf_rx_unaligned;
+        xi->__get_mbuf_addr_tx = __get_mbuf_addr_tx_unaligned;
+        xi->__pull_cq_addr     = __pull_cq_addr_unaligned;
+        xi->__get_mbuf_rx      = __get_mbuf_rx_unaligned;
     }
 
     umem = umem_create(c);
