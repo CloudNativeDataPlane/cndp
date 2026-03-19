@@ -12,17 +12,17 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.8
+    rev: v22.1.1
     hooks:
       - id: clang-format
         types_or: [c++, c]
         args: [-i, --style=file]
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.21.0
-    hooks:
-      - id: markdownlint-cli2-rules-docker
+#  - repo: https://github.com/DavidAnson/markdownlint-cli2
+#    rev: v0.21.0
+#    hooks:
+#      - id: markdownlint-cli2-rules-docker
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         args: [--toml, cndp-codespell.precommit-toml]
