@@ -181,20 +181,21 @@ typedef struct jcfg_lport {
 } jcfg_lport_t;
 
 /** JCFG lport configuration names */
-#define JCFG_LPORT_PMD_NAME          "pmd"
-#define JCFG_LPORT_UMEM_NAME         "umem"
-#define JCFG_LPORT_REGION_NAME       "region"
-#define JCFG_LPORT_QID_NAME          "qid"
-#define JCFG_LPORT_DESCRIPTION_NAME  "description"
-#define JCFG_LPORT_DESC_NAME         "desc"
-#define JCFG_LPORT_BUSY_POLL_NAME    "busy_poll"
-#define JCFG_LPORT_BUSY_POLLING_NAME "busy_polling"
-#define JCFG_LPORT_BUSY_TIMEOUT_NAME "busy_timeout"
-#define JCFG_LPORT_BUSY_BUDGET_NAME  "busy_budget"
-#define JCFG_PINNED_XSK_MAP_NAME     "xsk_pin_path"
-#define JCFG_UDS_NAME                "uds_path"
-#define JCFG_LPORT_FORCE_WAKEUP_NAME "force_wakeup"
-#define JCFG_LPORT_SKB_MODE_NAME     "skb_mode"
+#define JCFG_LPORT_PMD_NAME               "pmd"
+#define JCFG_LPORT_UMEM_NAME              "umem"
+#define JCFG_LPORT_REGION_NAME            "region"
+#define JCFG_LPORT_QID_NAME               "qid"
+#define JCFG_LPORT_DESCRIPTION_NAME       "description"
+#define JCFG_LPORT_DESC_NAME              "desc"
+#define JCFG_LPORT_BUSY_POLL_NAME         "busy_poll"
+#define JCFG_LPORT_BUSY_POLLING_NAME      "busy_polling"
+#define JCFG_LPORT_BUSY_TIMEOUT_NAME      "busy_timeout"
+#define JCFG_LPORT_BUSY_BUDGET_NAME       "busy_budget"
+#define JCFG_PINNED_XSK_MAP_NAME          "xsk_pin_path"
+#define JCFG_UDS_NAME                     "uds_path"
+#define JCFG_LPORT_FORCE_WAKEUP_NAME      "force_wakeup"
+#define JCFG_LPORT_SKB_MODE_NAME          "skb_mode"
+#define JCFG_LPORT_UNALIGNED_BUFFERS_NAME "unaligned_buffers"
 
 /**
  * JCFG  lgroup for lcore allocations
