@@ -616,14 +616,14 @@ crc32c_sb8_64_bit(uint32_t crc, const unsigned char *p_buf, uint32_t length, uin
                 sctp_crc_tableil8_o80[(crc >> 8) & 0x000000FF];
         term2 = crc >> 16;
         crc   = term1 ^ sctp_crc_tableil8_o72[term2 & 0x000000FF] ^
-              sctp_crc_tableil8_o64[(term2 >> 8) & 0x000000FF];
+                sctp_crc_tableil8_o64[(term2 >> 8) & 0x000000FF];
 
         term1 = sctp_crc_tableil8_o56[(*(const uint32_t *)p_buf) & 0x000000FF] ^
                 sctp_crc_tableil8_o48[((*(const uint32_t *)p_buf) >> 8) & 0x000000FF];
 
         term2 = (*(const uint32_t *)p_buf) >> 16;
         crc   = crc ^ term1 ^ sctp_crc_tableil8_o40[term2 & 0x000000FF] ^
-              sctp_crc_tableil8_o32[(term2 >> 8) & 0x000000FF];
+                sctp_crc_tableil8_o32[(term2 >> 8) & 0x000000FF];
         p_buf += 4;
     }
 
