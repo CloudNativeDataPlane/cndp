@@ -48,7 +48,7 @@ typedef void (*mbuf_dtor_t)(struct pktmbuf_info_s *pi);
  * @param pkts
  *   The vector array of pktmbuf_t pointers
  * @param npkts
- *   The number of valid pktmbuy_t pointers in the *pkts* array
+ *   The number of valid pktmbuf_t pointers in the *pkts* array
  * @return
  *   0 on success or -1 on error
  */
@@ -62,7 +62,7 @@ typedef int (*mbuf_alloc_t)(struct pktmbuf_info_s *pi, struct pktmbuf_s **pkts, 
  * @param pkts
  *   The vector array of pktmbuf_t pointers
  * @param npkts
- *   The number of valid pktmbuy_t pointers in the *pkts* array can be zero
+ *   The number of valid pktmbuf_t pointers in the *pkts* array can be zero
  */
 typedef void (*mbuf_free_t)(struct pktmbuf_info_s *pi, struct pktmbuf_s **pkts, uint16_t npkts);
 

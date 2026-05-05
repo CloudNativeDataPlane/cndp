@@ -16,8 +16,12 @@
 #include <cne_log.h>           // for CNE_LOG_ERR, CNE_ERR, CNE_DEBUG, CNE_LOG_DEBUG
 #include <metrics.h>           // for metrics_destroy
 #include <cne_system.h>        // for cne_lcore_id
-#include <jcfg.h>              // for jcfg_thd_t, jcfg_lport_t, jcfg_lport_by_index
+#include <net/cne_ether.h>
+#include <net/cne_ip.h>
+#include <net/cne_udp.h>
+#include <jcfg.h>        // for jcfg_thd_t, jcfg_lport_t, jcfg_lport_by_index
 #include <idlemgr.h>
+#include <netdev_funcs.h>        // for netdev_get_mac_addr
 
 #include "main.h"
 
@@ -27,7 +31,7 @@ static struct fwd_info *fwd = &fwd_info;
 #define foreach_thd_lport(_t, _lp) \
     for (int _i = 0; _i < _t->lport_cnt && (_lp = _t->lports[_i]); _i++, _lp = _t->lports[_i])
 
-#define TIMEOUT_VALUE 1000 /* Number of times to wait for each usleep() time */
+#define TIMEOUT_1MS 1000 /* Number of microseconds for timeout */
 
 enum thread_quit_state {
     THD_RUN = 0, /**< Thread should continue running */
@@ -35,11 +39,62 @@ enum thread_quit_state {
     THD_DONE,    /**< Thread should set this state when done */
 };
 
-static uint8_t frame_data[] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x45,
-    0x00, 0x00, 0x2e, 0x60, 0xac, 0x00, 0x00, 0x40, 0x11, 0x8c, 0xec, 0xc6, 0x12, 0x00, 0x01,
-    0xc6, 0x12, 0x01, 0x01, 0x04, 0xd2, 0x16, 0x2e, 0x00, 0x1a, 0x00, 0x00, 0x6b, 0x6c, 0x6d,
-    0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x30, 0x31};
+/* use RFC863 Discard Protocol */
+uint16_t tx_udp_src_port = 9;
+uint16_t tx_udp_dst_port = 9;
+
+/* use RFC5735 / RFC2544 reserved network test addresses */
+uint32_t tx_ip_src_addr = (198U << 24) | (18 << 16) | (0 << 8) | 1;
+uint32_t tx_ip_dst_addr = (198U << 24) | (18 << 16) | (0 << 8) | 2;
+
+#define IP_DEFTTL 64 /* from RFC 1340. */
+
+static void
+setup_pkt_udp_ip_headers(char *netdev, struct cne_ether_hdr *eth_hdr, struct cne_ipv4_hdr *ip_hdr,
+                         struct cne_udp_hdr *udp_hdr, uint16_t pkt_data_len)
+{
+    uint16_t pkt_len;
+
+    memset(eth_hdr, 0, sizeof(*eth_hdr));
+    memset(ip_hdr, 0, sizeof(*ip_hdr));
+    memset(udp_hdr, 0, sizeof(*udp_hdr));
+
+    int ret = netdev_get_mac_addr(netdev, &eth_hdr->s_addr);
+    if (ret)
+        CNE_ERR("netdev_get_mac_addr() failed\n");
+
+    memset(&eth_hdr->d_addr, 0xFF, ETH_ALEN);
+    eth_hdr->ether_type = htons(CNE_ETHER_TYPE_IPV4);
+
+    /*
+     * Initialize IP header.
+     */
+    pkt_len                 = (uint16_t)(pkt_data_len - sizeof(struct cne_ether_hdr));
+    ip_hdr->version_ihl     = CNE_IPV4_VHL_DEF;
+    ip_hdr->type_of_service = 0;
+    ip_hdr->fragment_offset = 0;
+    ip_hdr->time_to_live    = IP_DEFTTL;
+    ip_hdr->next_proto_id   = IPPROTO_UDP;
+    ip_hdr->packet_id       = 0;
+    ip_hdr->total_length    = htons(pkt_len);
+    ip_hdr->src_addr        = htonl(tx_ip_src_addr);
+    ip_hdr->dst_addr        = htonl(tx_ip_dst_addr);
+
+    /*
+     * Initialize UDP header.
+     */
+    pkt_len =
+        (uint16_t)((pkt_data_len - sizeof(struct cne_ether_hdr) - sizeof(struct cne_ipv4_hdr)));
+    udp_hdr->src_port  = htons(tx_udp_src_port);
+    udp_hdr->dst_port  = htons(tx_udp_dst_port);
+    udp_hdr->dgram_len = htons(pkt_len);
+
+    /*
+     * Compute IP and UDP checksums.
+     */
+    ip_hdr->hdr_checksum = cne_ipv4_cksum(ip_hdr);
+    udp_hdr->dgram_cksum = cne_ipv4_udptcp_cksum(ip_hdr, udp_hdr);
+}
 
 static __cne_always_inline int
 __rx_burst(pkt_api_t api, struct fwd_port *pd, pktmbuf_t **mbufs, int n_pkts)
@@ -296,11 +351,22 @@ _txonly_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     n_pkts = __buf_alloc_bulk(fwd->pkt_api, lport, tx_mbufs, fwd->burst);
 
     if (n_pkts > 0) {
-        for (int j = 0; j < n_pkts; j++) {
-            pktmbuf_t *xb = tx_mbufs[j];
-            uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
+        if (!pd->pkt_built) {
+            setup_pkt_udp_ip_headers(lport->netdev, &pd->pkt_eth_hdr, &pd->pkt_ip_hdr,
+                                     &pd->pkt_udp_hdr, 60);
+            pd->pkt_built = true;
+        }
 
-            memcpy(p, lport->frame_data, lport->frame_len);
+        for (int j = 0; j < n_pkts; j++) {
+            pktmbuf_t *xb             = tx_mbufs[j];
+            struct cne_ether_hdr *eth = pktmbuf_mtod(xb, struct cne_ether_hdr *);
+            struct cne_ipv4_hdr *ip   = (struct cne_ipv4_hdr *)&eth[1];
+            struct cne_udp_hdr *udp   = (struct cne_udp_hdr *)&ip[1];
+
+            memcpy(eth, &pd->pkt_eth_hdr, sizeof(pd->pkt_eth_hdr));
+            memcpy(ip, &pd->pkt_ip_hdr, sizeof(pd->pkt_ip_hdr));
+            memcpy(udp, &pd->pkt_udp_hdr, sizeof(pd->pkt_udp_hdr));
+
             pktmbuf_data_len(xb) = 60;
         }
 
@@ -333,11 +399,22 @@ _txonly_rx_test(jcfg_lport_t *lport, struct fwd_info *fwd)
     n_pkts = __buf_alloc_bulk(fwd->pkt_api, lport, tx_mbufs, fwd->burst);
 
     if (n_pkts > 0) {
-        for (int j = 0; j < n_pkts; j++) {
-            pktmbuf_t *xb = tx_mbufs[j];
-            uint64_t *p   = pktmbuf_mtod(xb, uint64_t *);
+        if (!pd->pkt_built) {
+            setup_pkt_udp_ip_headers(lport->netdev, &pd->pkt_eth_hdr, &pd->pkt_ip_hdr,
+                                     &pd->pkt_udp_hdr, 60);
+            pd->pkt_built = true;
+        }
 
-            memcpy(p, lport->frame_data, lport->frame_len);
+        for (int j = 0; j < n_pkts; j++) {
+            pktmbuf_t *xb             = tx_mbufs[j];
+            struct cne_ether_hdr *eth = pktmbuf_mtod(xb, struct cne_ether_hdr *);
+            struct cne_ipv4_hdr *ip   = (struct cne_ipv4_hdr *)&eth[1];
+            struct cne_udp_hdr *udp   = (struct cne_udp_hdr *)&ip[1];
+
+            memcpy(eth, &pd->pkt_eth_hdr, sizeof(pd->pkt_eth_hdr));
+            memcpy(ip, &pd->pkt_ip_hdr, sizeof(pd->pkt_ip_hdr));
+            memcpy(udp, &pd->pkt_udp_hdr, sizeof(pd->pkt_udp_hdr));
+
             pktmbuf_data_len(xb) = 60;
         }
 
@@ -521,14 +598,6 @@ thread_func(void *arg)
         }
     }
 
-    // Construct the transmit frame
-    foreach_thd_lport (thd, lport) {
-        lport->frame_len = sizeof(frame_data);
-        memcpy(lport->frame_data, frame_data, lport->frame_len);
-        memcpy(lport->frame_data, &fwd->dst_mac, ETH_ALEN);
-        memcpy(lport->frame_data + ETH_ALEN, &lport->mac_addr, ETH_ALEN);
-    }
-
     for (;;) {
         foreach_thd_lport (thd, lport) {
             int n_pkts;
@@ -536,7 +605,7 @@ thread_func(void *arg)
             if (thd->quit == THD_QUIT) /* Make sure we check quit often to break out ASAP */
                 goto leave;
             if (thd->pause) {
-                usleep(1000);        // sleep for 1ms
+                usleep(TIMEOUT_1MS);        // sleep for 1ms
                 continue;
             }
 
@@ -559,7 +628,7 @@ leave_no_lport:
         idlemgr_destroy(imgr);
 
     while (thd->quit != THD_QUIT)
-        usleep(1000);
+        usleep(TIMEOUT_1MS);
     // Free thread_func_arg_t.
     free(func_arg);
 
@@ -575,6 +644,7 @@ _thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int
     jcfg_thd_t *thd = obj;
 
     thd->quit = THD_QUIT;
+    usleep(TIMEOUT_1MS * 10);
     return 0;
 }
 
@@ -619,11 +689,11 @@ static int
 _check_thread_quit(jcfg_info_t *j __cne_unused, void *obj, void *arg __cne_unused, int idx)
 {
     jcfg_thd_t *thd = obj;
-    uint32_t timo   = TIMEOUT_VALUE;
+    uint32_t timo   = 1000;
 
     /* Make sure worker threads are done. Ignore main thread (idx=0) */
     while (--timo && thd->quit != THD_DONE && idx > 0)
-        usleep(10000); /* 10ms */
+        usleep(10 * TIMEOUT_1MS); /* 10ms */
 
     if (timo == 0)
         return -1;

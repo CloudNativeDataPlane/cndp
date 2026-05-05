@@ -147,11 +147,32 @@ static inline uint16_t cndp_buf_get_data_len (void *mb)
   return b->current_length;
 }
 
-static inline uint64_t cndp_buf_get_addr (void *mb)
+static inline uint64_t cndp_buf_get_base_ptr (void *mb)
 {
   vlib_buffer_t *b = (vlib_buffer_t *)mb;
 
   return (pointer_to_uword (b));
+}
+
+static __cne_always_inline uint64_t cndp_buf_get_data_ptr (void *mb)
+{
+  vlib_buffer_t *b = (vlib_buffer_t *)mb;
+
+  return (pointer_to_uword (b) + b->current_data);
+}
+
+static __cne_always_inline void cndp_buf_set_data_off (void *mb, uint32_t off)
+{
+  vlib_buffer_t *b = (vlib_buffer_t *)mb;
+
+  b->current_data = off;
+}
+
+static __cne_always_inline uint32_t cndp_buf_get_data_off (void *mb)
+{
+  vlib_buffer_t *b = (vlib_buffer_t *)mb;
+
+  return b->current_data;
 }
 
 static __cne_always_inline void **cndp_buf_inc_ptr (void **mbs)
@@ -273,10 +294,13 @@ clib_error_t *cndp_create_dev (vlib_main_t *vm, u8 *ifname, u32 nb_qs,
       p_config->buf_mgmt.buf_set_data = cndp_buf_set_data;
       p_config->buf_mgmt.buf_get_data_len = cndp_buf_get_data_len;
       p_config->buf_mgmt.buf_get_data = cndp_buf_get_data;
-      p_config->buf_mgmt.buf_get_addr = cndp_buf_get_addr;
+      p_config->buf_mgmt.buf_get_base_ptr = cndp_buf_get_base_ptr;
+      p_config->buf_mgmt.buf_get_data_ptr = cndp_buf_get_data_ptr;
+      p_config->buf_mgmt.buf_set_data_off = cndp_buf_set_data_off;
+      p_config->buf_mgmt.buf_get_data_off = cndp_buf_get_data_off;
       p_config->buf_mgmt.buf_inc_ptr = cndp_buf_inc_ptr;
       p_config->buf_mgmt.buf_reset = cndp_buf_reset;
-      p_config->buf_mgmt.buf_headroom = sizeof (vlib_buffer_t);
+      p_config->buf_mgmt.buf_header_sz = sizeof (vlib_buffer_t);
       p_config->buf_mgmt.frame_size = p_config->bufsz;
       p_config->buf_mgmt.pool_header_sz = 0;
 
