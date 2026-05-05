@@ -480,7 +480,7 @@ struct ipv4_7tuple acl_test_data[] = {
     {.vlan   = 0x5,
      .ip_src = CNE_IPV4(192, 168, 2, 50),
      .allow  = 8,
-     .deny   = 9},                                                     /* should match 8, 9 */
+     .deny   = 9},                                                   /* should match 8, 9 */
     {.vlan = 0x55, .ip_src = CNE_IPV4(192, 168, 1, 49), .allow = 8}, /* should match 8 */
     {.port_dst = 80, .port_src = 1024, .allow = 13, .deny = 20},     /* should match 13,20 */
     {.port_dst = 79, .port_src = 1024, .allow = 14, .deny = 20},     /* should match 14,20 */
@@ -492,7 +492,7 @@ struct ipv4_7tuple acl_test_data[] = {
     {.proto  = 0x5,
      .ip_dst = CNE_IPV4(192, 168, 1, 50),
      .allow  = 2,
-     .deny   = 23},                                            /* should match 2, 23 */
+     .deny   = 23},                                          /* should match 2, 23 */
     {.vlan = 0x64, .domain = 0x5, .allow = 11, .deny = 12},  /* should match 11, 12 */
     {.proto = 0x5, .port_src = 80, .allow = 17, .deny = 23}, /* should match 17, 23 */
     {.proto = 0x5, .port_dst = 80, .allow = 13, .deny = 23}, /* should match 13, 23 */
