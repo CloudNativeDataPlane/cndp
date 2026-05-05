@@ -7,7 +7,7 @@
 # The install directory will contain all of the includes and libraries
 # for external applications to build and link with CNDP.
 #
-# using 'cne-build.sh help' or 'cne-build.sh -h' or 'cne-build.sh --help' to see help information.
+# Use 'cne-build.sh help', 'cne-build.sh -h', or 'cne-build.sh --help' to see usage information.
 #
 
 currdir=$(pwd)
@@ -59,10 +59,23 @@ echo ""
 
 function run_meson() {
     btype="-Dbuildtype=$buildtype"
+    local meson_args=()
+
+    [[ -n "$configure" ]] && meson_args+=("$configure")
+    [[ -n "$static" ]] && meson_args+=("$static")
+    [[ -n "$coverity" ]] && meson_args+=("$coverity")
+    meson_args+=("$btype")
+    [[ -n "$tcp" ]] && meson_args+=("$tcp")
+    [[ -n "$ipv6" ]] && meson_args+=("$ipv6")
+    meson_args+=("--prefix=/$target_dir" "$build_path")
+    [[ -n "$sdk_dir" ]] && meson_args+=("$sdk_dir")
+
     if [[ -n "$CNE_VERBOSE" ]]; then
-        echo "meson $configure $static $coverity $btype $tcp $ipv6 --prefix=\"/$target_dir\" \"$build_path\" $sdk_dir"
+        printf 'meson'
+        printf ' %q' "${meson_args[@]}"
+        printf '\n'
     fi
-    meson $configure $static $coverity $btype $tcp $ipv6 --prefix="/$target_dir" "$build_path" $sdk_dir
+    meson "${meson_args[@]}"
     configure=""
 }
 
@@ -100,10 +113,10 @@ function ninja_build_docs() {
 }
 
 function build_rust_apps() {
-    echo ">>> Build rust applications"
+    echo ">>> Build Rust applications"
     # Check if Cargo is installed.
     if ! command -v cargo &> /dev/null; then
-        echo "Cargo not found.Install Cargo"
+        echo "Cargo not found. Install Cargo."
         return 1
     fi
     # Build rust applications
@@ -130,10 +143,10 @@ function cargo_build_rust_app() {
 }
 
 function clean_rust_apps() {
-    echo ">>> Clean rust applications"
+    echo ">>> Clean Rust applications"
     # Check if Cargo is installed.
     if ! command -v cargo &> /dev/null; then
-        echo "Cargo not found.Install Cargo"
+        echo "Cargo not found. Install Cargo."
         return 1
     fi
     # Clean rust applications.
@@ -189,7 +202,7 @@ ninja_uninstall() {
 
 usage() {
     echo " Usage: Build CNDP using Meson/Ninja tools"
-    echo "  ** Must be in the top level directory for CNDP"
+    echo "  ** Must be in the top-level directory for CNDP"
     echo "     This tool is in tools/cne-build.sh, but use 'make' which calls this script"
     echo "     Use 'make' to build CNDP as it allows for multiple targets i.e. 'make clean debug'"
     echo ""
@@ -212,10 +225,10 @@ usage() {
     echo "    clean          - remove the 'build_dir' directory then exit"
     echo "    install        - install the includes/libraries into 'target_dir' directory"
     echo "    uninstall      - uninstall the includes/libraries from 'target_dir' directory"
-    echo "    coverity       - (internal) build using coverity tool"
-    echo "    docs           - create the document files"
-    echo "    rust-app       - Build Rust application"
-    echo "    rust-app-clean - Clean Rust application"
+    echo "    coverity       - (internal) build using the Coverity tool"
+    echo "    docs           - create the documentation files"
+    echo "    rust-app       - build Rust applications"
+    echo "    rust-app-clean - clean Rust applications"
     exit
 }
 
