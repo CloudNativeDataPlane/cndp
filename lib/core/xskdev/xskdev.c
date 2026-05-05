@@ -246,7 +246,7 @@ fq_add(xskdev_info_t *xi, int times)
 
         for (uint32_t i = 0; i < nb_bufs; i++) {
             void *buf       = bufs[i];
-            uint64_t offset = (uint64_t)xskdev_buf_get_data_ptr(xi, buf) - (uint64_t)ux->umem_addr -
+            uint64_t offset = (uint64_t)buf - (uint64_t)ux->umem_addr -
                               (uint64_t)xi->buf_mgmt.pool_header_sz;
 
             xskdev_buf_reset(xi, buf, ux->obj_sz, xi->buf_mgmt.buf_header_sz);
