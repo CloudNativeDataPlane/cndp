@@ -110,7 +110,7 @@ _thd_obj(struct json_object *obj, int flags, struct json_object *parent __cne_un
 
         thd = calloc(1, sizeof(jcfg_thd_t));
         if (thd) {
-            char *p = strchr(key, ':');
+            const char *p = strchr(key, ':');
             int idx;
 
             thd->cbtype      = JCFG_THREAD_TYPE;

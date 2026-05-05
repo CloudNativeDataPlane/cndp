@@ -99,7 +99,8 @@ check_allowed_range_characters(const char *s)
 static int
 parse_range(const char *range, uint16_t *v1, uint16_t *v2)
 {
-    char *hyphen, *end = NULL;
+    const char *hyphen;
+    char *end = NULL;
 
     if (!range || !v1 || !v2)
         return -1;

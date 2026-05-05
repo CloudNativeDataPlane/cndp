@@ -149,7 +149,7 @@ _lport_obj(struct json_object *obj, int flags, struct json_object *parent __cne_
 
         lport = calloc(1, sizeof(jcfg_lport_t));
         if (lport) {
-            char *c = strchr(key, ':');
+            const char *c = strchr(key, ':');
 
             lport->cbtype = JCFG_LPORT_TYPE;
             lport->name   = strdup(key);

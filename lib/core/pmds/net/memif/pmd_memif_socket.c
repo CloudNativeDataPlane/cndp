@@ -27,7 +27,8 @@
 static int
 cne_memif_check_socket_filename(const char *filename)
 {
-    char *dir = NULL, *tmp;
+    char *dir = NULL;
+    const char *tmp;
     uint32_t idx;
     int ret = 0;
 
