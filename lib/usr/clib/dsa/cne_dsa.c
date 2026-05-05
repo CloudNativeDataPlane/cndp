@@ -183,8 +183,8 @@ dsa_perform_ops(uint16_t dev)
     idxd->hdl_ring_flags[comp_idx]            = DSA_HDL_INVALID;
 
     const struct idxd_hw_desc batch_desc = {
-        .op_flags = (idxd_op_batch << IDXD_CMD_OP_SHIFT) | IDXD_FLAG_COMPLETION_ADDR_VALID |
-                    IDXD_FLAG_REQUEST_COMPLETION,
+        .op_flags   = (idxd_op_batch << IDXD_CMD_OP_SHIFT) | IDXD_FLAG_COMPLETION_ADDR_VALID |
+                      IDXD_FLAG_REQUEST_COMPLETION,
         .desc_addr  = __desc_idx_to_iova(idxd, idxd->batch_start),
         .completion = __desc_idx_to_iova(idxd, comp_idx),
         .size       = idxd->batch_size,

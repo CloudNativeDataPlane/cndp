@@ -98,11 +98,11 @@ typedef struct lport_cfg {
 } lport_cfg_t;
 
 /**< lport_cfg.flags configuration bits */
-#define LPORT_UNPRIVILEGED           (1 << 0) /**< Inhibit Loading the BPF program & config of busy poll */
-#define LPORT_FORCE_WAKEUP           (1 << 1) /**< Force a wakeup, for CVL NICs */
-#define LPORT_SKB_MODE               (1 << 2) /**< Force the SKB_MODE or copy mode */
-#define LPORT_BUSY_POLLING           (1 << 3) /**< Enable busy polling */
-#define LPORT_SHARED_UMEM            (1 << 4) /**< Enable UMEM Shared mode if available */
+#define LPORT_UNPRIVILEGED (1 << 0) /**< Inhibit Loading the BPF program & config of busy poll */
+#define LPORT_FORCE_WAKEUP (1 << 1) /**< Force a wakeup, for CVL NICs */
+#define LPORT_SKB_MODE     (1 << 2) /**< Force the SKB_MODE or copy mode */
+#define LPORT_BUSY_POLLING (1 << 3) /**< Enable busy polling */
+#define LPORT_SHARED_UMEM  (1 << 4) /**< Enable UMEM Shared mode if available */
 #define LPORT_USER_MANAGED_BUFFERS   (1 << 5) /**< Enable Buffer Manager outside of CNDP */
 #define LPORT_UMEM_UNALIGNED_BUFFERS (1 << 6) /**< Enable unaligned frame UMEM support */
 
