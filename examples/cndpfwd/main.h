@@ -37,7 +37,9 @@ extern "C" {
 #include <jcfg.h>        // for jcfg_info_t, jcfg_thd_t
 #include <jcfg_process.h>
 
-#include <net/cne_ip.h>        // for CNE_IPV4
+#include <net/cne_ether.h>        // for cne_ether_hdr
+#include <net/cne_ip.h>           // for CNE_IPV4
+#include <net/cne_udp.h>          // for cne_udp_hdr
 
 #include "metrics.h"        // for metrics_info_t
 #include "pktmbuf.h"        // for pktmbuf_t
@@ -52,7 +54,7 @@ enum {
     FWD_NO_METRICS  = (1 << 1), /**< Disable the Metrics function */
     FWD_NO_RESTAPI  = (1 << 2), /**< Disable the REST API */
     FWD_CLI_ENABLE  = (1 << 3), /**< Enable the CLI */
-    FWD_ACL_STATS   = (1 << 4), /**< Enable printing ACL stats */
+    FWD_ACL_STATS   = (1 << 4)  /**< Enable printing ACL stats */
 };
 
 #define PKT_API_TAG    "pkt_api"         /**< Packet API json tag */
@@ -128,6 +130,10 @@ struct fwd_port {
     uint64_t tx_overrun;                 /**< Number of mbufs failing to flush */
     struct acl_fwd_stats acl_stats;      /**< ACL-related stats */
     struct acl_fwd_stats prev_acl_stats; /**< previous values for ACL stats */
+    struct cne_ether_hdr pkt_eth_hdr;    /**< Cached Ethernet header for TX-only mode */
+    struct cne_ipv4_hdr pkt_ip_hdr;      /**< Cached IPv4 header for TX-only mode */
+    struct cne_udp_hdr pkt_udp_hdr;      /**< Cached UDP header for TX-only mode */
+    bool pkt_built;                      /**< True once per-lport TX headers have been built */
 };
 
 struct app_options {

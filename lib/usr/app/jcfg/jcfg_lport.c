@@ -4,7 +4,7 @@
 
 // IWYU pragma: no_include <json-c/json_types.h>
 
-#include <string.h>                    // for strcmp, strdup, strchr
+#include <string.h>                    // for strncmp, strdup, strchr
 #include <json-c/json_object.h>        // for json_object_get_string, json_object_...
 #include <json-c/json_visit.h>         // for json_c_visit, JSON_C_VISIT_RETURN_CO...
 #include <stdlib.h>                    // for NULL, calloc, free, size_t
@@ -69,7 +69,7 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
     enum json_type type;
     char *pmd_opt[JCFG_OPT_NUM] = {0};
     char *pmd_str               = NULL;
-    int ret                     = JSON_C_VISIT_RETURN_CONTINUE;
+    int val, ret = JSON_C_VISIT_RETURN_CONTINUE;
 
     if (flags == JSON_C_VISIT_SECOND)
         return ret;
@@ -95,16 +95,12 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
                  !strncmp(key, JCFG_LPORT_DESCRIPTION_NAME, keylen))
             lport->desc = strdup(json_object_get_string(obj));
         else if (!strncmp(key, JCFG_LPORT_BUSY_TIMEOUT_NAME, keylen)) {
-            int val;
-
             val = json_object_get_int(obj);
             if (val < 0 || val > USHRT_MAX)
                 CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "%s: Invalid Range\n",
                                 JCFG_LPORT_BUSY_TIMEOUT_NAME);
             lport->busy_timeout = (uint16_t)val;
         } else if (!strncmp(key, JCFG_LPORT_BUSY_BUDGET_NAME, keylen)) {
-            int val;
-
             val = json_object_get_int(obj);
             if (val < 0 || val > USHRT_MAX)
                 CNE_ERR_RET_VAL(JSON_C_VISIT_RETURN_ERROR, "%s: Invalid Range\n",
@@ -123,6 +119,8 @@ _lport(struct json_object *obj, int flags, struct json_object *parent __cne_unus
         else if (!strncmp(key, JCFG_LPORT_BUSY_POLL_NAME, keylen) ||
                  !strncmp(key, JCFG_LPORT_BUSY_POLLING_NAME, keylen))
             lport->flags |= json_object_get_boolean(obj) ? LPORT_BUSY_POLLING : 0;
+        else if (!strncmp(key, JCFG_LPORT_UNALIGNED_BUFFERS_NAME, keylen))
+            lport->flags |= json_object_get_boolean(obj) ? LPORT_UMEM_UNALIGNED_BUFFERS : 0;
         else
             CNE_WARN("Unknown lport key (%s)\n", key);
     }
